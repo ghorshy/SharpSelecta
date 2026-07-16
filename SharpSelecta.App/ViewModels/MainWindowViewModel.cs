@@ -23,18 +23,15 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string? statusMessage;
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(PlayPauseLabel))]
-    private bool isPlaying;
+    public PlaybackControlsViewModel PlaybackControls { get; }
 
     public MainWindowViewModel(IAudioEngine audioEngine, IFilePickerService filePickerService, ILogger<MainWindowViewModel> logger)
     {
         _audioEngine = audioEngine;
         _filePickerService = filePickerService;
         _logger = logger;
+        PlaybackControls = new PlaybackControlsViewModel(audioEngine);
     }
-
-    public string PlayPauseLabel => IsPlaying ? Strings.Pause : Strings.Play;
 
     public string DisplayFileName => LoadedFileName ?? Strings.NoFileLoaded;
 
@@ -50,27 +47,13 @@ public partial class MainWindowViewModel : ViewModelBase
             await Task.Run(() => _audioEngine.Load(filePath));
             LoadedFileName = Path.GetFileName(filePath);
             StatusMessage = null;
-            IsPlaying = false;
+            PlaybackControls.IsPlaying = false;
+            PlaybackControls.RefreshPosition();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load {FilePath}", filePath);
             StatusMessage = Strings.FailedToLoadFile(ex.Message);
-        }
-    }
-
-    [RelayCommand]
-    private void PlayPause()
-    {
-        if (IsPlaying)
-        {
-            _audioEngine.Pause();
-            IsPlaying = false;
-        }
-        else
-        {
-            _audioEngine.Play();
-            IsPlaying = true;
         }
     }
 }

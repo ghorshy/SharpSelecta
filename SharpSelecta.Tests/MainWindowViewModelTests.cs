@@ -85,27 +85,17 @@ public class MainWindowViewModelTests
     }
 
     [Test]
-    public async Task PlayPauseCommand_WhenNotPlaying_PlaysAndUpdatesState()
+    public async Task OpenFileCommand_WhenFileSelected_ResetsPlaybackControlsState()
     {
-        var vm = CreateViewModel(out var audioEngine, out _);
+        var vm = CreateViewModel(out var audioEngine, out var filePickerService);
+        audioEngine.Position.Returns(0.0);
+        audioEngine.Duration.Returns(200.0);
+        filePickerService.PickAudioFileAsync().Returns("/music/song.mp3");
+        vm.PlaybackControls.PlayPauseCommand.Execute(null);
 
-        vm.PlayPauseCommand.Execute(null);
+        await vm.OpenFileCommand.ExecuteAsync(null);
 
-        audioEngine.Received(1).Play();
-        await Assert.That(vm.IsPlaying).IsTrue();
-        await Assert.That(vm.PlayPauseLabel).IsEqualTo("Pause");
-    }
-
-    [Test]
-    public async Task PlayPauseCommand_WhenPlaying_PausesAndUpdatesState()
-    {
-        var vm = CreateViewModel(out var audioEngine, out _);
-        vm.PlayPauseCommand.Execute(null);
-
-        vm.PlayPauseCommand.Execute(null);
-
-        audioEngine.Received(1).Pause();
-        await Assert.That(vm.IsPlaying).IsFalse();
-        await Assert.That(vm.PlayPauseLabel).IsEqualTo("Play");
+        await Assert.That(vm.PlaybackControls.IsPlaying).IsFalse();
+        await Assert.That(vm.PlaybackControls.DurationSeconds).IsEqualTo(200.0);
     }
 }

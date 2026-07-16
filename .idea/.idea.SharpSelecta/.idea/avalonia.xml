@@ -5,6 +5,7 @@
       <map>
         <entry key="SharpSelecta.App/App.axaml" value="SharpSelecta.App/SharpSelecta.App.csproj" />
         <entry key="SharpSelecta.App/Views/MainWindow.axaml" value="SharpSelecta.App/SharpSelecta.App.csproj" />
+        <entry key="SharpSelecta.App/Views/PlaybackControlsView.axaml" value="SharpSelecta.App/SharpSelecta.App.csproj" />
       </map>
     </option>
   </component>

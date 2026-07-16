@@ -13,6 +13,7 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
     private AudioMixer? _mixer;
     private FileSource? _currentTrack;
     private string? _transcodedTempFile;
+    private float _pendingVolume = 1.0f;
 
     public async Task InitializeAsync()
     {
@@ -20,6 +21,7 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
         OwnaudioNet.Start();
         _mixer = new AudioMixer(OwnaudioNet.Engine!.UnderlyingEngine);
         _mixer.Start();
+        _mixer.MasterVolume = _pendingVolume;
 
         logger.LogInformation(
             "OwnAudioSharp engine initialized (SampleRate={SampleRate}, Channels={Channels})",
@@ -40,6 +42,9 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
             _currentTrack.DetachFromClock();
             _mixer.RemoveSource(_currentTrack);
             _currentTrack.Dispose();
+            _currentTrack = null;
+            
+            _mixer.MasterClock.Reset();
         }
 
         DeleteTranscodedTempFile();
@@ -62,13 +67,32 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
         }
 
         _currentTrack.AttachToClock(_mixer.MasterClock);
-        
+        _currentTrack.Seek(0);
+
         _mixer.AddSourcePrepared(_currentTrack);
     }
 
     public void Play() => _currentTrack?.Play();
 
     public void Pause() => _currentTrack?.Pause();
+
+    public void Seek(double positionSeconds) => _currentTrack?.Seek(positionSeconds);
+
+    public double Position => _currentTrack?.Position ?? 0.0;
+
+    public double Duration => _currentTrack?.Duration ?? 0.0;
+
+    public float Volume
+    {
+        get => _mixer?.MasterVolume ?? _pendingVolume;
+        set
+        {
+            // Cached separately since Load()/Volume may be set before InitializeAsync has
+            // created the mixer (e.g. the ViewModel's default volume, applied at construction).
+            _pendingVolume = value;
+            _mixer?.MasterVolume = value;
+        }
+    }
 
     private string TranscodeToFlac(string filePath)
     {
@@ -112,7 +136,9 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
     private void DeleteTranscodedTempFile()
     {
         if (_transcodedTempFile is null)
+        {
             return;
+        }
 
         File.Delete(_transcodedTempFile);
         _transcodedTempFile = null;

@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
+using SharpSelecta.App.Resources;
 
 namespace SharpSelecta.App.Services;
 
@@ -10,11 +11,11 @@ public sealed class AvaloniaFilePickerService(Window owner) : IFilePickerService
     {
         var files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Wybierz plik muzyczny",
+            Title = Strings.FilePickerTitle,
             AllowMultiple = false,
             FileTypeFilter =
             [
-                new FilePickerFileType("Pliki audio")
+                new FilePickerFileType(Strings.AudioFilesFilterName)
                 {
                     Patterns = ["*.mp3", "*.flac", "*.wav", "*.m4a"],
                 },

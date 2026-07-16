@@ -73,4 +73,19 @@
   <data name="FailedToLoadFileFormat" xml:space="preserve">
     <value>Failed to load file: {0}</value>
   </data>
+  <data name="Previous" xml:space="preserve">
+    <value>Previous</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="Volume" xml:space="preserve">
+    <value>Volume</value>
+  </data>
+  <data name="FilePickerTitle" xml:space="preserve">
+    <value>Choose an audio file</value>
+  </data>
+  <data name="AudioFilesFilterName" xml:space="preserve">
+    <value>Audio files</value>
+  </data>
 </root>

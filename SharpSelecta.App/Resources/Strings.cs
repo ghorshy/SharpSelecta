@@ -12,6 +12,11 @@ public static class Strings
     public static string Play => Get(nameof(Play));
     public static string Pause => Get(nameof(Pause));
     public static string NoFileLoaded => Get(nameof(NoFileLoaded));
+    public static string Previous => Get(nameof(Previous));
+    public static string Next => Get(nameof(Next));
+    public static string Volume => Get(nameof(Volume));
+    public static string FilePickerTitle => Get(nameof(FilePickerTitle));
+    public static string AudioFilesFilterName => Get(nameof(AudioFilesFilterName));
 
     public static string FailedToLoadFile(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToLoadFileFormat"), reason);
