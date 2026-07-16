@@ -195,4 +195,57 @@ public class LibraryViewModelTests
         await Assert.That(playbackControls.QueueEntries[0].Track).IsEqualTo(first);
         await Assert.That(playbackControls.QueueEntries[1].Track).IsEqualTo(second);
     }
+
+    [Test]
+    public async Task HidingEveryColumn_LeavesTheLastOneVisible()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+
+        vm.IsTrackNumberColumnVisible = false;
+        vm.IsTitleColumnVisible = false;
+        vm.IsArtistColumnVisible = false;
+        vm.IsAlbumColumnVisible = false;
+        vm.IsLengthColumnVisible = false;
+        vm.IsSampleRateColumnVisible = false;
+        vm.IsBitDepthColumnVisible = false;
+        vm.IsBitrateColumnVisible = false;
+        vm.IsFileTypeColumnVisible = false;
+        vm.IsYearColumnVisible = false;
+
+        await Assert.That(vm.IsYearColumnVisible).IsTrue();
+    }
+
+    [Test]
+    public async Task HidingAColumn_WhileAnotherIsStillVisible_Succeeds()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+
+        vm.IsTrackNumberColumnVisible = false;
+
+        await Assert.That(vm.IsTrackNumberColumnVisible).IsFalse();
+        await Assert.That(vm.IsTitleColumnVisible).IsTrue();
+    }
+
+    [Test]
+    public async Task ColumnVisibility_PersistsAcrossInstancesForTheSameSettingsFile()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            var vm = CreateViewModel(out _, out _, out _, settingsPath);
+            vm.IsArtistColumnVisible = false;
+            vm.IsYearColumnVisible = false;
+
+            var restarted = CreateViewModel(out _, out _, out _, settingsPath);
+            await restarted.InitializeAsync();
+
+            await Assert.That(restarted.IsArtistColumnVisible).IsFalse();
+            await Assert.That(restarted.IsYearColumnVisible).IsFalse();
+            await Assert.That(restarted.IsTitleColumnVisible).IsTrue();
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
 }

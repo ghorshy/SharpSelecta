@@ -51,11 +51,106 @@ public partial class LibraryViewModel : ViewModelBase
     [ObservableProperty]
     private bool isYearColumnVisible = true;
 
+    // CommunityToolkit's generated setters can't be cancelled, so hiding the last visible column
+    // is undone here instead of blocked up front.
+    private bool AnyColumnVisible() =>
+        IsTrackNumberColumnVisible || IsTitleColumnVisible || IsArtistColumnVisible || IsAlbumColumnVisible ||
+        IsLengthColumnVisible || IsSampleRateColumnVisible || IsBitDepthColumnVisible || IsBitrateColumnVisible ||
+        IsFileTypeColumnVisible || IsYearColumnVisible;
+
+    partial void OnIsTrackNumberColumnVisibleChanged(bool value)
+    {
+        if (!value && !AnyColumnVisible()) { IsTrackNumberColumnVisible = true; return; }
+        SaveColumnVisibility();
+    }
+
+    partial void OnIsTitleColumnVisibleChanged(bool value)
+    {
+        if (!value && !AnyColumnVisible()) { IsTitleColumnVisible = true; return; }
+        SaveColumnVisibility();
+    }
+
+    partial void OnIsArtistColumnVisibleChanged(bool value)
+    {
+        if (!value && !AnyColumnVisible()) { IsArtistColumnVisible = true; return; }
+        SaveColumnVisibility();
+    }
+
+    partial void OnIsAlbumColumnVisibleChanged(bool value)
+    {
+        if (!value && !AnyColumnVisible()) { IsAlbumColumnVisible = true; return; }
+        SaveColumnVisibility();
+    }
+
+    partial void OnIsLengthColumnVisibleChanged(bool value)
+    {
+        if (!value && !AnyColumnVisible()) { IsLengthColumnVisible = true; return; }
+        SaveColumnVisibility();
+    }
+
+    partial void OnIsSampleRateColumnVisibleChanged(bool value)
+    {
+        if (!value && !AnyColumnVisible()) { IsSampleRateColumnVisible = true; return; }
+        SaveColumnVisibility();
+    }
+
+    partial void OnIsBitDepthColumnVisibleChanged(bool value)
+    {
+        if (!value && !AnyColumnVisible()) { IsBitDepthColumnVisible = true; return; }
+        SaveColumnVisibility();
+    }
+
+    partial void OnIsBitrateColumnVisibleChanged(bool value)
+    {
+        if (!value && !AnyColumnVisible()) { IsBitrateColumnVisible = true; return; }
+        SaveColumnVisibility();
+    }
+
+    partial void OnIsFileTypeColumnVisibleChanged(bool value)
+    {
+        if (!value && !AnyColumnVisible()) { IsFileTypeColumnVisible = true; return; }
+        SaveColumnVisibility();
+    }
+
+    partial void OnIsYearColumnVisibleChanged(bool value)
+    {
+        if (!value && !AnyColumnVisible()) { IsYearColumnVisible = true; return; }
+        SaveColumnVisibility();
+    }
+
+    private void SaveColumnVisibility() => LibrarySettingsStore.SaveColumnVisibility(_settingsFilePath, new ColumnVisibility(
+        IsTrackNumberColumnVisible, IsTitleColumnVisible, IsArtistColumnVisible, IsAlbumColumnVisible,
+        IsLengthColumnVisible, IsSampleRateColumnVisible, IsBitDepthColumnVisible, IsBitrateColumnVisible,
+        IsFileTypeColumnVisible, IsYearColumnVisible));
+
+    private void ApplySavedColumnVisibility()
+    {
+        var columns = LibrarySettingsStore.LoadColumnVisibility(_settingsFilePath);
+        if (columns is null)
+            return;
+
+        IsTrackNumberColumnVisible = columns.TrackNumber;
+        IsTitleColumnVisible = columns.Title;
+        IsArtistColumnVisible = columns.Artist;
+        IsAlbumColumnVisible = columns.Album;
+        IsLengthColumnVisible = columns.Length;
+        IsSampleRateColumnVisible = columns.SampleRate;
+        IsBitDepthColumnVisible = columns.BitDepth;
+        IsBitrateColumnVisible = columns.Bitrate;
+        IsFileTypeColumnVisible = columns.FileType;
+        IsYearColumnVisible = columns.Year;
+    }
+
     public ObservableCollection<LibraryTrackViewModel> Tracks { get; } = [];
 
     public bool HasTracks => Tracks.Count > 0;
 
     public bool NoTracks => Tracks.Count == 0;
+
+    // Column order isn't modeled as a ViewModel property like visibility is — DataGridColumn's
+    // DisplayIndex lives on the control itself — so LibraryView reads/writes it directly through
+    // LibrarySettingsStore using this path.
+    public string SettingsFilePath => _settingsFilePath;
 
     public LibraryViewModel(
         IFilePickerService filePickerService,
@@ -78,6 +173,8 @@ public partial class LibraryViewModel : ViewModelBase
     // Re-scans whatever library folder was remembered from a previous session, if any.
     public async Task InitializeAsync()
     {
+        ApplySavedColumnVisibility();
+
         var folderPath = LibrarySettingsStore.LoadLibraryFolderPath(_settingsFilePath);
         if (folderPath is not null)
         {

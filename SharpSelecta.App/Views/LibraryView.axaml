@@ -23,20 +23,36 @@
                 <TextBlock Text="{Binding StatusMessage}" Foreground="OrangeRed" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
             </StackPanel>
 
-            <DataGrid ItemsSource="{Binding Tracks}"
+            <DataGrid x:Name="TracksGrid"
+                      ItemsSource="{Binding Tracks}"
                       AutoGenerateColumns="False"
                       CanUserSortColumns="True"
                       CanUserResizeColumns="True"
                       CanUserReorderColumns="True"
                       IsReadOnly="True"
                       GridLinesVisibility="Horizontal"
-                      DoubleTapped="OnTrackDoubleTapped">
+                      DoubleTapped="OnTrackDoubleTapped"
+                      ColumnReordered="OnColumnReordered">
+                <!-- No built-in default — without this, dragging a column header to reorder it
+                     shows no indicator of where it will land. Height is fixed rather than clipped
+                     to the header row automatically, so it's sized to match it explicitly. -->
+                <DataGrid.DropLocationIndicatorTemplate>
+                    <Template>
+                        <Border Width="2" Height="32" Background="{DynamicResource SystemAccentColor}" />
+                    </Template>
+                </DataGrid.DropLocationIndicatorTemplate>
+
                 <DataGrid.Styles>
                     <!-- Right-click on a column header: choose which columns are visible. -->
                     <Style Selector="DataGridColumnHeader">
                         <Setter Property="ContextMenu">
                             <Setter.Value>
                                 <ContextMenu>
+                                    <ContextMenu.Styles>
+                                        <Style Selector="MenuItem">
+                                            <Setter Property="StaysOpenOnClick" Value="True" />
+                                        </Style>
+                                    </ContextMenu.Styles>
                                     <MenuItem Header="{x:Static res:Strings.ColumnTrack}" ToggleType="CheckBox" IsChecked="{Binding IsTrackNumberColumnVisible, Mode=TwoWay}" />
                                     <MenuItem Header="{x:Static res:Strings.ColumnTitle}" ToggleType="CheckBox" IsChecked="{Binding IsTitleColumnVisible, Mode=TwoWay}" />
                                     <MenuItem Header="{x:Static res:Strings.ColumnArtist}" ToggleType="CheckBox" IsChecked="{Binding IsArtistColumnVisible, Mode=TwoWay}" />
@@ -74,16 +90,16 @@
                 </DataGrid.Styles>
 
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="{x:Static res:Strings.ColumnTrack}" Binding="{Binding Track.TrackNumber}" IsVisible="{Binding IsTrackNumberColumnVisible}" />
-                    <DataGridTextColumn Header="{x:Static res:Strings.ColumnTitle}" Binding="{Binding Track.Title}" IsVisible="{Binding IsTitleColumnVisible}" Width="200" />
-                    <DataGridTextColumn Header="{x:Static res:Strings.ColumnArtist}" Binding="{Binding Track.Artist}" IsVisible="{Binding IsArtistColumnVisible}" Width="150" />
-                    <DataGridTextColumn Header="{x:Static res:Strings.ColumnAlbum}" Binding="{Binding Track.Album}" IsVisible="{Binding IsAlbumColumnVisible}" Width="150" />
-                    <DataGridTextColumn Header="{x:Static res:Strings.ColumnLength}" Binding="{Binding Track.LengthDisplay}" IsVisible="{Binding IsLengthColumnVisible}" />
-                    <DataGridTextColumn Header="{x:Static res:Strings.ColumnSampleRate}" Binding="{Binding Track.SampleRateDisplay}" IsVisible="{Binding IsSampleRateColumnVisible}" />
-                    <DataGridTextColumn Header="{x:Static res:Strings.ColumnBitDepth}" Binding="{Binding Track.BitDepthDisplay}" IsVisible="{Binding IsBitDepthColumnVisible}" />
-                    <DataGridTextColumn Header="{x:Static res:Strings.ColumnBitrate}" Binding="{Binding Track.BitrateDisplay}" IsVisible="{Binding IsBitrateColumnVisible}" />
-                    <DataGridTextColumn Header="{x:Static res:Strings.ColumnFileType}" Binding="{Binding Track.FileType}" IsVisible="{Binding IsFileTypeColumnVisible}" />
-                    <DataGridTextColumn Header="{x:Static res:Strings.ColumnYear}" Binding="{Binding Track.Year}" IsVisible="{Binding IsYearColumnVisible}" />
+                    <DataGridTextColumn Tag="TrackNumber" Header="{x:Static res:Strings.ColumnTrack}" Binding="{Binding Track.TrackNumber}" IsVisible="{Binding IsTrackNumberColumnVisible}" />
+                    <DataGridTextColumn Tag="Title" Header="{x:Static res:Strings.ColumnTitle}" Binding="{Binding Track.Title}" IsVisible="{Binding IsTitleColumnVisible}" Width="200" />
+                    <DataGridTextColumn Tag="Artist" Header="{x:Static res:Strings.ColumnArtist}" Binding="{Binding Track.Artist}" IsVisible="{Binding IsArtistColumnVisible}" Width="150" />
+                    <DataGridTextColumn Tag="Album" Header="{x:Static res:Strings.ColumnAlbum}" Binding="{Binding Track.Album}" IsVisible="{Binding IsAlbumColumnVisible}" Width="150" />
+                    <DataGridTextColumn Tag="Length" Header="{x:Static res:Strings.ColumnLength}" Binding="{Binding Track.LengthDisplay}" IsVisible="{Binding IsLengthColumnVisible}" />
+                    <DataGridTextColumn Tag="SampleRate" Header="{x:Static res:Strings.ColumnSampleRate}" Binding="{Binding Track.SampleRateDisplay}" IsVisible="{Binding IsSampleRateColumnVisible}" />
+                    <DataGridTextColumn Tag="BitDepth" Header="{x:Static res:Strings.ColumnBitDepth}" Binding="{Binding Track.BitDepthDisplay}" IsVisible="{Binding IsBitDepthColumnVisible}" />
+                    <DataGridTextColumn Tag="Bitrate" Header="{x:Static res:Strings.ColumnBitrate}" Binding="{Binding Track.BitrateDisplay}" IsVisible="{Binding IsBitrateColumnVisible}" />
+                    <DataGridTextColumn Tag="FileType" Header="{x:Static res:Strings.ColumnFileType}" Binding="{Binding Track.FileType}" IsVisible="{Binding IsFileTypeColumnVisible}" />
+                    <DataGridTextColumn Tag="Year" Header="{x:Static res:Strings.ColumnYear}" Binding="{Binding Track.Year}" IsVisible="{Binding IsYearColumnVisible}" />
                 </DataGrid.Columns>
             </DataGrid>
         </DockPanel>

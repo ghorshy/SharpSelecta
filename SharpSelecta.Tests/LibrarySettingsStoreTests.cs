@@ -71,4 +71,126 @@ public class LibrarySettingsStoreTests
             File.Delete(settingsPath);
         }
     }
+
+    [Test]
+    public async Task SaveAndLoad_RoundTripsColumnVisibility()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            var columns = new ColumnVisibility(
+                TrackNumber: true, Title: true, Artist: false, Album: false,
+                Length: true, SampleRate: false, BitDepth: false, Bitrate: true,
+                FileType: false, Year: true);
+
+            LibrarySettingsStore.SaveColumnVisibility(settingsPath, columns);
+
+            var loaded = LibrarySettingsStore.LoadColumnVisibility(settingsPath);
+
+            await Assert.That(loaded).IsEqualTo(columns);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task SavingColumnVisibility_DoesNotClobberAnAlreadySavedFolderPath()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveLibraryFolderPath(settingsPath, "/music/library");
+
+            LibrarySettingsStore.SaveColumnVisibility(settingsPath, new ColumnVisibility(
+                true, true, true, true, true, true, true, true, true, true));
+
+            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPath(settingsPath)).IsEqualTo("/music/library");
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task SavingFolderPath_DoesNotClobberAnAlreadySavedColumnVisibility()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            var columns = new ColumnVisibility(true, false, true, false, true, false, true, false, true, false);
+            LibrarySettingsStore.SaveColumnVisibility(settingsPath, columns);
+
+            LibrarySettingsStore.SaveLibraryFolderPath(settingsPath, "/music/library");
+
+            await Assert.That(LibrarySettingsStore.LoadColumnVisibility(settingsPath)).IsEqualTo(columns);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task LoadColumnVisibility_WhenFileDoesNotExist_ReturnsNull()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        var loaded = LibrarySettingsStore.LoadColumnVisibility(settingsPath);
+
+        await Assert.That(loaded).IsNull();
+    }
+
+    [Test]
+    public async Task SaveAndLoad_RoundTripsColumnOrder()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            string[] order = ["Artist", "Title", "TrackNumber", "Year"];
+
+            LibrarySettingsStore.SaveColumnOrder(settingsPath, order);
+
+            var loaded = LibrarySettingsStore.LoadColumnOrder(settingsPath);
+
+            await Assert.That(loaded).IsEquivalentTo(order);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task SavingColumnOrder_DoesNotClobberAnAlreadySavedFolderPathOrColumnVisibility()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveLibraryFolderPath(settingsPath, "/music/library");
+            var columns = new ColumnVisibility(true, false, true, false, true, false, true, false, true, false);
+            LibrarySettingsStore.SaveColumnVisibility(settingsPath, columns);
+
+            LibrarySettingsStore.SaveColumnOrder(settingsPath, ["Title", "Artist"]);
+
+            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPath(settingsPath)).IsEqualTo("/music/library");
+            await Assert.That(LibrarySettingsStore.LoadColumnVisibility(settingsPath)).IsEqualTo(columns);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task LoadColumnOrder_WhenFileDoesNotExist_ReturnsNull()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        var loaded = LibrarySettingsStore.LoadColumnOrder(settingsPath);
+
+        await Assert.That(loaded).IsNull();
+    }
 }
