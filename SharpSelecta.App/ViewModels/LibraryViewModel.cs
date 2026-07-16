@@ -14,7 +14,6 @@ public partial class LibraryViewModel : ViewModelBase
 {
     private readonly IFilePickerService _filePickerService;
     private readonly PlaybackControlsViewModel _playbackControls;
-    private readonly PlaybackQueue _queue;
     private readonly string _settingsFilePath;
     private readonly ILogger<LibraryViewModel> _logger;
 
@@ -30,13 +29,11 @@ public partial class LibraryViewModel : ViewModelBase
     public LibraryViewModel(
         IFilePickerService filePickerService,
         PlaybackControlsViewModel playbackControls,
-        PlaybackQueue queue,
         string settingsFilePath,
         ILogger<LibraryViewModel> logger)
     {
         _filePickerService = filePickerService;
         _playbackControls = playbackControls;
-        _queue = queue;
         _settingsFilePath = settingsFilePath;
         _logger = logger;
 
@@ -92,8 +89,8 @@ public partial class LibraryViewModel : ViewModelBase
     private Task PlayNowAsync(Track track) => _playbackControls.PlayNowAsync(track);
 
     [RelayCommand]
-    private void PlayNext(Track track) => _queue.PlayNext(track);
+    private void PlayNext(Track track) => _playbackControls.PlayNext(track);
 
     [RelayCommand]
-    private void AddToQueue(Track track) => _queue.AddToQueue(track);
+    private void AddToQueue(Track track) => _playbackControls.AddToQueue(track);
 }

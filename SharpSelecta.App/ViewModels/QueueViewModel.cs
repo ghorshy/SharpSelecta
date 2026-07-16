@@ -1,19 +1,30 @@
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.Input;
 using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.ViewModels;
 
-public sealed class QueueViewModel : ViewModelBase
+public partial class QueueViewModel : ViewModelBase
 {
-    private readonly PlaybackQueue _queue;
+    private readonly PlaybackControlsViewModel _playbackControls;
 
-    public QueueViewModel(PlaybackQueue queue)
+    public QueueViewModel(PlaybackControlsViewModel playbackControls)
     {
-        _queue = queue;
-        _queue.CurrentIndexChanged += (_, _) => OnPropertyChanged(nameof(CurrentIndex));
+        _playbackControls = playbackControls;
+        _playbackControls.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PlaybackControlsViewModel.QueueCurrentIndex))
+            {
+                OnPropertyChanged(nameof(CurrentIndex));
+            }
+        };
     }
 
-    public ObservableCollection<QueueEntry> Entries => _queue.Entries;
+    public ObservableCollection<QueueEntry> Entries => _playbackControls.QueueEntries;
 
-    public int CurrentIndex => _queue.CurrentIndex;
+    public int CurrentIndex => _playbackControls.QueueCurrentIndex;
+
+    [RelayCommand]
+    private Task PlayEntryAsync(QueueEntry entry) => _playbackControls.PlayQueueEntryAsync(entry);
 }

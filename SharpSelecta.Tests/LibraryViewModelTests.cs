@@ -16,17 +16,15 @@ public class LibraryViewModelTests
         out IAudioEngine audioEngine,
         out IFilePickerService filePickerService,
         out PlaybackControlsViewModel playbackControls,
-        out PlaybackQueue queue,
         string? settingsFilePath = null)
     {
         audioEngine = Substitute.For<IAudioEngine>();
         filePickerService = Substitute.For<IFilePickerService>();
-        queue = new PlaybackQueue();
+        var queue = new PlaybackQueue();
         playbackControls = new PlaybackControlsViewModel(audioEngine, queue, NullLogger<PlaybackControlsViewModel>.Instance);
         return new LibraryViewModel(
             filePickerService,
             playbackControls,
-            queue,
             settingsFilePath ?? CreateTempSettingsPath(),
             NullLogger<LibraryViewModel>.Instance);
     }
@@ -34,7 +32,7 @@ public class LibraryViewModelTests
     [Test]
     public async Task ChooseFolderCommand_WhenFolderSelected_PopulatesTracksFromScan()
     {
-        var vm = CreateViewModel(out _, out var filePickerService, out _, out _);
+        var vm = CreateViewModel(out _, out var filePickerService, out _);
         var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
         try
         {
@@ -55,7 +53,7 @@ public class LibraryViewModelTests
     [Test]
     public async Task ChooseFolderCommand_WhenNoFolderSelected_DoesNotTouchTracks()
     {
-        var vm = CreateViewModel(out _, out var filePickerService, out _, out _);
+        var vm = CreateViewModel(out _, out var filePickerService, out _);
         filePickerService.PickLibraryFolderAsync().Returns((string?)null);
 
         await vm.ChooseFolderCommand.ExecuteAsync(null);
@@ -66,7 +64,7 @@ public class LibraryViewModelTests
     [Test]
     public async Task ChooseFolderCommand_WhenFolderDoesNotExist_SetsStatusMessage()
     {
-        var vm = CreateViewModel(out _, out var filePickerService, out _, out _);
+        var vm = CreateViewModel(out _, out var filePickerService, out _);
         filePickerService.PickLibraryFolderAsync().Returns("/no/such/folder");
 
         await vm.ChooseFolderCommand.ExecuteAsync(null);
@@ -77,7 +75,7 @@ public class LibraryViewModelTests
     [Test]
     public async Task HasTracksAndNoTracks_ReflectWhetherAnyTracksAreLoaded()
     {
-        var vm = CreateViewModel(out _, out var filePickerService, out _, out _);
+        var vm = CreateViewModel(out _, out var filePickerService, out _);
         await Assert.That(vm.NoTracks).IsTrue();
         await Assert.That(vm.HasTracks).IsFalse();
 
@@ -104,7 +102,7 @@ public class LibraryViewModelTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            var vm = CreateViewModel(out _, out var filePickerService, out _, out _, settingsPath);
+            var vm = CreateViewModel(out _, out var filePickerService, out _, settingsPath);
             var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
             try
             {
@@ -134,7 +132,7 @@ public class LibraryViewModelTests
         {
             File.WriteAllBytes(Path.Combine(root.FullName, "song.mp3"), []);
             LibrarySettingsStore.SaveLibraryFolderPath(settingsPath, root.FullName);
-            var vm = CreateViewModel(out _, out _, out _, out _, settingsPath);
+            var vm = CreateViewModel(out _, out _, out _, settingsPath);
 
             await vm.InitializeAsync();
 
@@ -151,7 +149,7 @@ public class LibraryViewModelTests
     [Test]
     public async Task InitializeAsync_WhenNothingRemembered_LeavesTracksEmpty()
     {
-        var vm = CreateViewModel(out _, out _, out _, out _);
+        var vm = CreateViewModel(out _, out _, out _);
 
         await vm.InitializeAsync();
 
@@ -161,7 +159,7 @@ public class LibraryViewModelTests
     [Test]
     public async Task PlayNowCommand_LoadsIntoEngineAndStartsPlaybackViaPlaybackControls()
     {
-        var vm = CreateViewModel(out var audioEngine, out _, out var playbackControls, out _);
+        var vm = CreateViewModel(out var audioEngine, out _, out var playbackControls);
         var track = new Track("/music/song.mp3", "song.mp3");
 
         await vm.PlayNowCommand.ExecuteAsync(track);
@@ -174,26 +172,26 @@ public class LibraryViewModelTests
     [Test]
     public async Task PlayNextCommand_InsertsTrackAtFrontOfQueue()
     {
-        var vm = CreateViewModel(out _, out _, out _, out var queue);
-        queue.AddToQueue(new Track("/music/existing.mp3", "existing.mp3"));
+        var vm = CreateViewModel(out _, out _, out var playbackControls);
+        playbackControls.AddToQueue(new Track("/music/existing.mp3", "existing.mp3"));
         var track = new Track("/music/song.mp3", "song.mp3");
 
         vm.PlayNextCommand.Execute(track);
 
-        await Assert.That(queue.Entries[0].Track).IsEqualTo(track);
+        await Assert.That(playbackControls.QueueEntries[0].Track).IsEqualTo(track);
     }
 
     [Test]
     public async Task AddToQueueCommand_AppendsTrackToQueue()
     {
-        var vm = CreateViewModel(out _, out _, out _, out var queue);
+        var vm = CreateViewModel(out _, out _, out var playbackControls);
         var first = new Track("/music/first.mp3", "first.mp3");
         var second = new Track("/music/second.mp3", "second.mp3");
 
         vm.AddToQueueCommand.Execute(first);
         vm.AddToQueueCommand.Execute(second);
 
-        await Assert.That(queue.Entries[0].Track).IsEqualTo(first);
-        await Assert.That(queue.Entries[1].Track).IsEqualTo(second);
+        await Assert.That(playbackControls.QueueEntries[0].Track).IsEqualTo(first);
+        await Assert.That(playbackControls.QueueEntries[1].Track).IsEqualTo(second);
     }
 }

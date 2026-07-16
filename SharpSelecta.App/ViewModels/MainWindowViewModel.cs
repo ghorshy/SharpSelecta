@@ -22,7 +22,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         var queue = new PlaybackQueue();
         PlaybackControls = new PlaybackControlsViewModel(audioEngine, queue, playbackControlsLogger);
-        Library = new LibraryViewModel(filePickerService, PlaybackControls, queue, librarySettingsFilePath, libraryLogger);
-        Queue = new QueueViewModel(queue);
+        Library = new LibraryViewModel(filePickerService, PlaybackControls, librarySettingsFilePath, libraryLogger);
+        Queue = new QueueViewModel(PlaybackControls);
     }
 }
