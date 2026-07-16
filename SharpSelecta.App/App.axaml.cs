@@ -2,6 +2,8 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
+using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Markup.Xaml;
@@ -37,17 +39,24 @@ public partial class App : Application
 
             var audioEngine = provider.GetRequiredService<IAudioEngine>();
 
-            mainWindow.DataContext = new MainWindowViewModel(
+            var librarySettingsFilePath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "SharpSelecta", "library-settings.json");
+
+            var mainWindowViewModel = new MainWindowViewModel(
                 audioEngine,
                 provider.GetRequiredService<IFilePickerService>(),
+                librarySettingsFilePath,
                 provider.GetRequiredService<ILogger<PlaybackControlsViewModel>>(),
                 provider.GetRequiredService<ILogger<LibraryViewModel>>());
+            mainWindow.DataContext = mainWindowViewModel;
             desktop.MainWindow = mainWindow;
 
             // Task.Run escapes Avalonia's SynchronizationContext: at this point the classic desktop
             // lifetime hasn't started pumping its dispatcher loop yet, so blocking the UI thread here
             // while awaiting a continuation that expects that loop to be running would deadlock.
             Task.Run(() => audioEngine.InitializeAsync());
+            Task.Run(() => mainWindowViewModel.Library.InitializeAsync());
         }
 
         base.OnFrameworkInitializationCompleted();

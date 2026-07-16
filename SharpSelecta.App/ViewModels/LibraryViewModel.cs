@@ -15,6 +15,7 @@ public partial class LibraryViewModel : ViewModelBase
     private readonly IFilePickerService _filePickerService;
     private readonly PlaybackControlsViewModel _playbackControls;
     private readonly PlaybackQueue _queue;
+    private readonly string _settingsFilePath;
     private readonly ILogger<LibraryViewModel> _logger;
 
     [ObservableProperty]
@@ -22,16 +23,38 @@ public partial class LibraryViewModel : ViewModelBase
 
     public ObservableCollection<LibraryTrackViewModel> Tracks { get; } = [];
 
+    public bool HasTracks => Tracks.Count > 0;
+
+    public bool NoTracks => Tracks.Count == 0;
+
     public LibraryViewModel(
         IFilePickerService filePickerService,
         PlaybackControlsViewModel playbackControls,
         PlaybackQueue queue,
+        string settingsFilePath,
         ILogger<LibraryViewModel> logger)
     {
         _filePickerService = filePickerService;
         _playbackControls = playbackControls;
         _queue = queue;
+        _settingsFilePath = settingsFilePath;
         _logger = logger;
+
+        Tracks.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasTracks));
+            OnPropertyChanged(nameof(NoTracks));
+        };
+    }
+
+    // Re-scans whatever library folder was remembered from a previous session, if any.
+    public async Task InitializeAsync()
+    {
+        var folderPath = LibrarySettingsStore.LoadLibraryFolderPath(_settingsFilePath);
+        if (folderPath is not null)
+        {
+            await LoadFolderAsync(folderPath);
+        }
     }
 
     [RelayCommand]
@@ -41,6 +64,12 @@ public partial class LibraryViewModel : ViewModelBase
         if (folderPath is null)
             return;
 
+        LibrarySettingsStore.SaveLibraryFolderPath(_settingsFilePath, folderPath);
+        await LoadFolderAsync(folderPath);
+    }
+
+    private async Task LoadFolderAsync(string folderPath)
+    {
         try
         {
             var tracks = await Task.Run(() => MusicLibraryScanner.Scan(folderPath));

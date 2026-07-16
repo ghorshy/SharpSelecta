@@ -16,12 +16,13 @@ public partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel(
         IAudioEngine audioEngine,
         IFilePickerService filePickerService,
+        string librarySettingsFilePath,
         ILogger<PlaybackControlsViewModel> playbackControlsLogger,
         ILogger<LibraryViewModel> libraryLogger)
     {
         var queue = new PlaybackQueue();
         PlaybackControls = new PlaybackControlsViewModel(audioEngine, queue, playbackControlsLogger);
-        Library = new LibraryViewModel(filePickerService, PlaybackControls, queue, libraryLogger);
+        Library = new LibraryViewModel(filePickerService, PlaybackControls, queue, librarySettingsFilePath, libraryLogger);
         Queue = new QueueViewModel(queue);
     }
 }

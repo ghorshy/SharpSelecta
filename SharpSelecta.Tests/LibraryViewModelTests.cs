@@ -9,17 +9,26 @@ namespace SharpSelecta.Tests;
 
 public class LibraryViewModelTests
 {
+    private static string CreateTempSettingsPath() =>
+        Path.Combine(Path.GetTempPath(), $"sharpselecta-library-vm-settings-{Guid.NewGuid():N}.json");
+
     private static LibraryViewModel CreateViewModel(
         out IAudioEngine audioEngine,
         out IFilePickerService filePickerService,
         out PlaybackControlsViewModel playbackControls,
-        out PlaybackQueue queue)
+        out PlaybackQueue queue,
+        string? settingsFilePath = null)
     {
         audioEngine = Substitute.For<IAudioEngine>();
         filePickerService = Substitute.For<IFilePickerService>();
         queue = new PlaybackQueue();
         playbackControls = new PlaybackControlsViewModel(audioEngine, queue, NullLogger<PlaybackControlsViewModel>.Instance);
-        return new LibraryViewModel(filePickerService, playbackControls, queue, NullLogger<LibraryViewModel>.Instance);
+        return new LibraryViewModel(
+            filePickerService,
+            playbackControls,
+            queue,
+            settingsFilePath ?? CreateTempSettingsPath(),
+            NullLogger<LibraryViewModel>.Instance);
     }
 
     [Test]
@@ -63,6 +72,90 @@ public class LibraryViewModelTests
         await vm.ChooseFolderCommand.ExecuteAsync(null);
 
         await Assert.That(vm.StatusMessage).IsNotNull();
+    }
+
+    [Test]
+    public async Task HasTracksAndNoTracks_ReflectWhetherAnyTracksAreLoaded()
+    {
+        var vm = CreateViewModel(out _, out var filePickerService, out _, out _);
+        await Assert.That(vm.NoTracks).IsTrue();
+        await Assert.That(vm.HasTracks).IsFalse();
+
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+        try
+        {
+            File.WriteAllBytes(Path.Combine(root.FullName, "song.mp3"), []);
+            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+
+            await vm.ChooseFolderCommand.ExecuteAsync(null);
+
+            await Assert.That(vm.HasTracks).IsTrue();
+            await Assert.That(vm.NoTracks).IsFalse();
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task ChooseFolderCommand_PersistsFolderPathForNextLaunch()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            var vm = CreateViewModel(out _, out var filePickerService, out _, out _, settingsPath);
+            var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+            try
+            {
+                filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+
+                await vm.ChooseFolderCommand.ExecuteAsync(null);
+
+                await Assert.That(LibrarySettingsStore.LoadLibraryFolderPath(settingsPath)).IsEqualTo(root.FullName);
+            }
+            finally
+            {
+                root.Delete(recursive: true);
+            }
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task InitializeAsync_WhenFolderRemembered_ScansItAutomatically()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+        try
+        {
+            File.WriteAllBytes(Path.Combine(root.FullName, "song.mp3"), []);
+            LibrarySettingsStore.SaveLibraryFolderPath(settingsPath, root.FullName);
+            var vm = CreateViewModel(out _, out _, out _, out _, settingsPath);
+
+            await vm.InitializeAsync();
+
+            await Assert.That(vm.Tracks.Count).IsEqualTo(1);
+            await Assert.That(vm.Tracks[0].DisplayName).IsEqualTo("song.mp3");
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task InitializeAsync_WhenNothingRemembered_LeavesTracksEmpty()
+    {
+        var vm = CreateViewModel(out _, out _, out _, out _);
+
+        await vm.InitializeAsync();
+
+        await Assert.That(vm.Tracks).IsEmpty();
     }
 
     [Test]

@@ -13,9 +13,11 @@ public class MainWindowViewModelTests
     {
         audioEngine = Substitute.For<IAudioEngine>();
         var filePickerService = Substitute.For<IFilePickerService>();
+        var settingsFilePath = Path.Combine(Path.GetTempPath(), $"sharpselecta-mainwindow-vm-settings-{Guid.NewGuid():N}.json");
         return new MainWindowViewModel(
             audioEngine,
             filePickerService,
+            settingsFilePath,
             NullLogger<PlaybackControlsViewModel>.Instance,
             NullLogger<LibraryViewModel>.Instance);
     }

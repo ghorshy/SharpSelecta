@@ -9,37 +9,46 @@
              x:Class="SharpSelecta.App.Views.LibraryView"
              x:DataType="vm:LibraryViewModel">
 
-    <DockPanel LastChildFill="True">
-        <StackPanel DockPanel.Dock="Top" Spacing="10" Margin="0,0,0,10">
-            <Button Content="{x:Static res:Strings.ChooseLibraryFolder}" Command="{Binding ChooseFolderCommand}" HorizontalAlignment="Left" />
-            <TextBlock Text="{Binding StatusMessage}" Foreground="OrangeRed" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+    <Grid>
+        <!-- Empty state: no library folder chosen (or remembered) yet — the button takes center
+             stage as an invitation, instead of sitting small at the top above an empty list. -->
+        <StackPanel IsVisible="{Binding NoTracks}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
+            <Button Content="{x:Static res:Strings.ChooseLibraryFolder}" Command="{Binding ChooseFolderCommand}" HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding StatusMessage}" Foreground="OrangeRed" TextWrapping="Wrap" HorizontalAlignment="Center" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
         </StackPanel>
 
-        <ListBox ItemsSource="{Binding Tracks}" DoubleTapped="OnTrackDoubleTapped">
-            <ListBox.ItemTemplate>
-                <DataTemplate x:DataType="vm:LibraryTrackViewModel">
-                    <!-- Background must be set (even Transparent) for the whole row to be
-                         hit-testable — otherwise right-clicking anywhere but the text glyphs
-                         themselves misses the ContextMenu entirely (Avalonia issue #15942). -->
-                    <Border Background="Transparent" HorizontalAlignment="Stretch">
-                        <Border.ContextMenu>
-                            <ContextMenu>
-                                <MenuItem Header="{x:Static res:Strings.PlayNow}"
-                                          Command="{Binding Library.PlayNowCommand}"
-                                          CommandParameter="{Binding Track}" />
-                                <MenuItem Header="{x:Static res:Strings.PlayNext}"
-                                          Command="{Binding Library.PlayNextCommand}"
-                                          CommandParameter="{Binding Track}" />
-                                <MenuItem Header="{x:Static res:Strings.AddToQueue}"
-                                          Command="{Binding Library.AddToQueueCommand}"
-                                          CommandParameter="{Binding Track}" />
-                            </ContextMenu>
-                        </Border.ContextMenu>
-                        <TextBlock Text="{Binding DisplayName}" />
-                    </Border>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
-    </DockPanel>
+        <DockPanel IsVisible="{Binding HasTracks}" LastChildFill="True">
+            <StackPanel DockPanel.Dock="Top" Spacing="10" Margin="0,0,0,10">
+                <Button Content="{x:Static res:Strings.ChooseLibraryFolder}" Command="{Binding ChooseFolderCommand}" HorizontalAlignment="Left" />
+                <TextBlock Text="{Binding StatusMessage}" Foreground="OrangeRed" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+            </StackPanel>
+
+            <ListBox ItemsSource="{Binding Tracks}" DoubleTapped="OnTrackDoubleTapped">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:LibraryTrackViewModel">
+                        <!-- Background must be set (even Transparent) for the whole row to be
+                             hit-testable — otherwise right-clicking anywhere but the text glyphs
+                             themselves misses the ContextMenu entirely (Avalonia issue #15942). -->
+                        <Border Background="Transparent" HorizontalAlignment="Stretch">
+                            <Border.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="{x:Static res:Strings.PlayNow}"
+                                              Command="{Binding Library.PlayNowCommand}"
+                                              CommandParameter="{Binding Track}" />
+                                    <MenuItem Header="{x:Static res:Strings.PlayNext}"
+                                              Command="{Binding Library.PlayNextCommand}"
+                                              CommandParameter="{Binding Track}" />
+                                    <MenuItem Header="{x:Static res:Strings.AddToQueue}"
+                                              Command="{Binding Library.AddToQueueCommand}"
+                                              CommandParameter="{Binding Track}" />
+                                </ContextMenu>
+                            </Border.ContextMenu>
+                            <TextBlock Text="{Binding DisplayName}" />
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
+    </Grid>
 
 </UserControl>
