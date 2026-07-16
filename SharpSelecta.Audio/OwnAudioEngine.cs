@@ -62,7 +62,8 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
         }
 
         _currentTrack.AttachToClock(_mixer.MasterClock);
-        _mixer.AddSource(_currentTrack);
+        
+        _mixer.AddSourcePrepared(_currentTrack);
     }
 
     public void Play() => _currentTrack?.Play();
