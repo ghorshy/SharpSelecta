@@ -30,7 +30,7 @@ dotnet test
 - [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) — MVVM (observable properties, commands)
 - [OwnAudioSharp](https://github.com/ModernMube/OwnAudioSharp) — audio engine (decode, mix, output)
 - [FFmpeg](https://git.ffmpeg.org/ffmpeg.git) — fallback decoder for formats OwnAudioSharp can't handle natively
-- [TagLibSharp](https://github.com/mono/taglib-sharp) — reading/writing audio tags
+- [ATL.NET](https://github.com/Zeugma440/atldotnet) — reading audio tags and properties
 - [Serilog](https://github.com/serilog/serilog) — logging
 - [TUnit](https://github.com/thomhurst/TUnit) + [NSubstitute](https://github.com/nsubstitute/NSubstitute) — testing
 

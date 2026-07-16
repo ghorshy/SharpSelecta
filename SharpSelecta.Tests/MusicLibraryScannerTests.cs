@@ -17,9 +17,11 @@ public class MusicLibraryScannerTests
 
             var tracks = MusicLibraryScanner.Scan(root.FullName);
 
+            // Tag content isn't the concern here (these are empty dummy files) — just that
+            // recursive scanning finds the right files and ignores non-audio ones.
             await Assert.That(tracks.Count).IsEqualTo(2);
-            await Assert.That(tracks.Select(t => t.DisplayName)).Contains("top-level.mp3");
-            await Assert.That(tracks.Select(t => t.DisplayName)).Contains("01 - track.flac");
+            await Assert.That(tracks.Select(t => t.FilePath)).Contains(Path.Combine(root.FullName, "top-level.mp3"));
+            await Assert.That(tracks.Select(t => t.FilePath)).Contains(Path.Combine(albumDir.FullName, "01 - track.flac"));
         }
         finally
         {
@@ -36,6 +38,55 @@ public class MusicLibraryScannerTests
             var tracks = MusicLibraryScanner.Scan(root.FullName);
 
             await Assert.That(tracks).IsEmpty();
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task Scan_OnAnUnreadableFile_FallsBackToFilenameOnlyInsteadOfThrowing()
+    {
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-tests-");
+        try
+        {
+            File.WriteAllBytes(Path.Combine(root.FullName, "not-really-audio.wav"), [1, 2, 3]);
+
+            var tracks = MusicLibraryScanner.Scan(root.FullName);
+
+            await Assert.That(tracks.Count).IsEqualTo(1);
+            await Assert.That(tracks[0].FileType).IsEqualTo("WAV");
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task Scan_ReadsTagsAndAudioPropertiesFromARealFile()
+    {
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-tests-");
+        try
+        {
+            var fixturePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3");
+            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+            File.Copy(fixturePath, trackPath);
+
+            var tracks = MusicLibraryScanner.Scan(root.FullName);
+
+            await Assert.That(tracks.Count).IsEqualTo(1);
+            var track = tracks[0];
+            await Assert.That(track.Title).IsEqualTo("Test Song");
+            await Assert.That(track.Artist).IsEqualTo("Test Artist");
+            await Assert.That(track.Album).IsEqualTo("Test Album");
+            await Assert.That(track.Year).IsEqualTo(2024);
+            await Assert.That(track.TrackNumber).IsEqualTo(3);
+            await Assert.That(track.SampleRate).IsEqualTo(44100);
+            await Assert.That(track.FileType).IsEqualTo("MP3");
+            await Assert.That(track.DisplayName).IsEqualTo("Test Song");
+            await Assert.That(track.Duration.TotalSeconds).IsGreaterThan(0);
         }
         finally
         {

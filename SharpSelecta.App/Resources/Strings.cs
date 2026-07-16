@@ -23,6 +23,16 @@ public static class Strings
     public static string RepeatOff => Get(nameof(RepeatOff));
     public static string RepeatAll => Get(nameof(RepeatAll));
     public static string RepeatOne => Get(nameof(RepeatOne));
+    public static string ColumnTrack => Get(nameof(ColumnTrack));
+    public static string ColumnTitle => Get(nameof(ColumnTitle));
+    public static string ColumnArtist => Get(nameof(ColumnArtist));
+    public static string ColumnAlbum => Get(nameof(ColumnAlbum));
+    public static string ColumnLength => Get(nameof(ColumnLength));
+    public static string ColumnSampleRate => Get(nameof(ColumnSampleRate));
+    public static string ColumnBitDepth => Get(nameof(ColumnBitDepth));
+    public static string ColumnBitrate => Get(nameof(ColumnBitrate));
+    public static string ColumnFileType => Get(nameof(ColumnFileType));
+    public static string ColumnYear => Get(nameof(ColumnYear));
 
     public static string FailedToLoadFile(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToLoadFileFormat"), reason);

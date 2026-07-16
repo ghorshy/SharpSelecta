@@ -42,7 +42,7 @@ public class LibraryViewModelTests
             await vm.ChooseFolderCommand.ExecuteAsync(null);
 
             await Assert.That(vm.Tracks.Count).IsEqualTo(1);
-            await Assert.That(vm.Tracks[0].DisplayName).IsEqualTo("song.mp3");
+            await Assert.That(vm.Tracks[0].Track.FilePath).IsEqualTo(Path.Combine(root.FullName, "song.mp3"));
         }
         finally
         {
@@ -137,7 +137,7 @@ public class LibraryViewModelTests
             await vm.InitializeAsync();
 
             await Assert.That(vm.Tracks.Count).IsEqualTo(1);
-            await Assert.That(vm.Tracks[0].DisplayName).IsEqualTo("song.mp3");
+            await Assert.That(vm.Tracks[0].Track.FilePath).IsEqualTo(Path.Combine(root.FullName, "song.mp3"));
         }
         finally
         {

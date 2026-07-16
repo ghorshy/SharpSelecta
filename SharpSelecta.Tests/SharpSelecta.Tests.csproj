@@ -16,4 +16,8 @@
       <ProjectReference Include="..\SharpSelecta.Core\SharpSelecta.Core.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
 </Project>

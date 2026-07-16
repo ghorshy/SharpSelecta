@@ -5,7 +5,7 @@
              xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="400"
+             mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="400"
              x:Class="SharpSelecta.App.Views.LibraryView"
              x:DataType="vm:LibraryViewModel">
 
@@ -23,13 +23,38 @@
                 <TextBlock Text="{Binding StatusMessage}" Foreground="OrangeRed" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
             </StackPanel>
 
-            <ListBox ItemsSource="{Binding Tracks}" DoubleTapped="OnTrackDoubleTapped">
-                <!-- ContextMenu lives on ListBoxItem itself (via style), not on the DataTemplate's
-                     content — the item container is what actually covers the full row including
-                     its own padding, so this is the only way right-click works across the whole
-                     row instead of just the text glyphs (Avalonia issue #15942 strikes again). -->
-                <ListBox.Styles>
-                    <Style Selector="ListBoxItem">
+            <DataGrid ItemsSource="{Binding Tracks}"
+                      AutoGenerateColumns="False"
+                      CanUserSortColumns="True"
+                      CanUserResizeColumns="True"
+                      CanUserReorderColumns="True"
+                      IsReadOnly="True"
+                      GridLinesVisibility="Horizontal"
+                      DoubleTapped="OnTrackDoubleTapped">
+                <DataGrid.Styles>
+                    <!-- Right-click on a column header: choose which columns are visible. -->
+                    <Style Selector="DataGridColumnHeader">
+                        <Setter Property="ContextMenu">
+                            <Setter.Value>
+                                <ContextMenu>
+                                    <MenuItem Header="{x:Static res:Strings.ColumnTrack}" ToggleType="CheckBox" IsChecked="{Binding IsTrackNumberColumnVisible, Mode=TwoWay}" />
+                                    <MenuItem Header="{x:Static res:Strings.ColumnTitle}" ToggleType="CheckBox" IsChecked="{Binding IsTitleColumnVisible, Mode=TwoWay}" />
+                                    <MenuItem Header="{x:Static res:Strings.ColumnArtist}" ToggleType="CheckBox" IsChecked="{Binding IsArtistColumnVisible, Mode=TwoWay}" />
+                                    <MenuItem Header="{x:Static res:Strings.ColumnAlbum}" ToggleType="CheckBox" IsChecked="{Binding IsAlbumColumnVisible, Mode=TwoWay}" />
+                                    <MenuItem Header="{x:Static res:Strings.ColumnLength}" ToggleType="CheckBox" IsChecked="{Binding IsLengthColumnVisible, Mode=TwoWay}" />
+                                    <MenuItem Header="{x:Static res:Strings.ColumnSampleRate}" ToggleType="CheckBox" IsChecked="{Binding IsSampleRateColumnVisible, Mode=TwoWay}" />
+                                    <MenuItem Header="{x:Static res:Strings.ColumnBitDepth}" ToggleType="CheckBox" IsChecked="{Binding IsBitDepthColumnVisible, Mode=TwoWay}" />
+                                    <MenuItem Header="{x:Static res:Strings.ColumnBitrate}" ToggleType="CheckBox" IsChecked="{Binding IsBitrateColumnVisible, Mode=TwoWay}" />
+                                    <MenuItem Header="{x:Static res:Strings.ColumnFileType}" ToggleType="CheckBox" IsChecked="{Binding IsFileTypeColumnVisible, Mode=TwoWay}" />
+                                    <MenuItem Header="{x:Static res:Strings.ColumnYear}" ToggleType="CheckBox" IsChecked="{Binding IsYearColumnVisible, Mode=TwoWay}" />
+                                </ContextMenu>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+
+                    <!-- Right-click on a row: same Play Now/Play Next/Add to Queue actions as
+                         before, now on DataGridRow instead of ListBoxItem. -->
+                    <Style Selector="DataGridRow">
                         <Setter Property="ContextMenu">
                             <Setter.Value>
                                 <ContextMenu x:DataType="vm:LibraryTrackViewModel">
@@ -46,13 +71,21 @@
                             </Setter.Value>
                         </Setter>
                     </Style>
-                </ListBox.Styles>
-                <ListBox.ItemTemplate>
-                    <DataTemplate x:DataType="vm:LibraryTrackViewModel">
-                        <TextBlock Text="{Binding DisplayName}" />
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+                </DataGrid.Styles>
+
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="{x:Static res:Strings.ColumnTrack}" Binding="{Binding Track.TrackNumber}" IsVisible="{Binding IsTrackNumberColumnVisible}" />
+                    <DataGridTextColumn Header="{x:Static res:Strings.ColumnTitle}" Binding="{Binding Track.Title}" IsVisible="{Binding IsTitleColumnVisible}" Width="200" />
+                    <DataGridTextColumn Header="{x:Static res:Strings.ColumnArtist}" Binding="{Binding Track.Artist}" IsVisible="{Binding IsArtistColumnVisible}" Width="150" />
+                    <DataGridTextColumn Header="{x:Static res:Strings.ColumnAlbum}" Binding="{Binding Track.Album}" IsVisible="{Binding IsAlbumColumnVisible}" Width="150" />
+                    <DataGridTextColumn Header="{x:Static res:Strings.ColumnLength}" Binding="{Binding Track.LengthDisplay}" IsVisible="{Binding IsLengthColumnVisible}" />
+                    <DataGridTextColumn Header="{x:Static res:Strings.ColumnSampleRate}" Binding="{Binding Track.SampleRateDisplay}" IsVisible="{Binding IsSampleRateColumnVisible}" />
+                    <DataGridTextColumn Header="{x:Static res:Strings.ColumnBitDepth}" Binding="{Binding Track.BitDepthDisplay}" IsVisible="{Binding IsBitDepthColumnVisible}" />
+                    <DataGridTextColumn Header="{x:Static res:Strings.ColumnBitrate}" Binding="{Binding Track.BitrateDisplay}" IsVisible="{Binding IsBitrateColumnVisible}" />
+                    <DataGridTextColumn Header="{x:Static res:Strings.ColumnFileType}" Binding="{Binding Track.FileType}" IsVisible="{Binding IsFileTypeColumnVisible}" />
+                    <DataGridTextColumn Header="{x:Static res:Strings.ColumnYear}" Binding="{Binding Track.Year}" IsVisible="{Binding IsYearColumnVisible}" />
+                </DataGrid.Columns>
+            </DataGrid>
         </DockPanel>
     </Grid>
 

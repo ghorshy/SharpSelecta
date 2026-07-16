@@ -109,4 +109,34 @@
   <data name="FailedToScanFolderFormat" xml:space="preserve">
     <value>Failed to scan folder: {0}</value>
   </data>
+  <data name="ColumnTrack" xml:space="preserve">
+    <value>Track</value>
+  </data>
+  <data name="ColumnTitle" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="ColumnArtist" xml:space="preserve">
+    <value>Artist</value>
+  </data>
+  <data name="ColumnAlbum" xml:space="preserve">
+    <value>Album</value>
+  </data>
+  <data name="ColumnLength" xml:space="preserve">
+    <value>Length</value>
+  </data>
+  <data name="ColumnSampleRate" xml:space="preserve">
+    <value>Sample Rate</value>
+  </data>
+  <data name="ColumnBitDepth" xml:space="preserve">
+    <value>Bit Depth</value>
+  </data>
+  <data name="ColumnBitrate" xml:space="preserve">
+    <value>Bitrate</value>
+  </data>
+  <data name="ColumnFileType" xml:space="preserve">
+    <value>File Type</value>
+  </data>
+  <data name="ColumnYear" xml:space="preserve">
+    <value>Year</value>
+  </data>
 </root>

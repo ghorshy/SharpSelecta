@@ -20,6 +20,37 @@ public partial class LibraryViewModel : ViewModelBase
     [ObservableProperty]
     private string? statusMessage;
 
+    // Toggled from the column header's right-click menu; all visible by default.
+    [ObservableProperty]
+    private bool isTrackNumberColumnVisible = true;
+
+    [ObservableProperty]
+    private bool isTitleColumnVisible = true;
+
+    [ObservableProperty]
+    private bool isArtistColumnVisible = true;
+
+    [ObservableProperty]
+    private bool isAlbumColumnVisible = true;
+
+    [ObservableProperty]
+    private bool isLengthColumnVisible = true;
+
+    [ObservableProperty]
+    private bool isSampleRateColumnVisible = true;
+
+    [ObservableProperty]
+    private bool isBitDepthColumnVisible = true;
+
+    [ObservableProperty]
+    private bool isBitrateColumnVisible = true;
+
+    [ObservableProperty]
+    private bool isFileTypeColumnVisible = true;
+
+    [ObservableProperty]
+    private bool isYearColumnVisible = true;
+
     public ObservableCollection<LibraryTrackViewModel> Tracks { get; } = [];
 
     public bool HasTracks => Tracks.Count > 0;
