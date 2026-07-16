@@ -55,8 +55,13 @@ public partial class App : Application
             // Task.Run escapes Avalonia's SynchronizationContext: at this point the classic desktop
             // lifetime hasn't started pumping its dispatcher loop yet, so blocking the UI thread here
             // while awaiting a continuation that expects that loop to be running would deadlock.
+            // audioEngine.InitializeAsync() needs that isolation since native engine startup's
+            // synchronous prefix is unpredictable. Library.InitializeAsync() doesn't (it's just
+            // managed file I/O internally offloaded via its own Task.Run) — calling it directly
+            // keeps its continuation on the UI thread, which it needs to safely mutate the
+            // Tracks collection the DataGrid is bound to.
             Task.Run(() => audioEngine.InitializeAsync());
-            Task.Run(() => mainWindowViewModel.Library.InitializeAsync());
+            _ = mainWindowViewModel.Library.InitializeAsync();
         }
 
         base.OnFrameworkInitializationCompleted();
