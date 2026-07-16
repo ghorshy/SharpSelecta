@@ -24,14 +24,15 @@
             </StackPanel>
 
             <ListBox ItemsSource="{Binding Tracks}" DoubleTapped="OnTrackDoubleTapped">
-                <ListBox.ItemTemplate>
-                    <DataTemplate x:DataType="vm:LibraryTrackViewModel">
-                        <!-- Background must be set (even Transparent) for the whole row to be
-                             hit-testable — otherwise right-clicking anywhere but the text glyphs
-                             themselves misses the ContextMenu entirely (Avalonia issue #15942). -->
-                        <Border Background="Transparent" HorizontalAlignment="Stretch">
-                            <Border.ContextMenu>
-                                <ContextMenu>
+                <!-- ContextMenu lives on ListBoxItem itself (via style), not on the DataTemplate's
+                     content — the item container is what actually covers the full row including
+                     its own padding, so this is the only way right-click works across the whole
+                     row instead of just the text glyphs (Avalonia issue #15942 strikes again). -->
+                <ListBox.Styles>
+                    <Style Selector="ListBoxItem">
+                        <Setter Property="ContextMenu">
+                            <Setter.Value>
+                                <ContextMenu x:DataType="vm:LibraryTrackViewModel">
                                     <MenuItem Header="{x:Static res:Strings.PlayNow}"
                                               Command="{Binding Library.PlayNowCommand}"
                                               CommandParameter="{Binding Track}" />
@@ -42,9 +43,13 @@
                                               Command="{Binding Library.AddToQueueCommand}"
                                               CommandParameter="{Binding Track}" />
                                 </ContextMenu>
-                            </Border.ContextMenu>
-                            <TextBlock Text="{Binding DisplayName}" />
-                        </Border>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListBox.Styles>
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:LibraryTrackViewModel">
+                        <TextBlock Text="{Binding DisplayName}" />
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
