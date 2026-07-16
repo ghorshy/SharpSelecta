@@ -4,5 +4,5 @@ namespace SharpSelecta.App.Services;
 
 public interface IFilePickerService
 {
-    Task<string?> PickAudioFileAsync();
+    Task<string?> PickLibraryFolderAsync();
 }

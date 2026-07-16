@@ -8,18 +8,24 @@ public static class Strings
     private static readonly ResourceManager ResourceManager =
         new("SharpSelecta.App.Resources.Strings", typeof(Strings).Assembly);
 
-    public static string OpenFile => Get(nameof(OpenFile));
+    public static string ChooseLibraryFolder => Get(nameof(ChooseLibraryFolder));
     public static string Play => Get(nameof(Play));
     public static string Pause => Get(nameof(Pause));
     public static string NoFileLoaded => Get(nameof(NoFileLoaded));
     public static string Previous => Get(nameof(Previous));
     public static string Next => Get(nameof(Next));
     public static string Volume => Get(nameof(Volume));
-    public static string FilePickerTitle => Get(nameof(FilePickerTitle));
-    public static string AudioFilesFilterName => Get(nameof(AudioFilesFilterName));
+    public static string LibraryFolderPickerTitle => Get(nameof(LibraryFolderPickerTitle));
+    public static string PlayNow => Get(nameof(PlayNow));
+    public static string PlayNext => Get(nameof(PlayNext));
+    public static string AddToQueue => Get(nameof(AddToQueue));
+    public static string Queue => Get(nameof(Queue));
 
     public static string FailedToLoadFile(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToLoadFileFormat"), reason);
+
+    public static string FailedToScanFolder(string reason) =>
+        string.Format(CultureInfo.CurrentCulture, Get("FailedToScanFolderFormat"), reason);
 
     private static string Get(string name) => ResourceManager.GetString(name, CultureInfo.CurrentUICulture)!;
 }

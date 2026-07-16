@@ -7,21 +7,14 @@ namespace SharpSelecta.App.Services;
 
 public sealed class AvaloniaFilePickerService(Window owner) : IFilePickerService
 {
-    public async Task<string?> PickAudioFileAsync()
+    public async Task<string?> PickLibraryFolderAsync()
     {
-        var files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        var folders = await owner.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
-            Title = Strings.FilePickerTitle,
+            Title = Strings.LibraryFolderPickerTitle,
             AllowMultiple = false,
-            FileTypeFilter =
-            [
-                new FilePickerFileType(Strings.AudioFilesFilterName)
-                {
-                    Patterns = ["*.mp3", "*.flac", "*.wav", "*.m4a"],
-                },
-            ],
         });
 
-        return files.Count > 0 ? files[0].TryGetLocalPath() : null;
+        return folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
     }
 }

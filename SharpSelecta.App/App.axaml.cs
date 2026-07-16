@@ -40,7 +40,8 @@ public partial class App : Application
             mainWindow.DataContext = new MainWindowViewModel(
                 audioEngine,
                 provider.GetRequiredService<IFilePickerService>(),
-                provider.GetRequiredService<ILogger<MainWindowViewModel>>());
+                provider.GetRequiredService<ILogger<PlaybackControlsViewModel>>(),
+                provider.GetRequiredService<ILogger<LibraryViewModel>>());
             desktop.MainWindow = mainWindow;
 
             // Task.Run escapes Avalonia's SynchronizationContext: at this point the classic desktop

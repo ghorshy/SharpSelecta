@@ -2,19 +2,25 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SharpSelecta.App.ViewModels"
              xmlns:res="using:SharpSelecta.App.Resources"
+             xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="40"
+             mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="70"
              x:Class="SharpSelecta.App.Views.PlaybackControlsView"
              x:DataType="vm:PlaybackControlsViewModel">
 
-    <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,80" ColumnSpacing="10">
-        <Button Grid.Column="0" Content="{x:Static res:Strings.Previous}" Command="{Binding PreviousTrackCommand}" />
-        <Button Grid.Column="1" Content="{Binding PlayPauseLabel}" Command="{Binding PlayPauseCommand}" />
-        <Button Grid.Column="2" Content="{x:Static res:Strings.Next}" Command="{Binding NextTrackCommand}" />
-        <Slider Grid.Column="3" VerticalAlignment="Center" Minimum="0" Maximum="{Binding DurationSeconds}" Value="{Binding PositionSeconds}" />
-        <TextBlock Grid.Column="4" Text="{x:Static res:Strings.Volume}" VerticalAlignment="Center" />
-        <Slider Grid.Column="5" VerticalAlignment="Center" Minimum="0" Maximum="1" Value="{Binding Volume}" />
-    </Grid>
+    <StackPanel Spacing="10">
+        <TextBlock Text="{Binding DisplayFileName}" />
+        <TextBlock Text="{Binding StatusMessage}" Foreground="OrangeRed" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+
+        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,80" ColumnSpacing="10">
+            <Button Grid.Column="0" Content="{x:Static res:Strings.Previous}" Command="{Binding PreviousTrackCommand}" />
+            <Button Grid.Column="1" Content="{Binding PlayPauseLabel}" Command="{Binding PlayPauseCommand}" />
+            <Button Grid.Column="2" Content="{x:Static res:Strings.Next}" Command="{Binding NextTrackCommand}" />
+            <Slider Grid.Column="3" VerticalAlignment="Center" Minimum="0" Maximum="{Binding DurationSeconds}" Value="{Binding PositionSeconds}" />
+            <TextBlock Grid.Column="4" Text="{x:Static res:Strings.Volume}" VerticalAlignment="Center" />
+            <Slider Grid.Column="5" VerticalAlignment="Center" Minimum="0" Maximum="1" Value="{Binding Volume}" />
+        </Grid>
+    </StackPanel>
 
 </UserControl>

@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SharpSelecta.App.ViewModels"
+             xmlns:res="using:SharpSelecta.App.Resources"
+             xmlns:lib="using:SharpSelecta.Core.Library"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="200" d:DesignHeight="400"
+             x:Class="SharpSelecta.App.Views.QueueView"
+             x:DataType="vm:QueueViewModel">
+
+    <DockPanel LastChildFill="True">
+        <TextBlock DockPanel.Dock="Top" Text="{x:Static res:Strings.Queue}" FontWeight="Bold" Margin="0,0,0,10" />
+
+        <ListBox ItemsSource="{Binding Entries}" SelectedIndex="{Binding CurrentIndex, Mode=OneWay}">
+            <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="lib:QueueEntry">
+                    <TextBlock Text="{Binding Track.DisplayName}" TextWrapping="Wrap" />
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </DockPanel>
+
+</UserControl>

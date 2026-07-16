@@ -1,27 +1,24 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:SharpSelecta.App.ViewModels"
-        xmlns:res="using:SharpSelecta.App.Resources"
         xmlns:views="using:SharpSelecta.App.Views"
-        xmlns:conv="using:Avalonia.Data.Converters"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="520" d:DesignHeight="450"
+        mc:Ignorable="d" d:DesignWidth="750" d:DesignHeight="600"
         x:Class="SharpSelecta.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="SharpSelecta"
-        Width="520"
-        Height="450">
+        Width="750"
+        Height="600">
 
     <DockPanel Margin="10" LastChildFill="True">
         <views:PlaybackControlsView DockPanel.Dock="Bottom" Margin="0,10,0,0" DataContext="{Binding PlaybackControls}" />
 
-        <StackPanel Spacing="10">
-            <TextBlock Text="{Binding DisplayFileName}" />
-            <Button Content="{x:Static res:Strings.OpenFile}" Command="{Binding OpenFileCommand}" HorizontalAlignment="Left" />
-            <TextBlock Text="{Binding StatusMessage}" Foreground="OrangeRed" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
-        </StackPanel>
+        <Grid ColumnDefinitions="*,10,220">
+            <views:LibraryView Grid.Column="0" DataContext="{Binding Library}" />
+            <views:QueueView Grid.Column="2" DataContext="{Binding Queue}" />
+        </Grid>
     </DockPanel>
 
 </Window>
