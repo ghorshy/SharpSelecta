@@ -1,4 +1,5 @@
 using SharpSelecta.Core.Library;
+using SharpSelecta.Core.Playback;
 
 namespace SharpSelecta.Tests;
 

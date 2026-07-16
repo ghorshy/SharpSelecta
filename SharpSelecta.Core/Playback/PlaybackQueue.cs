@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
+using SharpSelecta.Core.Library;
 
-namespace SharpSelecta.Core.Library;
+namespace SharpSelecta.Core.Playback;
 
 public sealed class PlaybackQueue
 {

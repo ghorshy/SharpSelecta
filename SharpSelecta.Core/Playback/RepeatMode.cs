@@ -1,4 +1,4 @@
-namespace SharpSelecta.Core.Library;
+namespace SharpSelecta.Core.Playback;
 
 public enum RepeatMode
 {

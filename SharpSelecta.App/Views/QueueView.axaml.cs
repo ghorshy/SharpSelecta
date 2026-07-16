@@ -1,7 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using SharpSelecta.App.ViewModels;
-using SharpSelecta.Core.Library;
+using SharpSelecta.Core.Playback;
 
 namespace SharpSelecta.App.Views;
 

@@ -3,6 +3,7 @@ using NSubstitute;
 using SharpSelecta.App.ViewModels;
 using SharpSelecta.Core.Audio;
 using SharpSelecta.Core.Library;
+using SharpSelecta.Core.Playback;
 
 namespace SharpSelecta.Tests;
 

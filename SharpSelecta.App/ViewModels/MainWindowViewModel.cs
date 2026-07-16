@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using SharpSelecta.App.Services;
 using SharpSelecta.Core.Audio;
-using SharpSelecta.Core.Library;
+using SharpSelecta.Core.Playback;
 
 namespace SharpSelecta.App.ViewModels;
 
