@@ -48,7 +48,8 @@ public partial class App : Application
                 provider.GetRequiredService<IFilePickerService>(),
                 librarySettingsFilePath,
                 provider.GetRequiredService<ILogger<PlaybackControlsViewModel>>(),
-                provider.GetRequiredService<ILogger<LibraryViewModel>>());
+                provider.GetRequiredService<ILogger<LibraryViewModel>>(),
+                provider.GetRequiredService<ILogger<QueueViewModel>>());
             mainWindow.DataContext = mainWindowViewModel;
             desktop.MainWindow = mainWindow;
 

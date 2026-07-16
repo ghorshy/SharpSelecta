@@ -19,6 +19,7 @@ public static class Strings
     public static string PlayNow => Get(nameof(PlayNow));
     public static string PlayNext => Get(nameof(PlayNext));
     public static string AddToQueue => Get(nameof(AddToQueue));
+    public static string RemoveFromQueue => Get(nameof(RemoveFromQueue));
     public static string Queue => Get(nameof(Queue));
     public static string RepeatOff => Get(nameof(RepeatOff));
     public static string RepeatAll => Get(nameof(RepeatAll));

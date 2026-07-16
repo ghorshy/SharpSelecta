@@ -64,7 +64,7 @@ public class PlaybackQueueTests
     {
         var queue = new PlaybackQueue();
         queue.PlayNow(TrackA);
-        queue.Entries.Add(new QueueEntry(TrackB, QueueEntrySource.AutoDj));
+        queue.AddAutoDjEntry(TrackB);
 
         queue.AddToQueue(TrackC);
 
@@ -192,5 +192,109 @@ public class PlaybackQueueTests
 
         await Assert.That(jumped).IsNull();
         await Assert.That(queue.CurrentIndex).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task Move_ReordersEntries()
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow(TrackA);
+        queue.AddToQueue(TrackB);
+        queue.AddToQueue(TrackC);
+
+        queue.Move(2, 0);
+
+        await Assert.That(queue.Entries[0].Track).IsEqualTo(TrackC);
+        await Assert.That(queue.Entries[1].Track).IsEqualTo(TrackA);
+        await Assert.That(queue.Entries[2].Track).IsEqualTo(TrackB);
+    }
+
+    [Test]
+    public async Task Move_OfTheCurrentEntry_KeepsCurrentIndexPointingAtIt()
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow(TrackA); // CurrentIndex = 0
+        queue.AddToQueue(TrackB);
+        queue.AddToQueue(TrackC);
+
+        queue.Move(0, 2);
+
+        await Assert.That(queue.CurrentIndex).IsEqualTo(2);
+        await Assert.That(queue.Entries[2].Track).IsEqualTo(TrackA);
+    }
+
+    [Test]
+    public async Task Move_AcrossTheCurrentEntry_ShiftsCurrentIndexToStayOnTheSameEntry()
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow(TrackA);
+        queue.AddToQueue(TrackB);
+        queue.AddToQueue(TrackC);
+        queue.MoveNext(); // CurrentIndex = 1 (TrackB)
+
+        queue.Move(2, 0); // TrackC moves from after TrackB to before TrackA
+
+        await Assert.That(queue.CurrentIndex).IsEqualTo(2);
+        await Assert.That(queue.Entries[2].Track).IsEqualTo(TrackB);
+    }
+
+    [Test]
+    public async Task RemoveAt_BeforeCurrentIndex_ShiftsCurrentIndexLeft()
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow(TrackA);
+        queue.AddToQueue(TrackB);
+        queue.MoveNext(); // CurrentIndex = 1 (TrackB)
+
+        queue.RemoveAt(0);
+
+        await Assert.That(queue.CurrentIndex).IsEqualTo(0);
+        await Assert.That(queue.Entries[0].Track).IsEqualTo(TrackB);
+    }
+
+    [Test]
+    public async Task RemoveAt_TheCurrentEntry_IsANoOp()
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow(TrackA);
+        queue.AddToQueue(TrackB);
+
+        queue.RemoveAt(0);
+
+        await Assert.That(queue.CurrentIndex).IsEqualTo(0);
+        await Assert.That(queue.Entries.Select(e => e.Track)).IsEquivalentTo([TrackA, TrackB]);
+    }
+
+    [Test]
+    public async Task RemoveAt_TheOnlyEntry_WhileItIsCurrent_IsANoOp()
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow(TrackA);
+
+        queue.RemoveAt(0);
+
+        await Assert.That(queue.CurrentIndex).IsEqualTo(0);
+        await Assert.That(queue.Entries.Count).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task IndexOf_FindsAnEntryByReferenceNotByValue()
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow(TrackA);
+        queue.AddToQueue(TrackB);
+        queue.AddToQueue(TrackA); // structurally equal to Entries[0], but a distinct instance
+
+        await Assert.That(queue.IndexOf(queue.Entries[0])).IsEqualTo(0);
+        await Assert.That(queue.IndexOf(queue.Entries[2])).IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task IndexOf_WhenEntryIsNotInTheQueue_ReturnsMinusOne()
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow(TrackA);
+
+        await Assert.That(queue.IndexOf(new QueueEntry(TrackB, QueueEntrySource.Manual))).IsEqualTo(-1);
     }
 }

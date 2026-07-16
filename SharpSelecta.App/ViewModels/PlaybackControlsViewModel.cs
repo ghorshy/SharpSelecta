@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -23,6 +24,10 @@ public partial class PlaybackControlsViewModel : ViewModelBase
     private readonly ILogger<PlaybackControlsViewModel> _logger;
     private bool _isSyncingFromEngine;
     private bool _hasHandledEndOfStream;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(PlayPauseCommand))]
+    private TransportState transportState = TransportState.NoTrack;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PlayPauseLabel))]
@@ -62,8 +67,9 @@ public partial class PlaybackControlsViewModel : ViewModelBase
         _logger = logger;
 
         // Keeps Previous/Next enabled state in sync as the queue is edited or navigated,
-        // whether that happens here or from the Library's context menu.
-        _queue.Entries.CollectionChanged += (_, _) => RefreshNavigationCommands();
+        // whether that happens here or from the Library's context menu. ReadOnlyObservableCollection
+        // implements CollectionChanged explicitly, hence the interface cast.
+        ((INotifyCollectionChanged)_queue.Entries).CollectionChanged += (_, _) => RefreshNavigationCommands();
         _queue.CurrentIndexChanged += (_, _) =>
         {
             RefreshNavigationCommands();
@@ -73,7 +79,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase
 
     // This class is the single owner of the shared PlaybackQueue — the Library and Queue
     // components only ever reach it through these members, never touching PlaybackQueue directly.
-    public ObservableCollection<QueueEntry> QueueEntries => _queue.Entries;
+    public ReadOnlyObservableCollection<QueueEntry> QueueEntries => _queue.Entries;
 
     public int QueueCurrentIndex => _queue.CurrentIndex;
 
@@ -81,9 +87,49 @@ public partial class PlaybackControlsViewModel : ViewModelBase
 
     public void AddToQueue(Track track) => _queue.AddToQueue(track);
 
+    // Dropping onto another entry lands the dragged entry immediately above it; dropping with no
+    // target (targetEntry is null, e.g. past the last row) moves it to the end of the queue instead.
+    public void MoveQueueEntry(QueueEntry entry, QueueEntry? targetEntry)
+    {
+        var oldIndex = _queue.IndexOf(entry);
+        if (oldIndex < 0)
+            return;
+
+        int newIndex;
+        if (targetEntry is null)
+        {
+            newIndex = _queue.Entries.Count - 1;
+        }
+        else
+        {
+            var targetIndex = _queue.IndexOf(targetEntry);
+            if (targetIndex < 0)
+                return;
+
+            // PlaybackQueue.Move's newIndex is interpreted against the list AFTER the source entry
+            // is removed. When dragging downward (oldIndex < targetIndex), the target has already
+            // shifted left by one by the time the insert happens, so landing "immediately above the
+            // target" — matching the Queue view's drop indicator — means using targetIndex - 1, not
+            // targetIndex. Dragging upward needs no adjustment: removing from below the target never
+            // moves it.
+            newIndex = oldIndex < targetIndex ? targetIndex - 1 : targetIndex;
+        }
+
+        _queue.Move(oldIndex, newIndex);
+    }
+
+    public void RemoveFromQueue(QueueEntry entry)
+    {
+        var index = _queue.IndexOf(entry);
+        if (index >= 0)
+        {
+            _queue.RemoveAt(index);
+        }
+    }
+
     public async Task PlayQueueEntryAsync(QueueEntry entry)
     {
-        var index = _queue.Entries.IndexOf(entry);
+        var index = _queue.IndexOf(entry);
         if (index < 0)
             return;
 
@@ -134,7 +180,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase
         };
     }
 
-    [RelayCommand(CanExecute = nameof(HasCurrentTrack))]
+    [RelayCommand(CanExecute = nameof(CanPlayPause))]
     private void PlayPause()
     {
         if (IsPlaying)
@@ -151,6 +197,8 @@ public partial class PlaybackControlsViewModel : ViewModelBase
 
     // Nothing to play/pause, go back to, or restart until something has actually been loaded.
     private bool HasCurrentTrack() => _queue.CurrentIndex >= 0;
+
+    private bool CanPlayPause() => TransportState == TransportState.Ready;
 
     [RelayCommand(CanExecute = nameof(HasCurrentTrack))]
     private async Task PreviousTrackAsync()
@@ -173,7 +221,11 @@ public partial class PlaybackControlsViewModel : ViewModelBase
         }
     }
 
-    private void RestartCurrentTrack() => PositionSeconds = 0;
+    private void RestartCurrentTrack()
+    {
+        PositionSeconds = 0;
+        TransportState = TransportState.Ready;
+    }
 
     [RelayCommand(CanExecute = nameof(CanGoNext))]
     private async Task NextTrackAsync()
@@ -215,6 +267,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase
             StatusMessage = null;
             IsPlaying = false;
             _hasHandledEndOfStream = false;
+            TransportState = TransportState.Ready;
             RefreshPosition();
             PlayPauseCommand.Execute(null);
         }
@@ -289,7 +342,12 @@ public partial class PlaybackControlsViewModel : ViewModelBase
         }
         else
         {
+            // End of the queue with Repeat off — actually stop the engine (it doesn't do this on
+            // its own; Position just keeps climbing past Duration, see the note above) and disable
+            // Play/Pause so nothing tries to resume a track that has already finished.
+            _audioEngine.Pause();
             IsPlaying = false;
+            TransportState = TransportState.Finished;
         }
     }
 }

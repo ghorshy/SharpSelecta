@@ -19,7 +19,8 @@ public class MainWindowViewModelTests
             filePickerService,
             settingsFilePath,
             NullLogger<PlaybackControlsViewModel>.Instance,
-            NullLogger<LibraryViewModel>.Instance);
+            NullLogger<LibraryViewModel>.Instance,
+            NullLogger<QueueViewModel>.Instance);
     }
 
     [Test]

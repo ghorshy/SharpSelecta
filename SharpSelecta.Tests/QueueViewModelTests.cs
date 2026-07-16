@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using SharpSelecta.App.ViewModels;
@@ -14,7 +15,7 @@ public class QueueViewModelTests
         audioEngine = Substitute.For<IAudioEngine>();
         queue = new PlaybackQueue();
         var playbackControls = new PlaybackControlsViewModel(audioEngine, queue, NullLogger<PlaybackControlsViewModel>.Instance);
-        return new QueueViewModel(playbackControls);
+        return new QueueViewModel(playbackControls, NullLogger<QueueViewModel>.Instance);
     }
 
     [Test]
@@ -42,5 +43,15 @@ public class QueueViewModelTests
         await vm.PlayEntryCommand.ExecuteAsync(vm.Entries[0]);
 
         await Assert.That(vm.Entries.Count).IsEqualTo(3);
+    }
+
+    // Called from QueueView's code-behind when DragDrop.DoDragDropAsync throws — must not itself
+    // throw, since that would defeat the point of catching the original exception there.
+    [Test]
+    public void ReportDragReorderFailure_DoesNotThrow()
+    {
+        var vm = CreateViewModel(out _, out _);
+
+        vm.ReportDragReorderFailure(new InvalidOperationException("simulated drag failure"));
     }
 }

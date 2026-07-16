@@ -19,10 +19,12 @@ public class PlaybackControlsViewModelTests
     [Test]
     public async Task PlayPauseCommand_DisabledUntilSomethingIsLoaded()
     {
-        var vm = CreateViewModel(out _, out var queue);
+        var vm = CreateViewModel(out _, out _);
         await Assert.That(vm.PlayPauseCommand.CanExecute(null)).IsFalse();
 
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
+        // Mutating the queue alone isn't enough — Play/Pause reflects TransportState, which only
+        // becomes Ready once the track has actually been loaded into the engine.
+        await vm.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
 
         await Assert.That(vm.PlayPauseCommand.CanExecute(null)).IsTrue();
     }
@@ -178,6 +180,21 @@ public class PlaybackControlsViewModelTests
     }
 
     [Test]
+    public async Task PreviousTrackCommand_AfterQueueFinished_ReEnablesPlayPause()
+    {
+        var vm = CreateViewModel(out var audioEngine, out var queue);
+        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
+        audioEngine.Duration.Returns(180.0);
+        audioEngine.Position.Returns(200.0); // triggers natural end-of-queue -> _isQueueFinished
+        await vm.RefreshPositionAsync();
+        await Assert.That(vm.PlayPauseCommand.CanExecute(null)).IsFalse();
+
+        await vm.PreviousTrackCommand.ExecuteAsync(null); // past threshold -> restarts current track
+
+        await Assert.That(vm.PlayPauseCommand.CanExecute(null)).IsTrue();
+    }
+
+    [Test]
     public async Task PlayNowAsync_JoinsQueueAndLoadsIntoEngine()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
@@ -309,7 +326,9 @@ public class PlaybackControlsViewModelTests
         await vm.RefreshPositionAsync();
 
         audioEngine.DidNotReceive().Load(Arg.Any<string>());
+        audioEngine.Received(1).Pause();
         await Assert.That(vm.IsPlaying).IsFalse();
+        await Assert.That(vm.PlayPauseCommand.CanExecute(null)).IsFalse();
     }
 
     [Test]
@@ -374,5 +393,152 @@ public class PlaybackControlsViewModelTests
         await vm.RefreshPositionAsync();
 
         await Assert.That(vm.DurationDisplay).IsEqualTo("1:02:05");
+    }
+
+    [Test]
+    public async Task MoveQueueEntry_ReordersTheUnderlyingQueue()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        var a = new Track("/music/a.mp3", "a.mp3");
+        var b = new Track("/music/b.mp3", "b.mp3");
+        var c = new Track("/music/c.mp3", "c.mp3");
+        queue.PlayNow(a);
+        queue.AddToQueue(b);
+        queue.AddToQueue(c);
+
+        vm.MoveQueueEntry(queue.Entries[2], queue.Entries[0]);
+
+        await Assert.That(queue.Entries[0].Track).IsEqualTo(c);
+        await Assert.That(queue.Entries[1].Track).IsEqualTo(a);
+        await Assert.That(queue.Entries[2].Track).IsEqualTo(b);
+    }
+
+    [Test]
+    public async Task MoveQueueEntry_WithNoTarget_MovesToTheEndOfTheQueue()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        var a = new Track("/music/a.mp3", "a.mp3");
+        var b = new Track("/music/b.mp3", "b.mp3");
+        queue.PlayNow(a);
+        queue.AddToQueue(b);
+
+        vm.MoveQueueEntry(queue.Entries[0], null);
+
+        await Assert.That(queue.Entries[0].Track).IsEqualTo(b);
+        await Assert.That(queue.Entries[1].Track).IsEqualTo(a);
+    }
+
+    // ObservableCollection<T>.Move interprets its target index against the list AFTER the source
+    // entry is removed, so dropping an entry further down the queue would otherwise land it one
+    // slot past where the drop indicator (a line above the target row) shows.
+    [Test]
+    public async Task MoveQueueEntry_DownwardDrag_LandsImmediatelyBeforeTheTargetEntry()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        var a = new Track("/music/a.mp3", "a.mp3");
+        var b = new Track("/music/b.mp3", "b.mp3");
+        var c = new Track("/music/c.mp3", "c.mp3");
+        queue.PlayNow(a);
+        queue.AddToQueue(b);
+        queue.AddToQueue(c);
+
+        vm.MoveQueueEntry(queue.Entries[0], queue.Entries[2]); // drag a onto c
+
+        await Assert.That(queue.Entries[0].Track).IsEqualTo(b);
+        await Assert.That(queue.Entries[1].Track).IsEqualTo(a);
+        await Assert.That(queue.Entries[2].Track).IsEqualTo(c);
+    }
+
+    // QueueEntry is a record, so IndexOf-by-value would resolve to the FIRST structurally-equal
+    // entry when the same track is queued twice — MoveQueueEntry must act on the exact instance
+    // it was given instead. Under the old value-equality lookup, both the dragged duplicate and
+    // the target here resolve to the same (first) index, so the move would have silently no-op'd.
+    [Test]
+    public async Task MoveQueueEntry_WithTheSameTrackQueuedTwice_ActsOnTheExactEntryInstance()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        var a = new Track("/music/a.mp3", "a.mp3");
+        var b = new Track("/music/b.mp3", "b.mp3");
+        queue.PlayNow(a);
+        queue.AddToQueue(b);
+        queue.AddToQueue(a); // same track queued again -> structurally equal to Entries[0]
+        var currentEntry = queue.Entries[0];
+        var duplicateEntry = queue.Entries[2];
+
+        vm.MoveQueueEntry(duplicateEntry, currentEntry);
+
+        await Assert.That(queue.Entries.Count).IsEqualTo(3);
+        await Assert.That(ReferenceEquals(queue.Entries[0], duplicateEntry)).IsTrue();
+        await Assert.That(ReferenceEquals(queue.Entries[1], currentEntry)).IsTrue();
+        await Assert.That(ReferenceEquals(queue.Entries[2].Track, b)).IsTrue();
+        await Assert.That(queue.CurrentIndex).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task RemoveFromQueue_RemovesTheGivenEntry()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        var a = new Track("/music/a.mp3", "a.mp3");
+        var b = new Track("/music/b.mp3", "b.mp3");
+        queue.PlayNow(a);
+        queue.AddToQueue(b);
+
+        vm.RemoveFromQueue(queue.Entries[1]);
+
+        await Assert.That(queue.Entries.Count).IsEqualTo(1);
+        await Assert.That(queue.Entries[0].Track).IsEqualTo(a);
+    }
+
+    // Under the old value-equality lookup, removing the duplicate here would have resolved to the
+    // first (currently-playing) occurrence and silently no-op'd instead of removing the row clicked.
+    [Test]
+    public async Task RemoveFromQueue_WithTheSameTrackQueuedTwice_RemovesTheExactEntryInstance()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        var a = new Track("/music/a.mp3", "a.mp3");
+        var b = new Track("/music/b.mp3", "b.mp3");
+        queue.PlayNow(a);
+        queue.AddToQueue(b);
+        queue.AddToQueue(a); // same track queued again -> structurally equal to the current entry
+        var currentEntry = queue.Entries[0];
+        var duplicateEntry = queue.Entries[2];
+
+        vm.RemoveFromQueue(duplicateEntry);
+
+        await Assert.That(queue.Entries.Count).IsEqualTo(2);
+        await Assert.That(ReferenceEquals(queue.Entries[0], currentEntry)).IsTrue();
+        await Assert.That(ReferenceEquals(queue.Entries[1].Track, b)).IsTrue();
+        await Assert.That(queue.CurrentIndex).IsEqualTo(0);
+    }
+
+    // Under the old value-equality lookup, jumping to the duplicate here would have resolved to
+    // index 0 (already current) and done nothing, instead of jumping to the clicked row at index 2.
+    [Test]
+    public async Task PlayQueueEntryAsync_WithTheSameTrackQueuedTwice_JumpsToTheExactEntryInstance()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        var a = new Track("/music/a.mp3", "a.mp3");
+        var b = new Track("/music/b.mp3", "b.mp3");
+        queue.PlayNow(a);
+        queue.AddToQueue(b);
+        queue.AddToQueue(a); // duplicate, structurally equal to Entries[0]
+
+        await vm.PlayQueueEntryAsync(queue.Entries[2]);
+
+        await Assert.That(queue.CurrentIndex).IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task RemoveFromQueue_TheCurrentlyPlayingEntry_IsANoOp()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        var a = new Track("/music/a.mp3", "a.mp3");
+        var b = new Track("/music/b.mp3", "b.mp3");
+        queue.PlayNow(a);
+        queue.AddToQueue(b);
+
+        vm.RemoveFromQueue(queue.Entries[0]);
+
+        await Assert.That(queue.Entries.Count).IsEqualTo(2);
     }
 }

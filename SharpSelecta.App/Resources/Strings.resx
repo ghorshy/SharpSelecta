@@ -100,6 +100,9 @@
   <data name="AddToQueue" xml:space="preserve">
     <value>Add to Queue</value>
   </data>
+  <data name="RemoveFromQueue" xml:space="preserve">
+    <value>Remove from Queue</value>
+  </data>
   <data name="Queue" xml:space="preserve">
     <value>Queue</value>
   </data>
