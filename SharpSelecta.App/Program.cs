@@ -43,11 +43,23 @@ sealed class Program
 
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()
-        => AppBuilder.Configure<App>()
+    {
+        var builder = AppBuilder.Configure<App>()
             .UsePlatformDetect()
 #if DEBUG
             .WithDeveloperTools()
 #endif
             .WithInterFont()
             .LogToTrace();
+
+        // Native Wayland backend (Avalonia 12.1+) is still experimental, so UsePlatformDetect()
+        // doesn't pick it up on its own — opt in explicitly when a Wayland session is present,
+        // instead of running through the XWayland compatibility layer.
+        if (OperatingSystem.IsLinux() && Environment.GetEnvironmentVariable("WAYLAND_DISPLAY") is not null)
+        {
+            builder = builder.UseWayland();
+        }
+
+        return builder;
+    }
 }
