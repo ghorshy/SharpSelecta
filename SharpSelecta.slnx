@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="SharpSelecta.App/SharpSelecta.App.csproj" />
+  <Project Path="SharpSelecta.Audio/SharpSelecta.Audio.csproj" />
+  <Project Path="SharpSelecta.Core/SharpSelecta.Core.csproj" />
+  <Project Path="SharpSelecta.Tests/SharpSelecta.Tests.csproj" />
+</Solution>
