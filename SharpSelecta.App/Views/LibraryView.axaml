@@ -43,8 +43,30 @@
                 </DataGrid.DropLocationIndicatorTemplate>
 
                 <DataGrid.Styles>
+                    <!-- DataGrid's bundled theme uses its own larger default instead of the rest
+                         of the app's Fluent-theme content font size — match it explicitly. -->
+                    <Style Selector="DataGridCell">
+                        <Setter Property="FontSize" Value="{DynamicResource ControlContentThemeFontSize}" />
+                    </Style>
+
+                    <!-- Rows are IsReadOnly, so the per-cell "current cell" indicator the bundled
+                         theme draws on click doesn't serve editing focus — just row selection,
+                         which the row highlight already shows. It's an inner Rectangle in
+                         DataGridCell's own control template (not bound to the cell's own
+                         BorderBrush/BorderThickness), toggled visible via these pseudo-classes. -->
+                    <Style Selector="DataGridCell:current /template/ Rectangle">
+                        <Setter Property="IsVisible" Value="False" />
+                    </Style>
+                    <Style Selector="DataGridCell:focus /template/ Rectangle">
+                        <Setter Property="IsVisible" Value="False" />
+                    </Style>
+                    <Style Selector="DataGridCell:focus-visible /template/ Rectangle">
+                        <Setter Property="IsVisible" Value="False" />
+                    </Style>
+
                     <!-- Right-click on a column header: choose which columns are visible. -->
                     <Style Selector="DataGridColumnHeader">
+                        <Setter Property="FontSize" Value="{DynamicResource ControlContentThemeFontSize}" />
                         <Setter Property="ContextMenu">
                             <Setter.Value>
                                 <ContextMenu>
