@@ -1,4 +1,5 @@
 using System;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -20,16 +21,24 @@ public partial class PlaybackControlsViewModel : ViewModelBase
     private readonly PlaybackQueue _queue;
     private readonly ILogger<PlaybackControlsViewModel> _logger;
     private bool _isSyncingFromEngine;
+    private bool _hasHandledEndOfStream;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PlayPauseLabel))]
     private bool isPlaying;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PositionDisplay))]
+    [NotifyPropertyChangedFor(nameof(DurationDisplay))]
     private double positionSeconds;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DurationDisplay))]
     private double durationSeconds;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DurationDisplay))]
+    private bool showRemainingTime;
 
     [ObservableProperty]
     private double volume = 1.0;
@@ -41,6 +50,10 @@ public partial class PlaybackControlsViewModel : ViewModelBase
     [ObservableProperty]
     private string? statusMessage;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RepeatModeLabel))]
+    private RepeatMode repeatMode = RepeatMode.Off;
+
     public PlaybackControlsViewModel(IAudioEngine audioEngine, PlaybackQueue queue, ILogger<PlaybackControlsViewModel> logger)
     {
         _audioEngine = audioEngine;
@@ -50,14 +63,77 @@ public partial class PlaybackControlsViewModel : ViewModelBase
         // Keeps Previous/Next enabled state in sync as the queue is edited or navigated,
         // whether that happens here or from the Library's context menu.
         _queue.Entries.CollectionChanged += (_, _) => RefreshNavigationCommands();
-        _queue.CurrentIndexChanged += (_, _) => RefreshNavigationCommands();
+        _queue.CurrentIndexChanged += (_, _) =>
+        {
+            RefreshNavigationCommands();
+            OnPropertyChanged(nameof(QueueCurrentIndex));
+        };
+    }
+
+    // This class is the single owner of the shared PlaybackQueue — the Library and Queue
+    // components only ever reach it through these members, never touching PlaybackQueue directly.
+    public ObservableCollection<QueueEntry> QueueEntries => _queue.Entries;
+
+    public int QueueCurrentIndex => _queue.CurrentIndex;
+
+    public void PlayNext(Track track) => _queue.PlayNext(track);
+
+    public void AddToQueue(Track track) => _queue.AddToQueue(track);
+
+    public async Task PlayQueueEntryAsync(QueueEntry entry)
+    {
+        var index = _queue.Entries.IndexOf(entry);
+        if (index < 0)
+            return;
+
+        var track = _queue.JumpTo(index);
+        if (track is not null)
+        {
+            await LoadTrackAsync(track);
+        }
     }
 
     public string PlayPauseLabel => IsPlaying ? Strings.Pause : Strings.Play;
 
     public string DisplayFileName => LoadedFileName ?? Strings.NoFileLoaded;
 
+    public string PositionDisplay => FormatTime(PositionSeconds);
+
+    // Toggled by clicking it: total duration, or time remaining (prefixed with "-"), like
+    // Spotify/Apple Music's duration-label toggle.
+    public string DurationDisplay => ShowRemainingTime
+        ? $"-{FormatTime(Math.Max(0, DurationSeconds - PositionSeconds))}"
+        : FormatTime(DurationSeconds);
+
     [RelayCommand]
+    private void ToggleDurationDisplay() => ShowRemainingTime = !ShowRemainingTime;
+
+    private static string FormatTime(double totalSeconds)
+    {
+        var span = TimeSpan.FromSeconds(Math.Max(0, totalSeconds));
+        return span.Hours > 0 ? span.ToString(@"h\:mm\:ss") : span.ToString(@"m\:ss");
+    }
+
+    public string RepeatModeLabel => RepeatMode switch
+    {
+        RepeatMode.RepeatAll => Strings.RepeatAll,
+        RepeatMode.RepeatOne => Strings.RepeatOne,
+        _ => Strings.RepeatOff,
+    };
+
+    // Cycles Off -> Repeat All -> Repeat One -> Off, matching SoundCloud's repeat toggle.
+    [RelayCommand]
+    private void ToggleRepeatMode()
+    {
+        RepeatMode = RepeatMode switch
+        {
+            RepeatMode.Off => RepeatMode.RepeatAll,
+            RepeatMode.RepeatAll => RepeatMode.RepeatOne,
+            _ => RepeatMode.Off,
+        };
+    }
+
+    [RelayCommand(CanExecute = nameof(HasCurrentTrack))]
     private void PlayPause()
     {
         if (IsPlaying)
@@ -72,7 +148,10 @@ public partial class PlaybackControlsViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand(CanExecute = nameof(CanGoPrevious))]
+    // Nothing to play/pause, go back to, or restart until something has actually been loaded.
+    private bool HasCurrentTrack() => _queue.CurrentIndex >= 0;
+
+    [RelayCommand(CanExecute = nameof(HasCurrentTrack))]
     private async Task PreviousTrackAsync()
     {
         if (PositionSeconds > RestartThresholdSeconds)
@@ -93,8 +172,6 @@ public partial class PlaybackControlsViewModel : ViewModelBase
         }
     }
 
-    private bool CanGoPrevious() => _queue.CurrentIndex >= 0;
-
     private void RestartCurrentTrack() => PositionSeconds = 0;
 
     [RelayCommand(CanExecute = nameof(CanGoNext))]
@@ -111,6 +188,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase
 
     private void RefreshNavigationCommands()
     {
+        PlayPauseCommand.NotifyCanExecuteChanged();
         PreviousTrackCommand.NotifyCanExecuteChanged();
         NextTrackCommand.NotifyCanExecuteChanged();
     }
@@ -124,7 +202,10 @@ public partial class PlaybackControlsViewModel : ViewModelBase
         await LoadTrackAsync(track);
     }
 
-    private async Task LoadTrackAsync(Track track)
+    // Public so anything that has already positioned the queue (Next/Previous, PlayNowAsync,
+    // or the Queue view's own jump-to-entry) can trigger the actual load+play mechanics without
+    // also mutating the queue itself.
+    public async Task LoadTrackAsync(Track track)
     {
         try
         {
@@ -132,6 +213,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase
             LoadedFileName = track.DisplayName;
             StatusMessage = null;
             IsPlaying = false;
+            _hasHandledEndOfStream = false;
             RefreshPosition();
             PlayPauseCommand.Execute(null);
         }
@@ -152,11 +234,61 @@ public partial class PlaybackControlsViewModel : ViewModelBase
 
     partial void OnVolumeChanged(double value) => _audioEngine.Volume = (float)value;
 
-    public void RefreshPosition()
+    public void RefreshPosition() => _ = RefreshPositionAsync();
+
+    // Awaitable form of RefreshPosition() so callers (tests, in particular) can deterministically
+    // wait for any end-of-stream reaction it triggers instead of racing a fire-and-forget Task.
+    public async Task RefreshPositionAsync()
     {
         _isSyncingFromEngine = true;
         PositionSeconds = _audioEngine.Position;
         DurationSeconds = _audioEngine.Duration;
         _isSyncingFromEngine = false;
+
+        // OwnAudioSharp's IsEndOfStream/StateChanged(EndOfStream) never fire on this preview
+        // build — Position just keeps climbing past Duration indefinitely instead (confirmed via
+        // a throwaway diagnostic). Position >= Duration is the only reliable "track finished"
+        // signal available, so we detect it that way instead.
+        if (DurationSeconds > 0 && PositionSeconds >= DurationSeconds && !_hasHandledEndOfStream)
+        {
+            _hasHandledEndOfStream = true;
+            await HandleTrackEndedAsync();
+        }
+    }
+
+    private async Task HandleTrackEndedAsync()
+    {
+        if (RepeatMode == RepeatMode.RepeatOne)
+        {
+            RestartCurrentTrack();
+            _audioEngine.Play();
+            IsPlaying = true;
+            // Unlike the other branches, this doesn't go through LoadTrackAsync (which is what
+            // normally resets this flag for a new track) — reset it here so looping keeps working
+            // past the first repeat instead of only firing once.
+            _hasHandledEndOfStream = false;
+            return;
+        }
+
+        if (RepeatMode == RepeatMode.RepeatAll && !_queue.CanGoNext)
+        {
+            var track = _queue.MoveToStart();
+            if (track is not null)
+            {
+                await LoadTrackAsync(track);
+            }
+
+            return;
+        }
+
+        var next = _queue.MoveNext();
+        if (next is not null)
+        {
+            await LoadTrackAsync(next);
+        }
+        else
+        {
+            IsPlaying = false;
+        }
     }
 }

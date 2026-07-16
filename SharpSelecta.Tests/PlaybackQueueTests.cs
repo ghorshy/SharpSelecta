@@ -140,4 +140,56 @@ public class PlaybackQueueTests
         await Assert.That(queue.CanGoNext).IsFalse();
         await Assert.That(queue.CanGoPrevious).IsTrue();
     }
+
+    [Test]
+    public async Task MoveToStart_WrapsBackToTheFirstEntry()
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow(TrackA);
+        queue.AddToQueue(TrackB);
+        queue.MoveNext();
+
+        var first = queue.MoveToStart();
+
+        await Assert.That(first).IsEqualTo(TrackA);
+        await Assert.That(queue.CurrentIndex).IsEqualTo(0);
+        await Assert.That(queue.Entries.Select(e => e.Track)).IsEquivalentTo([TrackA, TrackB]);
+    }
+
+    [Test]
+    public async Task MoveToStart_OnEmptyQueue_ReturnsNull()
+    {
+        var queue = new PlaybackQueue();
+
+        var first = queue.MoveToStart();
+
+        await Assert.That(first).IsNull();
+    }
+
+    [Test]
+    public async Task JumpTo_MovesDirectlyToTheGivenIndexWithoutLosingEntries()
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow(TrackA);
+        queue.AddToQueue(TrackB);
+        queue.AddToQueue(TrackC);
+
+        var jumped = queue.JumpTo(2);
+
+        await Assert.That(jumped).IsEqualTo(TrackC);
+        await Assert.That(queue.CurrentIndex).IsEqualTo(2);
+        await Assert.That(queue.Entries.Select(e => e.Track)).IsEquivalentTo([TrackA, TrackB, TrackC]);
+    }
+
+    [Test]
+    public async Task JumpTo_WithOutOfRangeIndex_ReturnsNullAndDoesNotMove()
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow(TrackA);
+
+        var jumped = queue.JumpTo(5);
+
+        await Assert.That(jumped).IsNull();
+        await Assert.That(queue.CurrentIndex).IsEqualTo(0);
+    }
 }

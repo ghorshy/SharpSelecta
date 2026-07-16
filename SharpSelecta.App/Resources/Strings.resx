@@ -82,6 +82,15 @@
   <data name="Volume" xml:space="preserve">
     <value>Volume</value>
   </data>
+  <data name="RepeatOff" xml:space="preserve">
+    <value>Repeat: Off</value>
+  </data>
+  <data name="RepeatAll" xml:space="preserve">
+    <value>Repeat: All</value>
+  </data>
+  <data name="RepeatOne" xml:space="preserve">
+    <value>Repeat: One</value>
+  </data>
   <data name="PlayNow" xml:space="preserve">
     <value>Play Now</value>
   </data>

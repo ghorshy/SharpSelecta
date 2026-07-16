@@ -63,6 +63,21 @@ public sealed class PlaybackQueue
         return Entries[CurrentIndex].Track;
     }
 
+    // Used to wrap back around for RepeatMode.RepeatAll once the end of the queue is reached.
+    public Track? MoveToStart() => JumpTo(0);
+
+    // Jumps straight to an arbitrary entry — e.g. double-clicking a row in the Queue view.
+    public Track? JumpTo(int index)
+    {
+        if (index < 0 || index >= Entries.Count)
+        {
+            return null;
+        }
+
+        SetCurrentIndex(index);
+        return Entries[index].Track;
+    }
+
     private void SetCurrentIndex(int value)
     {
         CurrentIndex = value;

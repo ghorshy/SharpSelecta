@@ -20,6 +20,9 @@ public static class Strings
     public static string PlayNext => Get(nameof(PlayNext));
     public static string AddToQueue => Get(nameof(AddToQueue));
     public static string Queue => Get(nameof(Queue));
+    public static string RepeatOff => Get(nameof(RepeatOff));
+    public static string RepeatAll => Get(nameof(RepeatAll));
+    public static string RepeatOne => Get(nameof(RepeatOne));
 
     public static string FailedToLoadFile(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToLoadFileFormat"), reason);
