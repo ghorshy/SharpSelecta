@@ -31,7 +31,9 @@ public static class MusicLibraryScanner
                 Title = atlTrack.Title,
                 Artist = atlTrack.Artist,
                 Album = atlTrack.Album,
-                Year = atlTrack.Year,
+                // ATL.NET's Year is nullable in theory but reports 0 rather than null when a file
+                // has no year tag — normalize that to null so it displays as blank, not "0".
+                Year = atlTrack.Year is > 0 ? atlTrack.Year : null,
                 Duration = TimeSpan.FromSeconds(atlTrack.Duration),
                 SampleRate = (int)atlTrack.SampleRate,
                 BitDepth = atlTrack.BitDepth,
@@ -44,6 +46,20 @@ public static class MusicLibraryScanner
             // One unreadable/corrupt file shouldn't stop the whole folder scan — fall back to a
             // filename-only entry instead.
             return new Track(path, fileName) { FileType = fileType };
+        }
+    }
+
+    // Not read during Scan — decoding embedded pictures for an entire library upfront would be
+    // wasteful. Called instead when a track is actually loaded for playback.
+    public static byte[]? LoadArtwork(string filePath)
+    {
+        try
+        {
+            return new AtlTrack(filePath).EmbeddedPictures.FirstOrDefault()?.PictureData;
+        }
+        catch (Exception)
+        {
+            return null;
         }
     }
 }

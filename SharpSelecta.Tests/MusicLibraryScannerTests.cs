@@ -93,4 +93,47 @@ public class MusicLibraryScannerTests
             root.Delete(recursive: true);
         }
     }
+
+    [Test]
+    public async Task Scan_WithNoYearTag_LeavesYearNullInsteadOfZero()
+    {
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-tests-");
+        try
+        {
+            var fixturePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track-no-year.mp3");
+            var trackPath = Path.Combine(root.FullName, "tagged-track-no-year.mp3");
+            File.Copy(fixturePath, trackPath);
+
+            var tracks = MusicLibraryScanner.Scan(root.FullName);
+
+            await Assert.That(tracks.Count).IsEqualTo(1);
+            await Assert.That(tracks[0].Title).IsEqualTo("No Year Song");
+            await Assert.That(tracks[0].Year).IsNull();
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task LoadArtwork_WhenFileHasAnEmbeddedPicture_ReturnsItsBytes()
+    {
+        var fixturePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track-with-artwork.mp3");
+
+        var artwork = MusicLibraryScanner.LoadArtwork(fixturePath);
+
+        await Assert.That(artwork).IsNotNull();
+        await Assert.That(artwork!.Length).IsGreaterThan(0);
+    }
+
+    [Test]
+    public async Task LoadArtwork_WhenFileHasNoEmbeddedPicture_ReturnsNull()
+    {
+        var fixturePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3");
+
+        var artwork = MusicLibraryScanner.LoadArtwork(fixturePath);
+
+        await Assert.That(artwork).IsNull();
+    }
 }

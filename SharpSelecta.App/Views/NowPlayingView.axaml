@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SharpSelecta.App.ViewModels"
+             xmlns:converters="using:SharpSelecta.App.Converters"
+             xmlns:conv="using:Avalonia.Data.Converters"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="220" d:DesignHeight="260"
+             x:Class="SharpSelecta.App.Views.NowPlayingView"
+             x:DataType="vm:PlaybackControlsViewModel">
+
+    <StackPanel Spacing="4" IsVisible="{Binding CurrentTrack, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+        <TextBlock Text="{Binding CurrentTrack.Title}" FontWeight="Bold" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding CurrentTrack.Artist}" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding CurrentTrack.Album}" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding CurrentTrack.Year}" />
+        <TextBlock Text="{Binding CurrentTrack.TechnicalSummary}" Opacity="0.7" FontSize="11" TextWrapping="Wrap" />
+        <Image Source="{Binding CurrentTrackArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
+               Stretch="Uniform"
+               HorizontalAlignment="Stretch"
+               Margin="0,6,0,0"
+               IsVisible="{Binding CurrentTrackArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+    </StackPanel>
+
+</UserControl>

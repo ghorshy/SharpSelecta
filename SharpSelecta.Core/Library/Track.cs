@@ -28,4 +28,6 @@ public sealed record Track(string FilePath, string DisplayName)
         : string.Empty;
 
     public string BitrateDisplay => Bitrate > 0 ? $"{Bitrate} kbps" : string.Empty;
+
+    public string TechnicalSummary => $"{FileType} {SampleRateDisplay}, {BitrateDisplay}, {LengthDisplay}";
 }

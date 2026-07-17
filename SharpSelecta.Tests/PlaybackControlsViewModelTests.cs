@@ -209,6 +209,41 @@ public class PlaybackControlsViewModelTests
     }
 
     [Test]
+    public async Task PlayNowAsync_SetsCurrentTrack()
+    {
+        var vm = CreateViewModel(out _, out _);
+        var track = new Track("/music/song.mp3", "song.mp3");
+
+        await vm.PlayNowAsync(track);
+
+        await Assert.That(vm.CurrentTrack).IsEqualTo(track);
+    }
+
+    [Test]
+    public async Task LoadTrackAsync_WithEmbeddedArtwork_SetsCurrentTrackArtwork()
+    {
+        var vm = CreateViewModel(out _, out _);
+        var fixturePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track-with-artwork.mp3");
+        var track = new Track(fixturePath, "tagged-track-with-artwork.mp3");
+
+        await vm.LoadTrackAsync(track);
+
+        await Assert.That(vm.CurrentTrackArtworkBytes).IsNotNull();
+    }
+
+    [Test]
+    public async Task LoadTrackAsync_WithNoEmbeddedArtwork_LeavesCurrentTrackArtworkNull()
+    {
+        var vm = CreateViewModel(out _, out _);
+        var fixturePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3");
+        var track = new Track(fixturePath, "tagged-track.mp3");
+
+        await vm.LoadTrackAsync(track);
+
+        await Assert.That(vm.CurrentTrackArtworkBytes).IsNull();
+    }
+
+    [Test]
     public async Task PlayNowAsync_WhenEngineThrows_SetsStatusMessageInsteadOfCrashing()
     {
         var vm = CreateViewModel(out var audioEngine, out _);

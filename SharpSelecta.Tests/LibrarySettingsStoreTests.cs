@@ -193,4 +193,64 @@ public class LibrarySettingsStoreTests
 
         await Assert.That(loaded).IsNull();
     }
+
+    [Test]
+    public async Task SaveAndLoad_RoundTripsRightColumnWidth()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveRightColumnWidth(settingsPath, 275.5);
+
+            var loaded = LibrarySettingsStore.LoadRightColumnWidth(settingsPath);
+
+            await Assert.That(loaded).IsEqualTo(275.5);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task SaveAndLoad_RoundTripsColumnWidths()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            var widths = new Dictionary<string, double> { ["Title"] = 250, ["Artist"] = 180 };
+
+            LibrarySettingsStore.SaveColumnWidths(settingsPath, widths);
+
+            var loaded = LibrarySettingsStore.LoadColumnWidths(settingsPath);
+
+            await Assert.That(loaded!["Title"]).IsEqualTo(250);
+            await Assert.That(loaded!["Artist"]).IsEqualTo(180);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task SavingRightColumnWidth_DoesNotClobberOtherSettings()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveLibraryFolderPath(settingsPath, "/music/library");
+            LibrarySettingsStore.SaveColumnOrder(settingsPath, ["Title", "Artist"]);
+
+            LibrarySettingsStore.SaveRightColumnWidth(settingsPath, 300);
+
+            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPath(settingsPath)).IsEqualTo("/music/library");
+            await Assert.That(LibrarySettingsStore.LoadColumnOrder(settingsPath)).IsEquivalentTo(["Title", "Artist"]);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
 }

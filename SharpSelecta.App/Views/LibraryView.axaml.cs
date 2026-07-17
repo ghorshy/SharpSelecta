@@ -15,6 +15,11 @@ public partial class LibraryView : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+
+        foreach (var column in TracksGrid.Columns)
+        {
+            column.PropertyChanged += OnColumnPropertyChanged;
+        }
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -23,15 +28,27 @@ public partial class LibraryView : UserControl
             return;
 
         var order = LibrarySettingsStore.LoadColumnOrder(vm.SettingsFilePath);
-        if (order is null)
-            return;
-
-        for (var i = 0; i < order.Count; i++)
+        if (order is not null)
         {
-            var column = TracksGrid.Columns.FirstOrDefault(c => c.Tag as string == order[i]);
-            if (column is not null)
+            for (var i = 0; i < order.Count; i++)
             {
-                column.DisplayIndex = i;
+                var column = TracksGrid.Columns.FirstOrDefault(c => c.Tag as string == order[i]);
+                if (column is not null)
+                {
+                    column.DisplayIndex = i;
+                }
+            }
+        }
+
+        var widths = LibrarySettingsStore.LoadColumnWidths(vm.SettingsFilePath);
+        if (widths is not null)
+        {
+            foreach (var column in TracksGrid.Columns)
+            {
+                if (column.Tag is string key && widths.TryGetValue(key, out var width))
+                {
+                    column.Width = new DataGridLength(width);
+                }
             }
         }
     }
@@ -48,6 +65,20 @@ public partial class LibraryView : UserControl
             .ToList();
 
         LibrarySettingsStore.SaveColumnOrder(vm.SettingsFilePath, orderedKeys);
+    }
+
+    private void OnColumnPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property != DataGridColumn.WidthProperty || DataContext is not LibraryViewModel vm)
+            return;
+
+        // Width.Value (set synchronously as part of the property itself) rather than ActualWidth
+        // (a layout-computed value that may not have caught up yet at the exact moment this fires).
+        var widths = TracksGrid.Columns
+            .Where(c => c.Tag is string)
+            .ToDictionary(c => (string)c.Tag!, c => c.Width.Value);
+
+        LibrarySettingsStore.SaveColumnWidths(vm.SettingsFilePath, widths);
     }
 
     private void OnTrackDoubleTapped(object? sender, TappedEventArgs e)

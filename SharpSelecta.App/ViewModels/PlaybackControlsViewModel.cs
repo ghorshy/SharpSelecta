@@ -57,6 +57,15 @@ public partial class PlaybackControlsViewModel : ViewModelBase
     private string? statusMessage;
 
     [ObservableProperty]
+    private Track? currentTrack;
+
+    // Raw bytes rather than an Avalonia Bitmap — constructing a Bitmap requires the platform's
+    // rendering backend to be initialized, which a plain unit test process doesn't have. The View
+    // converts these bytes to a Bitmap at render time instead (see ArtworkConverter).
+    [ObservableProperty]
+    private byte[]? currentTrackArtworkBytes;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(RepeatModeLabel))]
     private RepeatMode repeatMode = RepeatMode.Off;
 
@@ -268,6 +277,8 @@ public partial class PlaybackControlsViewModel : ViewModelBase
             IsPlaying = false;
             _hasHandledEndOfStream = false;
             TransportState = TransportState.Ready;
+            CurrentTrack = track;
+            CurrentTrackArtworkBytes = await Task.Run(() => MusicLibraryScanner.LoadArtwork(track.FilePath));
             RefreshPosition();
             PlayPauseCommand.Execute(null);
         }

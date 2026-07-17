@@ -15,9 +15,25 @@
     <DockPanel Margin="10" LastChildFill="True">
         <views:PlaybackControlsView DockPanel.Dock="Bottom" Margin="0,10,0,0" DataContext="{Binding PlaybackControls}" />
 
-        <Grid ColumnDefinitions="*,10,220">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="{Binding RightColumnWidth, Mode=TwoWay}" />
+            </Grid.ColumnDefinitions>
+
             <views:LibraryView Grid.Column="0" DataContext="{Binding Library}" />
-            <views:QueueView Grid.Column="2" DataContext="{Binding Queue}" />
+
+            <GridSplitter Grid.Column="1"
+                          ResizeDirection="Columns"
+                          ResizeBehavior="PreviousAndNext"
+                          Background="Transparent"
+                          HorizontalAlignment="Stretch" />
+
+            <DockPanel Grid.Column="2" LastChildFill="True">
+                <views:NowPlayingView DockPanel.Dock="Bottom" Margin="0,10,0,0" DataContext="{Binding PlaybackControls}" />
+                <views:QueueView DataContext="{Binding Queue}" />
+            </DockPanel>
         </Grid>
     </DockPanel>
 

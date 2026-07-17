@@ -57,4 +57,18 @@ public class TrackTests
 
         await Assert.That(track.LengthDisplay).IsEqualTo("1:02:05");
     }
+
+    [Test]
+    public async Task TechnicalSummary_CombinesFileTypeSampleRateBitrateAndLength()
+    {
+        var track = new Track("/music/a.mp3", "a.mp3")
+        {
+            FileType = "MP3",
+            SampleRate = 44100,
+            Bitrate = 320,
+            Duration = TimeSpan.FromSeconds(185),
+        };
+
+        await Assert.That(track.TechnicalSummary).IsEqualTo("MP3 44.1 kHz, 320 kbps, 3:05");
+    }
 }

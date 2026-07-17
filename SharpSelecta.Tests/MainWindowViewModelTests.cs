@@ -1,3 +1,4 @@
+using Avalonia.Controls;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using SharpSelecta.App.Services;
@@ -9,15 +10,17 @@ namespace SharpSelecta.Tests;
 
 public class MainWindowViewModelTests
 {
-    private static MainWindowViewModel CreateViewModel(out IAudioEngine audioEngine)
+    private static string CreateTempSettingsPath() =>
+        Path.Combine(Path.GetTempPath(), $"sharpselecta-mainwindow-vm-settings-{Guid.NewGuid():N}.json");
+
+    private static MainWindowViewModel CreateViewModel(out IAudioEngine audioEngine, string? settingsFilePath = null)
     {
         audioEngine = Substitute.For<IAudioEngine>();
         var filePickerService = Substitute.For<IFilePickerService>();
-        var settingsFilePath = Path.Combine(Path.GetTempPath(), $"sharpselecta-mainwindow-vm-settings-{Guid.NewGuid():N}.json");
         return new MainWindowViewModel(
             audioEngine,
             filePickerService,
-            settingsFilePath,
+            settingsFilePath ?? CreateTempSettingsPath(),
             NullLogger<PlaybackControlsViewModel>.Instance,
             NullLogger<LibraryViewModel>.Instance,
             NullLogger<QueueViewModel>.Instance);
@@ -50,5 +53,32 @@ public class MainWindowViewModelTests
         audioEngine.Received(1).Load("/music/song.mp3");
         await Assert.That(vm.Queue.Entries.Count).IsEqualTo(1);
         await Assert.That(vm.Queue.CurrentIndex).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task RightColumnWidth_DefaultsTo220WhenNothingIsSaved()
+    {
+        var vm = CreateViewModel(out _);
+
+        await Assert.That(vm.RightColumnWidth.Value).IsEqualTo(220);
+    }
+
+    [Test]
+    public async Task RightColumnWidth_PersistsAcrossInstancesForTheSameSettingsFile()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            var vm = CreateViewModel(out _, settingsPath);
+
+            vm.RightColumnWidth = new GridLength(300);
+
+            var restarted = CreateViewModel(out _, settingsPath);
+            await Assert.That(restarted.RightColumnWidth.Value).IsEqualTo(300);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
     }
 }

@@ -7,17 +7,30 @@ public static class LibrarySettingsStore
     public static string? LoadLibraryFolderPath(string settingsFilePath) => Load(settingsFilePath)?.LibraryFolderPath;
 
     public static void SaveLibraryFolderPath(string settingsFilePath, string folderPath) =>
-        Save(settingsFilePath, (Load(settingsFilePath) ?? new LibrarySettingsData(null, null, null)) with { LibraryFolderPath = folderPath });
+        Save(settingsFilePath, Default(settingsFilePath) with { LibraryFolderPath = folderPath });
 
     public static ColumnVisibility? LoadColumnVisibility(string settingsFilePath) => Load(settingsFilePath)?.Columns;
 
     public static void SaveColumnVisibility(string settingsFilePath, ColumnVisibility columns) =>
-        Save(settingsFilePath, (Load(settingsFilePath) ?? new LibrarySettingsData(null, null, null)) with { Columns = columns });
+        Save(settingsFilePath, Default(settingsFilePath) with { Columns = columns });
 
     public static IReadOnlyList<string>? LoadColumnOrder(string settingsFilePath) => Load(settingsFilePath)?.ColumnOrder;
 
     public static void SaveColumnOrder(string settingsFilePath, IReadOnlyList<string> columnOrder) =>
-        Save(settingsFilePath, (Load(settingsFilePath) ?? new LibrarySettingsData(null, null, null)) with { ColumnOrder = columnOrder });
+        Save(settingsFilePath, Default(settingsFilePath) with { ColumnOrder = columnOrder });
+
+    public static double? LoadRightColumnWidth(string settingsFilePath) => Load(settingsFilePath)?.RightColumnWidth;
+
+    public static void SaveRightColumnWidth(string settingsFilePath, double width) =>
+        Save(settingsFilePath, Default(settingsFilePath) with { RightColumnWidth = width });
+
+    public static IReadOnlyDictionary<string, double>? LoadColumnWidths(string settingsFilePath) => Load(settingsFilePath)?.ColumnWidths;
+
+    public static void SaveColumnWidths(string settingsFilePath, IReadOnlyDictionary<string, double> columnWidths) =>
+        Save(settingsFilePath, Default(settingsFilePath) with { ColumnWidths = columnWidths });
+
+    private static LibrarySettingsData Default(string settingsFilePath) =>
+        Load(settingsFilePath) ?? new LibrarySettingsData(null, null, null, null, null);
 
     private static LibrarySettingsData? Load(string settingsFilePath)
     {
@@ -48,5 +61,10 @@ public static class LibrarySettingsStore
         File.WriteAllText(settingsFilePath, JsonSerializer.Serialize(data));
     }
 
-    private sealed record LibrarySettingsData(string? LibraryFolderPath, ColumnVisibility? Columns, IReadOnlyList<string>? ColumnOrder);
+    private sealed record LibrarySettingsData(
+        string? LibraryFolderPath,
+        ColumnVisibility? Columns,
+        IReadOnlyList<string>? ColumnOrder,
+        double? RightColumnWidth,
+        IReadOnlyDictionary<string, double>? ColumnWidths);
 }
