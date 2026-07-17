@@ -30,6 +30,31 @@ public class MusicLibraryScannerTests
     }
 
     [Test]
+    public async Task Scan_ReturnsFilesOrderedByPathDespiteParallelReads()
+    {
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-tests-");
+        try
+        {
+            string[] names = ["charlie.mp3", "alpha.flac", "echo.wav", "bravo.m4a", "delta.mp3"];
+            foreach (var name in names)
+            {
+                File.WriteAllBytes(Path.Combine(root.FullName, name), []);
+            }
+
+            var tracks = MusicLibraryScanner.Scan(root.FullName);
+
+            var expectedOrder = names
+                .Select(name => Path.Combine(root.FullName, name))
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
+            await Assert.That(tracks.Select(t => t.FilePath)).IsEquivalentTo(expectedOrder);
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
     public async Task Scan_OnEmptyFolder_ReturnsEmptyList()
     {
         var root = Directory.CreateTempSubdirectory("sharpselecta-library-tests-");

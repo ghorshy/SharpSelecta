@@ -14,6 +14,8 @@ public static class MusicLibraryScanner
         return Directory.EnumerateFiles(folderPath, "*.*", SearchOption.AllDirectories)
             .Where(path => SupportedExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
             .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+            .AsParallel()
+            .AsOrdered()
             .Select(ReadTrack)
             .ToList();
     }
