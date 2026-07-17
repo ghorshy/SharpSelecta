@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:SharpSelecta.App.ViewModels"
         xmlns:views="using:SharpSelecta.App.Views"
+        xmlns:styles="using:SharpSelecta.App.Styles"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="720"
@@ -12,8 +13,8 @@
         Width="1280"
         Height="720">
 
-    <DockPanel Margin="{StaticResource ThicknessUniformM}" LastChildFill="True">
-        <views:PlaybackControlsView DockPanel.Dock="Bottom" Margin="{StaticResource ThicknessTopM}" DataContext="{Binding PlaybackControls}" />
+    <DockPanel Margin="{styles:Spacing Uniform=M}" LastChildFill="True">
+        <views:PlaybackControlsView DockPanel.Dock="Bottom" Margin="{styles:Spacing Top=M}" DataContext="{Binding PlaybackControls}" />
 
         <Grid>
             <Grid.ColumnDefinitions>
@@ -32,7 +33,7 @@
                           DragCompleted="OnSplitterDragCompleted" />
 
             <DockPanel Grid.Column="2" LastChildFill="True">
-                <views:NowPlayingView DockPanel.Dock="Bottom" Margin="{StaticResource ThicknessTopM}" DataContext="{Binding PlaybackControls}" />
+                <views:NowPlayingView DockPanel.Dock="Bottom" Margin="{styles:Spacing Top=M}" DataContext="{Binding PlaybackControls}" />
                 <views:QueueView DataContext="{Binding Queue}" />
             </DockPanel>
         </Grid>

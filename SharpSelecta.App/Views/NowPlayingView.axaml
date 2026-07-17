@@ -3,13 +3,14 @@
              xmlns:vm="using:SharpSelecta.App.ViewModels"
              xmlns:converters="using:SharpSelecta.App.Converters"
              xmlns:conv="using:Avalonia.Data.Converters"
+             xmlns:styles="using:SharpSelecta.App.Styles"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="220" d:DesignHeight="260"
              x:Class="SharpSelecta.App.Views.NowPlayingView"
              x:DataType="vm:PlaybackControlsViewModel">
 
-    <StackPanel Spacing="{StaticResource SpacingXS}" IsVisible="{Binding CurrentTrack, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+    <StackPanel Spacing="{styles:SpacingValue XS}" IsVisible="{Binding CurrentTrack, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
         <TextBlock Text="{Binding CurrentTrack.Title}" FontWeight="Bold" TextWrapping="Wrap" />
         <TextBlock Text="{Binding CurrentTrack.Artist}" TextWrapping="Wrap" />
         <TextBlock Text="{Binding CurrentTrack.Album}" TextWrapping="Wrap" />
@@ -18,7 +19,7 @@
         <Image Source="{Binding CurrentTrackArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
                Stretch="Uniform"
                HorizontalAlignment="Stretch"
-               Margin="{StaticResource ThicknessTopS}"
+               Margin="{styles:Spacing Top=S}"
                IsVisible="{Binding CurrentTrackArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
     </StackPanel>
 

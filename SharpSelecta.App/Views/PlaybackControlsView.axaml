@@ -3,17 +3,18 @@
              xmlns:vm="using:SharpSelecta.App.ViewModels"
              xmlns:res="using:SharpSelecta.App.Resources"
              xmlns:conv="using:Avalonia.Data.Converters"
+             xmlns:styles="using:SharpSelecta.App.Styles"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="70"
              x:Class="SharpSelecta.App.Views.PlaybackControlsView"
              x:DataType="vm:PlaybackControlsViewModel">
 
-    <StackPanel Spacing="{StaticResource SpacingM}">
+    <StackPanel Spacing="{styles:SpacingValue M}">
         <TextBlock Text="{Binding DisplayFileName}" />
         <TextBlock Text="{Binding StatusMessage}" Foreground="OrangeRed" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
 
-        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,80,Auto" ColumnSpacing="{StaticResource SpacingM}">
+        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,80,Auto" ColumnSpacing="{styles:SpacingValue M}">
             <Button Grid.Column="0" Content="{x:Static res:Strings.Previous}" Command="{Binding PreviousTrackCommand}" />
             <Button Grid.Column="1" Content="{Binding PlayPauseLabel}" Command="{Binding PlayPauseCommand}" />
             <Button Grid.Column="2" Content="{x:Static res:Strings.Next}" Command="{Binding NextTrackCommand}" />

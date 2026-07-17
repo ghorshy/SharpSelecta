@@ -3,6 +3,7 @@
              xmlns:vm="using:SharpSelecta.App.ViewModels"
              xmlns:res="using:SharpSelecta.App.Resources"
              xmlns:converters="using:SharpSelecta.App.Converters"
+             xmlns:styles="using:SharpSelecta.App.Styles"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="200" d:DesignHeight="400"
@@ -10,7 +11,7 @@
              x:DataType="vm:QueueViewModel">
 
     <DockPanel LastChildFill="True">
-        <TextBlock DockPanel.Dock="Top" Text="{x:Static res:Strings.Queue}" FontWeight="Bold" Margin="{StaticResource ThicknessBottomM}" />
+        <TextBlock DockPanel.Dock="Top" Text="{x:Static res:Strings.Queue}" FontWeight="Bold" Margin="{styles:Spacing Bottom=M}" />
 
         <!-- Drag-and-drop reordering: a press only turns into a drag once the pointer actually
              moves past a small threshold (see code-behind) — DragDrop.AllowDrop here is what lets
@@ -57,17 +58,17 @@
             </ListBox.Styles>
             <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:QueueEntryViewModel">
-                    <Grid ColumnDefinitions="36,*,Auto" Margin="{StaticResource ThicknessVerticalXXS}">
+                    <Grid ColumnDefinitions="36,*,Auto" Margin="{styles:Spacing Vertical=XXS}">
                         <Border Grid.Column="0" Width="36" Height="36" Background="{DynamicResource SystemBaseLowColor}">
                             <Image Source="{Binding ArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
                                    Stretch="UniformToFill" />
                         </Border>
-                        <StackPanel Grid.Column="1" Margin="{StaticResource ThicknessHorizontalXS}" VerticalAlignment="Center">
+                        <StackPanel Grid.Column="1" Margin="{styles:Spacing Horizontal=XS}" VerticalAlignment="Center">
                             <TextBlock Text="{Binding Title}" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
                             <TextBlock Text="{Binding Artist}" Opacity="0.7" FontSize="11" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                         <TextBlock Grid.Column="2" Text="{x:Static res:Strings.Playing}"
-                                   VerticalAlignment="Center" Margin="{StaticResource ThicknessLeftXS}"
+                                   VerticalAlignment="Center" Margin="{styles:Spacing Left=XS}"
                                    IsVisible="{Binding IsCurrent}" />
                     </Grid>
                 </DataTemplate>
