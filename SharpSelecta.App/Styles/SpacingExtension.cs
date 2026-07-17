@@ -1,8 +1,5 @@
 using System;
-using System.Linq;
 using Avalonia;
-using Avalonia.Data;
-using Avalonia.Data.Converters;
 using Avalonia.Markup.Xaml;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 
@@ -18,25 +15,15 @@ public sealed class SpacingExtension : MarkupExtension
     public Spacing Right { get; set; }
     public Spacing Bottom { get; set; }
 
-    public override object ProvideValue(IServiceProvider serviceProvider) => new MultiBinding
+    public override object ProvideValue(IServiceProvider serviceProvider) => new Thickness(
+        Resolve(Left, Horizontal, serviceProvider),
+        Resolve(Top, Vertical, serviceProvider),
+        Resolve(Right, Horizontal, serviceProvider),
+        Resolve(Bottom, Vertical, serviceProvider));
+
+    private double Resolve(Spacing side, Spacing axis, IServiceProvider serviceProvider)
     {
-        Converter = new FuncMultiValueConverter<double, Thickness>(values =>
-        {
-            var v = values.ToArray();
-            return new Thickness(v[0], v[1], v[2], v[3]);
-        }),
-        Bindings =
-        {
-            ResourceBinding(Resolve(Left, Horizontal), serviceProvider),
-            ResourceBinding(Resolve(Top, Vertical), serviceProvider),
-            ResourceBinding(Resolve(Right, Horizontal), serviceProvider),
-            ResourceBinding(Resolve(Bottom, Vertical), serviceProvider),
-        },
-    };
-
-    private Spacing Resolve(Spacing side, Spacing axis) =>
-        side != Spacing.None ? side : axis != Spacing.None ? axis : Uniform;
-
-    private static BindingBase ResourceBinding(Spacing step, IServiceProvider serviceProvider) =>
-        new DynamicResourceExtension(SpacingScale.KeyFor(step)).ProvideValue(serviceProvider);
+        var step = side != Spacing.None ? side : axis != Spacing.None ? axis : Uniform;
+        return (double)new StaticResourceExtension(SpacingScale.KeyFor(step)).ProvideValue(serviceProvider)!;
+    }
 }
