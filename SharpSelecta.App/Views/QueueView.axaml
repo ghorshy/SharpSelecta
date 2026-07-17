@@ -24,6 +24,7 @@
             <ListBox.Styles>
                 <!-- Right-click on an entry: Play Now / Remove from Queue. -->
                 <Style Selector="ListBoxItem">
+                    <Setter Property="Padding" Value="0" />
                     <Setter Property="ContextMenu">
                         <Setter.Value>
                             <ContextMenu x:DataType="vm:QueueEntryViewModel">
@@ -58,17 +59,17 @@
             </ListBox.Styles>
             <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:QueueEntryViewModel">
-                    <Grid ColumnDefinitions="36,*,Auto" Margin="{styles:Spacing Vertical=XXS}">
-                        <Border Grid.Column="0" Width="36" Height="36" Background="{DynamicResource SystemBaseLowColor}">
+                    <Grid ColumnDefinitions="36,*,Auto" Margin="{styles:Spacing Uniform=S}">
+                        <Border Grid.Column="0" Width="36" Height="36" VerticalAlignment="Center" Background="{DynamicResource SystemBaseLowColor}">
                             <Image Source="{Binding ArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
                                    Stretch="UniformToFill" />
                         </Border>
-                        <StackPanel Grid.Column="1" Margin="{styles:Spacing Horizontal=XS}" VerticalAlignment="Center">
+                        <StackPanel Grid.Column="1" Margin="{styles:Spacing Left=S, Right=XXS}" VerticalAlignment="Center">
                             <TextBlock Text="{Binding Title}" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
                             <TextBlock Text="{Binding Artist}" Opacity="0.7" FontSize="11" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                         <TextBlock Grid.Column="2" Text="{x:Static res:Strings.Playing}"
-                                   VerticalAlignment="Center" Margin="{styles:Spacing Left=XS}"
+                                   VerticalAlignment="Center" Margin="{styles:Spacing Left=XXS}"
                                    IsVisible="{Binding IsCurrent}" />
                     </Grid>
                 </DataTemplate>
