@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using AtlTrack = ATL.Track;
 
 namespace SharpSelecta.Core.Library;
@@ -5,6 +6,8 @@ namespace SharpSelecta.Core.Library;
 public static class MusicLibraryScanner
 {
     private static readonly string[] SupportedExtensions = [".mp3", ".flac", ".wav", ".m4a"];
+
+    private static readonly ConcurrentDictionary<string, byte[]?> ArtworkCache = new();
 
     public static IReadOnlyList<Track> Scan(string folderPath)
     {
@@ -51,15 +54,16 @@ public static class MusicLibraryScanner
 
     // Not read during Scan — decoding embedded pictures for an entire library upfront would be
     // wasteful. Called instead when a track is actually loaded for playback.
-    public static byte[]? LoadArtwork(string filePath)
-    {
-        try
+    public static byte[]? LoadArtwork(string filePath) =>
+        ArtworkCache.GetOrAdd(filePath, static path =>
         {
-            return new AtlTrack(filePath).EmbeddedPictures.FirstOrDefault()?.PictureData;
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
+            try
+            {
+                return new AtlTrack(path).EmbeddedPictures.FirstOrDefault()?.PictureData;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        });
 }

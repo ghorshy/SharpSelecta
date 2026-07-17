@@ -41,6 +41,7 @@ dotnet test
 - Auto-DJ / crossfade
 - Equalizer
 - Discord Rich Presence
+- Grid/tile Library view with cover art
 
 ## License
 
