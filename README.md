@@ -4,7 +4,7 @@ Cross-platform, open-source music player built on .NET 10 + Avalonia.
 
 ## Status
 
-Early stage — currently a single-track player (pick a file, play/pause). Playlists, a track library, tag editing, auto-DJ/crossfade, and an equalizer are planned next.
+Early stage. You can point it at a folder, browse your library in a sortable table, queue up tracks and reorder them, and see what's playing with its artwork.
 
 ## Requirements
 
@@ -33,6 +33,14 @@ dotnet test
 - [ATL.NET](https://github.com/Zeugma440/atldotnet) — reading audio tags and properties
 - [Serilog](https://github.com/serilog/serilog) — logging
 - [TUnit](https://github.com/thomhurst/TUnit) + [NSubstitute](https://github.com/nsubstitute/NSubstitute) — testing
+
+## TODO
+
+- Playlists
+- Tag editing
+- Auto-DJ / crossfade
+- Equalizer
+- Discord Rich Presence
 
 ## License
 
