@@ -195,6 +195,65 @@ public class PlaybackControlsViewModelTests
     }
 
     [Test]
+    public async Task PlayNext_AfterQueueFinished_StartsPlayingTheQueuedTrack()
+    {
+        var vm = CreateViewModel(out var audioEngine, out var queue);
+        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
+        audioEngine.Duration.Returns(180.0);
+        audioEngine.Position.Returns(200.0); // triggers natural end-of-queue -> TransportState.Finished
+        await vm.RefreshPositionAsync();
+        audioEngine.ClearReceivedCalls();
+        // Reset the stale "finished" position/duration — otherwise LoadTrackAsync's own internal
+        // RefreshPosition() call (for the newly loaded track) would immediately see the same
+        // Position >= Duration reading and re-trigger end-of-stream before this method returns.
+        audioEngine.Position.Returns(0.0);
+        audioEngine.Duration.Returns(0.0);
+        var next = new Track("/music/b.mp3", "b.mp3");
+
+        await vm.PlayNext(next);
+
+        audioEngine.Received(1).Load("/music/b.mp3");
+        await Assert.That(vm.IsPlaying).IsTrue();
+        await Assert.That(vm.PlayPauseCommand.CanExecute(null)).IsTrue();
+    }
+
+    [Test]
+    public async Task AddToQueue_AfterQueueFinished_StartsPlayingTheQueuedTrack()
+    {
+        var vm = CreateViewModel(out var audioEngine, out var queue);
+        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
+        audioEngine.Duration.Returns(180.0);
+        audioEngine.Position.Returns(200.0); // triggers natural end-of-queue -> TransportState.Finished
+        await vm.RefreshPositionAsync();
+        audioEngine.ClearReceivedCalls();
+        // Reset the stale "finished" position/duration — see the equivalent comment in
+        // PlayNext_AfterQueueFinished_StartsPlayingTheQueuedTrack above.
+        audioEngine.Position.Returns(0.0);
+        audioEngine.Duration.Returns(0.0);
+        var next = new Track("/music/b.mp3", "b.mp3");
+
+        await vm.AddToQueue(next);
+
+        audioEngine.Received(1).Load("/music/b.mp3");
+        await Assert.That(vm.IsPlaying).IsTrue();
+        await Assert.That(vm.PlayPauseCommand.CanExecute(null)).IsTrue();
+    }
+
+    [Test]
+    public async Task PlayNext_WhileAlreadyPlaying_JustQueuesWithoutInterruptingPlayback()
+    {
+        var vm = CreateViewModel(out var audioEngine, out var queue);
+        await vm.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
+        audioEngine.ClearReceivedCalls();
+        var next = new Track("/music/b.mp3", "b.mp3");
+
+        await vm.PlayNext(next);
+
+        audioEngine.DidNotReceive().Load(Arg.Any<string>());
+        await Assert.That(vm.LoadedFileName).IsEqualTo("a.mp3");
+    }
+
+    [Test]
     public async Task PlayNowAsync_JoinsQueueAndLoadsIntoEngine()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);

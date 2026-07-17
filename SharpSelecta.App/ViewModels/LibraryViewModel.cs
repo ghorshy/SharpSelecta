@@ -217,8 +217,8 @@ public partial class LibraryViewModel : ViewModelBase
     private Task PlayNowAsync(Track track) => _playbackControls.PlayNowAsync(track);
 
     [RelayCommand]
-    private void PlayNext(Track track) => _playbackControls.PlayNext(track);
+    private Task PlayNext(Track track) => _playbackControls.PlayNext(track);
 
     [RelayCommand]
-    private void AddToQueue(Track track) => _playbackControls.AddToQueue(track);
+    private Task AddToQueue(Track track) => _playbackControls.AddToQueue(track);
 }

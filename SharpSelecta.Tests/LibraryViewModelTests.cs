@@ -174,7 +174,7 @@ public class LibraryViewModelTests
     public async Task PlayNextCommand_InsertsTrackAtFrontOfQueue()
     {
         var vm = CreateViewModel(out _, out _, out var playbackControls);
-        playbackControls.AddToQueue(new Track("/music/existing.mp3", "existing.mp3"));
+        await playbackControls.AddToQueue(new Track("/music/existing.mp3", "existing.mp3"));
         var track = new Track("/music/song.mp3", "song.mp3");
 
         vm.PlayNextCommand.Execute(track);

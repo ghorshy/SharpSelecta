@@ -92,9 +92,29 @@ public partial class PlaybackControlsViewModel : ViewModelBase
 
     public int QueueCurrentIndex => _queue.CurrentIndex;
 
-    public void PlayNext(Track track) => _queue.PlayNext(track);
+    public async Task PlayNext(Track track)
+    {
+        _queue.PlayNext(track);
+        await ResumeIfQueueWasFinishedAsync();
+    }
 
-    public void AddToQueue(Track track) => _queue.AddToQueue(track);
+    public async Task AddToQueue(Track track)
+    {
+        _queue.AddToQueue(track);
+        await ResumeIfQueueWasFinishedAsync();
+    }
+
+    private async Task ResumeIfQueueWasFinishedAsync()
+    {
+        if (TransportState != TransportState.Finished)
+            return;
+
+        var next = _queue.MoveNext();
+        if (next is not null)
+        {
+            await LoadTrackAsync(next);
+        }
+    }
 
     // Dropping onto another entry lands the dragged entry immediately above it; dropping with no
     // target (targetEntry is null, e.g. past the last row) moves it to the end of the queue instead.
