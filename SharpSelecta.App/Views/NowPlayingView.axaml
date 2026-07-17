@@ -9,7 +9,7 @@
              x:Class="SharpSelecta.App.Views.NowPlayingView"
              x:DataType="vm:PlaybackControlsViewModel">
 
-    <StackPanel Spacing="4" IsVisible="{Binding CurrentTrack, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+    <StackPanel Spacing="{StaticResource SpacingXS}" IsVisible="{Binding CurrentTrack, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
         <TextBlock Text="{Binding CurrentTrack.Title}" FontWeight="Bold" TextWrapping="Wrap" />
         <TextBlock Text="{Binding CurrentTrack.Artist}" TextWrapping="Wrap" />
         <TextBlock Text="{Binding CurrentTrack.Album}" TextWrapping="Wrap" />
@@ -18,7 +18,7 @@
         <Image Source="{Binding CurrentTrackArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
                Stretch="Uniform"
                HorizontalAlignment="Stretch"
-               Margin="0,6,0,0"
+               Margin="{StaticResource ThicknessTopS}"
                IsVisible="{Binding CurrentTrackArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
     </StackPanel>
 

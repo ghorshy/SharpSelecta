@@ -12,8 +12,8 @@
         Width="1280"
         Height="720">
 
-    <DockPanel Margin="10" LastChildFill="True">
-        <views:PlaybackControlsView DockPanel.Dock="Bottom" Margin="0,10,0,0" DataContext="{Binding PlaybackControls}" />
+    <DockPanel Margin="{StaticResource ThicknessUniformM}" LastChildFill="True">
+        <views:PlaybackControlsView DockPanel.Dock="Bottom" Margin="{StaticResource ThicknessTopM}" DataContext="{Binding PlaybackControls}" />
 
         <Grid>
             <Grid.ColumnDefinitions>
@@ -31,7 +31,7 @@
                           HorizontalAlignment="Stretch" />
 
             <DockPanel Grid.Column="2" LastChildFill="True">
-                <views:NowPlayingView DockPanel.Dock="Bottom" Margin="0,10,0,0" DataContext="{Binding PlaybackControls}" />
+                <views:NowPlayingView DockPanel.Dock="Bottom" Margin="{StaticResource ThicknessTopM}" DataContext="{Binding PlaybackControls}" />
                 <views:QueueView DataContext="{Binding Queue}" />
             </DockPanel>
         </Grid>

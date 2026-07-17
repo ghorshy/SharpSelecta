@@ -36,6 +36,7 @@ public partial class QueueViewModel : ViewModelBase
             {
                 OnPropertyChanged(nameof(CurrentIndex));
                 RemoveFromQueueCommand.NotifyCanExecuteChanged();
+                RefreshIsCurrent();
             }
         };
     }
@@ -83,6 +84,17 @@ public partial class QueueViewModel : ViewModelBase
         }
 
         RemoveFromQueueCommand.NotifyCanExecuteChanged();
+        RefreshIsCurrent();
+    }
+
+    // Every entry's index can shift on any add/remove/move, so all of them are re-checked rather
+    // than trying to track which ones actually moved.
+    private void RefreshIsCurrent()
+    {
+        foreach (var entry in Entries)
+        {
+            entry.NotifyIsCurrentChanged();
+        }
     }
 
     public int CurrentIndex => _playbackControls.QueueCurrentIndex;
