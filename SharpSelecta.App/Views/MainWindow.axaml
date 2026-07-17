@@ -28,7 +28,8 @@
                           ResizeDirection="Columns"
                           ResizeBehavior="PreviousAndNext"
                           Background="Transparent"
-                          HorizontalAlignment="Stretch" />
+                          HorizontalAlignment="Stretch"
+                          DragCompleted="OnSplitterDragCompleted" />
 
             <DockPanel Grid.Column="2" LastChildFill="True">
                 <views:NowPlayingView DockPanel.Dock="Bottom" Margin="{StaticResource ThicknessTopM}" DataContext="{Binding PlaybackControls}" />

@@ -11,6 +11,8 @@ namespace SharpSelecta.App.Views;
 
 public partial class LibraryView : UserControl
 {
+    private bool _columnWidthsDirty;
+
     public LibraryView()
     {
         InitializeComponent();
@@ -20,6 +22,8 @@ public partial class LibraryView : UserControl
         {
             column.PropertyChanged += OnColumnPropertyChanged;
         }
+
+        TracksGrid.AddHandler(InputElement.PointerReleasedEvent, OnPointerReleased, handledEventsToo: true);
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -69,8 +73,18 @@ public partial class LibraryView : UserControl
 
     private void OnColumnPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
-        if (e.Property != DataGridColumn.WidthProperty || DataContext is not LibraryViewModel vm)
+        if (e.Property != DataGridColumn.WidthProperty)
             return;
+
+        _columnWidthsDirty = true;
+    }
+
+    private void OnPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (!_columnWidthsDirty || DataContext is not LibraryViewModel vm)
+            return;
+
+        _columnWidthsDirty = false;
 
         // Width.Value (set synchronously as part of the property itself) rather than ActualWidth
         // (a layout-computed value that may not have caught up yet at the exact moment this fires).

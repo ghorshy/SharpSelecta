@@ -43,6 +43,6 @@ public partial class MainWindowViewModel : ViewModelBase
         rightColumnWidth = new GridLength(LibrarySettingsStore.LoadRightColumnWidth(_settingsFilePath) ?? DefaultRightColumnWidth);
     }
 
-    partial void OnRightColumnWidthChanged(GridLength value) =>
-        LibrarySettingsStore.SaveRightColumnWidth(_settingsFilePath, value.Value);
+    public void PersistRightColumnWidth() =>
+        LibrarySettingsStore.SaveRightColumnWidth(_settingsFilePath, RightColumnWidth.Value);
 }

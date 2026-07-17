@@ -72,6 +72,7 @@ public class MainWindowViewModelTests
             var vm = CreateViewModel(out _, settingsPath);
 
             vm.RightColumnWidth = new GridLength(300);
+            vm.PersistRightColumnWidth();
 
             var restarted = CreateViewModel(out _, settingsPath);
             await Assert.That(restarted.RightColumnWidth.Value).IsEqualTo(300);
