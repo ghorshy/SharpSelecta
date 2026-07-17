@@ -1,9 +1,10 @@
 using System;
-using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using SharpSelecta.App.Collections;
 using SharpSelecta.App.Resources;
 using SharpSelecta.App.Services;
 using SharpSelecta.Core.Library;
@@ -141,7 +142,7 @@ public partial class LibraryViewModel : ViewModelBase
         IsYearColumnVisible = columns.Year;
     }
 
-    public ObservableCollection<LibraryTrackViewModel> Tracks { get; } = [];
+    public BulkObservableCollection<LibraryTrackViewModel> Tracks { get; } = [];
 
     public bool HasTracks => Tracks.Count > 0;
 
@@ -198,11 +199,7 @@ public partial class LibraryViewModel : ViewModelBase
         try
         {
             var tracks = await Task.Run(() => MusicLibraryScanner.Scan(folderPath));
-            Tracks.Clear();
-            foreach (var track in tracks)
-            {
-                Tracks.Add(new LibraryTrackViewModel(track, this));
-            }
+            Tracks.ReplaceAll(tracks.Select(track => new LibraryTrackViewModel(track, this)));
 
             StatusMessage = null;
         }
