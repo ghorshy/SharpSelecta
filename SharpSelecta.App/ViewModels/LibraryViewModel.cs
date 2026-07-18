@@ -21,6 +21,12 @@ public partial class LibraryViewModel : ViewModelBase
     [ObservableProperty]
     private string? statusMessage;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayLibraryFolderPath))]
+    private string? libraryFolderPath;
+
+    public string DisplayLibraryFolderPath => LibraryFolderPath ?? Strings.NoLibraryFolderChosen;
+
     // Toggled from the column header's right-click menu; all visible by default.
     [ObservableProperty]
     private bool isTrackNumberColumnVisible = true;
@@ -196,6 +202,8 @@ public partial class LibraryViewModel : ViewModelBase
 
     private async Task LoadFolderAsync(string folderPath)
     {
+        LibraryFolderPath = folderPath;
+
         try
         {
             var tracks = await Task.Run(() => MusicLibraryScanner.Scan(folderPath));

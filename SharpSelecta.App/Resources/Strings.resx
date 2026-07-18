@@ -109,6 +109,15 @@
   <data name="Playing" xml:space="preserve">
     <value>Playing</value>
   </data>
+  <data name="Options" xml:space="preserve">
+    <value>Options</value>
+  </data>
+  <data name="SettingsCategoryLibrary" xml:space="preserve">
+    <value>Library</value>
+  </data>
+  <data name="NoLibraryFolderChosen" xml:space="preserve">
+    <value>No folder chosen</value>
+  </data>
   <data name="LibraryFolderPickerTitle" xml:space="preserve">
     <value>Choose a library folder</value>
   </data>

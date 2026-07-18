@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using SharpSelecta.App.Resources;
 using SharpSelecta.App.Services;
 using SharpSelecta.App.ViewModels;
 using SharpSelecta.Core.Audio;
@@ -44,6 +45,35 @@ public class LibraryViewModelTests
 
             await Assert.That(vm.Tracks.Count).IsEqualTo(1);
             await Assert.That(vm.Tracks[0].Track.FilePath).IsEqualTo(Path.Combine(root.FullName, "song.mp3"));
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task DisplayLibraryFolderPath_WhenNothingChosen_ShowsPlaceholder()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+
+        await Assert.That(vm.LibraryFolderPath).IsNull();
+        await Assert.That(vm.DisplayLibraryFolderPath).IsEqualTo(Strings.NoLibraryFolderChosen);
+    }
+
+    [Test]
+    public async Task ChooseFolderCommand_WhenFolderSelected_UpdatesLibraryFolderPath()
+    {
+        var vm = CreateViewModel(out _, out var filePickerService, out _);
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+        try
+        {
+            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+
+            await vm.ChooseFolderCommand.ExecuteAsync(null);
+
+            await Assert.That(vm.LibraryFolderPath).IsEqualTo(root.FullName);
+            await Assert.That(vm.DisplayLibraryFolderPath).IsEqualTo(root.FullName);
         }
         finally
         {

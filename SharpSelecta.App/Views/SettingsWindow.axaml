@@ -1,0 +1,26 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SharpSelecta.App.ViewModels"
+        xmlns:views="using:SharpSelecta.App.Views"
+        xmlns:res="using:SharpSelecta.App.Resources"
+        xmlns:styles="using:SharpSelecta.App.Styles"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="400"
+        x:Class="SharpSelecta.App.Views.SettingsWindow"
+        x:DataType="vm:SettingsWindowViewModel"
+        Title="{x:Static res:Strings.Options}"
+        Width="600"
+        Height="400">
+
+    <Grid ColumnDefinitions="160,*">
+        <ListBox Grid.Column="0"
+                 ItemsSource="{Binding Categories}"
+                 SelectedItem="{Binding SelectedCategory}" />
+
+        <Border Grid.Column="1" Padding="{styles:Spacing Uniform=M}">
+            <views:LibrarySettingsView DataContext="{Binding Library}" />
+        </Border>
+    </Grid>
+
+</Window>

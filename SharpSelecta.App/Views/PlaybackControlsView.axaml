@@ -14,7 +14,7 @@
         <TextBlock Text="{Binding DisplayFileName}" />
         <TextBlock Text="{Binding StatusMessage}" Foreground="OrangeRed" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
 
-        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,80,Auto" ColumnSpacing="{styles:SpacingValue M}">
+        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,80,Auto,Auto" ColumnSpacing="{styles:SpacingValue M}">
             <Button Grid.Column="0" Content="{x:Static res:Strings.Previous}" Command="{Binding PreviousTrackCommand}" />
             <Button Grid.Column="1" Content="{Binding PlayPauseLabel}" Command="{Binding PlayPauseCommand}" />
             <Button Grid.Column="2" Content="{x:Static res:Strings.Next}" Command="{Binding NextTrackCommand}" />
@@ -26,6 +26,7 @@
             <TextBlock Grid.Column="6" Text="{x:Static res:Strings.Volume}" VerticalAlignment="Center" />
             <Slider Grid.Column="7" VerticalAlignment="Center" Minimum="0" Maximum="1" Value="{Binding Volume}" />
             <Button Grid.Column="8" Content="{Binding RepeatModeLabel}" Command="{Binding ToggleRepeatModeCommand}" />
+            <Button Grid.Column="9" Content="{x:Static res:Strings.Options}" Click="OnOptionsClick" />
         </Grid>
     </StackPanel>
 

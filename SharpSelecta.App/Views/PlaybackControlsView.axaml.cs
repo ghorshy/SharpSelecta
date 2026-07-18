@@ -1,6 +1,8 @@
 using System;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using SharpSelecta.App.ViewModels;
 
 namespace SharpSelecta.App.Views;
@@ -22,4 +24,12 @@ public partial class PlaybackControlsView : UserControl
 
     private void OnPositionTimerTick(object? sender, EventArgs e) =>
         (DataContext as PlaybackControlsViewModel)?.RefreshPosition();
+
+    private void OnOptionsClick(object? sender, RoutedEventArgs e)
+    {
+        if (this.FindAncestorOfType<Window>() is not { DataContext: MainWindowViewModel mainWindowViewModel } window)
+            return;
+
+        new SettingsWindow { DataContext = new SettingsWindowViewModel(mainWindowViewModel.Library) }.ShowDialog(window);
+    }
 }
