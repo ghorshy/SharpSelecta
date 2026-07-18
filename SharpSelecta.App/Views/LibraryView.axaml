@@ -112,10 +112,10 @@
                     <DataGridTextColumn Tag="Title" Header="{x:Static res:Strings.ColumnTitle}" Binding="{Binding Track.Title}" IsVisible="{Binding IsTitleColumnVisible}" Width="200" />
                     <DataGridTextColumn Tag="Artist" Header="{x:Static res:Strings.ColumnArtist}" Binding="{Binding Track.Artist}" IsVisible="{Binding IsArtistColumnVisible}" Width="150" />
                     <DataGridTextColumn Tag="Album" Header="{x:Static res:Strings.ColumnAlbum}" Binding="{Binding Track.Album}" IsVisible="{Binding IsAlbumColumnVisible}" Width="150" />
-                    <DataGridTextColumn Tag="Length" Header="{x:Static res:Strings.ColumnLength}" Binding="{Binding Track.LengthDisplay}" IsVisible="{Binding IsLengthColumnVisible}" Width="80" />
-                    <DataGridTextColumn Tag="SampleRate" Header="{x:Static res:Strings.ColumnSampleRate}" Binding="{Binding Track.SampleRateDisplay}" IsVisible="{Binding IsSampleRateColumnVisible}" Width="100" />
-                    <DataGridTextColumn Tag="BitDepth" Header="{x:Static res:Strings.ColumnBitDepth}" Binding="{Binding Track.BitDepthDisplay}" IsVisible="{Binding IsBitDepthColumnVisible}" Width="80" />
-                    <DataGridTextColumn Tag="Bitrate" Header="{x:Static res:Strings.ColumnBitrate}" Binding="{Binding Track.BitrateDisplay}" IsVisible="{Binding IsBitrateColumnVisible}" Width="90" />
+                    <DataGridTextColumn Tag="Length" Header="{x:Static res:Strings.ColumnLength}" Binding="{Binding Track.LengthDisplay}" SortMemberPath="Track.Duration" IsVisible="{Binding IsLengthColumnVisible}" Width="80" />
+                    <DataGridTextColumn Tag="SampleRate" Header="{x:Static res:Strings.ColumnSampleRate}" Binding="{Binding Track.SampleRateDisplay}" SortMemberPath="Track.SampleRate" IsVisible="{Binding IsSampleRateColumnVisible}" Width="100" />
+                    <DataGridTextColumn Tag="BitDepth" Header="{x:Static res:Strings.ColumnBitDepth}" Binding="{Binding Track.BitDepthDisplay}" SortMemberPath="Track.BitDepth" IsVisible="{Binding IsBitDepthColumnVisible}" Width="80" />
+                    <DataGridTextColumn Tag="Bitrate" Header="{x:Static res:Strings.ColumnBitrate}" Binding="{Binding Track.BitrateDisplay}" SortMemberPath="Track.Bitrate" IsVisible="{Binding IsBitrateColumnVisible}" Width="90" />
                     <DataGridTextColumn Tag="FileType" Header="{x:Static res:Strings.ColumnFileType}" Binding="{Binding Track.FileType}" IsVisible="{Binding IsFileTypeColumnVisible}" Width="80" />
                     <DataGridTextColumn Tag="Year" Header="{x:Static res:Strings.ColumnYear}" Binding="{Binding Track.Year}" IsVisible="{Binding IsYearColumnVisible}" Width="60" />
                 </DataGrid.Columns>
