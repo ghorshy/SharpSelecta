@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -21,11 +23,9 @@ public partial class LibraryViewModel : ViewModelBase
     [ObservableProperty]
     private string? statusMessage;
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(DisplayLibraryFolderPath))]
-    private string? libraryFolderPath;
+    public ObservableCollection<string> LibraryFolderPaths { get; } = [];
 
-    public string DisplayLibraryFolderPath => LibraryFolderPath ?? Strings.NoLibraryFolderChosen;
+    public bool HasLibraryFolders => LibraryFolderPaths.Count > 0;
 
     // Toggled from the column header's right-click menu; all visible by default.
     [ObservableProperty]
@@ -175,47 +175,80 @@ public partial class LibraryViewModel : ViewModelBase
             OnPropertyChanged(nameof(HasTracks));
             OnPropertyChanged(nameof(NoTracks));
         };
+
+        LibraryFolderPaths.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasLibraryFolders));
     }
 
-    // Re-scans whatever library folder was remembered from a previous session, if any.
+    // Re-scans whatever library folders were remembered from a previous session, if any.
     public async Task InitializeAsync()
     {
         ApplySavedColumnVisibility();
 
-        var folderPath = LibrarySettingsStore.LoadLibraryFolderPath(_settingsFilePath);
-        if (folderPath is not null)
+        var folderPaths = LibrarySettingsStore.LoadLibraryFolderPaths(_settingsFilePath);
+        if (folderPaths is not null)
         {
-            await LoadFolderAsync(folderPath);
+            foreach (var folderPath in folderPaths)
+            {
+                LibraryFolderPaths.Add(folderPath);
+            }
+
+            await LoadFoldersAsync();
         }
     }
 
     [RelayCommand]
-    private async Task ChooseFolderAsync()
+    private async Task AddFolderAsync()
     {
         var folderPath = await _filePickerService.PickLibraryFolderAsync();
-        if (folderPath is null)
+        if (folderPath is null || LibraryFolderPaths.Contains(folderPath))
             return;
 
-        LibrarySettingsStore.SaveLibraryFolderPath(_settingsFilePath, folderPath);
-        await LoadFolderAsync(folderPath);
+        LibraryFolderPaths.Add(folderPath);
+        LibrarySettingsStore.SaveLibraryFolderPaths(_settingsFilePath, LibraryFolderPaths);
+        await LoadFoldersAsync();
     }
 
-    private async Task LoadFolderAsync(string folderPath)
+    [RelayCommand]
+    private async Task RemoveFolderAsync(string folderPath)
     {
-        LibraryFolderPath = folderPath;
+        LibraryFolderPaths.Remove(folderPath);
+        LibrarySettingsStore.SaveLibraryFolderPaths(_settingsFilePath, LibraryFolderPaths);
+        await LoadFoldersAsync();
+    }
 
-        try
+    private async Task LoadFoldersAsync()
+    {
+        if (LibraryFolderPaths.Count == 0)
         {
-            var tracks = await Task.Run(() => MusicLibraryScanner.Scan(folderPath));
-            Tracks.ReplaceAll(tracks.Select(track => new LibraryTrackViewModel(track, this)));
-
+            Tracks.ReplaceAll([]);
             StatusMessage = null;
+            return;
         }
-        catch (Exception ex)
+
+        var folderPaths = LibraryFolderPaths.ToList();
+        var failedFolders = new List<string>();
+
+        var tracks = await Task.Run(() =>
         {
-            _logger.LogError(ex, "Failed to scan library folder {FolderPath}", folderPath);
-            StatusMessage = Strings.FailedToScanFolder(ex.Message);
-        }
+            var scanned = new List<Track>();
+            foreach (var folderPath in folderPaths)
+            {
+                try
+                {
+                    scanned.AddRange(MusicLibraryScanner.Scan(folderPath));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to scan library folder {FolderPath}", folderPath);
+                    failedFolders.Add(folderPath);
+                }
+            }
+
+            return scanned.DistinctBy(t => t.FilePath).ToList();
+        });
+
+        Tracks.ReplaceAll(tracks.Select(track => new LibraryTrackViewModel(track, this)));
+        StatusMessage = failedFolders.Count > 0 ? Strings.FailedToScanFolder(string.Join(", ", failedFolders)) : null;
     }
 
     [RelayCommand]

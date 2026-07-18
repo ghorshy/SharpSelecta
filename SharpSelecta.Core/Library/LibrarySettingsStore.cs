@@ -4,10 +4,10 @@ namespace SharpSelecta.Core.Library;
 
 public static class LibrarySettingsStore
 {
-    public static string? LoadLibraryFolderPath(string settingsFilePath) => Load(settingsFilePath)?.LibraryFolderPath;
+    public static IReadOnlyList<string>? LoadLibraryFolderPaths(string settingsFilePath) => Load(settingsFilePath)?.LibraryFolderPaths;
 
-    public static void SaveLibraryFolderPath(string settingsFilePath, string folderPath) =>
-        Save(settingsFilePath, Default(settingsFilePath) with { LibraryFolderPath = folderPath });
+    public static void SaveLibraryFolderPaths(string settingsFilePath, IReadOnlyList<string> folderPaths) =>
+        Save(settingsFilePath, Default(settingsFilePath) with { LibraryFolderPaths = folderPaths });
 
     public static ColumnVisibility? LoadColumnVisibility(string settingsFilePath) => Load(settingsFilePath)?.Columns;
 
@@ -62,7 +62,7 @@ public static class LibrarySettingsStore
     }
 
     private sealed record LibrarySettingsData(
-        string? LibraryFolderPath,
+        IReadOnlyList<string>? LibraryFolderPaths,
         ColumnVisibility? Columns,
         IReadOnlyList<string>? ColumnOrder,
         double? RightColumnWidth,

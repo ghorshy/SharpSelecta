@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
-using SharpSelecta.App.Resources;
 using SharpSelecta.App.Services;
 using SharpSelecta.App.ViewModels;
 using SharpSelecta.Core.Audio;
@@ -32,7 +31,7 @@ public class LibraryViewModelTests
     }
 
     [Test]
-    public async Task ChooseFolderCommand_WhenFolderSelected_PopulatesTracksFromScan()
+    public async Task AddFolderCommand_WhenFolderSelected_PopulatesTracksFromScan()
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);
         var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
@@ -41,7 +40,7 @@ public class LibraryViewModelTests
             File.WriteAllBytes(Path.Combine(root.FullName, "song.mp3"), []);
             filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
 
-            await vm.ChooseFolderCommand.ExecuteAsync(null);
+            await vm.AddFolderCommand.ExecuteAsync(null);
 
             await Assert.That(vm.Tracks.Count).IsEqualTo(1);
             await Assert.That(vm.Tracks[0].Track.FilePath).IsEqualTo(Path.Combine(root.FullName, "song.mp3"));
@@ -53,16 +52,16 @@ public class LibraryViewModelTests
     }
 
     [Test]
-    public async Task DisplayLibraryFolderPath_WhenNothingChosen_ShowsPlaceholder()
+    public async Task HasLibraryFolders_WhenNothingAdded_IsFalse()
     {
         var vm = CreateViewModel(out _, out _, out _);
 
-        await Assert.That(vm.LibraryFolderPath).IsNull();
-        await Assert.That(vm.DisplayLibraryFolderPath).IsEqualTo(Strings.NoLibraryFolderChosen);
+        await Assert.That(vm.LibraryFolderPaths).IsEmpty();
+        await Assert.That(vm.HasLibraryFolders).IsFalse();
     }
 
     [Test]
-    public async Task ChooseFolderCommand_WhenFolderSelected_UpdatesLibraryFolderPath()
+    public async Task AddFolderCommand_WhenFolderSelected_AddsToLibraryFolderPaths()
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);
         var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
@@ -70,10 +69,10 @@ public class LibraryViewModelTests
         {
             filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
 
-            await vm.ChooseFolderCommand.ExecuteAsync(null);
+            await vm.AddFolderCommand.ExecuteAsync(null);
 
-            await Assert.That(vm.LibraryFolderPath).IsEqualTo(root.FullName);
-            await Assert.That(vm.DisplayLibraryFolderPath).IsEqualTo(root.FullName);
+            await Assert.That(vm.LibraryFolderPaths).IsEquivalentTo([root.FullName]);
+            await Assert.That(vm.HasLibraryFolders).IsTrue();
         }
         finally
         {
@@ -82,23 +81,122 @@ public class LibraryViewModelTests
     }
 
     [Test]
-    public async Task ChooseFolderCommand_WhenNoFolderSelected_DoesNotTouchTracks()
+    public async Task AddFolderCommand_WhenFolderAlreadyAdded_DoesNotAddDuplicate()
+    {
+        var vm = CreateViewModel(out _, out var filePickerService, out _);
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+        try
+        {
+            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+
+            await vm.AddFolderCommand.ExecuteAsync(null);
+            await vm.AddFolderCommand.ExecuteAsync(null);
+
+            await Assert.That(vm.LibraryFolderPaths).IsEquivalentTo([root.FullName]);
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task AddFolderCommand_WithMultipleFolders_MergesTracksFromBoth()
+    {
+        var vm = CreateViewModel(out _, out var filePickerService, out _);
+        var rootA = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-a-");
+        var rootB = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-b-");
+        try
+        {
+            File.WriteAllBytes(Path.Combine(rootA.FullName, "songA.mp3"), []);
+            File.WriteAllBytes(Path.Combine(rootB.FullName, "songB.mp3"), []);
+
+            filePickerService.PickLibraryFolderAsync().Returns(rootA.FullName);
+            await vm.AddFolderCommand.ExecuteAsync(null);
+            filePickerService.PickLibraryFolderAsync().Returns(rootB.FullName);
+            await vm.AddFolderCommand.ExecuteAsync(null);
+
+            await Assert.That(vm.Tracks.Count).IsEqualTo(2);
+            await Assert.That(vm.Tracks.Select(t => t.Track.FilePath)).Contains(Path.Combine(rootA.FullName, "songA.mp3"));
+            await Assert.That(vm.Tracks.Select(t => t.Track.FilePath)).Contains(Path.Combine(rootB.FullName, "songB.mp3"));
+        }
+        finally
+        {
+            rootA.Delete(recursive: true);
+            rootB.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task RemoveFolderCommand_RescansRemainingFolders()
+    {
+        var vm = CreateViewModel(out _, out var filePickerService, out _);
+        var rootA = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-a-");
+        var rootB = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-b-");
+        try
+        {
+            File.WriteAllBytes(Path.Combine(rootA.FullName, "songA.mp3"), []);
+            File.WriteAllBytes(Path.Combine(rootB.FullName, "songB.mp3"), []);
+
+            filePickerService.PickLibraryFolderAsync().Returns(rootA.FullName);
+            await vm.AddFolderCommand.ExecuteAsync(null);
+            filePickerService.PickLibraryFolderAsync().Returns(rootB.FullName);
+            await vm.AddFolderCommand.ExecuteAsync(null);
+
+            await vm.RemoveFolderCommand.ExecuteAsync(rootA.FullName);
+
+            await Assert.That(vm.LibraryFolderPaths).IsEquivalentTo([rootB.FullName]);
+            await Assert.That(vm.Tracks.Count).IsEqualTo(1);
+            await Assert.That(vm.Tracks[0].Track.FilePath).IsEqualTo(Path.Combine(rootB.FullName, "songB.mp3"));
+        }
+        finally
+        {
+            rootA.Delete(recursive: true);
+            rootB.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task RemoveFolderCommand_WhenLastFolderRemoved_ClearsTracks()
+    {
+        var vm = CreateViewModel(out _, out var filePickerService, out _);
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+        try
+        {
+            File.WriteAllBytes(Path.Combine(root.FullName, "song.mp3"), []);
+            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+            await vm.AddFolderCommand.ExecuteAsync(null);
+
+            await vm.RemoveFolderCommand.ExecuteAsync(root.FullName);
+
+            await Assert.That(vm.LibraryFolderPaths).IsEmpty();
+            await Assert.That(vm.Tracks).IsEmpty();
+            await Assert.That(vm.HasLibraryFolders).IsFalse();
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task AddFolderCommand_WhenNoFolderSelected_DoesNotTouchTracks()
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);
         filePickerService.PickLibraryFolderAsync().Returns((string?)null);
 
-        await vm.ChooseFolderCommand.ExecuteAsync(null);
+        await vm.AddFolderCommand.ExecuteAsync(null);
 
         await Assert.That(vm.Tracks).IsEmpty();
     }
 
     [Test]
-    public async Task ChooseFolderCommand_WhenFolderDoesNotExist_SetsStatusMessage()
+    public async Task AddFolderCommand_WhenFolderDoesNotExist_SetsStatusMessage()
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);
         filePickerService.PickLibraryFolderAsync().Returns("/no/such/folder");
 
-        await vm.ChooseFolderCommand.ExecuteAsync(null);
+        await vm.AddFolderCommand.ExecuteAsync(null);
 
         await Assert.That(vm.StatusMessage).IsNotNull();
     }
@@ -116,7 +214,7 @@ public class LibraryViewModelTests
             File.WriteAllBytes(Path.Combine(root.FullName, "song.mp3"), []);
             filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
 
-            await vm.ChooseFolderCommand.ExecuteAsync(null);
+            await vm.AddFolderCommand.ExecuteAsync(null);
 
             await Assert.That(vm.HasTracks).IsTrue();
             await Assert.That(vm.NoTracks).IsFalse();
@@ -128,7 +226,7 @@ public class LibraryViewModelTests
     }
 
     [Test]
-    public async Task ChooseFolderCommand_PersistsFolderPathForNextLaunch()
+    public async Task AddFolderCommand_PersistsFolderPathForNextLaunch()
     {
         var settingsPath = CreateTempSettingsPath();
         try
@@ -139,9 +237,9 @@ public class LibraryViewModelTests
             {
                 filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
 
-                await vm.ChooseFolderCommand.ExecuteAsync(null);
+                await vm.AddFolderCommand.ExecuteAsync(null);
 
-                await Assert.That(LibrarySettingsStore.LoadLibraryFolderPath(settingsPath)).IsEqualTo(root.FullName);
+                await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo([root.FullName]);
             }
             finally
             {
@@ -155,14 +253,14 @@ public class LibraryViewModelTests
     }
 
     [Test]
-    public async Task InitializeAsync_WhenFolderRemembered_ScansItAutomatically()
+    public async Task InitializeAsync_WhenFoldersRemembered_ScansThemAutomatically()
     {
         var settingsPath = CreateTempSettingsPath();
         var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
         try
         {
             File.WriteAllBytes(Path.Combine(root.FullName, "song.mp3"), []);
-            LibrarySettingsStore.SaveLibraryFolderPath(settingsPath, root.FullName);
+            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, [root.FullName]);
             var vm = CreateViewModel(out _, out _, out _, settingsPath);
 
             await vm.InitializeAsync();

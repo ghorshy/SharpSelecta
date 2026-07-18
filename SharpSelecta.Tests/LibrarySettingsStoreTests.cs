@@ -8,16 +8,16 @@ public class LibrarySettingsStoreTests
         Path.Combine(Path.GetTempPath(), $"sharpselecta-settings-tests-{Guid.NewGuid():N}.json");
 
     [Test]
-    public async Task SaveAndLoad_RoundTripsTheFolderPath()
+    public async Task SaveAndLoad_RoundTripsTheFolderPaths()
     {
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveLibraryFolderPath(settingsPath, "/music/library");
+            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library", "/music/other"]);
 
-            var loaded = LibrarySettingsStore.LoadLibraryFolderPath(settingsPath);
+            var loaded = LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath);
 
-            await Assert.That(loaded).IsEqualTo("/music/library");
+            await Assert.That(loaded).IsEquivalentTo(["/music/library", "/music/other"]);
         }
         finally
         {
@@ -30,7 +30,7 @@ public class LibrarySettingsStoreTests
     {
         var settingsPath = CreateTempSettingsPath();
 
-        var loaded = LibrarySettingsStore.LoadLibraryFolderPath(settingsPath);
+        var loaded = LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath);
 
         await Assert.That(loaded).IsNull();
     }
@@ -43,7 +43,7 @@ public class LibrarySettingsStoreTests
         {
             File.WriteAllText(settingsPath, "{ not valid json");
 
-            var loaded = LibrarySettingsStore.LoadLibraryFolderPath(settingsPath);
+            var loaded = LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath);
 
             await Assert.That(loaded).IsNull();
         }
@@ -54,17 +54,17 @@ public class LibrarySettingsStoreTests
     }
 
     [Test]
-    public async Task Save_OverwritesThePreviousFolderPath()
+    public async Task Save_OverwritesThePreviousFolderPaths()
     {
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveLibraryFolderPath(settingsPath, "/music/old");
-            LibrarySettingsStore.SaveLibraryFolderPath(settingsPath, "/music/new");
+            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/old"]);
+            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/new"]);
 
-            var loaded = LibrarySettingsStore.LoadLibraryFolderPath(settingsPath);
+            var loaded = LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath);
 
-            await Assert.That(loaded).IsEqualTo("/music/new");
+            await Assert.That(loaded).IsEquivalentTo(["/music/new"]);
         }
         finally
         {
@@ -96,17 +96,17 @@ public class LibrarySettingsStoreTests
     }
 
     [Test]
-    public async Task SavingColumnVisibility_DoesNotClobberAnAlreadySavedFolderPath()
+    public async Task SavingColumnVisibility_DoesNotClobberAnAlreadySavedFolderPaths()
     {
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveLibraryFolderPath(settingsPath, "/music/library");
+            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
 
             LibrarySettingsStore.SaveColumnVisibility(settingsPath, new ColumnVisibility(
                 true, true, true, true, true, true, true, true, true, true));
 
-            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPath(settingsPath)).IsEqualTo("/music/library");
+            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
         }
         finally
         {
@@ -115,7 +115,7 @@ public class LibrarySettingsStoreTests
     }
 
     [Test]
-    public async Task SavingFolderPath_DoesNotClobberAnAlreadySavedColumnVisibility()
+    public async Task SavingFolderPaths_DoesNotClobberAnAlreadySavedColumnVisibility()
     {
         var settingsPath = CreateTempSettingsPath();
         try
@@ -123,7 +123,7 @@ public class LibrarySettingsStoreTests
             var columns = new ColumnVisibility(true, false, true, false, true, false, true, false, true, false);
             LibrarySettingsStore.SaveColumnVisibility(settingsPath, columns);
 
-            LibrarySettingsStore.SaveLibraryFolderPath(settingsPath, "/music/library");
+            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
 
             await Assert.That(LibrarySettingsStore.LoadColumnVisibility(settingsPath)).IsEqualTo(columns);
         }
@@ -164,18 +164,18 @@ public class LibrarySettingsStoreTests
     }
 
     [Test]
-    public async Task SavingColumnOrder_DoesNotClobberAnAlreadySavedFolderPathOrColumnVisibility()
+    public async Task SavingColumnOrder_DoesNotClobberAnAlreadySavedFolderPathsOrColumnVisibility()
     {
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveLibraryFolderPath(settingsPath, "/music/library");
+            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
             var columns = new ColumnVisibility(true, false, true, false, true, false, true, false, true, false);
             LibrarySettingsStore.SaveColumnVisibility(settingsPath, columns);
 
             LibrarySettingsStore.SaveColumnOrder(settingsPath, ["Title", "Artist"]);
 
-            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPath(settingsPath)).IsEqualTo("/music/library");
+            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
             await Assert.That(LibrarySettingsStore.LoadColumnVisibility(settingsPath)).IsEqualTo(columns);
         }
         finally
@@ -239,12 +239,12 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveLibraryFolderPath(settingsPath, "/music/library");
+            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
             LibrarySettingsStore.SaveColumnOrder(settingsPath, ["Title", "Artist"]);
 
             LibrarySettingsStore.SaveRightColumnWidth(settingsPath, 300);
 
-            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPath(settingsPath)).IsEqualTo("/music/library");
+            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
             await Assert.That(LibrarySettingsStore.LoadColumnOrder(settingsPath)).IsEquivalentTo(["Title", "Artist"]);
         }
         finally

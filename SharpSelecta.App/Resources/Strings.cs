@@ -24,7 +24,7 @@ public static class Strings
     public static string Playing => Get(nameof(Playing));
     public static string Options => Get(nameof(Options));
     public static string SettingsCategoryLibrary => Get(nameof(SettingsCategoryLibrary));
-    public static string NoLibraryFolderChosen => Get(nameof(NoLibraryFolderChosen));
+    public static string NoLibraryFoldersAdded => Get(nameof(NoLibraryFoldersAdded));
     public static string RepeatOff => Get(nameof(RepeatOff));
     public static string RepeatAll => Get(nameof(RepeatAll));
     public static string RepeatOne => Get(nameof(RepeatOne));

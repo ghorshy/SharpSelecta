@@ -14,16 +14,11 @@
         <!-- Empty state: no library folder chosen (or remembered) yet — the button takes center
              stage as an invitation, instead of sitting small at the top above an empty list. -->
         <StackPanel IsVisible="{Binding NoTracks}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{styles:SpacingValue M}">
-            <Button Content="{x:Static res:Strings.ChooseLibraryFolder}" Command="{Binding ChooseFolderCommand}" HorizontalAlignment="Center" />
+            <Button Content="{x:Static res:Strings.ChooseLibraryFolder}" Command="{Binding AddFolderCommand}" HorizontalAlignment="Center" />
             <TextBlock Text="{Binding StatusMessage}" Foreground="OrangeRed" TextWrapping="Wrap" HorizontalAlignment="Center" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
         </StackPanel>
 
         <DockPanel IsVisible="{Binding HasTracks}" LastChildFill="True">
-            <StackPanel DockPanel.Dock="Top" Spacing="{styles:SpacingValue M}" Margin="{styles:Spacing Bottom=M}">
-                <Button Content="{x:Static res:Strings.ChooseLibraryFolder}" Command="{Binding ChooseFolderCommand}" HorizontalAlignment="Left" />
-                <TextBlock Text="{Binding StatusMessage}" Foreground="OrangeRed" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
-            </StackPanel>
-
             <DataGrid x:Name="TracksGrid"
                       ItemsSource="{Binding Tracks}"
                       AutoGenerateColumns="False"

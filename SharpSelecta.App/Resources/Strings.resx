@@ -59,7 +59,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="ChooseLibraryFolder" xml:space="preserve">
-    <value>Choose Library Folder...</value>
+    <value>Add Folder...</value>
   </data>
   <data name="Play" xml:space="preserve">
     <value>Play</value>
@@ -115,8 +115,8 @@
   <data name="SettingsCategoryLibrary" xml:space="preserve">
     <value>Library</value>
   </data>
-  <data name="NoLibraryFolderChosen" xml:space="preserve">
-    <value>No folder chosen</value>
+  <data name="NoLibraryFoldersAdded" xml:space="preserve">
+    <value>No folders added yet</value>
   </data>
   <data name="LibraryFolderPickerTitle" xml:space="preserve">
     <value>Choose a library folder</value>
