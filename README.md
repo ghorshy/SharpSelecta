@@ -42,6 +42,7 @@ dotnet test
 - Equalizer
 - Discord Rich Presence
 - Grid/tile Library view with cover art
+- File extension converter (WAV->FLAC, etc...)
 
 ## License
 
