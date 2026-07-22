@@ -28,11 +28,12 @@
                     HorizontalAlignment="Right"
                     Spacing="{styles:SpacingValue S}"
                     Margin="{styles:Spacing Uniform=M}">
-            <Button Content="{x:Static res:Strings.Apply}"
-                    Command="{Binding SelectedCategoryViewModel.ApplyCommand}"
-                    IsEnabled="{Binding SelectedCategoryViewModel.HasPendingChanges}" />
+            <Button Content="{x:Static res:Strings.Ok}" Click="OnOkClick" />
             <Button Content="{x:Static res:Strings.Cancel}"
                     Command="{Binding SelectedCategoryViewModel.CancelCommand}"
+                    IsEnabled="{Binding SelectedCategoryViewModel.HasPendingChanges}" />
+            <Button Content="{x:Static res:Strings.Apply}"
+                    Command="{Binding SelectedCategoryViewModel.ApplyCommand}"
                     IsEnabled="{Binding SelectedCategoryViewModel.HasPendingChanges}" />
         </StackPanel>
     </Grid>

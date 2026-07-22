@@ -118,6 +118,9 @@
   <data name="NoLibraryFoldersAdded" xml:space="preserve">
     <value>No folders added yet</value>
   </data>
+  <data name="Ok" xml:space="preserve">
+    <value>OK</value>
+  </data>
   <data name="Apply" xml:space="preserve">
     <value>Apply</value>
   </data>
