@@ -118,6 +118,12 @@
   <data name="NoLibraryFoldersAdded" xml:space="preserve">
     <value>No folders added yet</value>
   </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
   <data name="LibraryFolderPickerTitle" xml:space="preserve">
     <value>Choose a library folder</value>
   </data>

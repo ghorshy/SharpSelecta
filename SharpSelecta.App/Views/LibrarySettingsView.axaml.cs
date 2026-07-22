@@ -16,6 +16,6 @@ public partial class LibrarySettingsView : UserControl
         if (sender is not Button { DataContext: string folderPath } || DataContext is not LibraryViewModel vm)
             return;
 
-        vm.RemoveFolderCommand.Execute(folderPath);
+        vm.RemovePendingFolderCommand.Execute(folderPath);
     }
 }

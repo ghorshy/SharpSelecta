@@ -46,4 +46,14 @@ public class SettingsWindowViewModelTests
 
         await Assert.That(vm.Library).IsEqualTo(library);
     }
+
+    [Test]
+    public async Task SelectedCategoryViewModel_ResolvesToLibrary()
+    {
+        var library = CreateLibraryViewModel();
+
+        var vm = new SettingsWindowViewModel(library);
+
+        await Assert.That(vm.SelectedCategoryViewModel).IsEqualTo(library);
+    }
 }

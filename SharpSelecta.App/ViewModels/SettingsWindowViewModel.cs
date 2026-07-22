@@ -13,6 +13,10 @@ public partial class SettingsWindowViewModel : ViewModelBase
 
     public LibraryViewModel Library { get; }
 
+    // Only one category exists so far, so this always resolves to Library — once a second
+    // category is added, this switches on SelectedCategory to pick the right one.
+    public ISettingsCategoryViewModel SelectedCategoryViewModel => Library;
+
     public SettingsWindowViewModel(LibraryViewModel library)
     {
         Library = library;

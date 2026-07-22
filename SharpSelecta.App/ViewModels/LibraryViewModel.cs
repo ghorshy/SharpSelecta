@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -13,7 +14,7 @@ using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.ViewModels;
 
-public partial class LibraryViewModel : ViewModelBase
+public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewModel
 {
     private readonly IFilePickerService _filePickerService;
     private readonly PlaybackControlsViewModel _playbackControls;
@@ -26,6 +27,18 @@ public partial class LibraryViewModel : ViewModelBase
     public ObservableCollection<string> LibraryFolderPaths { get; } = [];
 
     public bool HasLibraryFolders => LibraryFolderPaths.Count > 0;
+
+    // Settings edits this working copy; nothing touches LibraryFolderPaths (and triggers a
+    // rescan) until Apply is confirmed. Cancel just resets it back to the applied list.
+    public ObservableCollection<string> PendingLibraryFolderPaths { get; } = [];
+
+    public bool HasPendingLibraryFolders => PendingLibraryFolderPaths.Count > 0;
+
+    public bool HasPendingChanges => !PendingLibraryFolderPaths.SequenceEqual(LibraryFolderPaths);
+
+    ICommand ISettingsCategoryViewModel.ApplyCommand => ApplyPendingFolderChangesCommand;
+
+    ICommand ISettingsCategoryViewModel.CancelCommand => CancelPendingFolderChangesCommand;
 
     // Toggled from the column header's right-click menu; all visible by default.
     [ObservableProperty]
@@ -176,7 +189,27 @@ public partial class LibraryViewModel : ViewModelBase
             OnPropertyChanged(nameof(NoTracks));
         };
 
-        LibraryFolderPaths.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasLibraryFolders));
+        LibraryFolderPaths.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasLibraryFolders));
+            OnPropertyChanged(nameof(HasPendingChanges));
+            SyncPendingLibraryFolderPaths();
+        };
+
+        PendingLibraryFolderPaths.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasPendingLibraryFolders));
+            OnPropertyChanged(nameof(HasPendingChanges));
+        };
+    }
+
+    private void SyncPendingLibraryFolderPaths()
+    {
+        PendingLibraryFolderPaths.Clear();
+        foreach (var folderPath in LibraryFolderPaths)
+        {
+            PendingLibraryFolderPaths.Add(folderPath);
+        }
     }
 
     // Re-scans whatever library folders were remembered from a previous session, if any.
@@ -209,12 +242,37 @@ public partial class LibraryViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task RemoveFolderAsync(string folderPath)
+    private async Task AddPendingFolderAsync()
     {
-        LibraryFolderPaths.Remove(folderPath);
+        var folderPath = await _filePickerService.PickLibraryFolderAsync();
+        if (folderPath is null || PendingLibraryFolderPaths.Contains(folderPath))
+            return;
+
+        PendingLibraryFolderPaths.Add(folderPath);
+    }
+
+    [RelayCommand]
+    private void RemovePendingFolder(string folderPath) => PendingLibraryFolderPaths.Remove(folderPath);
+
+    [RelayCommand]
+    private async Task ApplyPendingFolderChangesAsync()
+    {
+        // Snapshotted first: clearing LibraryFolderPaths below re-syncs PendingLibraryFolderPaths
+        // as a side effect, which would otherwise wipe out the list being enumerated here.
+        var folderPaths = PendingLibraryFolderPaths.ToList();
+
+        LibraryFolderPaths.Clear();
+        foreach (var folderPath in folderPaths)
+        {
+            LibraryFolderPaths.Add(folderPath);
+        }
+
         LibrarySettingsStore.SaveLibraryFolderPaths(_settingsFilePath, LibraryFolderPaths);
         await LoadFoldersAsync();
     }
+
+    [RelayCommand]
+    private void CancelPendingFolderChanges() => SyncPendingLibraryFolderPaths();
 
     private async Task LoadFoldersAsync()
     {

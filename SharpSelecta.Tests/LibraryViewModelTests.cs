@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using SharpSelecta.App.Services;
@@ -128,7 +129,7 @@ public class LibraryViewModelTests
     }
 
     [Test]
-    public async Task RemoveFolderCommand_RescansRemainingFolders()
+    public async Task ApplyPendingFolderChangesCommand_AfterRemovingAPendingFolder_RescansRemainingFolders()
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);
         var rootA = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-a-");
@@ -143,7 +144,8 @@ public class LibraryViewModelTests
             filePickerService.PickLibraryFolderAsync().Returns(rootB.FullName);
             await vm.AddFolderCommand.ExecuteAsync(null);
 
-            await vm.RemoveFolderCommand.ExecuteAsync(rootA.FullName);
+            vm.RemovePendingFolderCommand.Execute(rootA.FullName);
+            await vm.ApplyPendingFolderChangesCommand.ExecuteAsync(null);
 
             await Assert.That(vm.LibraryFolderPaths).IsEquivalentTo([rootB.FullName]);
             await Assert.That(vm.Tracks.Count).IsEqualTo(1);
@@ -157,7 +159,7 @@ public class LibraryViewModelTests
     }
 
     [Test]
-    public async Task RemoveFolderCommand_WhenLastFolderRemoved_ClearsTracks()
+    public async Task ApplyPendingFolderChangesCommand_WhenLastFolderRemoved_ClearsTracks()
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);
         var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
@@ -167,11 +169,56 @@ public class LibraryViewModelTests
             filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
             await vm.AddFolderCommand.ExecuteAsync(null);
 
-            await vm.RemoveFolderCommand.ExecuteAsync(root.FullName);
+            vm.RemovePendingFolderCommand.Execute(root.FullName);
+            await vm.ApplyPendingFolderChangesCommand.ExecuteAsync(null);
 
             await Assert.That(vm.LibraryFolderPaths).IsEmpty();
             await Assert.That(vm.Tracks).IsEmpty();
             await Assert.That(vm.HasLibraryFolders).IsFalse();
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task RemovePendingFolderCommand_BeforeApply_DoesNotChangeLibraryFolderPaths()
+    {
+        var vm = CreateViewModel(out _, out var filePickerService, out _);
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+        try
+        {
+            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+            await vm.AddFolderCommand.ExecuteAsync(null);
+
+            vm.RemovePendingFolderCommand.Execute(root.FullName);
+
+            await Assert.That(vm.LibraryFolderPaths).IsEquivalentTo([root.FullName]);
+            await Assert.That(vm.PendingLibraryFolderPaths).IsEmpty();
+            await Assert.That(vm.HasPendingChanges).IsTrue();
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task CancelPendingFolderChangesCommand_DiscardsPendingRemoval()
+    {
+        var vm = CreateViewModel(out _, out var filePickerService, out _);
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+        try
+        {
+            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+            await vm.AddFolderCommand.ExecuteAsync(null);
+
+            vm.RemovePendingFolderCommand.Execute(root.FullName);
+            vm.CancelPendingFolderChangesCommand.Execute(null);
+
+            await Assert.That(vm.PendingLibraryFolderPaths).IsEquivalentTo([root.FullName]);
+            await Assert.That(vm.HasPendingChanges).IsFalse();
         }
         finally
         {
@@ -283,6 +330,54 @@ public class LibraryViewModelTests
         await vm.InitializeAsync();
 
         await Assert.That(vm.Tracks).IsEmpty();
+    }
+
+    [Test]
+    public async Task ISettingsCategoryViewModel_ApplyCommand_AppliesPendingFolderChanges()
+    {
+        var vm = CreateViewModel(out _, out var filePickerService, out _);
+        var category = (ISettingsCategoryViewModel)vm;
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+        try
+        {
+            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+            await vm.AddFolderCommand.ExecuteAsync(null);
+            vm.RemovePendingFolderCommand.Execute(root.FullName);
+
+            await Assert.That(category.HasPendingChanges).IsTrue();
+
+            await ((IAsyncRelayCommand)category.ApplyCommand).ExecuteAsync(null);
+
+            await Assert.That(vm.LibraryFolderPaths).IsEmpty();
+            await Assert.That(category.HasPendingChanges).IsFalse();
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task ISettingsCategoryViewModel_CancelCommand_DiscardsPendingFolderChanges()
+    {
+        var vm = CreateViewModel(out _, out var filePickerService, out _);
+        var category = (ISettingsCategoryViewModel)vm;
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+        try
+        {
+            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+            await vm.AddFolderCommand.ExecuteAsync(null);
+            vm.RemovePendingFolderCommand.Execute(root.FullName);
+
+            category.CancelCommand.Execute(null);
+
+            await Assert.That(vm.PendingLibraryFolderPaths).IsEquivalentTo([root.FullName]);
+            await Assert.That(category.HasPendingChanges).IsFalse();
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
     }
 
     [Test]

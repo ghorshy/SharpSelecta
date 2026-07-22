@@ -25,6 +25,8 @@ public static class Strings
     public static string Options => Get(nameof(Options));
     public static string SettingsCategoryLibrary => Get(nameof(SettingsCategoryLibrary));
     public static string NoLibraryFoldersAdded => Get(nameof(NoLibraryFoldersAdded));
+    public static string Apply => Get(nameof(Apply));
+    public static string Cancel => Get(nameof(Cancel));
     public static string RepeatOff => Get(nameof(RepeatOff));
     public static string RepeatAll => Get(nameof(RepeatAll));
     public static string RepeatOne => Get(nameof(RepeatOne));

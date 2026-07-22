@@ -11,16 +11,30 @@
         x:DataType="vm:SettingsWindowViewModel"
         Title="{x:Static res:Strings.Options}"
         Width="600"
-        Height="400">
+        Height="400"
+        Closing="OnClosing">
 
-    <Grid ColumnDefinitions="160,*">
-        <ListBox Grid.Column="0"
+    <Grid ColumnDefinitions="160,*" RowDefinitions="*,Auto">
+        <ListBox Grid.Row="0" Grid.Column="0"
                  ItemsSource="{Binding Categories}"
                  SelectedItem="{Binding SelectedCategory}" />
 
-        <Border Grid.Column="1" Padding="{styles:Spacing Uniform=M}">
+        <Border Grid.Row="0" Grid.Column="1" Padding="{styles:Spacing Uniform=M}">
             <views:LibrarySettingsView DataContext="{Binding Library}" />
         </Border>
+
+        <StackPanel Grid.Row="1" Grid.Column="1"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="{styles:SpacingValue S}"
+                    Margin="{styles:Spacing Uniform=M}">
+            <Button Content="{x:Static res:Strings.Apply}"
+                    Command="{Binding SelectedCategoryViewModel.ApplyCommand}"
+                    IsEnabled="{Binding SelectedCategoryViewModel.HasPendingChanges}" />
+            <Button Content="{x:Static res:Strings.Cancel}"
+                    Command="{Binding SelectedCategoryViewModel.CancelCommand}"
+                    IsEnabled="{Binding SelectedCategoryViewModel.HasPendingChanges}" />
+        </StackPanel>
     </Grid>
 
 </Window>

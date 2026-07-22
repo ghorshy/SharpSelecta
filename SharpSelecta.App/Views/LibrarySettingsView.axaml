@@ -11,7 +11,7 @@
              x:DataType="vm:LibraryViewModel">
 
     <StackPanel Spacing="{styles:SpacingValue S}">
-        <ItemsControl ItemsSource="{Binding LibraryFolderPaths}">
+        <ItemsControl ItemsSource="{Binding PendingLibraryFolderPaths}">
             <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="x:String">
                     <Grid ColumnDefinitions="*,Auto" Margin="{styles:Spacing Bottom=XXS}">
@@ -22,9 +22,9 @@
             </ItemsControl.ItemTemplate>
         </ItemsControl>
 
-        <TextBlock Text="{x:Static res:Strings.NoLibraryFoldersAdded}" IsVisible="{Binding !HasLibraryFolders}" />
+        <TextBlock Text="{x:Static res:Strings.NoLibraryFoldersAdded}" IsVisible="{Binding !HasPendingLibraryFolders}" />
 
-        <Button Content="{x:Static res:Strings.ChooseLibraryFolder}" Command="{Binding AddFolderCommand}" HorizontalAlignment="Left" />
+        <Button Content="{x:Static res:Strings.ChooseLibraryFolder}" Command="{Binding AddPendingFolderCommand}" HorizontalAlignment="Left" />
         <TextBlock Text="{Binding StatusMessage}" Foreground="OrangeRed" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
     </StackPanel>
 
