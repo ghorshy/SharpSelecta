@@ -253,4 +253,52 @@ public class LibrarySettingsStoreTests
         }
     }
 
+    [Test]
+    public async Task SaveAndLoad_RoundTripsSort()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveSort(settingsPath, "Track.Bitrate", true);
+
+            var loaded = LibrarySettingsStore.LoadSort(settingsPath);
+
+            await Assert.That(loaded).IsEqualTo(("Track.Bitrate", true));
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task LoadSort_WhenFileDoesNotExist_ReturnsNull()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        var loaded = LibrarySettingsStore.LoadSort(settingsPath);
+
+        await Assert.That(loaded).IsNull();
+    }
+
+    [Test]
+    public async Task SavingSort_DoesNotClobberOtherSettings()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
+            LibrarySettingsStore.SaveColumnOrder(settingsPath, ["Title", "Artist"]);
+
+            LibrarySettingsStore.SaveSort(settingsPath, "Track.Title", false);
+
+            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
+            await Assert.That(LibrarySettingsStore.LoadColumnOrder(settingsPath)).IsEquivalentTo(["Title", "Artist"]);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
 }

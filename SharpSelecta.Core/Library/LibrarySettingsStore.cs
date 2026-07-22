@@ -29,8 +29,17 @@ public static class LibrarySettingsStore
     public static void SaveColumnWidths(string settingsFilePath, IReadOnlyDictionary<string, double> columnWidths) =>
         Save(settingsFilePath, Default(settingsFilePath) with { ColumnWidths = columnWidths });
 
+    public static (string PropertyPath, bool Descending)? LoadSort(string settingsFilePath)
+    {
+        var data = Load(settingsFilePath);
+        return data?.SortPropertyPath is { } propertyPath ? (propertyPath, data.SortDescending ?? false) : null;
+    }
+
+    public static void SaveSort(string settingsFilePath, string propertyPath, bool descending) =>
+        Save(settingsFilePath, Default(settingsFilePath) with { SortPropertyPath = propertyPath, SortDescending = descending });
+
     private static LibrarySettingsData Default(string settingsFilePath) =>
-        Load(settingsFilePath) ?? new LibrarySettingsData(null, null, null, null, null);
+        Load(settingsFilePath) ?? new LibrarySettingsData(null, null, null, null, null, null, null);
 
     private static LibrarySettingsData? Load(string settingsFilePath)
     {
@@ -66,5 +75,7 @@ public static class LibrarySettingsStore
         ColumnVisibility? Columns,
         IReadOnlyList<string>? ColumnOrder,
         double? RightColumnWidth,
-        IReadOnlyDictionary<string, double>? ColumnWidths);
+        IReadOnlyDictionary<string, double>? ColumnWidths,
+        string? SortPropertyPath,
+        bool? SortDescending);
 }

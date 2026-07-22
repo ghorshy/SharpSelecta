@@ -1,6 +1,8 @@
 using System;
+using System.ComponentModel;
 using System.Linq;
 using Avalonia;
+using Avalonia.Collections;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.VisualTree;
@@ -12,6 +14,7 @@ namespace SharpSelecta.App.Views;
 public partial class LibraryView : UserControl
 {
     private bool _columnWidthsDirty;
+    private bool _sortDirty;
 
     public LibraryView()
     {
@@ -24,6 +27,7 @@ public partial class LibraryView : UserControl
         }
 
         TracksGrid.AddHandler(InputElement.PointerReleasedEvent, OnPointerReleased, handledEventsToo: true);
+        TracksGrid.Sorting += (_, _) => _sortDirty = true;
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -55,6 +59,22 @@ public partial class LibraryView : UserControl
                 }
             }
         }
+
+        // CollectionView is still null right here — TracksGrid's ItemsSource binding to Tracks
+        // hasn't caught up with this DataContext yet — so the saved sort is (re)applied once
+        // Tracks actually gets populated instead, when CollectionView is guaranteed to exist.
+        vm.Tracks.CollectionChanged += (_, _) => ApplySavedSort(vm);
+    }
+
+    private void ApplySavedSort(LibraryViewModel vm)
+    {
+        var sort = LibrarySettingsStore.LoadSort(vm.SettingsFilePath);
+        if (sort is not { } savedSort || TracksGrid.CollectionView is not { } collectionView)
+            return;
+
+        var direction = savedSort.Descending ? ListSortDirection.Descending : ListSortDirection.Ascending;
+        collectionView.SortDescriptions.Clear();
+        collectionView.SortDescriptions.Add(DataGridSortDescription.FromPath(savedSort.PropertyPath, direction));
     }
 
     private void OnColumnReordered(object? sender, DataGridColumnEventArgs e)
@@ -81,18 +101,34 @@ public partial class LibraryView : UserControl
 
     private void OnPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
-        if (!_columnWidthsDirty || DataContext is not LibraryViewModel vm)
+        if (DataContext is not LibraryViewModel vm)
             return;
 
-        _columnWidthsDirty = false;
+        if (_columnWidthsDirty)
+        {
+            _columnWidthsDirty = false;
 
-        // Width.Value (set synchronously as part of the property itself) rather than ActualWidth
-        // (a layout-computed value that may not have caught up yet at the exact moment this fires).
-        var widths = TracksGrid.Columns
-            .Where(c => c.Tag is string)
-            .ToDictionary(c => (string)c.Tag!, c => c.Width.Value);
+            // Width.Value (set synchronously as part of the property itself) rather than ActualWidth
+            // (a layout-computed value that may not have caught up yet at the exact moment this fires).
+            var widths = TracksGrid.Columns
+                .Where(c => c.Tag is string)
+                .ToDictionary(c => (string)c.Tag!, c => c.Width.Value);
 
-        LibrarySettingsStore.SaveColumnWidths(vm.SettingsFilePath, widths);
+            LibrarySettingsStore.SaveColumnWidths(vm.SettingsFilePath, widths);
+        }
+
+        // Sorting fires (and updates CollectionView.SortDescriptions) before this bubbles up, so
+        // the description read here already reflects the click that just happened.
+        if (_sortDirty)
+        {
+            _sortDirty = false;
+
+            if (TracksGrid.CollectionView?.SortDescriptions.FirstOrDefault() is { } sortDescription)
+            {
+                LibrarySettingsStore.SaveSort(
+                    vm.SettingsFilePath, sortDescription.PropertyPath, sortDescription.Direction == ListSortDirection.Descending);
+            }
+        }
     }
 
     private void OnTrackDoubleTapped(object? sender, TappedEventArgs e)
