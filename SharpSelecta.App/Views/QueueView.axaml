@@ -67,7 +67,7 @@
                                 <Image Source="{Binding ArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
                                        IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
                                        Stretch="UniformToFill" />
-                                <views:VinylPlaceholderIcon IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNull}}" />
+                                <views:AlbumCoverPlaceholderIcon IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNull}}" />
                             </Panel>
                         </Border>
                         <StackPanel Grid.Column="1" Margin="{styles:Spacing Left=S, Right=XXS}" VerticalAlignment="Center">

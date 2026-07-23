@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SharpSelecta.App.ViewModels"
+             xmlns:views="using:SharpSelecta.App.Views"
              xmlns:converters="using:SharpSelecta.App.Converters"
              xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:styles="using:SharpSelecta.App.Styles"
@@ -21,6 +22,9 @@
                HorizontalAlignment="Stretch"
                Margin="{styles:Spacing Top=S}"
                IsVisible="{Binding CurrentTrackArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+        <views:AlbumCoverPlaceholderIcon HorizontalAlignment="Stretch"
+                                     Margin="{styles:Spacing Top=S}"
+                                     IsVisible="{Binding CurrentTrackArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNull}}" />
     </StackPanel>
 
 </UserControl>

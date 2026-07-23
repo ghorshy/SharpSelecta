@@ -3,7 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="100" d:DesignHeight="100"
-             x:Class="SharpSelecta.App.Views.VinylPlaceholderIcon">
+             x:Class="SharpSelecta.App.Views.AlbumCoverPlaceholderIcon">
 
     <!-- Vector, not a raster image - Viewbox scales it cleanly to any tile size (1:1) without
          needing per-zoom-level assets, unlike a bitmap placeholder would. -->

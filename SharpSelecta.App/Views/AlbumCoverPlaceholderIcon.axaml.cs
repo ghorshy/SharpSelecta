@@ -2,9 +2,9 @@ using Avalonia.Controls;
 
 namespace SharpSelecta.App.Views;
 
-public partial class VinylPlaceholderIcon : UserControl
+public partial class AlbumCoverPlaceholderIcon : UserControl
 {
-    public VinylPlaceholderIcon()
+    public AlbumCoverPlaceholderIcon()
     {
         InitializeComponent();
     }
