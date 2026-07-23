@@ -568,4 +568,59 @@ public class LibraryViewModelTests
 
         await Assert.That(vm.Albums[0].Artist).IsEqualTo(string.Empty);
     }
+
+    [Test]
+    public async Task ShowEmptyState_WhileLibraryIsLoading_IsFalseEvenWithNoTracksYet()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+        await Assert.That(vm.NoTracks).IsTrue();
+
+        vm.IsLoadingLibrary = true;
+
+        await Assert.That(vm.ShowEmptyState).IsFalse();
+    }
+
+    [Test]
+    public async Task IsLoadingLibrary_IsFalseAfterFoldersFinishLoading()
+    {
+        var vm = CreateViewModel(out _, out var filePickerService, out _);
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+        try
+        {
+            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+
+            await vm.AddFolderCommand.ExecuteAsync(null);
+
+            await Assert.That(vm.IsLoadingLibrary).IsFalse();
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task ClearArtworkCacheCommand_DeletesCachedThumbnailFiles()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var cacheDirectory = Path.Combine(Path.GetDirectoryName(settingsPath)!, "artwork-cache");
+        try
+        {
+            var vm = CreateViewModel(out _, out _, out _, settingsPath);
+            Directory.CreateDirectory(cacheDirectory);
+            File.WriteAllBytes(Path.Combine(cacheDirectory, "fake.jpg"), [1, 2, 3]);
+
+            vm.ClearArtworkCacheCommand.Execute(null);
+
+            await Assert.That(Directory.EnumerateFiles(cacheDirectory)).IsEmpty();
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            if (Directory.Exists(cacheDirectory))
+            {
+                Directory.Delete(cacheDirectory, recursive: true);
+            }
+        }
+    }
 }

@@ -169,4 +169,10 @@
   <data name="VariousArtists" xml:space="preserve">
     <value>Various Artists</value>
   </data>
+  <data name="LoadingLibrary" xml:space="preserve">
+    <value>Loading library…</value>
+  </data>
+  <data name="ClearArtworkCache" xml:space="preserve">
+    <value>Clear Artwork Cache</value>
+  </data>
 </root>

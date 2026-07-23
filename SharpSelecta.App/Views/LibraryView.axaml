@@ -22,10 +22,17 @@
 
     <Grid>
         <!-- Empty state: no library folder chosen (or remembered) yet — the button takes center
-             stage as an invitation, instead of sitting small at the top above an empty list. -->
-        <StackPanel IsVisible="{Binding NoTracks}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{styles:SpacingValue M}">
+             stage as an invitation, instead of sitting small at the top above an empty list.
+             Gated on ShowEmptyState (NoTracks AND NOT loading), not NoTracks alone, so this
+             doesn't flash up misleadingly while a remembered folder is still being (re)scanned. -->
+        <StackPanel IsVisible="{Binding ShowEmptyState}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{styles:SpacingValue M}">
             <Button Content="{x:Static res:Strings.ChooseLibraryFolder}" Command="{Binding AddFolderCommand}" HorizontalAlignment="Center" />
             <TextBlock Text="{Binding StatusMessage}" Foreground="OrangeRed" TextWrapping="Wrap" HorizontalAlignment="Center" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+        </StackPanel>
+
+        <StackPanel IsVisible="{Binding IsLoadingLibrary}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{styles:SpacingValue M}">
+            <ProgressBar IsIndeterminate="True" Width="200" />
+            <TextBlock Text="{x:Static res:Strings.LoadingLibrary}" HorizontalAlignment="Center" />
         </StackPanel>
 
         <Border IsVisible="{Binding IsAlbumGridViewVisible}">

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -141,6 +142,16 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     public bool NoTracks => Tracks.Count == 0;
 
     [ObservableProperty]
+    private bool isLoadingLibrary;
+
+    // NoTracks alone can't distinguish "nothing configured yet" from "a scan of already-configured
+    // folders is in progress" — without this, the empty-state "Add Folder" button would flash up
+    // misleadingly on every app startup while the remembered folders are still being (re)scanned.
+    public bool ShowEmptyState => NoTracks && !IsLoadingLibrary;
+
+    partial void OnIsLoadingLibraryChanged(bool value) => OnPropertyChanged(nameof(ShowEmptyState));
+
+    [ObservableProperty]
     private LibraryViewMode viewMode = LibraryViewMode.TrackList;
 
     public bool IsTrackListViewVisible => HasTracks && ViewMode == LibraryViewMode.TrackList;
@@ -167,6 +178,9 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     private void RebuildAlbums()
     {
+        // The raw (trimmed, original-case) group key is kept alongside each AlbumViewModel so the
+        // artwork cache can be keyed off it directly — using the localized "Unknown Album" display
+        // fallback as a cache key would tie cache filenames to the current UI language.
         var groups = Tracks
             .GroupBy(t => (t.Track.Album ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase)
             .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
@@ -187,26 +201,70 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         _ = LoadAlbumArtworkAsync(groups);
     }
 
+    // Bounded parallelism (half the cores): sequential was far too slow on a cold cache (minutes
+    // for a large library), but running fully unbounded would peg every core decoding/resizing
+    // cover art at once, right back to the CPU contention with the real-time audio thread that
+    // this whole perf pass was fixing in the first place.
+    private static readonly int ArtworkLoadConcurrency = Math.Max(1, Environment.ProcessorCount / 2);
+
+    private string ArtworkCacheDirectory => Path.Combine(Path.GetDirectoryName(_settingsFilePath)!, "artwork-cache");
+
+    [RelayCommand]
+    private void ClearArtworkCache()
+    {
+        if (Directory.Exists(ArtworkCacheDirectory))
+        {
+            // Deleted file-by-file rather than Directory.Delete(recursive: true) — a
+            // LoadAlbumArtworkAsync pass from an earlier rescan/startup may still be writing new
+            // thumbnails into this same directory concurrently, and a recursive directory delete
+            // throws IOException ("Directory not empty") if a writer adds a file between its
+            // internal enumeration and the final directory removal. Deleting files individually
+            // (and tolerating one being mid-write) avoids that race entirely.
+            foreach (var file in Directory.EnumerateFiles(ArtworkCacheDirectory))
+            {
+                try
+                {
+                    File.Delete(file);
+                }
+                catch (IOException)
+                {
+                }
+            }
+        }
+
+        // Re-groups from the already-scanned Tracks (no rescan needed) and kicks off a fresh
+        // LoadAlbumArtworkAsync pass, which regenerates every thumbnail since the disk cache it
+        // would otherwise have hit was just deleted.
+        RebuildAlbums();
+    }
+
     private async Task LoadAlbumArtworkAsync(IReadOnlyList<(string RawKey, AlbumViewModel Album)> groups)
     {
-        var cacheDirectory = Path.Combine(Path.GetDirectoryName(_settingsFilePath)!, "artwork-cache");
+        var cacheDirectory = ArtworkCacheDirectory;
+        var options = new ParallelOptions { MaxDegreeOfParallelism = ArtworkLoadConcurrency };
 
-        foreach (var (rawKey, album) in groups)
+        await Parallel.ForEachAsync(groups, options, async (group, cancellationToken) =>
         {
+            var (rawKey, album) = group;
             var firstTrackPath = album.Tracks.Count > 0 ? album.Tracks[0].Track.FilePath : null;
             if (firstTrackPath is null)
-                continue;
+                return;
 
             try
             {
-                album.ArtworkBytes = await Task.Run(() =>
-                    AlbumArtworkCache.GetOrCreate(cacheDirectory, rawKey, () => MusicLibraryScanner.LoadArtwork(firstTrackPath)));
+                var artwork = AlbumArtworkCache.GetOrCreate(
+                    cacheDirectory, rawKey, () => MusicLibraryScanner.LoadArtworkUncached(firstTrackPath));
+
+                // GetOrCreate above runs on this Parallel.ForEachAsync worker thread, not the UI
+                // thread — ArtworkBytes is an ObservableProperty, so its change notification has
+                // to be raised back on the UI thread for bindings to update safely.
+                await Dispatcher.UIThread.InvokeAsync(() => album.ArtworkBytes = artwork);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to load artwork for album {Album}", album.Title);
             }
-        }
+        });
     }
 
     private static string ResolveArtistLabel(IEnumerable<LibraryTrackViewModel> tracks)
@@ -247,6 +305,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         {
             OnPropertyChanged(nameof(HasTracks));
             OnPropertyChanged(nameof(NoTracks));
+            OnPropertyChanged(nameof(ShowEmptyState));
             OnPropertyChanged(nameof(IsTrackListViewVisible));
             OnPropertyChanged(nameof(IsAlbumGridViewVisible));
             RebuildAlbums();
@@ -355,27 +414,35 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         var folderPaths = LibraryFolderPaths.ToList();
         var failedFolders = new List<string>();
 
-        var tracks = await Task.Run(() =>
+        IsLoadingLibrary = true;
+        try
         {
-            var scanned = new List<Track>();
-            foreach (var folderPath in folderPaths)
+            var tracks = await Task.Run(() =>
             {
-                try
+                var scanned = new List<Track>();
+                foreach (var folderPath in folderPaths)
                 {
-                    scanned.AddRange(MusicLibraryScanner.Scan(folderPath));
+                    try
+                    {
+                        scanned.AddRange(MusicLibraryScanner.Scan(folderPath));
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to scan library folder {FolderPath}", folderPath);
+                        failedFolders.Add(folderPath);
+                    }
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to scan library folder {FolderPath}", folderPath);
-                    failedFolders.Add(folderPath);
-                }
-            }
 
-            return scanned.DistinctBy(t => t.FilePath).ToList();
-        });
+                return scanned.DistinctBy(t => t.FilePath).ToList();
+            });
 
-        Tracks.ReplaceAll(tracks.Select(track => new LibraryTrackViewModel(track, this)));
-        StatusMessage = failedFolders.Count > 0 ? Strings.FailedToScanFolder(string.Join(", ", failedFolders)) : null;
+            Tracks.ReplaceAll(tracks.Select(track => new LibraryTrackViewModel(track, this)));
+            StatusMessage = failedFolders.Count > 0 ? Strings.FailedToScanFolder(string.Join(", ", failedFolders)) : null;
+        }
+        finally
+        {
+            IsLoadingLibrary = false;
+        }
     }
 
     [RelayCommand]

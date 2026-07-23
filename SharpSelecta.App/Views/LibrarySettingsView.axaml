@@ -26,6 +26,8 @@
 
         <Button Content="{x:Static res:Strings.ChooseLibraryFolder}" Command="{Binding AddPendingFolderCommand}" HorizontalAlignment="Left" />
         <TextBlock Text="{Binding StatusMessage}" Foreground="OrangeRed" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+
+        <Button Content="{x:Static res:Strings.ClearArtworkCache}" Command="{Binding ClearArtworkCacheCommand}" HorizontalAlignment="Left" Margin="{styles:Spacing Top=S}" />
     </StackPanel>
 
 </UserControl>
