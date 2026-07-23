@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using SharpSelecta.App.Formatting;
 using SharpSelecta.App.Resources;
 using SharpSelecta.Core.Audio;
 using SharpSelecta.Core.Library;
@@ -57,7 +58,10 @@ public partial class PlaybackControlsViewModel : ViewModelBase
     private string? statusMessage;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CurrentTrackTechnicalSummary))]
     private Track? currentTrack;
+
+    public string CurrentTrackTechnicalSummary => CurrentTrack is null ? string.Empty : TrackFormatting.TechnicalSummary(CurrentTrack);
 
     // Raw bytes rather than an Avalonia Bitmap — constructing a Bitmap requires the platform's
     // rendering backend to be initialized, which a plain unit test process doesn't have. The View
@@ -184,11 +188,8 @@ public partial class PlaybackControlsViewModel : ViewModelBase
     [RelayCommand]
     private void ToggleDurationDisplay() => ShowRemainingTime = !ShowRemainingTime;
 
-    private static string FormatTime(double totalSeconds)
-    {
-        var span = TimeSpan.FromSeconds(Math.Max(0, totalSeconds));
-        return span.Hours > 0 ? span.ToString(@"h\:mm\:ss") : span.ToString(@"m\:ss");
-    }
+    private static string FormatTime(double totalSeconds) =>
+        TrackFormatting.FormatDuration(TimeSpan.FromSeconds(Math.Max(0, totalSeconds)));
 
     public string RepeatModeLabel => RepeatMode switch
     {

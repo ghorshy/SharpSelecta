@@ -15,7 +15,7 @@
         <TextBlock Text="{Binding CurrentTrack.Artist}" TextWrapping="Wrap" />
         <TextBlock Text="{Binding CurrentTrack.Album}" TextWrapping="Wrap" />
         <TextBlock Text="{Binding CurrentTrack.Year}" />
-        <TextBlock Text="{Binding CurrentTrack.TechnicalSummary}" Opacity="0.7" FontSize="11" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding CurrentTrackTechnicalSummary}" Opacity="0.7" FontSize="11" TextWrapping="Wrap" />
         <Image Source="{Binding CurrentTrackArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
                Stretch="Uniform"
                HorizontalAlignment="Stretch"
