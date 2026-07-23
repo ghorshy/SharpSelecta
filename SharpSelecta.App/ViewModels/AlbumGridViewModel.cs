@@ -14,14 +14,25 @@ namespace SharpSelecta.App.ViewModels;
 public partial class AlbumGridViewModel : ViewModelBase
 {
     private const double DefaultTileSize = 160;
-    private const double MinTileSize = 80;
+
+    // Raised from 80 - a smaller minimum let more tiles fit on screen at once, and since the grid
+    // isn't virtualized *within* the viewport (only off-screen rows are skipped), more visible
+    // tiles means more concurrent artwork decode/render work competing with the real-time audio
+    // thread for CPU, causing buffer overruns again even after the ItemsRepeater virtualization fix.
+    private const double MinTileSize = 144;
     private const double MaxTileSize = 320;
-    private const double RowSpacing = 8;
+
+    // Must match the actual tile Spacing/Margin in AlbumGridView.axaml (Spacing.L) - this is what
+    // the column-count math below assumes the real per-tile gap is.
+    private const double RowSpacing = 16;
 
     private readonly LibraryViewModel _library;
     private readonly string _settingsFilePath;
     private double _viewportWidth;
-    private int _columnCount = 1;
+
+    // -1 (not a valid column count) so the very first RebuildRows call always proceeds, even if
+    // the first real computation happens to come out to the same value a default like 1 would have.
+    private int _columnCount = -1;
 
     [ObservableProperty]
     private double tileSize;
@@ -37,7 +48,7 @@ public partial class AlbumGridViewModel : ViewModelBase
         _settingsFilePath = settingsFilePath;
         tileSize = Math.Clamp(LibrarySettingsStore.LoadTileSize(settingsFilePath) ?? DefaultTileSize, MinTileSize, MaxTileSize);
 
-        _library.Albums.CollectionChanged += (_, _) => RecomputeLayout();
+        _library.Albums.CollectionChanged += (_, _) => RebuildRows(force: true);
     }
 
     // Fed by the View's SizeChanged handler — WrapPanel can't tell us this itself since we're not
@@ -48,7 +59,7 @@ public partial class AlbumGridViewModel : ViewModelBase
             return;
 
         _viewportWidth = width;
-        RecomputeLayout();
+        RebuildRows(force: false);
     }
 
     public void AdjustTileSize(double delta) => TileSize = Math.Clamp(TileSize + delta, MinTileSize, MaxTileSize);
@@ -56,7 +67,7 @@ public partial class AlbumGridViewModel : ViewModelBase
     partial void OnTileSizeChanged(double value)
     {
         LibrarySettingsStore.SaveTileSize(_settingsFilePath, value);
-        RecomputeLayout();
+        RebuildRows(force: false);
     }
 
     [RelayCommand]
@@ -72,13 +83,24 @@ public partial class AlbumGridViewModel : ViewModelBase
         }
     }
 
-    // Any layout-affecting change (viewport resize, zoom, or the album list itself changing after
-    // a rescan) collapses whatever was expanded rather than trying to re-attach it to whichever
-    // row it lands in after repartitioning — simpler, and resizing/zooming while reading an
-    // expanded album's tracklist is an edge case not worth the extra complexity.
-    private void RecomputeLayout()
+    // Rebuilding Rows means Avalonia has to tear down and reconstruct every tile's visual tree
+    // (the grid isn't virtualized) — expensive for a large library, and was happening on every
+    // single TileSize tick during a slider drag or Ctrl+scroll, most of which don't actually change
+    // how many tiles fit per row. TileSize changes reflow already-realized tiles for free via their
+    // own Width/Height bindings, so a rebuild is only needed when the column count itself changes,
+    // or when the album list changed (force=true, e.g. after a rescan) since the tiles themselves
+    // are different then regardless of column count.
+    //
+    // Any real rebuild collapses whatever was expanded rather than trying to re-attach it to
+    // whichever row it lands in after repartitioning — simpler, and resizing/zooming while reading
+    // an expanded album's tracklist is an edge case not worth the extra complexity.
+    private void RebuildRows(bool force)
     {
-        _columnCount = ComputeColumnCount(_viewportWidth, TileSize);
+        var newColumnCount = ComputeColumnCount(_viewportWidth, TileSize);
+        if (!force && newColumnCount == _columnCount)
+            return;
+
+        _columnCount = newColumnCount;
         ExpandedAlbum = null;
 
         var rows = _library.Albums

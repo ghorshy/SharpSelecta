@@ -28,20 +28,26 @@
 
     <DockPanel LastChildFill="True">
         <Slider DockPanel.Dock="Top"
-                Minimum="80" Maximum="320"
+                Minimum="144" Maximum="320"
                 Value="{Binding TileSize, Mode=TwoWay}"
                 Width="160" HorizontalAlignment="Right"
                 Margin="{styles:Spacing Uniform=XS}" />
 
         <ScrollViewer x:Name="Scroller" SizeChanged="OnScrollerSizeChanged" PointerWheelChanged="OnPointerWheelChanged">
-            <ItemsControl ItemsSource="{Binding Rows}">
-                <ItemsControl.ItemTemplate>
+            <!-- ItemsRepeater instead of ItemsControl for the row list specifically: it virtualizes
+                 inside a ScrollViewer (only on-screen rows get realized), unlike ItemsControl which
+                 builds every row's - and every tile's - whole visual tree upfront regardless of
+                 scroll position. A large library (hundreds of albums) made that the dominant cost
+                 in both memory and CPU. Each row's own tile strip stays a plain ItemsControl since
+                 a single row only ever has a handful of tiles (whatever the column count is). -->
+            <ItemsRepeater ItemsSource="{Binding Rows}">
+                <ItemsRepeater.ItemTemplate>
                     <DataTemplate x:DataType="vm:AlbumRowViewModel">
-                        <StackPanel Margin="{styles:Spacing Bottom=S}">
+                        <StackPanel Margin="{styles:Spacing Bottom=L}">
                             <ItemsControl ItemsSource="{Binding Tiles}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
-                                        <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue S}" />
+                                        <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue L}" />
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
@@ -122,8 +128,8 @@
                             </Border>
                         </StackPanel>
                     </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
         </ScrollViewer>
     </DockPanel>
 

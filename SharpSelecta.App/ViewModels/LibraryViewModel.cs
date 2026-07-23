@@ -86,7 +86,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         ("Year", () => IsYearColumnVisible, v => IsYearColumnVisible = v),
     ];
 
-    // CommunityToolkit's generated setters can't be cancelled, so hiding the last visible column
+    // CommunityToolkit's generated setters can't be canceled, so hiding the last visible column
     // is undone here instead of blocked up front.
     private bool AnyColumnVisible() => ColumnVisibilityBindings().Any(c => c.Get());
 
@@ -167,9 +167,6 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     private void RebuildAlbums()
     {
-        // The raw (trimmed, original-case) group key is kept alongside each AlbumViewModel so the
-        // artwork cache can be keyed off it directly — using the localized "Unknown Album" display
-        // fallback as a cache key would tie cache filenames to the current UI language.
         var groups = Tracks
             .GroupBy(t => (t.Track.Album ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase)
             .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)

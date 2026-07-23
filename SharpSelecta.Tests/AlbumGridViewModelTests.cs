@@ -34,7 +34,7 @@ public class AlbumGridViewModelTests
             AddTrack(vm, $"/music/{i}.mp3", $"Album {i}");
         }
 
-        // TileSize defaults to 160, RowSpacing is 8 internally: (400+8)/(160+8) = 2.4 -> 2 columns.
+        // TileSize defaults to 160, RowSpacing is 16 internally: (400+16)/(160+16) = 2.36 -> 2 columns.
         vm.Grid.SetViewportWidth(400);
 
         await Assert.That(vm.Grid.Rows.Count).IsEqualTo(3);
@@ -102,16 +102,30 @@ public class AlbumGridViewModelTests
     }
 
     [Test]
-    public async Task ChangingTileSize_CollapsesAnyExpandedAlbum()
+    public async Task ChangingTileSize_WhenItChangesTheColumnCount_CollapsesAnyExpandedAlbum()
     {
         var vm = CreateLibraryViewModel();
         AddTrack(vm, "/music/a.mp3", "Album A");
-        vm.Grid.SetViewportWidth(400);
+        AddTrack(vm, "/music/b.mp3", "Album B");
+        vm.Grid.SetViewportWidth(400); // TileSize 160 -> columnCount 2, both albums fit in one row
         vm.Grid.ToggleExpandCommand.Execute(vm.Albums[0]);
 
-        vm.Grid.AdjustTileSize(20);
+        vm.Grid.AdjustTileSize(160); // TileSize 320 (clamped) -> columnCount 1 at this width
 
         await Assert.That(vm.Grid.ExpandedAlbum).IsNull();
+    }
+
+    [Test]
+    public async Task ChangingTileSize_WithoutChangingTheColumnCount_DoesNotCollapseAnyExpandedAlbum()
+    {
+        var vm = CreateLibraryViewModel();
+        AddTrack(vm, "/music/a.mp3", "Album A");
+        vm.Grid.SetViewportWidth(2000); // TileSize 160 -> columnCount 11
+        vm.Grid.ToggleExpandCommand.Execute(vm.Albums[0]);
+
+        vm.Grid.AdjustTileSize(2); // TileSize 162 -> columnCount still 11 at this width
+
+        await Assert.That(vm.Grid.ExpandedAlbum).IsEqualTo(vm.Albums[0]);
     }
 
     [Test]
@@ -143,7 +157,7 @@ public class AlbumGridViewModelTests
         vm.Grid.AdjustTileSize(1000);
         var max = vm.Grid.TileSize;
 
-        await Assert.That(min).IsGreaterThanOrEqualTo(80);
+        await Assert.That(min).IsGreaterThanOrEqualTo(144);
         await Assert.That(max).IsLessThanOrEqualTo(320);
     }
 }
