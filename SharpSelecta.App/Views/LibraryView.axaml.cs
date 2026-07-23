@@ -6,6 +6,7 @@ using Avalonia;
 using Avalonia.Collections;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using SharpSelecta.App.ViewModels;
 using SharpSelecta.Core.Library;
@@ -15,7 +16,6 @@ namespace SharpSelecta.App.Views;
 public partial class LibraryView : UserControl
 {
     private bool _columnWidthsDirty;
-    private bool _sortDirty;
 
     public LibraryView()
     {
@@ -28,7 +28,7 @@ public partial class LibraryView : UserControl
         }
 
         TracksGrid.AddHandler(InputElement.PointerReleasedEvent, OnPointerReleased, handledEventsToo: true);
-        TracksGrid.Sorting += (_, _) => _sortDirty = true;
+        TracksGrid.Sorting += (_, _) => Dispatcher.UIThread.Post(SaveCurrentSort, DispatcherPriority.Background);
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -116,19 +116,15 @@ public partial class LibraryView : UserControl
 
             LibrarySettingsStore.SaveColumnWidths(vm.SettingsFilePath, widths);
         }
+    }
 
-        // Sorting fires (and updates CollectionView.SortDescriptions) before this bubbles up, so
-        // the description read here already reflects the click that just happened.
-        if (_sortDirty)
-        {
-            _sortDirty = false;
+    private void SaveCurrentSort()
+    {
+        if (DataContext is not LibraryViewModel vm || TracksGrid.CollectionView?.SortDescriptions.FirstOrDefault() is not { } sortDescription)
+            return;
 
-            if (TracksGrid.CollectionView?.SortDescriptions.FirstOrDefault() is { } sortDescription)
-            {
-                LibrarySettingsStore.SaveSort(
-                    vm.SettingsFilePath, sortDescription.PropertyPath, sortDescription.Direction == ListSortDirection.Descending);
-            }
-        }
+        LibrarySettingsStore.SaveSort(
+            vm.SettingsFilePath, sortDescription.PropertyPath, sortDescription.Direction == ListSortDirection.Descending);
     }
 
     private void OnTrackDoubleTapped(object? sender, TappedEventArgs e)
