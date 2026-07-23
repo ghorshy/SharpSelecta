@@ -17,14 +17,17 @@
         <TextBlock Text="{Binding CurrentTrack.Album}" TextWrapping="Wrap" />
         <TextBlock Text="{Binding CurrentTrack.Year}" />
         <TextBlock Text="{Binding CurrentTrackTechnicalSummary}" Opacity="0.7" FontSize="11" TextWrapping="Wrap" />
-        <Image Source="{Binding CurrentTrackArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
-               Stretch="Uniform"
-               HorizontalAlignment="Stretch"
-               Margin="{styles:Spacing Top=S}"
-               IsVisible="{Binding CurrentTrackArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
-        <views:AlbumCoverPlaceholderIcon HorizontalAlignment="Stretch"
-                                     Margin="{styles:Spacing Top=S}"
-                                     IsVisible="{Binding CurrentTrackArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNull}}" />
+        <!-- Double-tap opens the cover at its real resolution in a separate borderless window
+             (AlbumCoverWindow) - only meaningful when there's actual artwork, hence the guard in
+             the handler rather than gating this Panel's own visibility. -->
+        <Panel Margin="{styles:Spacing Top=S}" DoubleTapped="OnArtworkDoubleTapped">
+            <Image Source="{Binding CurrentTrackArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
+                   Stretch="Uniform"
+                   HorizontalAlignment="Stretch"
+                   IsVisible="{Binding CurrentTrackArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+            <views:AlbumCoverPlaceholderIcon HorizontalAlignment="Stretch"
+                                             IsVisible="{Binding CurrentTrackArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNull}}" />
+        </Panel>
     </StackPanel>
 
 </UserControl>

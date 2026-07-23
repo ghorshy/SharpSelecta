@@ -1,0 +1,23 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SharpSelecta.App.ViewModels"
+        xmlns:converters="using:SharpSelecta.App.Converters"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="400"
+        x:Class="SharpSelecta.App.Views.AlbumCoverWindow"
+        x:DataType="vm:PlaybackControlsViewModel"
+        WindowDecorations="None"
+        CanResize="False"
+        ShowInTaskbar="False"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="CenterScreen">
+
+    <!-- No title bar to drag by, so the whole cover acts as one instead — ElementRole="TitleBar"
+         hands the actual drag-move to the OS/window manager, which is what makes this work
+         consistently across desktop environments instead of a hand-rolled position tracker. -->
+    <Border Background="Black" WindowDecorationProperties.ElementRole="TitleBar">
+        <Image Source="{Binding CurrentTrackArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}" />
+    </Border>
+
+</Window>
