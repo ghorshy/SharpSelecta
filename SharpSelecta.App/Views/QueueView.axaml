@@ -2,7 +2,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SharpSelecta.App.ViewModels"
              xmlns:res="using:SharpSelecta.App.Resources"
+             xmlns:views="using:SharpSelecta.App.Views"
              xmlns:converters="using:SharpSelecta.App.Converters"
+             xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:styles="using:SharpSelecta.App.Styles"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -61,8 +63,12 @@
                 <DataTemplate x:DataType="vm:QueueEntryViewModel">
                     <Grid ColumnDefinitions="36,*,Auto" Margin="{styles:Spacing Uniform=S}">
                         <Border Grid.Column="0" Width="36" Height="36" VerticalAlignment="Center" Background="{DynamicResource SystemBaseLowColor}">
-                            <Image Source="{Binding ArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
-                                   Stretch="UniformToFill" />
+                            <Panel>
+                                <Image Source="{Binding ArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
+                                       IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
+                                       Stretch="UniformToFill" />
+                                <views:VinylPlaceholderIcon IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNull}}" />
+                            </Panel>
                         </Border>
                         <StackPanel Grid.Column="1" Margin="{styles:Spacing Left=S, Right=XXS}" VerticalAlignment="Center">
                             <TextBlock Text="{Binding Title}" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
