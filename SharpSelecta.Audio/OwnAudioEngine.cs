@@ -94,6 +94,32 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
         }
     }
 
+    public void Dispose()
+    {
+        if (_currentTrack is not null)
+        {
+            _currentTrack.Stop();
+            _currentTrack.DetachFromClock();
+            _mixer?.RemoveSource(_currentTrack);
+            _currentTrack.Dispose();
+            _currentTrack = null;
+        }
+
+        DeleteTranscodedTempFile();
+
+        // Guards against disposing when InitializeAsync never ran (_mixer stays null in that
+        // case) — OwnaudioNet.Shutdown() would have nothing to release.
+        if (_mixer is not null)
+        {
+            _mixer.Stop();
+            _mixer.Dispose();
+            _mixer = null;
+            OwnaudioNet.Shutdown();
+        }
+
+        logger.LogInformation("OwnAudioSharp engine disposed");
+    }
+
     private string TranscodeToFlac(string filePath)
     {
         var tempPath = Path.Combine(Path.GetTempPath(), $"sharpselecta-{Guid.NewGuid():N}.flac");

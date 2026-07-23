@@ -1,6 +1,6 @@
 namespace SharpSelecta.Core.Audio;
 
-public interface IAudioEngine
+public interface IAudioEngine : IDisposable
 {
     Task InitializeAsync();
     void Load(string filePath);

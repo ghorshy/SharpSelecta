@@ -37,6 +37,10 @@ public partial class App : Application
             services.AddSingleton<IFilePickerService>(new AvaloniaFilePickerService(mainWindow));
             var provider = services.BuildServiceProvider();
 
+            // Disposes the singleton IAudioEngine (native mixer/source cleanup, temp transcode
+            // file) on a normal exit, instead of relying entirely on process teardown.
+            desktop.Exit += (_, _) => provider.Dispose();
+
             var audioEngine = provider.GetRequiredService<IAudioEngine>();
 
             var librarySettingsFilePath = Path.Combine(
