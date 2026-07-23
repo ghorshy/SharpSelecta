@@ -183,6 +183,34 @@ public class LibraryViewModelTests
     }
 
     [Test]
+    public async Task ApplyPendingFolderChangesCommand_WithNoPendingChanges_DoesNotRescan()
+    {
+        // Settings' OK button applies unconditionally (it means "apply + close"), so clicking it
+        // without having changed anything must not trigger a rescan (and, transitively, a full
+        // artwork-cache reload) — regression test for that behavior.
+        var vm = CreateViewModel(out _, out var filePickerService, out _);
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+        try
+        {
+            File.WriteAllBytes(Path.Combine(root.FullName, "songA.mp3"), []);
+            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+            await vm.AddFolderCommand.ExecuteAsync(null);
+            await Assert.That(vm.Tracks.Count).IsEqualTo(1);
+
+            // Added after the initial scan, with no pending folder changes — if Apply rescanned
+            // anyway, this would show up.
+            File.WriteAllBytes(Path.Combine(root.FullName, "songB.mp3"), []);
+            await vm.ApplyPendingFolderChangesCommand.ExecuteAsync(null);
+
+            await Assert.That(vm.Tracks.Count).IsEqualTo(1);
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
     public async Task ApplyPendingFolderChangesCommand_WhenLastFolderRemoved_ClearsTracks()
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);

@@ -388,6 +388,9 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     [RelayCommand]
     private async Task ApplyPendingFolderChangesAsync()
     {
+        if (!HasPendingChanges)
+            return;
+
         // Snapshotted first: clearing LibraryFolderPaths below re-syncs PendingLibraryFolderPaths
         // as a side effect, which would otherwise wipe out the list being enumerated here.
         var folderPaths = PendingLibraryFolderPaths.ToList();
