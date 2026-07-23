@@ -253,7 +253,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             try
             {
                 var artwork = AlbumArtworkCache.GetOrCreate(
-                    cacheDirectory, rawKey, () => MusicLibraryScanner.LoadArtworkUncached(firstTrackPath));
+                    cacheDirectory, rawKey, () => MusicLibraryScanner.LoadArtwork(firstTrackPath));
 
                 // GetOrCreate above runs on this Parallel.ForEachAsync worker thread, not the UI
                 // thread — ArtworkBytes is an ObservableProperty, so its change notification has

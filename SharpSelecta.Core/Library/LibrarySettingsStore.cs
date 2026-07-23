@@ -1,8 +1,9 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SharpSelecta.Core.Library;
 
-public static class LibrarySettingsStore
+public static partial class LibrarySettingsStore
 {
     public static IReadOnlyList<string>? LoadLibraryFolderPaths(string settingsFilePath) => Load(settingsFilePath)?.LibraryFolderPaths;
 
@@ -61,7 +62,7 @@ public static class LibrarySettingsStore
         try
         {
             var json = File.ReadAllText(settingsFilePath);
-            return JsonSerializer.Deserialize<LibrarySettingsData>(json);
+            return JsonSerializer.Deserialize(json, LibrarySettingsJsonContext.Default.LibrarySettingsData);
         }
         catch (Exception ex) when (ex is JsonException or IOException)
         {
@@ -77,7 +78,7 @@ public static class LibrarySettingsStore
             Directory.CreateDirectory(directory);
         }
 
-        File.WriteAllText(settingsFilePath, JsonSerializer.Serialize(data));
+        File.WriteAllText(settingsFilePath, JsonSerializer.Serialize(data, LibrarySettingsJsonContext.Default.LibrarySettingsData));
     }
 
     private sealed record LibrarySettingsData(
@@ -90,4 +91,9 @@ public static class LibrarySettingsStore
         bool? SortDescending,
         double? TileSize,
         LibraryViewMode? ViewMode);
+
+    [JsonSerializable(typeof(LibrarySettingsData))]
+    private partial class LibrarySettingsJsonContext : JsonSerializerContext
+    {
+    }
 }

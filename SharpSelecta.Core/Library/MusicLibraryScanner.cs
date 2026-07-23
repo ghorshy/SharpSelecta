@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using AtlTrack = ATL.Track;
 
 namespace SharpSelecta.Core.Library;
@@ -6,8 +5,6 @@ namespace SharpSelecta.Core.Library;
 public static class MusicLibraryScanner
 {
     private static readonly string[] SupportedExtensions = [".mp3", ".flac", ".wav", ".m4a"];
-
-    private static readonly ConcurrentDictionary<string, byte[]?> ArtworkCache = new();
 
     public static IReadOnlyList<Track> Scan(string folderPath)
     {
@@ -55,18 +52,7 @@ public static class MusicLibraryScanner
     }
 
     // Not read during Scan — decoding embedded pictures for an entire library upfront would be
-    // wasteful. Called instead when a track is actually loaded for playback — cached in memory
-    // since the same "currently playing" track's artwork tends to get re-requested.
-    public static byte[]? LoadArtwork(string filePath) => ArtworkCache.GetOrAdd(filePath, static path => ReadEmbeddedArtwork(path));
-
-    // Bypasses the in-memory cache above. Building the album grid's disk-backed thumbnail cache
-    // means reading one full-size embedded picture per album (hundreds of them, several MB apiece
-    // for high-res cover art) just once each to produce a small thumbnail — caching those
-    // full-size originals in ArtworkCache forever afterward serves no purpose and was pinning
-    // hundreds of MB of memory the app never released.
-    public static byte[]? LoadArtworkUncached(string filePath) => ReadEmbeddedArtwork(filePath);
-
-    private static byte[]? ReadEmbeddedArtwork(string filePath)
+    public static byte[]? LoadArtwork(string filePath)
     {
         try
         {

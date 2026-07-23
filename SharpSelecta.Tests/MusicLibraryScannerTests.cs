@@ -162,14 +162,4 @@ public class MusicLibraryScannerTests
         await Assert.That(artwork).IsNull();
     }
 
-    [Test]
-    public async Task LoadArtworkUncached_WhenFileHasAnEmbeddedPicture_ReturnsItsBytes()
-    {
-        var fixturePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track-with-artwork.mp3");
-
-        var artwork = MusicLibraryScanner.LoadArtworkUncached(fixturePath);
-
-        await Assert.That(artwork).IsNotNull();
-        await Assert.That(artwork!.Length).IsGreaterThan(0);
-    }
 }
