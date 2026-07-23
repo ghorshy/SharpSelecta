@@ -149,20 +149,29 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     // misleadingly on every app startup while the remembered folders are still being (re)scanned.
     public bool ShowEmptyState => NoTracks && !IsLoadingLibrary;
 
-    partial void OnIsLoadingLibraryChanged(bool value) => OnPropertyChanged(nameof(ShowEmptyState));
+    partial void OnIsLoadingLibraryChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowEmptyState));
+        NotifyViewVisibilityChanged();
+    }
 
     [ObservableProperty]
     private LibraryViewMode viewMode = LibraryViewMode.TrackList;
 
-    public bool IsTrackListViewVisible => HasTracks && ViewMode == LibraryViewMode.TrackList;
+    public bool IsTrackListViewVisible => HasTracks && !IsLoadingLibrary && ViewMode == LibraryViewMode.TrackList;
 
-    public bool IsAlbumGridViewVisible => HasTracks && ViewMode == LibraryViewMode.AlbumGrid;
+    public bool IsAlbumGridViewVisible => HasTracks && !IsLoadingLibrary && ViewMode == LibraryViewMode.AlbumGrid;
+
+    private void NotifyViewVisibilityChanged()
+    {
+        OnPropertyChanged(nameof(IsTrackListViewVisible));
+        OnPropertyChanged(nameof(IsAlbumGridViewVisible));
+    }
 
     partial void OnViewModeChanged(LibraryViewMode value)
     {
         LibrarySettingsStore.SaveViewMode(_settingsFilePath, value);
-        OnPropertyChanged(nameof(IsTrackListViewVisible));
-        OnPropertyChanged(nameof(IsAlbumGridViewVisible));
+        NotifyViewVisibilityChanged();
     }
 
     [RelayCommand]
@@ -306,8 +315,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             OnPropertyChanged(nameof(HasTracks));
             OnPropertyChanged(nameof(NoTracks));
             OnPropertyChanged(nameof(ShowEmptyState));
-            OnPropertyChanged(nameof(IsTrackListViewVisible));
-            OnPropertyChanged(nameof(IsAlbumGridViewVisible));
+            NotifyViewVisibilityChanged();
             RebuildAlbums();
         };
 
@@ -457,11 +465,11 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     // Whole-album actions (right-click a tile in the album grid) — same commands as the
     // per-track ones above, just applied to every track in the album, in TrackNumber order.
     [RelayCommand]
-    private Task PlayAlbumNowAsync(AlbumViewModel album) => _playbackControls.PlayNowAsync(album.Tracks.Select(t => t.Track).ToList());
+    private Task PlayAlbumNowAsync(AlbumViewModel album) => _playbackControls.PlayNowAsync(album.UnderlyingTracks);
 
     [RelayCommand]
-    private Task PlayAlbumNext(AlbumViewModel album) => _playbackControls.PlayNext(album.Tracks.Select(t => t.Track).ToList());
+    private Task PlayAlbumNext(AlbumViewModel album) => _playbackControls.PlayNext(album.UnderlyingTracks);
 
     [RelayCommand]
-    private Task AddAlbumToQueue(AlbumViewModel album) => _playbackControls.AddToQueue(album.Tracks.Select(t => t.Track).ToList());
+    private Task AddAlbumToQueue(AlbumViewModel album) => _playbackControls.AddToQueue(album.UnderlyingTracks);
 }

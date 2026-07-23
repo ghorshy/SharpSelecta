@@ -581,6 +581,22 @@ public class LibraryViewModelTests
     }
 
     [Test]
+    public async Task ViewVisibility_WhileLibraryIsLoading_IsFalseEvenWithTracksAlreadyShown()
+    {
+        // A rescan of an already-populated library leaves HasTracks true (the old Tracks aren't
+        // cleared until the new scan finishes) - the loading indicator must still take over rather
+        // than rendering on top of the still-live track/album grid.
+        var vm = CreateViewModel(out _, out _, out _);
+        AddTrack(vm, "/music/a.mp3", "Album A", "Artist");
+        await Assert.That(vm.HasTracks).IsTrue();
+
+        vm.IsLoadingLibrary = true;
+
+        await Assert.That(vm.IsTrackListViewVisible).IsFalse();
+        await Assert.That(vm.IsAlbumGridViewVisible).IsFalse();
+    }
+
+    [Test]
     public async Task IsLoadingLibrary_IsFalseAfterFoldersFinishLoading()
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);

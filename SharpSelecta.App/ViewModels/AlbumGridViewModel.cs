@@ -112,7 +112,7 @@ public partial class AlbumGridViewModel : ViewModelBase
 
     private static int ComputeColumnCount(double viewportWidth, double tileSize)
     {
-        if (viewportWidth <= 0 || tileSize <= 0)
+        if (viewportWidth <= 0)
             return 1;
 
         return Math.Max(1, (int)Math.Floor((viewportWidth + RowSpacing) / (tileSize + RowSpacing)));

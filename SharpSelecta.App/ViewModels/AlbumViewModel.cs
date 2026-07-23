@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.ViewModels;
 
@@ -18,6 +20,8 @@ public sealed partial class AlbumViewModel(string title, string artist, IReadOnl
     public string Artist { get; } = artist;
 
     public IReadOnlyList<LibraryTrackViewModel> Tracks { get; } = tracks;
+
+    public IReadOnlyList<Track> UnderlyingTracks { get; } = tracks.Select(t => t.Track).ToList();
 
     public LibraryViewModel Library { get; } = library;
 
