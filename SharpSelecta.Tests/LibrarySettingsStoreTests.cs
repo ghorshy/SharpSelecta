@@ -78,16 +78,18 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            var columns = new ColumnVisibility(
-                TrackNumber: true, Title: true, Artist: false, Album: false,
-                Length: true, SampleRate: false, BitDepth: false, Bitrate: true,
-                FileType: false, Year: true);
+            var columns = new Dictionary<string, bool>
+            {
+                ["TrackNumber"] = true, ["Title"] = true, ["Artist"] = false, ["Album"] = false,
+                ["Length"] = true, ["SampleRate"] = false, ["BitDepth"] = false, ["Bitrate"] = true,
+                ["FileType"] = false, ["Year"] = true,
+            };
 
             LibrarySettingsStore.SaveColumnVisibility(settingsPath, columns);
 
             var loaded = LibrarySettingsStore.LoadColumnVisibility(settingsPath);
 
-            await Assert.That(loaded).IsEqualTo(columns);
+            await Assert.That(loaded).IsEquivalentTo(columns);
         }
         finally
         {
@@ -103,8 +105,7 @@ public class LibrarySettingsStoreTests
         {
             LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
 
-            LibrarySettingsStore.SaveColumnVisibility(settingsPath, new ColumnVisibility(
-                true, true, true, true, true, true, true, true, true, true));
+            LibrarySettingsStore.SaveColumnVisibility(settingsPath, new Dictionary<string, bool> { ["TrackNumber"] = true });
 
             await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
         }
@@ -120,12 +121,12 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            var columns = new ColumnVisibility(true, false, true, false, true, false, true, false, true, false);
+            var columns = new Dictionary<string, bool> { ["TrackNumber"] = true, ["Title"] = false };
             LibrarySettingsStore.SaveColumnVisibility(settingsPath, columns);
 
             LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
 
-            await Assert.That(LibrarySettingsStore.LoadColumnVisibility(settingsPath)).IsEqualTo(columns);
+            await Assert.That(LibrarySettingsStore.LoadColumnVisibility(settingsPath)).IsEquivalentTo(columns);
         }
         finally
         {
@@ -170,13 +171,13 @@ public class LibrarySettingsStoreTests
         try
         {
             LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
-            var columns = new ColumnVisibility(true, false, true, false, true, false, true, false, true, false);
+            var columns = new Dictionary<string, bool> { ["TrackNumber"] = true, ["Title"] = false };
             LibrarySettingsStore.SaveColumnVisibility(settingsPath, columns);
 
             LibrarySettingsStore.SaveColumnOrder(settingsPath, ["Title", "Artist"]);
 
             await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
-            await Assert.That(LibrarySettingsStore.LoadColumnVisibility(settingsPath)).IsEqualTo(columns);
+            await Assert.That(LibrarySettingsStore.LoadColumnVisibility(settingsPath)).IsEquivalentTo(columns);
         }
         finally
         {

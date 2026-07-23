@@ -9,9 +9,9 @@ public static class LibrarySettingsStore
     public static void SaveLibraryFolderPaths(string settingsFilePath, IReadOnlyList<string> folderPaths) =>
         Save(settingsFilePath, Default(settingsFilePath) with { LibraryFolderPaths = folderPaths });
 
-    public static ColumnVisibility? LoadColumnVisibility(string settingsFilePath) => Load(settingsFilePath)?.Columns;
+    public static IReadOnlyDictionary<string, bool>? LoadColumnVisibility(string settingsFilePath) => Load(settingsFilePath)?.Columns;
 
-    public static void SaveColumnVisibility(string settingsFilePath, ColumnVisibility columns) =>
+    public static void SaveColumnVisibility(string settingsFilePath, IReadOnlyDictionary<string, bool> columns) =>
         Save(settingsFilePath, Default(settingsFilePath) with { Columns = columns });
 
     public static IReadOnlyList<string>? LoadColumnOrder(string settingsFilePath) => Load(settingsFilePath)?.ColumnOrder;
@@ -72,7 +72,7 @@ public static class LibrarySettingsStore
 
     private sealed record LibrarySettingsData(
         IReadOnlyList<string>? LibraryFolderPaths,
-        ColumnVisibility? Columns,
+        IReadOnlyDictionary<string, bool>? Columns,
         IReadOnlyList<string>? ColumnOrder,
         double? RightColumnWidth,
         IReadOnlyDictionary<string, double>? ColumnWidths,

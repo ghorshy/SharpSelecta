@@ -71,77 +71,52 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     [ObservableProperty]
     private bool isYearColumnVisible = true;
 
+    private IEnumerable<(string Key, Func<bool> Get, Action<bool> Set)> ColumnVisibilityBindings() =>
+    [
+        ("TrackNumber", () => IsTrackNumberColumnVisible, v => IsTrackNumberColumnVisible = v),
+        ("Title", () => IsTitleColumnVisible, v => IsTitleColumnVisible = v),
+        ("Artist", () => IsArtistColumnVisible, v => IsArtistColumnVisible = v),
+        ("Album", () => IsAlbumColumnVisible, v => IsAlbumColumnVisible = v),
+        ("Length", () => IsLengthColumnVisible, v => IsLengthColumnVisible = v),
+        ("SampleRate", () => IsSampleRateColumnVisible, v => IsSampleRateColumnVisible = v),
+        ("BitDepth", () => IsBitDepthColumnVisible, v => IsBitDepthColumnVisible = v),
+        ("Bitrate", () => IsBitrateColumnVisible, v => IsBitrateColumnVisible = v),
+        ("FileType", () => IsFileTypeColumnVisible, v => IsFileTypeColumnVisible = v),
+        ("Year", () => IsYearColumnVisible, v => IsYearColumnVisible = v),
+    ];
+
     // CommunityToolkit's generated setters can't be cancelled, so hiding the last visible column
     // is undone here instead of blocked up front.
-    private bool AnyColumnVisible() =>
-        IsTrackNumberColumnVisible || IsTitleColumnVisible || IsArtistColumnVisible || IsAlbumColumnVisible ||
-        IsLengthColumnVisible || IsSampleRateColumnVisible || IsBitDepthColumnVisible || IsBitrateColumnVisible ||
-        IsFileTypeColumnVisible || IsYearColumnVisible;
+    private bool AnyColumnVisible() => ColumnVisibilityBindings().Any(c => c.Get());
 
-    partial void OnIsTrackNumberColumnVisibleChanged(bool value)
+    private void OnColumnVisibilityChanged(bool value, Action<bool> revert)
     {
-        if (!value && !AnyColumnVisible()) { IsTrackNumberColumnVisible = true; return; }
+        if (!value && !AnyColumnVisible()) { revert(true); return; }
         SaveColumnVisibility();
     }
 
-    partial void OnIsTitleColumnVisibleChanged(bool value)
-    {
-        if (!value && !AnyColumnVisible()) { IsTitleColumnVisible = true; return; }
-        SaveColumnVisibility();
-    }
+    partial void OnIsTrackNumberColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsTrackNumberColumnVisible = v);
 
-    partial void OnIsArtistColumnVisibleChanged(bool value)
-    {
-        if (!value && !AnyColumnVisible()) { IsArtistColumnVisible = true; return; }
-        SaveColumnVisibility();
-    }
+    partial void OnIsTitleColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsTitleColumnVisible = v);
 
-    partial void OnIsAlbumColumnVisibleChanged(bool value)
-    {
-        if (!value && !AnyColumnVisible()) { IsAlbumColumnVisible = true; return; }
-        SaveColumnVisibility();
-    }
+    partial void OnIsArtistColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsArtistColumnVisible = v);
 
-    partial void OnIsLengthColumnVisibleChanged(bool value)
-    {
-        if (!value && !AnyColumnVisible()) { IsLengthColumnVisible = true; return; }
-        SaveColumnVisibility();
-    }
+    partial void OnIsAlbumColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsAlbumColumnVisible = v);
 
-    partial void OnIsSampleRateColumnVisibleChanged(bool value)
-    {
-        if (!value && !AnyColumnVisible()) { IsSampleRateColumnVisible = true; return; }
-        SaveColumnVisibility();
-    }
+    partial void OnIsLengthColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsLengthColumnVisible = v);
 
-    partial void OnIsBitDepthColumnVisibleChanged(bool value)
-    {
-        if (!value && !AnyColumnVisible()) { IsBitDepthColumnVisible = true; return; }
-        SaveColumnVisibility();
-    }
+    partial void OnIsSampleRateColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsSampleRateColumnVisible = v);
 
-    partial void OnIsBitrateColumnVisibleChanged(bool value)
-    {
-        if (!value && !AnyColumnVisible()) { IsBitrateColumnVisible = true; return; }
-        SaveColumnVisibility();
-    }
+    partial void OnIsBitDepthColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsBitDepthColumnVisible = v);
 
-    partial void OnIsFileTypeColumnVisibleChanged(bool value)
-    {
-        if (!value && !AnyColumnVisible()) { IsFileTypeColumnVisible = true; return; }
-        SaveColumnVisibility();
-    }
+    partial void OnIsBitrateColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsBitrateColumnVisible = v);
 
-    partial void OnIsYearColumnVisibleChanged(bool value)
-    {
-        if (!value && !AnyColumnVisible()) { IsYearColumnVisible = true; return; }
-        SaveColumnVisibility();
-    }
+    partial void OnIsFileTypeColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsFileTypeColumnVisible = v);
 
-    private void SaveColumnVisibility() => LibrarySettingsStore.SaveColumnVisibility(_settingsFilePath, new ColumnVisibility(
-        IsTrackNumberColumnVisible, IsTitleColumnVisible, IsArtistColumnVisible, IsAlbumColumnVisible,
-        IsLengthColumnVisible, IsSampleRateColumnVisible, IsBitDepthColumnVisible, IsBitrateColumnVisible,
-        IsFileTypeColumnVisible, IsYearColumnVisible));
+    partial void OnIsYearColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsYearColumnVisible = v);
+
+    private void SaveColumnVisibility() => LibrarySettingsStore.SaveColumnVisibility(
+        _settingsFilePath, ColumnVisibilityBindings().ToDictionary(c => c.Key, c => c.Get()));
 
     private void ApplySavedColumnVisibility()
     {
@@ -149,16 +124,13 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         if (columns is null)
             return;
 
-        IsTrackNumberColumnVisible = columns.TrackNumber;
-        IsTitleColumnVisible = columns.Title;
-        IsArtistColumnVisible = columns.Artist;
-        IsAlbumColumnVisible = columns.Album;
-        IsLengthColumnVisible = columns.Length;
-        IsSampleRateColumnVisible = columns.SampleRate;
-        IsBitDepthColumnVisible = columns.BitDepth;
-        IsBitrateColumnVisible = columns.Bitrate;
-        IsFileTypeColumnVisible = columns.FileType;
-        IsYearColumnVisible = columns.Year;
+        foreach (var (key, _, set) in ColumnVisibilityBindings())
+        {
+            if (columns.TryGetValue(key, out var visible))
+            {
+                set(visible);
+            }
+        }
     }
 
     public BulkObservableCollection<LibraryTrackViewModel> Tracks { get; } = [];
