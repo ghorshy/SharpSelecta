@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Threading.Tasks;
@@ -102,9 +103,21 @@ public partial class PlaybackControlsViewModel : ViewModelBase
         await ResumeIfQueueWasFinishedAsync();
     }
 
+    public async Task PlayNext(IReadOnlyList<Track> tracks)
+    {
+        _queue.PlayNext(tracks);
+        await ResumeIfQueueWasFinishedAsync();
+    }
+
     public async Task AddToQueue(Track track)
     {
         _queue.AddToQueue(track);
+        await ResumeIfQueueWasFinishedAsync();
+    }
+
+    public async Task AddToQueue(IReadOnlyList<Track> tracks)
+    {
+        _queue.AddToQueue(tracks);
         await ResumeIfQueueWasFinishedAsync();
     }
 
@@ -283,6 +296,16 @@ public partial class PlaybackControlsViewModel : ViewModelBase
     {
         _queue.PlayNow(track);
         await LoadTrackAsync(track);
+    }
+
+    // Whole-album version: queues every track in order, then loads/plays the first one.
+    public async Task PlayNowAsync(IReadOnlyList<Track> tracks)
+    {
+        if (tracks.Count == 0)
+            return;
+
+        _queue.PlayNow(tracks);
+        await LoadTrackAsync(tracks[0]);
     }
 
     // Public so anything that has already positioned the queue (Next/Previous, PlayNowAsync,

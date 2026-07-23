@@ -60,6 +60,42 @@ public class PlaybackQueueTests
     }
 
     [Test]
+    public async Task PlayNow_WithATrackList_InsertsAllInOrderAndCurrentPointsAtTheFirst()
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow(TrackA);
+
+        queue.PlayNow(new[] { TrackB, TrackC });
+
+        await Assert.That(queue.Entries.Select(e => e.Track)).IsEquivalentTo([TrackA, TrackB, TrackC]);
+        await Assert.That(queue.CurrentIndex).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task PlayNext_WithATrackList_InsertsAllInOrderWithoutMovingCurrent()
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow(TrackA);
+
+        queue.PlayNext(new[] { TrackB, TrackC });
+
+        await Assert.That(queue.Entries.Select(e => e.Track)).IsEquivalentTo([TrackA, TrackB, TrackC]);
+        await Assert.That(queue.CurrentIndex).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task AddToQueue_WithATrackList_AppendsAllInOrder()
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow(TrackA);
+        queue.AddAutoDjEntry(TrackC);
+
+        queue.AddToQueue(new[] { TrackB });
+
+        await Assert.That(queue.Entries.Select(e => e.Track)).IsEquivalentTo([TrackA, TrackB, TrackC]);
+    }
+
+    [Test]
     public async Task AddToQueue_InsertsBeforeAutoDjTail_NotAtTheVeryEnd()
     {
         var queue = new PlaybackQueue();

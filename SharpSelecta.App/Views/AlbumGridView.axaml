@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SharpSelecta.App.ViewModels"
              xmlns:views="using:SharpSelecta.App.Views"
+             xmlns:res="using:SharpSelecta.App.Resources"
              xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:converters="using:SharpSelecta.App.Converters"
              xmlns:styles="using:SharpSelecta.App.Styles"
@@ -49,6 +50,19 @@
                                                 Width="{Binding Library.Grid.TileSize}"
                                                 Command="{Binding Library.Grid.ToggleExpandCommand}"
                                                 CommandParameter="{Binding}">
+                                            <Button.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="{x:Static res:Strings.PlayNow}"
+                                                              Command="{Binding Library.PlayAlbumNowCommand}"
+                                                              CommandParameter="{Binding}" />
+                                                    <MenuItem Header="{x:Static res:Strings.PlayNext}"
+                                                              Command="{Binding Library.PlayAlbumNextCommand}"
+                                                              CommandParameter="{Binding}" />
+                                                    <MenuItem Header="{x:Static res:Strings.AddToQueue}"
+                                                              Command="{Binding Library.AddAlbumToQueueCommand}"
+                                                              CommandParameter="{Binding}" />
+                                                </ContextMenu>
+                                            </Button.ContextMenu>
                                             <StackPanel Spacing="{styles:SpacingValue XXS}">
                                                 <Border Width="{Binding Library.Grid.TileSize}"
                                                         Height="{Binding Library.Grid.TileSize}"

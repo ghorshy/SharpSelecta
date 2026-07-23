@@ -45,18 +45,43 @@ public sealed class PlaybackQueue
     // A track played "right now" is inserted right after wherever we currently are and becomes
     // the new current entry — anything already queued ahead stays queued, just pushed further out,
     // so nothing gets lost and the whole play history (including ad-hoc picks) stays browsable.
-    public void PlayNow(Track track)
+    public void PlayNow(Track track) => PlayNow([track]);
+
+    // Whole-album version: all tracks are inserted in order starting right after the current
+    // position, and the first one becomes the new current entry — same placement rule as the
+    // single-track overload, just for a batch instead of looping single inserts (which would
+    // need reversing to preserve order, since repeated single inserts at the same index don't).
+    public void PlayNow(IReadOnlyList<Track> tracks)
     {
+        if (tracks.Count == 0)
+            return;
+
         var insertIndex = CurrentIndex + 1;
-        _entries.Insert(insertIndex, new QueueEntry(track, QueueEntrySource.Manual));
-        SetCurrentIndex(insertIndex);
+        var firstInsertedIndex = insertIndex;
+        foreach (var track in tracks)
+        {
+            _entries.Insert(insertIndex++, new QueueEntry(track, QueueEntrySource.Manual));
+        }
+
+        SetCurrentIndex(firstInsertedIndex);
     }
 
-    public void PlayNext(Track track) => _entries.Insert(CurrentIndex + 1, new QueueEntry(track, QueueEntrySource.Manual));
+    public void PlayNext(Track track) => PlayNext([track]);
+
+    public void PlayNext(IReadOnlyList<Track> tracks)
+    {
+        var insertIndex = CurrentIndex + 1;
+        foreach (var track in tracks)
+        {
+            _entries.Insert(insertIndex++, new QueueEntry(track, QueueEntrySource.Manual));
+        }
+    }
 
     // Manual additions go after any earlier manual entries but always ahead of the auto-DJ tail,
     // so the auto-DJ's random picks never bury something the user deliberately queued up.
-    public void AddToQueue(Track track)
+    public void AddToQueue(Track track) => AddToQueue([track]);
+
+    public void AddToQueue(IReadOnlyList<Track> tracks)
     {
         var insertIndex = _entries.Count;
         for (var i = CurrentIndex + 1; i < _entries.Count; i++)
@@ -66,7 +91,10 @@ public sealed class PlaybackQueue
             break;
         }
 
-        _entries.Insert(insertIndex, new QueueEntry(track, QueueEntrySource.Manual));
+        foreach (var track in tracks)
+        {
+            _entries.Insert(insertIndex++, new QueueEntry(track, QueueEntrySource.Manual));
+        }
     }
 
     // Seeds an auto-DJ tail entry. No auto-DJ feature exists yet to call this from production

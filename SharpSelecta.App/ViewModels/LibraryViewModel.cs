@@ -389,4 +389,15 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     [RelayCommand]
     private Task AddToQueue(Track track) => _playbackControls.AddToQueue(track);
+
+    // Whole-album actions (right-click a tile in the album grid) — same commands as the
+    // per-track ones above, just applied to every track in the album, in TrackNumber order.
+    [RelayCommand]
+    private Task PlayAlbumNowAsync(AlbumViewModel album) => _playbackControls.PlayNowAsync(album.Tracks.Select(t => t.Track).ToList());
+
+    [RelayCommand]
+    private Task PlayAlbumNext(AlbumViewModel album) => _playbackControls.PlayNext(album.Tracks.Select(t => t.Track).ToList());
+
+    [RelayCommand]
+    private Task AddAlbumToQueue(AlbumViewModel album) => _playbackControls.AddToQueue(album.Tracks.Select(t => t.Track).ToList());
 }

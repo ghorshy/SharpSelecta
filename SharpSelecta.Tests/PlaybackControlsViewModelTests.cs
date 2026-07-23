@@ -635,4 +635,18 @@ public class PlaybackControlsViewModelTests
 
         await Assert.That(queue.Entries.Count).IsEqualTo(2);
     }
+
+    [Test]
+    public async Task PlayNowAsync_WithATrackList_QueuesAllAndLoadsTheFirst()
+    {
+        var vm = CreateViewModel(out var audioEngine, out var queue);
+        var a = new Track("/music/a.mp3", "a.mp3");
+        var b = new Track("/music/b.mp3", "b.mp3");
+
+        await vm.PlayNowAsync(new[] { a, b });
+
+        audioEngine.Received(1).Load(a.FilePath);
+        await Assert.That(queue.Entries.Select(e => e.Track)).IsEquivalentTo([a, b]);
+        await Assert.That(queue.CurrentIndex).IsEqualTo(0);
+    }
 }
