@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using Avalonia;
@@ -38,32 +39,31 @@ public partial class LibraryView : UserControl
         var order = LibrarySettingsStore.LoadColumnOrder(vm.SettingsFilePath);
         if (order is not null)
         {
-            for (var i = 0; i < order.Count; i++)
-            {
-                var column = TracksGrid.Columns.FirstOrDefault(c => c.Tag as string == order[i]);
-                if (column is not null)
-                {
-                    column.DisplayIndex = i;
-                }
-            }
+            var displayIndexByKey = order.Select((key, index) => (key, index)).ToDictionary(x => x.key, x => x.index);
+            ApplyToTaggedColumns(displayIndexByKey, (column, index) => column.DisplayIndex = index);
         }
 
         var widths = LibrarySettingsStore.LoadColumnWidths(vm.SettingsFilePath);
         if (widths is not null)
         {
-            foreach (var column in TracksGrid.Columns)
-            {
-                if (column.Tag is string key && widths.TryGetValue(key, out var width))
-                {
-                    column.Width = new DataGridLength(width);
-                }
-            }
+            ApplyToTaggedColumns(widths, (column, width) => column.Width = new DataGridLength(width));
         }
 
         // CollectionView is still null right here — TracksGrid's ItemsSource binding to Tracks
         // hasn't caught up with this DataContext yet — so the saved sort is (re)applied once
         // Tracks actually gets populated instead, when CollectionView is guaranteed to exist.
         vm.Tracks.CollectionChanged += (_, _) => ApplySavedSort(vm);
+    }
+
+    private void ApplyToTaggedColumns<T>(IReadOnlyDictionary<string, T> valuesByKey, Action<DataGridColumn, T> apply)
+    {
+        foreach (var column in TracksGrid.Columns)
+        {
+            if (column.Tag is string key && valuesByKey.TryGetValue(key, out var value))
+            {
+                apply(column, value);
+            }
+        }
     }
 
     private void ApplySavedSort(LibraryViewModel vm)
