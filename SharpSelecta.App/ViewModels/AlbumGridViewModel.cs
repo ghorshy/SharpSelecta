@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using SharpSelecta.App.Collections;
 using SharpSelecta.Core.Library;
 
@@ -58,7 +59,8 @@ public partial class AlbumGridViewModel : ViewModelBase
         RecomputeLayout();
     }
 
-    public void ToggleExpand(AlbumViewModel album) => SetExpandedAlbum(ExpandedAlbum == album ? null : album);
+    [RelayCommand]
+    private void ToggleExpand(AlbumViewModel album) => SetExpandedAlbum(ExpandedAlbum == album ? null : album);
 
     private void SetExpandedAlbum(AlbumViewModel? album)
     {

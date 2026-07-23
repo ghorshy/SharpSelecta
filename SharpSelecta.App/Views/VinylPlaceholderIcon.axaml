@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="100" d:DesignHeight="100"
+             x:Class="SharpSelecta.App.Views.VinylPlaceholderIcon">
+
+    <!-- Vector, not a raster image - Viewbox scales it cleanly to any tile size (1:1) without
+         needing per-zoom-level assets, unlike a bitmap placeholder would. -->
+    <Viewbox Stretch="Uniform">
+        <Canvas Width="100" Height="100">
+            <Ellipse Width="100" Height="100" Fill="#FF2B2B2B" />
+            <Ellipse Width="78" Height="78" Canvas.Left="11" Canvas.Top="11" Stroke="#FF1A1A1A" StrokeThickness="0.75" />
+            <Ellipse Width="56" Height="56" Canvas.Left="22" Canvas.Top="22" Stroke="#FF1A1A1A" StrokeThickness="0.75" />
+            <Ellipse Width="38" Height="38" Canvas.Left="31" Canvas.Top="31" Fill="#FFB33A3A" />
+            <Ellipse Width="8" Height="8" Canvas.Left="46" Canvas.Top="46" Fill="#FF0D0D0D" />
+        </Canvas>
+    </Viewbox>
+
+</UserControl>

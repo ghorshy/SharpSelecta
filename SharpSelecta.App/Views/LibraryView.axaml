@@ -2,6 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SharpSelecta.App.ViewModels"
              xmlns:res="using:SharpSelecta.App.Resources"
+             xmlns:core="using:SharpSelecta.Core.Library"
+             xmlns:views="using:SharpSelecta.App.Views"
              xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:styles="using:SharpSelecta.App.Styles"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -9,6 +11,14 @@
              mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="400"
              x:Class="SharpSelecta.App.Views.LibraryView"
              x:DataType="vm:LibraryViewModel">
+
+    <DockPanel LastChildFill="True">
+        <!-- Temporary: minimal view-mode switcher, not yet styled to show which one is active. -->
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="{styles:SpacingValue XS}"
+                    Margin="{styles:Spacing Bottom=XS}" IsVisible="{Binding HasTracks}">
+            <Button Content="List" Command="{Binding SetViewModeCommand}" CommandParameter="{x:Static core:LibraryViewMode.TrackList}" />
+            <Button Content="Albums" Command="{Binding SetViewModeCommand}" CommandParameter="{x:Static core:LibraryViewMode.AlbumGrid}" />
+        </StackPanel>
 
     <Grid>
         <!-- Empty state: no library folder chosen (or remembered) yet — the button takes center
@@ -18,7 +28,11 @@
             <TextBlock Text="{Binding StatusMessage}" Foreground="OrangeRed" TextWrapping="Wrap" HorizontalAlignment="Center" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
         </StackPanel>
 
-        <DockPanel IsVisible="{Binding HasTracks}" LastChildFill="True">
+        <Border IsVisible="{Binding IsAlbumGridViewVisible}">
+            <views:AlbumGridView DataContext="{Binding Grid}" />
+        </Border>
+
+        <DockPanel IsVisible="{Binding IsTrackListViewVisible}" LastChildFill="True">
             <DataGrid x:Name="TracksGrid"
                       ItemsSource="{Binding Tracks}"
                       AutoGenerateColumns="False"
@@ -122,5 +136,6 @@
             </DataGrid>
         </DockPanel>
     </Grid>
+    </DockPanel>
 
 </UserControl>

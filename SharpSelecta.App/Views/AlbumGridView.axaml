@@ -1,0 +1,116 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SharpSelecta.App.ViewModels"
+             xmlns:views="using:SharpSelecta.App.Views"
+             xmlns:conv="using:Avalonia.Data.Converters"
+             xmlns:converters="using:SharpSelecta.App.Converters"
+             xmlns:styles="using:SharpSelecta.App.Styles"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="400"
+             x:Class="SharpSelecta.App.Views.AlbumGridView"
+             x:DataType="vm:AlbumGridViewModel">
+
+    <UserControl.Styles>
+        <!-- Tiles/close button are plain Buttons used as clickable containers, not as buttons in
+             the usual sense - strip the default chrome so they look like the tile/icon they wrap. -->
+        <Style Selector="Button.plain">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+        <Style Selector="Button.plain:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+    </UserControl.Styles>
+
+    <DockPanel LastChildFill="True">
+        <Slider DockPanel.Dock="Top"
+                Minimum="80" Maximum="320"
+                Value="{Binding TileSize, Mode=TwoWay}"
+                Width="160" HorizontalAlignment="Right"
+                Margin="{styles:Spacing Uniform=XS}" />
+
+        <ScrollViewer x:Name="Scroller" SizeChanged="OnScrollerSizeChanged" PointerWheelChanged="OnPointerWheelChanged">
+            <ItemsControl ItemsSource="{Binding Rows}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:AlbumRowViewModel">
+                        <StackPanel Margin="{styles:Spacing Bottom=S}">
+                            <ItemsControl ItemsSource="{Binding Tiles}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue S}" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:AlbumViewModel">
+                                        <Button Classes="plain"
+                                                Width="{Binding Library.Grid.TileSize}"
+                                                Command="{Binding Library.Grid.ToggleExpandCommand}"
+                                                CommandParameter="{Binding}">
+                                            <StackPanel Spacing="{styles:SpacingValue XXS}">
+                                                <Border Width="{Binding Library.Grid.TileSize}"
+                                                        Height="{Binding Library.Grid.TileSize}"
+                                                        ClipToBounds="True"
+                                                        CornerRadius="4"
+                                                        Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+                                                    <Panel>
+                                                        <Image Source="{Binding ArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
+                                                               IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
+                                                               Stretch="UniformToFill" />
+                                                        <views:VinylPlaceholderIcon IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNull}}" />
+                                                    </Panel>
+                                                </Border>
+                                                <TextBlock Text="{Binding Title}" FontWeight="Bold" TextTrimming="CharacterEllipsis"
+                                                           Width="{Binding Library.Grid.TileSize}" />
+                                                <TextBlock Text="{Binding Artist}" Opacity="0.7" TextTrimming="CharacterEllipsis"
+                                                           Width="{Binding Library.Grid.TileSize}" />
+                                            </StackPanel>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <Border IsVisible="{Binding ExpandedAlbum, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
+                                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+                                    CornerRadius="4"
+                                    Padding="{styles:Spacing Uniform=S}"
+                                    Margin="{styles:Spacing Top=XS}">
+                                <Grid ColumnDefinitions="*,Auto" DataContext="{Binding ExpandedAlbum}" x:DataType="vm:AlbumViewModel">
+                                    <DockPanel Grid.Column="0">
+                                        <Button DockPanel.Dock="Top" Classes="plain" HorizontalAlignment="Right"
+                                                Content="&#x2715;"
+                                                Command="{Binding Library.Grid.ToggleExpandCommand}"
+                                                CommandParameter="{Binding}" />
+
+                                        <ItemsControl ItemsSource="{Binding Tracks}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:LibraryTrackViewModel">
+                                                    <Grid ColumnDefinitions="Auto,*,Auto" DoubleTapped="OnExpandedTrackDoubleTapped"
+                                                          Margin="{styles:Spacing Bottom=XXS}">
+                                                        <TextBlock Grid.Column="0" Text="{Binding Track.TrackNumber}" Width="30" Opacity="0.7" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding Track.Title}" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Grid.Column="2" Text="{Binding LengthDisplay}" Opacity="0.7" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </DockPanel>
+
+                                    <Panel Grid.Column="1" Width="160" Height="160" Margin="{styles:Spacing Left=S}">
+                                        <Image Source="{Binding ArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
+                                               IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
+                                               Stretch="UniformToFill" />
+                                        <views:VinylPlaceholderIcon IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNull}}" />
+                                    </Panel>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DockPanel>
+
+</UserControl>

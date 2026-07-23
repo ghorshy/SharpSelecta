@@ -140,6 +140,23 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     public bool NoTracks => Tracks.Count == 0;
 
+    [ObservableProperty]
+    private LibraryViewMode viewMode = LibraryViewMode.TrackList;
+
+    public bool IsTrackListViewVisible => HasTracks && ViewMode == LibraryViewMode.TrackList;
+
+    public bool IsAlbumGridViewVisible => HasTracks && ViewMode == LibraryViewMode.AlbumGrid;
+
+    partial void OnViewModeChanged(LibraryViewMode value)
+    {
+        LibrarySettingsStore.SaveViewMode(_settingsFilePath, value);
+        OnPropertyChanged(nameof(IsTrackListViewVisible));
+        OnPropertyChanged(nameof(IsAlbumGridViewVisible));
+    }
+
+    [RelayCommand]
+    private void SetViewMode(LibraryViewMode mode) => ViewMode = mode;
+
     // The album grid view's data source — grouped from Tracks (not scanned independently), keyed
     // by a trimmed, case-insensitive Album title so tag whitespace/casing differences don't fork
     // one album into two tiles. Various-artist compilations intentionally collapse into a single
@@ -233,6 +250,8 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         {
             OnPropertyChanged(nameof(HasTracks));
             OnPropertyChanged(nameof(NoTracks));
+            OnPropertyChanged(nameof(IsTrackListViewVisible));
+            OnPropertyChanged(nameof(IsAlbumGridViewVisible));
             RebuildAlbums();
         };
 
@@ -263,6 +282,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     public async Task InitializeAsync()
     {
         ApplySavedColumnVisibility();
+        ViewMode = LibrarySettingsStore.LoadViewMode(_settingsFilePath) ?? LibraryViewMode.TrackList;
 
         var folderPaths = LibrarySettingsStore.LoadLibraryFolderPaths(_settingsFilePath);
         if (folderPaths is not null)
