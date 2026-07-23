@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -145,22 +146,53 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     // tile (grouped by Album alone, not Artist+Album).
     public BulkObservableCollection<AlbumViewModel> Albums { get; } = [];
 
+    public AlbumGridViewModel Grid { get; }
+
     private void RebuildAlbums()
     {
-        var albums = Tracks
+        // The raw (trimmed, original-case) group key is kept alongside each AlbumViewModel so the
+        // artwork cache can be keyed off it directly — using the localized "Unknown Album" display
+        // fallback as a cache key would tie cache filenames to the current UI language.
+        var groups = Tracks
             .GroupBy(t => (t.Track.Album ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase)
             .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
             .Select(g =>
             {
                 var orderedTracks = g.OrderBy(t => t.Track.TrackNumber ?? int.MaxValue).ToList();
-                return new AlbumViewModel(
+                var album = new AlbumViewModel(
                     g.Key.Length > 0 ? g.Key : Strings.UnknownAlbum,
                     ResolveArtistLabel(orderedTracks),
                     orderedTracks,
                     this);
-            });
+                return (RawKey: g.Key, Album: album);
+            })
+            .ToList();
 
-        Albums.ReplaceAll(albums);
+        Albums.ReplaceAll(groups.Select(g => g.Album));
+
+        _ = LoadAlbumArtworkAsync(groups);
+    }
+
+    private async Task LoadAlbumArtworkAsync(IReadOnlyList<(string RawKey, AlbumViewModel Album)> groups)
+    {
+        var cacheDirectory = Path.Combine(Path.GetDirectoryName(_settingsFilePath)!, "artwork-cache");
+
+        foreach (var (rawKey, album) in groups)
+        {
+            var firstTrackPath = album.Tracks.Count > 0 ? album.Tracks[0].Track.FilePath : null;
+            if (firstTrackPath is null)
+                continue;
+
+            try
+            {
+                album.ArtworkBytes = await Task.Run(() =>
+                    AlbumArtworkCache.GetOrCreate(cacheDirectory, rawKey, () => MusicLibraryScanner.LoadArtwork(firstTrackPath)));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load artwork for album {Album}", album.Title);
+            }
+        }
     }
 
     private static string ResolveArtistLabel(IEnumerable<LibraryTrackViewModel> tracks)
@@ -194,6 +226,8 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         _playbackControls = playbackControls;
         _settingsFilePath = settingsFilePath;
         _logger = logger;
+
+        Grid = new AlbumGridViewModel(this, settingsFilePath);
 
         Tracks.CollectionChanged += (_, _) =>
         {
