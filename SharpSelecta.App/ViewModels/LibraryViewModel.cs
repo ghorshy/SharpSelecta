@@ -139,6 +139,46 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     public bool NoTracks => Tracks.Count == 0;
 
+    // The album grid view's data source — grouped from Tracks (not scanned independently), keyed
+    // by a trimmed, case-insensitive Album title so tag whitespace/casing differences don't fork
+    // one album into two tiles. Various-artist compilations intentionally collapse into a single
+    // tile (grouped by Album alone, not Artist+Album).
+    public BulkObservableCollection<AlbumViewModel> Albums { get; } = [];
+
+    private void RebuildAlbums()
+    {
+        var albums = Tracks
+            .GroupBy(t => (t.Track.Album ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase)
+            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(g =>
+            {
+                var orderedTracks = g.OrderBy(t => t.Track.TrackNumber ?? int.MaxValue).ToList();
+                return new AlbumViewModel(
+                    g.Key.Length > 0 ? g.Key : Strings.UnknownAlbum,
+                    ResolveArtistLabel(orderedTracks),
+                    orderedTracks,
+                    this);
+            });
+
+        Albums.ReplaceAll(albums);
+    }
+
+    private static string ResolveArtistLabel(IEnumerable<LibraryTrackViewModel> tracks)
+    {
+        var distinctArtists = tracks
+            .Select(t => (t.Track.Artist ?? string.Empty).Trim())
+            .Where(artist => artist.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        return distinctArtists.Count switch
+        {
+            0 => string.Empty,
+            1 => distinctArtists[0],
+            _ => Strings.VariousArtists,
+        };
+    }
+
     // Column order isn't modeled as a ViewModel property like visibility is — DataGridColumn's
     // DisplayIndex lives on the control itself — so LibraryView reads/writes it directly through
     // LibrarySettingsStore using this path.
@@ -159,6 +199,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         {
             OnPropertyChanged(nameof(HasTracks));
             OnPropertyChanged(nameof(NoTracks));
+            RebuildAlbums();
         };
 
         LibraryFolderPaths.CollectionChanged += (_, _) =>
@@ -245,6 +286,11 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     [RelayCommand]
     private void CancelPendingFolderChanges() => SyncPendingLibraryFolderPaths();
+
+    // Manual refresh entry point (e.g. an F5 action) — re-scans the currently configured folders
+    // from scratch, picking up tag/file changes without requiring a folder add/remove round trip.
+    [RelayCommand]
+    private Task RescanAsync() => LoadFoldersAsync();
 
     private async Task LoadFoldersAsync()
     {

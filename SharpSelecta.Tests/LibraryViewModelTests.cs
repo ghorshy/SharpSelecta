@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using SharpSelecta.App.Resources;
 using SharpSelecta.App.Services;
 using SharpSelecta.App.ViewModels;
 using SharpSelecta.Core.Audio;
@@ -125,6 +126,29 @@ public class LibraryViewModelTests
         {
             rootA.Delete(recursive: true);
             rootB.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task RescanCommand_PicksUpFilesAddedSinceTheLastScan()
+    {
+        var vm = CreateViewModel(out _, out var filePickerService, out _);
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+        try
+        {
+            File.WriteAllBytes(Path.Combine(root.FullName, "songA.mp3"), []);
+            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+            await vm.AddFolderCommand.ExecuteAsync(null);
+            await Assert.That(vm.Tracks.Count).IsEqualTo(1);
+
+            File.WriteAllBytes(Path.Combine(root.FullName, "songB.mp3"), []);
+            await vm.RescanCommand.ExecuteAsync(null);
+
+            await Assert.That(vm.Tracks.Count).IsEqualTo(2);
+        }
+        finally
+        {
+            root.Delete(recursive: true);
         }
     }
 
@@ -470,5 +494,78 @@ public class LibraryViewModelTests
         {
             File.Delete(settingsPath);
         }
+    }
+
+    private static void AddTrack(LibraryViewModel vm, string filePath, string? album, string? artist, int? trackNumber = null) =>
+        vm.Tracks.Add(new LibraryTrackViewModel(new Track(filePath, filePath) { Album = album, Artist = artist, TrackNumber = trackNumber }, vm));
+
+    [Test]
+    public async Task Albums_GroupsTracksByAlbumTitle_IgnoringArtist()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+
+        AddTrack(vm, "/music/a.mp3", "Compilation", "Artist One");
+        AddTrack(vm, "/music/b.mp3", "Compilation", "Artist Two");
+
+        await Assert.That(vm.Albums.Count).IsEqualTo(1);
+        await Assert.That(vm.Albums[0].Tracks.Count).IsEqualTo(2);
+        await Assert.That(vm.Albums[0].Artist).IsEqualTo(Strings.VariousArtists);
+    }
+
+    [Test]
+    public async Task Albums_GroupingIgnoresCaseAndSurroundingWhitespace()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+
+        AddTrack(vm, "/music/a.mp3", "Discovery", "Daft Punk");
+        AddTrack(vm, "/music/b.mp3", "  discovery ", "Daft Punk");
+
+        await Assert.That(vm.Albums.Count).IsEqualTo(1);
+        await Assert.That(vm.Albums[0].Tracks.Count).IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task Albums_WithNoAlbumTag_FallBackToUnknownAlbumBucket()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+
+        AddTrack(vm, "/music/a.mp3", album: null, artist: "Some Artist");
+        AddTrack(vm, "/music/b.mp3", album: null, artist: "Some Artist");
+
+        await Assert.That(vm.Albums.Count).IsEqualTo(1);
+        await Assert.That(vm.Albums[0].Title).IsEqualTo(Strings.UnknownAlbum);
+    }
+
+    [Test]
+    public async Task Albums_OrdersTracksByTrackNumber()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+
+        AddTrack(vm, "/music/b.mp3", "Album", "Artist", trackNumber: 2);
+        AddTrack(vm, "/music/a.mp3", "Album", "Artist", trackNumber: 1);
+
+        await Assert.That(vm.Albums[0].Tracks[0].Track.FilePath).IsEqualTo("/music/a.mp3");
+        await Assert.That(vm.Albums[0].Tracks[1].Track.FilePath).IsEqualTo("/music/b.mp3");
+    }
+
+    [Test]
+    public async Task Albums_WithASingleArtist_ShowsThatArtistNotVariousArtists()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+
+        AddTrack(vm, "/music/a.mp3", "Album", "Only Artist");
+        AddTrack(vm, "/music/b.mp3", "Album", "Only Artist");
+
+        await Assert.That(vm.Albums[0].Artist).IsEqualTo("Only Artist");
+    }
+
+    [Test]
+    public async Task Albums_WithNoArtistTag_ShowsBlankArtist()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+
+        AddTrack(vm, "/music/a.mp3", "Album", artist: null);
+
+        await Assert.That(vm.Albums[0].Artist).IsEqualTo(string.Empty);
     }
 }

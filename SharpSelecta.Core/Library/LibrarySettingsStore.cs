@@ -38,8 +38,18 @@ public static class LibrarySettingsStore
     public static void SaveSort(string settingsFilePath, string propertyPath, bool descending) =>
         Save(settingsFilePath, Default(settingsFilePath) with { SortPropertyPath = propertyPath, SortDescending = descending });
 
+    public static double? LoadTileSize(string settingsFilePath) => Load(settingsFilePath)?.TileSize;
+
+    public static void SaveTileSize(string settingsFilePath, double tileSize) =>
+        Save(settingsFilePath, Default(settingsFilePath) with { TileSize = tileSize });
+
+    public static LibraryViewMode? LoadViewMode(string settingsFilePath) => Load(settingsFilePath)?.ViewMode;
+
+    public static void SaveViewMode(string settingsFilePath, LibraryViewMode viewMode) =>
+        Save(settingsFilePath, Default(settingsFilePath) with { ViewMode = viewMode });
+
     private static LibrarySettingsData Default(string settingsFilePath) =>
-        Load(settingsFilePath) ?? new LibrarySettingsData(null, null, null, null, null, null, null);
+        Load(settingsFilePath) ?? new LibrarySettingsData(null, null, null, null, null, null, null, null, null);
 
     private static LibrarySettingsData? Load(string settingsFilePath)
     {
@@ -77,5 +87,7 @@ public static class LibrarySettingsStore
         double? RightColumnWidth,
         IReadOnlyDictionary<string, double>? ColumnWidths,
         string? SortPropertyPath,
-        bool? SortDescending);
+        bool? SortDescending,
+        double? TileSize,
+        LibraryViewMode? ViewMode);
 }

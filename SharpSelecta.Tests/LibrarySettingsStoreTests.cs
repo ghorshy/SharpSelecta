@@ -302,4 +302,80 @@ public class LibrarySettingsStoreTests
         }
     }
 
+    [Test]
+    public async Task SaveAndLoad_RoundTripsTileSize()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveTileSize(settingsPath, 220);
+
+            var loaded = LibrarySettingsStore.LoadTileSize(settingsPath);
+
+            await Assert.That(loaded).IsEqualTo(220);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task LoadTileSize_WhenFileDoesNotExist_ReturnsNull()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        var loaded = LibrarySettingsStore.LoadTileSize(settingsPath);
+
+        await Assert.That(loaded).IsNull();
+    }
+
+    [Test]
+    public async Task SaveAndLoad_RoundTripsViewMode()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveViewMode(settingsPath, LibraryViewMode.AlbumGrid);
+
+            var loaded = LibrarySettingsStore.LoadViewMode(settingsPath);
+
+            await Assert.That(loaded).IsEqualTo(LibraryViewMode.AlbumGrid);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task LoadViewMode_WhenFileDoesNotExist_ReturnsNull()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        var loaded = LibrarySettingsStore.LoadViewMode(settingsPath);
+
+        await Assert.That(loaded).IsNull();
+    }
+
+    [Test]
+    public async Task SavingTileSizeAndViewMode_DoesNotClobberOtherSettings()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
+            LibrarySettingsStore.SaveSort(settingsPath, "Track.Title", false);
+
+            LibrarySettingsStore.SaveTileSize(settingsPath, 180);
+            LibrarySettingsStore.SaveViewMode(settingsPath, LibraryViewMode.AlbumGrid);
+
+            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
+            await Assert.That(LibrarySettingsStore.LoadSort(settingsPath)).IsEqualTo(("Track.Title", false));
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
 }

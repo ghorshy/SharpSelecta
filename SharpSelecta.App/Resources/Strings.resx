@@ -163,4 +163,10 @@
   <data name="ColumnYear" xml:space="preserve">
     <value>Year</value>
   </data>
+  <data name="UnknownAlbum" xml:space="preserve">
+    <value>Unknown Album</value>
+  </data>
+  <data name="VariousArtists" xml:space="preserve">
+    <value>Various Artists</value>
+  </data>
 </root>
