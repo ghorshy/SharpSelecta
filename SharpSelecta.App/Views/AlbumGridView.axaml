@@ -97,34 +97,45 @@
                                     CornerRadius="4"
                                     Padding="{styles:Spacing Uniform=S}"
                                     Margin="{styles:Spacing Top=XS}">
-                                <Grid ColumnDefinitions="*,Auto" DataContext="{Binding ExpandedAlbum}" x:DataType="vm:AlbumViewModel">
-                                    <DockPanel Grid.Column="0">
-                                        <Button DockPanel.Dock="Top" Classes="plain" HorizontalAlignment="Right"
-                                                Content="&#x2715;"
-                                                Command="{Binding Library.Grid.ToggleExpandCommand}"
-                                                CommandParameter="{Binding}" />
+                                <!-- ContentControl rather than DataContext="{Binding ExpandedAlbum}" directly on a
+                                     static Grid: the latter briefly left children bound against the outer
+                                     AlbumRowViewModel context (and vice versa) during ItemsRepeater container
+                                     recycling, logging "unable to resolve" binding warnings - ContentControl owns
+                                     that content-swap lifecycle instead of relying on ad-hoc DataContext timing. -->
+                                <ContentControl Content="{Binding ExpandedAlbum}">
+                                    <ContentControl.ContentTemplate>
+                                        <DataTemplate x:DataType="vm:AlbumViewModel">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <DockPanel Grid.Column="0">
+                                                    <Button DockPanel.Dock="Top" Classes="plain" HorizontalAlignment="Right"
+                                                            Content="&#x2715;"
+                                                            Command="{Binding Library.Grid.ToggleExpandCommand}"
+                                                            CommandParameter="{Binding}" />
 
-                                        <ItemsControl ItemsSource="{Binding Tracks}">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate x:DataType="vm:LibraryTrackViewModel">
-                                                    <Grid ColumnDefinitions="Auto,*,Auto" DoubleTapped="OnExpandedTrackDoubleTapped"
-                                                          Margin="{styles:Spacing Bottom=XXS}">
-                                                        <TextBlock Grid.Column="0" Text="{Binding Track.TrackNumber}" Width="30" Opacity="0.7" />
-                                                        <TextBlock Grid.Column="1" Text="{Binding Track.Title}" TextTrimming="CharacterEllipsis" />
-                                                        <TextBlock Grid.Column="2" Text="{Binding LengthDisplay}" Opacity="0.7" />
-                                                    </Grid>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </DockPanel>
+                                                    <ItemsControl ItemsSource="{Binding Tracks}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate x:DataType="vm:LibraryTrackViewModel">
+                                                                <Grid ColumnDefinitions="Auto,*,Auto" DoubleTapped="OnExpandedTrackDoubleTapped"
+                                                                      Margin="{styles:Spacing Bottom=XXS}">
+                                                                    <TextBlock Grid.Column="0" Text="{Binding Track.TrackNumber}" Width="30" Opacity="0.7" />
+                                                                    <TextBlock Grid.Column="1" Text="{Binding Track.Title}" TextTrimming="CharacterEllipsis" />
+                                                                    <TextBlock Grid.Column="2" Text="{Binding LengthDisplay}" Opacity="0.7" />
+                                                                </Grid>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </DockPanel>
 
-                                    <Panel Grid.Column="1" Width="160" Height="160" Margin="{styles:Spacing Left=S}">
-                                        <Image Source="{Binding ArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
-                                               IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
-                                               Stretch="UniformToFill" />
-                                        <views:AlbumCoverPlaceholderIcon IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNull}}" />
-                                    </Panel>
-                                </Grid>
+                                                <Panel Grid.Column="1" Width="160" Height="160" Margin="{styles:Spacing Left=S}">
+                                                    <Image Source="{Binding ArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
+                                                           IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
+                                                           Stretch="UniformToFill" />
+                                                    <views:AlbumCoverPlaceholderIcon IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNull}}" />
+                                                </Panel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ContentControl.ContentTemplate>
+                                </ContentControl>
                             </Border>
                         </StackPanel>
                     </DataTemplate>
