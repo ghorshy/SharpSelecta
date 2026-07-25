@@ -6,6 +6,7 @@ public sealed record Track(string FilePath, string DisplayName)
     public string? Title { get; init; }
     public string? Artist { get; init; }
     public string? Album { get; init; }
+    public string? AlbumArtist { get; init; }
     public int? Year { get; init; }
     public TimeSpan Duration { get; init; }
     public int SampleRate { get; init; }

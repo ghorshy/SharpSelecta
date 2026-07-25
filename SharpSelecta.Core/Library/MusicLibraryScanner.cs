@@ -33,6 +33,7 @@ public static class MusicLibraryScanner
                 Title = atlTrack.Title,
                 Artist = atlTrack.Artist,
                 Album = atlTrack.Album,
+                AlbumArtist = atlTrack.AlbumArtist,
                 // ATL.NET's Year is nullable in theory but reports 0 rather than null when a file
                 // has no year tag — normalize that to null so it displays as blank, not "0".
                 Year = atlTrack.Year is > 0 ? atlTrack.Year : null,

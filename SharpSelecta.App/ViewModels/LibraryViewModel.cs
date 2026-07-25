@@ -179,8 +179,11 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     // The album grid view's data source — grouped from Tracks (not scanned independently), keyed
     // by a trimmed, case-insensitive Album title so tag whitespace/casing differences don't fork
-    // one album into two tiles. Various-artist compilations intentionally collapse into a single
-    // tile (grouped by Album alone, not Artist+Album).
+    // one album into two tiles. Also keyed by AlbumArtist (when tagged) so two different real
+    // albums that happen to share a title (e.g. two different releases both called "Bassline")
+    // don't get merged into one tile. Compilations tagged with a shared AlbumArtist (or none at
+    // all — the common case for loosely-tagged files) still collapse into a single tile, since
+    // every track in that group then shares the same (possibly empty) AlbumArtist key.
     public BulkObservableCollection<AlbumViewModel> Albums { get; } = [];
 
     public AlbumGridViewModel Grid { get; }
@@ -189,19 +192,24 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     {
         // The raw (trimmed, original-case) group key is kept alongside each AlbumViewModel so the
         // artwork cache can be keyed off it directly — using the localized "Unknown Album" display
-        // fallback as a cache key would tie cache filenames to the current UI language.
+        // fallback as a cache key would tie cache filenames to the current UI language. It combines
+        // both parts of the grouping key (not just the album title) so two distinct albums sharing
+        // a title don't collide on the same cached artwork file.
         var groups = Tracks
-            .GroupBy(t => (t.Track.Album ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase)
-            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+            .GroupBy(
+                t => (Album: (t.Track.Album ?? string.Empty).Trim(), AlbumArtist: (t.Track.AlbumArtist ?? string.Empty).Trim()),
+                AlbumGroupKeyComparer.Instance)
+            .OrderBy(g => g.Key.Album, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(g => g.Key.AlbumArtist, StringComparer.OrdinalIgnoreCase)
             .Select(g =>
             {
                 var orderedTracks = g.OrderBy(t => t.Track.TrackNumber ?? int.MaxValue).ToList();
                 var album = new AlbumViewModel(
-                    g.Key.Length > 0 ? g.Key : Strings.UnknownAlbum,
+                    g.Key.Album.Length > 0 ? g.Key.Album : Strings.UnknownAlbum,
                     ResolveArtistLabel(orderedTracks),
                     orderedTracks,
                     this);
-                return (RawKey: g.Key, Album: album);
+                return (RawKey: $"{g.Key.Album}{g.Key.AlbumArtist}", Album: album);
             })
             .ToList();
 
@@ -274,6 +282,20 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
                 _logger.LogError(ex, "Failed to load artwork for album {Album}", album.Title);
             }
         });
+    }
+
+    private sealed class AlbumGroupKeyComparer : IEqualityComparer<(string Album, string AlbumArtist)>
+    {
+        public static readonly AlbumGroupKeyComparer Instance = new();
+
+        public bool Equals((string Album, string AlbumArtist) x, (string Album, string AlbumArtist) y) =>
+            string.Equals(x.Album, y.Album, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(x.AlbumArtist, y.AlbumArtist, StringComparison.OrdinalIgnoreCase);
+
+        public int GetHashCode((string Album, string AlbumArtist) key) =>
+            HashCode.Combine(
+                key.Album.ToUpperInvariant(),
+                key.AlbumArtist.ToUpperInvariant());
     }
 
     private static string ResolveArtistLabel(IEnumerable<LibraryTrackViewModel> tracks)

@@ -524,8 +524,8 @@ public class LibraryViewModelTests
         }
     }
 
-    private static void AddTrack(LibraryViewModel vm, string filePath, string? album, string? artist, int? trackNumber = null) =>
-        vm.Tracks.Add(new LibraryTrackViewModel(new Track(filePath, filePath) { Album = album, Artist = artist, TrackNumber = trackNumber }, vm));
+    private static void AddTrack(LibraryViewModel vm, string filePath, string? album, string? artist, int? trackNumber = null, string? albumArtist = null) =>
+        vm.Tracks.Add(new LibraryTrackViewModel(new Track(filePath, filePath) { Album = album, Artist = artist, AlbumArtist = albumArtist, TrackNumber = trackNumber }, vm));
 
     [Test]
     public async Task Albums_GroupsTracksByAlbumTitle_IgnoringArtist()
@@ -538,6 +538,20 @@ public class LibraryViewModelTests
         await Assert.That(vm.Albums.Count).IsEqualTo(1);
         await Assert.That(vm.Albums[0].Tracks.Count).IsEqualTo(2);
         await Assert.That(vm.Albums[0].Artist).IsEqualTo(Strings.VariousArtists);
+    }
+
+    [Test]
+    public async Task Albums_WithSameTitleButDifferentAlbumArtist_StaysAsSeparateAlbums()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+
+        AddTrack(vm, "/music/a.mp3", "Bassline", "Capital", albumArtist: "Capital");
+        AddTrack(vm, "/music/b.mp3", "Bassline", "K Dot", albumArtist: "K Dot & DJ Q");
+
+        await Assert.That(vm.Albums.Count).IsEqualTo(2);
+        await Assert.That(vm.Albums[0].Title).IsEqualTo("Bassline");
+        await Assert.That(vm.Albums[1].Title).IsEqualTo("Bassline");
+        await Assert.That(vm.Albums.Select(a => a.Tracks.Count)).IsEquivalentTo([1, 1]);
     }
 
     [Test]
