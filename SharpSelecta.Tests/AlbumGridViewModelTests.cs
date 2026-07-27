@@ -25,6 +25,9 @@ public class AlbumGridViewModelTests
     private static void AddTrack(LibraryViewModel vm, string filePath, string album) =>
         vm.Tracks.Add(new LibraryTrackViewModel(new Track(filePath, filePath) { Album = album }, vm));
 
+    private static void AddTrack(LibraryViewModel vm, string filePath, string album, string artist, int? year) =>
+        vm.Tracks.Add(new LibraryTrackViewModel(new Track(filePath, filePath) { Album = album, Artist = artist, AlbumArtist = artist, Year = year }, vm));
+
     [Test]
     public async Task SetViewportWidth_PartitionsAlbumsIntoRowsOfTheComputedColumnCount()
     {
@@ -140,6 +143,95 @@ public class AlbumGridViewModelTests
             var restarted = CreateLibraryViewModel(settingsPath);
 
             await Assert.That(restarted.Grid.TileSize).IsEqualTo(vm.Grid.TileSize);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task SortMode_DefaultsToTitle()
+    {
+        var vm = CreateLibraryViewModel();
+
+        await Assert.That(vm.Grid.SortMode).IsEqualTo(AlbumSortMode.Title);
+    }
+
+    [Test]
+    public async Task SetSortMode_ToArtist_OrdersRowsByArtist()
+    {
+        var vm = CreateLibraryViewModel();
+        AddTrack(vm, "/music/a.mp3", "Zebra Album", "Beta Artist", null);
+        AddTrack(vm, "/music/b.mp3", "Apple Album", "Alpha Artist", null);
+        vm.Grid.SetViewportWidth(2000);
+
+        vm.Grid.SetSortModeCommand.Execute(AlbumSortMode.Artist);
+
+        await Assert.That(vm.Grid.Rows[0].Tiles[0].Artist).IsEqualTo("Alpha Artist");
+        await Assert.That(vm.Grid.Rows[0].Tiles[1].Artist).IsEqualTo("Beta Artist");
+    }
+
+    [Test]
+    public async Task SetSortMode_ToYear_OrdersRowsByYearWithUntaggedAlbumsLast()
+    {
+        var vm = CreateLibraryViewModel();
+        AddTrack(vm, "/music/a.mp3", "Album A", "Artist", 2010);
+        AddTrack(vm, "/music/b.mp3", "Album B", "Artist", null);
+        AddTrack(vm, "/music/c.mp3", "Album C", "Artist", 1999);
+        vm.Grid.SetViewportWidth(2000);
+
+        vm.Grid.SetSortModeCommand.Execute(AlbumSortMode.Year);
+
+        await Assert.That(vm.Grid.Rows[0].Tiles[0].Title).IsEqualTo("Album C");
+        await Assert.That(vm.Grid.Rows[0].Tiles[1].Title).IsEqualTo("Album A");
+        await Assert.That(vm.Grid.Rows[0].Tiles[2].Title).IsEqualTo("Album B");
+    }
+
+    [Test]
+    public async Task ToggleSortDirection_ReversesTheOrder()
+    {
+        var vm = CreateLibraryViewModel();
+        AddTrack(vm, "/music/a.mp3", "Album A", "Artist", 2010);
+        AddTrack(vm, "/music/b.mp3", "Album B", "Artist", 1999);
+        vm.Grid.SetViewportWidth(2000);
+        vm.Grid.SetSortModeCommand.Execute(AlbumSortMode.Year);
+
+        vm.Grid.ToggleSortDirectionCommand.Execute(null);
+
+        await Assert.That(vm.Grid.Rows[0].Tiles[0].Title).IsEqualTo("Album A");
+        await Assert.That(vm.Grid.Rows[0].Tiles[1].Title).IsEqualTo("Album B");
+    }
+
+    [Test]
+    public async Task ToggleSortDirection_WithYearSort_StillSortsUntaggedAlbumsLast()
+    {
+        var vm = CreateLibraryViewModel();
+        AddTrack(vm, "/music/a.mp3", "Album A", "Artist", 2010);
+        AddTrack(vm, "/music/b.mp3", "Album B", "Artist", null);
+        vm.Grid.SetViewportWidth(2000);
+        vm.Grid.SetSortModeCommand.Execute(AlbumSortMode.Year);
+
+        vm.Grid.ToggleSortDirectionCommand.Execute(null);
+
+        await Assert.That(vm.Grid.Rows[0].Tiles[0].Title).IsEqualTo("Album A");
+        await Assert.That(vm.Grid.Rows[0].Tiles[1].Title).IsEqualTo("Album B");
+    }
+
+    [Test]
+    public async Task SortModeAndDirection_RoundTripThroughSettings()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            var vm = CreateLibraryViewModel(settingsPath);
+            vm.Grid.SetSortModeCommand.Execute(AlbumSortMode.Year);
+            vm.Grid.ToggleSortDirectionCommand.Execute(null);
+
+            var restarted = CreateLibraryViewModel(settingsPath);
+
+            await Assert.That(restarted.Grid.SortMode).IsEqualTo(AlbumSortMode.Year);
+            await Assert.That(restarted.Grid.SortDescending).IsTrue();
         }
         finally
         {

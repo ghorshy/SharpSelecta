@@ -207,6 +207,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
                 var album = new AlbumViewModel(
                     g.Key.Album.Length > 0 ? g.Key.Album : Strings.UnknownAlbum,
                     ResolveArtistLabel(orderedTracks),
+                    orderedTracks.Select(t => t.Track.Year).FirstOrDefault(y => y.HasValue),
                     orderedTracks,
                     this);
                 return (RawKey: $"{g.Key.Album}{g.Key.AlbumArtist}", Album: album);

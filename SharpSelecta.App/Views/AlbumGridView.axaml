@@ -3,6 +3,7 @@
              xmlns:vm="using:SharpSelecta.App.ViewModels"
              xmlns:views="using:SharpSelecta.App.Views"
              xmlns:res="using:SharpSelecta.App.Resources"
+             xmlns:core="using:SharpSelecta.Core.Library"
              xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:converters="using:SharpSelecta.App.Converters"
              xmlns:styles="using:SharpSelecta.App.Styles"
@@ -32,6 +33,17 @@
                 Value="{Binding TileSize, Mode=TwoWay}"
                 Width="160" HorizontalAlignment="Right"
                 Margin="{styles:Spacing Uniform=XS}" />
+
+        <!-- Temporary: minimal sort-mode switcher, not yet styled to show which one is active
+             (same as LibraryView's List/Albums view-mode switcher). -->
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="{styles:SpacingValue XS}"
+                    Margin="{styles:Spacing Uniform=XS}">
+            <TextBlock Text="{x:Static res:Strings.SortBy}" VerticalAlignment="Center" Opacity="0.7" />
+            <Button Content="{x:Static res:Strings.ColumnTitle}" Command="{Binding SetSortModeCommand}" CommandParameter="{x:Static core:AlbumSortMode.Title}" />
+            <Button Content="{x:Static res:Strings.ColumnArtist}" Command="{Binding SetSortModeCommand}" CommandParameter="{x:Static core:AlbumSortMode.Artist}" />
+            <Button Content="{x:Static res:Strings.ColumnYear}" Command="{Binding SetSortModeCommand}" CommandParameter="{x:Static core:AlbumSortMode.Year}" />
+            <Button Content="{Binding SortDirectionSymbol}" Command="{Binding ToggleSortDirectionCommand}" />
+        </StackPanel>
 
         <ScrollViewer x:Name="Scroller" SizeChanged="OnScrollerSizeChanged" PointerWheelChanged="OnPointerWheelChanged">
             <!-- ItemsRepeater instead of ItemsControl for the row list specifically: it virtualizes

@@ -45,6 +45,7 @@ public static class Strings
     public static string VariousArtists => Get(nameof(VariousArtists));
     public static string LoadingLibrary => Get(nameof(LoadingLibrary));
     public static string ClearArtworkCache => Get(nameof(ClearArtworkCache));
+    public static string SortBy => Get(nameof(SortBy));
 
     public static string FailedToLoadFile(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToLoadFileFormat"), reason);

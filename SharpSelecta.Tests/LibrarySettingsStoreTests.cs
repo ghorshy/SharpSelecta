@@ -359,6 +359,83 @@ public class LibrarySettingsStoreTests
     }
 
     [Test]
+    public async Task SaveAndLoad_RoundTripsAlbumSortMode()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveAlbumSortMode(settingsPath, AlbumSortMode.Year);
+
+            var loaded = LibrarySettingsStore.LoadAlbumSortMode(settingsPath);
+
+            await Assert.That(loaded).IsEqualTo(AlbumSortMode.Year);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task LoadAlbumSortMode_WhenFileDoesNotExist_ReturnsNull()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        var loaded = LibrarySettingsStore.LoadAlbumSortMode(settingsPath);
+
+        await Assert.That(loaded).IsNull();
+    }
+
+    [Test]
+    public async Task SaveAndLoad_RoundTripsAlbumSortDescending()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveAlbumSortDescending(settingsPath, true);
+
+            var loaded = LibrarySettingsStore.LoadAlbumSortDescending(settingsPath);
+
+            await Assert.That(loaded).IsTrue();
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task LoadAlbumSortDescending_WhenFileDoesNotExist_ReturnsNull()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        var loaded = LibrarySettingsStore.LoadAlbumSortDescending(settingsPath);
+
+        await Assert.That(loaded).IsNull();
+    }
+
+    [Test]
+    public async Task SavingAlbumSortMode_DoesNotClobberOtherSettings()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
+            LibrarySettingsStore.SaveTileSize(settingsPath, 200);
+
+            LibrarySettingsStore.SaveAlbumSortMode(settingsPath, AlbumSortMode.Artist);
+            LibrarySettingsStore.SaveAlbumSortDescending(settingsPath, true);
+
+            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
+            await Assert.That(LibrarySettingsStore.LoadTileSize(settingsPath)).IsEqualTo(200);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
     public async Task SavingTileSizeAndViewMode_DoesNotClobberOtherSettings()
     {
         var settingsPath = CreateTempSettingsPath();

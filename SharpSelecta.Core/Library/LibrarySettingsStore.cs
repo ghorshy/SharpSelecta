@@ -49,8 +49,18 @@ public static partial class LibrarySettingsStore
     public static void SaveViewMode(string settingsFilePath, LibraryViewMode viewMode) =>
         Save(settingsFilePath, Default(settingsFilePath) with { ViewMode = viewMode });
 
+    public static AlbumSortMode? LoadAlbumSortMode(string settingsFilePath) => Load(settingsFilePath)?.AlbumSortMode;
+
+    public static void SaveAlbumSortMode(string settingsFilePath, AlbumSortMode sortMode) =>
+        Save(settingsFilePath, Default(settingsFilePath) with { AlbumSortMode = sortMode });
+
+    public static bool? LoadAlbumSortDescending(string settingsFilePath) => Load(settingsFilePath)?.AlbumSortDescending;
+
+    public static void SaveAlbumSortDescending(string settingsFilePath, bool descending) =>
+        Save(settingsFilePath, Default(settingsFilePath) with { AlbumSortDescending = descending });
+
     private static LibrarySettingsData Default(string settingsFilePath) =>
-        Load(settingsFilePath) ?? new LibrarySettingsData(null, null, null, null, null, null, null, null, null);
+        Load(settingsFilePath) ?? new LibrarySettingsData(null, null, null, null, null, null, null, null, null, null, null);
 
     private static LibrarySettingsData? Load(string settingsFilePath)
     {
@@ -90,7 +100,9 @@ public static partial class LibrarySettingsStore
         string? SortPropertyPath,
         bool? SortDescending,
         double? TileSize,
-        LibraryViewMode? ViewMode);
+        LibraryViewMode? ViewMode,
+        AlbumSortMode? AlbumSortMode,
+        bool? AlbumSortDescending);
 
     [JsonSerializable(typeof(LibrarySettingsData))]
     private partial class LibrarySettingsJsonContext : JsonSerializerContext

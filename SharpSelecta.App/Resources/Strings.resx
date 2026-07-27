@@ -175,4 +175,7 @@
   <data name="ClearArtworkCache" xml:space="preserve">
     <value>Clear Artwork Cache</value>
   </data>
+  <data name="SortBy" xml:space="preserve">
+    <value>Sort by</value>
+  </data>
 </root>

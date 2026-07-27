@@ -40,6 +40,12 @@ public partial class AlbumGridViewModel : ViewModelBase
     [ObservableProperty]
     private AlbumViewModel? expandedAlbum;
 
+    [ObservableProperty]
+    private AlbumSortMode sortMode;
+
+    [ObservableProperty]
+    private bool sortDescending;
+
     public BulkObservableCollection<AlbumRowViewModel> Rows { get; } = [];
 
     public AlbumGridViewModel(LibraryViewModel library, string settingsFilePath)
@@ -47,6 +53,8 @@ public partial class AlbumGridViewModel : ViewModelBase
         _library = library;
         _settingsFilePath = settingsFilePath;
         tileSize = Math.Clamp(LibrarySettingsStore.LoadTileSize(settingsFilePath) ?? DefaultTileSize, MinTileSize, MaxTileSize);
+        sortMode = LibrarySettingsStore.LoadAlbumSortMode(settingsFilePath) ?? AlbumSortMode.Title;
+        sortDescending = LibrarySettingsStore.LoadAlbumSortDescending(settingsFilePath) ?? false;
 
         _library.Albums.CollectionChanged += (_, _) => RebuildRows(force: true);
     }
@@ -70,6 +78,30 @@ public partial class AlbumGridViewModel : ViewModelBase
         RebuildRows(force: false);
     }
 
+    partial void OnSortModeChanged(AlbumSortMode value)
+    {
+        LibrarySettingsStore.SaveAlbumSortMode(_settingsFilePath, value);
+        RebuildRows(force: true);
+    }
+
+    partial void OnSortDescendingChanged(bool value)
+    {
+        LibrarySettingsStore.SaveAlbumSortDescending(_settingsFilePath, value);
+        OnPropertyChanged(nameof(SortDirectionSymbol));
+        RebuildRows(force: true);
+    }
+
+    // Plain up/down arrows rather than an icon font/asset - matches the rest of the grid's chrome
+    // (the Slider above it, the "✕" close glyph on an expanded tile), which is all text/glyphs
+    // rather than a bundled icon set.
+    public string SortDirectionSymbol => SortDescending ? "↓" : "↑";
+
+    [RelayCommand]
+    private void SetSortMode(AlbumSortMode mode) => SortMode = mode;
+
+    [RelayCommand]
+    private void ToggleSortDirection() => SortDescending = !SortDescending;
+
     [RelayCommand]
     private void ToggleExpand(AlbumViewModel album) => SetExpandedAlbum(ExpandedAlbum == album ? null : album);
 
@@ -88,8 +120,8 @@ public partial class AlbumGridViewModel : ViewModelBase
     // single TileSize tick during a slider drag or Ctrl+scroll, most of which don't actually change
     // how many tiles fit per row. TileSize changes reflow already-realized tiles for free via their
     // own Width/Height bindings, so a rebuild is only needed when the column count itself changes,
-    // or when the album list changed (force=true, e.g. after a rescan) since the tiles themselves
-    // are different then regardless of column count.
+    // or when the album list or sort changed (force=true, e.g. after a rescan or a sort-order
+    // change) since the tiles themselves are different then regardless of column count.
     //
     // Any real rebuild collapses whatever was expanded rather than trying to re-attach it to
     // whichever row it lands in after repartitioning — simpler, and resizing/zooming while reading
@@ -103,12 +135,33 @@ public partial class AlbumGridViewModel : ViewModelBase
         _columnCount = newColumnCount;
         ExpandedAlbum = null;
 
-        var rows = _library.Albums
+        var rows = SortAlbums(_library.Albums)
             .Chunk(_columnCount)
             .Select(tiles => new AlbumRowViewModel(tiles));
 
         Rows.ReplaceAll(rows);
     }
+
+    // _library.Albums itself always comes in Title-then-AlbumArtist order (see
+    // LibraryViewModel.RebuildAlbums) - LINQ's OrderBy/OrderByDescending are stable, so whichever
+    // mode below is picked, ties (e.g. two albums from the same Year) fall back to that original
+    // alphabetical order for free instead of needing an explicit ThenBy here.
+    private IEnumerable<AlbumViewModel> SortAlbums(IEnumerable<AlbumViewModel> albums) => SortMode switch
+    {
+        AlbumSortMode.Artist => SortDescending
+            ? albums.OrderByDescending(a => a.Artist, StringComparer.OrdinalIgnoreCase)
+            : albums.OrderBy(a => a.Artist, StringComparer.OrdinalIgnoreCase),
+
+        // Untagged (null-Year) albums are always sorted to the end regardless of direction, rather
+        // than jumping to the front when ascending just because null compares as the lowest value.
+        AlbumSortMode.Year => SortDescending
+            ? albums.OrderBy(a => a.Year is null).ThenByDescending(a => a.Year)
+            : albums.OrderBy(a => a.Year is null).ThenBy(a => a.Year),
+
+        _ => SortDescending
+            ? albums.OrderByDescending(a => a.Title, StringComparer.OrdinalIgnoreCase)
+            : albums.OrderBy(a => a.Title, StringComparer.OrdinalIgnoreCase),
+    };
 
     private static int ComputeColumnCount(double viewportWidth, double tileSize)
     {
