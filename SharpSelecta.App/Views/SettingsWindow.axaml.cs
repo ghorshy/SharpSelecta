@@ -25,6 +25,8 @@ public partial class SettingsWindow : Window
         Close();
     }
 
+    private void OnCancelClick(object? sender, RoutedEventArgs e) => Close();
+
     private void OnClosing(object? sender, WindowClosingEventArgs e)
     {
         if (DataContext is SettingsWindowViewModel { SelectedCategoryViewModel: var category })
