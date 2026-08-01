@@ -203,7 +203,10 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             .ThenBy(g => g.Key.AlbumArtist, StringComparer.OrdinalIgnoreCase)
             .Select(g =>
             {
-                var orderedTracks = g.OrderBy(t => t.Track.TrackNumber ?? int.MaxValue).ToList();
+                var orderedTracks = g
+                    .OrderBy(t => t.Track.TrackNumber ?? int.MaxValue)
+                    .ThenBy(t => t.Track.Title, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
                 var album = new AlbumViewModel(
                     g.Key.Album.Length > 0 ? g.Key.Album : Strings.UnknownAlbum,
                     ResolveArtistLabel(orderedTracks),

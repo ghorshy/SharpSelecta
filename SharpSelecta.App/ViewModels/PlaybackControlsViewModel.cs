@@ -14,7 +14,7 @@ using SharpSelecta.Core.Playback;
 
 namespace SharpSelecta.App.ViewModels;
 
-public partial class PlaybackControlsViewModel : ViewModelBase
+public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 {
     // Matches the common "restart vs. go back" convention (Spotify, Winamp, etc.): a deliberate
     // press of Previous soon after starting a track means "go back," but once you're a few
@@ -68,7 +68,10 @@ public partial class PlaybackControlsViewModel : ViewModelBase
     // rendering backend to be initialized, which a plain unit test process doesn't have. The View
     // converts these bytes to a Bitmap at render time instead (see ArtworkConverter).
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ArtworkBytes))]
     private byte[]? currentTrackArtworkBytes;
+
+    public byte[]? ArtworkBytes => CurrentTrackArtworkBytes;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(RepeatModeLabel))]

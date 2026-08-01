@@ -105,6 +105,8 @@ public partial class AlbumGridViewModel : ViewModelBase
     [RelayCommand]
     private void ToggleExpand(AlbumViewModel album) => SetExpandedAlbum(ExpandedAlbum == album ? null : album);
 
+    public void ExpandAlbum(AlbumViewModel album) => SetExpandedAlbum(album);
+
     private void SetExpandedAlbum(AlbumViewModel? album)
     {
         ExpandedAlbum = album;

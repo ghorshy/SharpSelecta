@@ -28,22 +28,22 @@
     </UserControl.Styles>
 
     <DockPanel LastChildFill="True">
-        <Slider DockPanel.Dock="Top"
-                Minimum="144" Maximum="320"
-                Value="{Binding TileSize, Mode=TwoWay}"
-                Width="160" HorizontalAlignment="Right"
-                Margin="{styles:Spacing Uniform=XS}" />
-
         <!-- Temporary: minimal sort-mode switcher, not yet styled to show which one is active
              (same as LibraryView's List/Albums view-mode switcher). -->
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="{styles:SpacingValue XS}"
-                    Margin="{styles:Spacing Uniform=XS}">
-            <TextBlock Text="{x:Static res:Strings.SortBy}" VerticalAlignment="Center" Opacity="0.7" />
-            <Button Content="{x:Static res:Strings.ColumnTitle}" Command="{Binding SetSortModeCommand}" CommandParameter="{x:Static core:AlbumSortMode.Title}" />
-            <Button Content="{x:Static res:Strings.ColumnArtist}" Command="{Binding SetSortModeCommand}" CommandParameter="{x:Static core:AlbumSortMode.Artist}" />
-            <Button Content="{x:Static res:Strings.ColumnYear}" Command="{Binding SetSortModeCommand}" CommandParameter="{x:Static core:AlbumSortMode.Year}" />
-            <Button Content="{Binding SortDirectionSymbol}" Command="{Binding ToggleSortDirectionCommand}" />
-        </StackPanel>
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="{styles:Spacing Uniform=XS}">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="{styles:SpacingValue XS}">
+                <TextBlock Text="{x:Static res:Strings.SortBy}" VerticalAlignment="Center" Opacity="0.7" />
+                <Button Content="{x:Static res:Strings.ColumnTitle}" Command="{Binding SetSortModeCommand}" CommandParameter="{x:Static core:AlbumSortMode.Title}" />
+                <Button Content="{x:Static res:Strings.ColumnArtist}" Command="{Binding SetSortModeCommand}" CommandParameter="{x:Static core:AlbumSortMode.Artist}" />
+                <Button Content="{x:Static res:Strings.ColumnYear}" Command="{Binding SetSortModeCommand}" CommandParameter="{x:Static core:AlbumSortMode.Year}" />
+                <Button Content="{Binding SortDirectionSymbol}" Command="{Binding ToggleSortDirectionCommand}" />
+            </StackPanel>
+
+            <Slider Grid.Column="1"
+                    Minimum="144" Maximum="320"
+                    Value="{Binding TileSize, Mode=TwoWay}"
+                    Width="160" VerticalAlignment="Center" />
+        </Grid>
 
         <ScrollViewer x:Name="Scroller" SizeChanged="OnScrollerSizeChanged" PointerWheelChanged="OnPointerWheelChanged">
             <!-- ItemsRepeater instead of ItemsControl for the row list specifically: it virtualizes
@@ -64,11 +64,17 @@
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:AlbumViewModel">
-                                        <Button Classes="plain"
+                                        <!-- Border, not Button: Button's own pointer-press handling (tracking press
+                                             state for its Click event) marks PointerPressed handled before a plain
+                                             XAML-attached PointerPressed handler on the same element ever runs, so
+                                             OnTilePointerPressed silently never fired. Border has no competing click
+                                             machinery, so the handler gets every press. Background="Transparent" makes
+                                             the whole tile (not just its Image/text children) hit-test-visible. -->
+                                        <Border Background="Transparent"
                                                 Width="{Binding Library.Grid.TileSize}"
-                                                Command="{Binding Library.Grid.ToggleExpandCommand}"
-                                                CommandParameter="{Binding}">
-                                            <Button.ContextMenu>
+                                                Tapped="OnTileTapped"
+                                                DoubleTapped="OnTileDoubleTapped">
+                                            <Border.ContextMenu>
                                                 <ContextMenu>
                                                     <MenuItem Header="{x:Static res:Strings.PlayNow}"
                                                               Command="{Binding Library.PlayAlbumNowCommand}"
@@ -80,7 +86,7 @@
                                                               Command="{Binding Library.AddAlbumToQueueCommand}"
                                                               CommandParameter="{Binding}" />
                                                 </ContextMenu>
-                                            </Button.ContextMenu>
+                                            </Border.ContextMenu>
                                             <StackPanel Spacing="{styles:SpacingValue XXS}">
                                                 <Border Width="{Binding Library.Grid.TileSize}"
                                                         Height="{Binding Library.Grid.TileSize}"
@@ -99,7 +105,7 @@
                                                 <TextBlock Text="{Binding Artist}" Opacity="0.7" TextTrimming="CharacterEllipsis"
                                                            Width="{Binding Library.Grid.TileSize}" />
                                             </StackPanel>
-                                        </Button>
+                                        </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
@@ -124,13 +130,17 @@
                                                             Command="{Binding Library.Grid.ToggleExpandCommand}"
                                                             CommandParameter="{Binding}" />
 
-                                                    <ItemsControl ItemsSource="{Binding Tracks}">
+                                                    <ItemsControl ItemsSource="{Binding TrackRows}">
                                                         <ItemsControl.ItemTemplate>
-                                                            <DataTemplate x:DataType="vm:LibraryTrackViewModel">
+                                                            <DataTemplate x:DataType="vm:AlbumTrackRowViewModel">
                                                                 <Grid ColumnDefinitions="Auto,*,Auto" DoubleTapped="OnExpandedTrackDoubleTapped"
                                                                       Margin="{styles:Spacing Bottom=XXS}">
-                                                                    <TextBlock Grid.Column="0" Text="{Binding Track.TrackNumber}" Width="30" Opacity="0.7" />
-                                                                    <TextBlock Grid.Column="1" Text="{Binding Track.Title}" TextTrimming="CharacterEllipsis" />
+                                                                    <TextBlock Grid.Column="0" Text="{Binding TrackNumber}" Width="30" Opacity="0.7" />
+                                                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{styles:SpacingValue XXS}">
+                                                                        <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                                                                        <TextBlock Text="{Binding ArtistSuffix}" Opacity="0.5" TextTrimming="CharacterEllipsis"
+                                                                                   IsVisible="{Binding ArtistSuffix, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+                                                                    </StackPanel>
                                                                     <TextBlock Grid.Column="2" Text="{Binding LengthDisplay}" Opacity="0.7" />
                                                                 </Grid>
                                                             </DataTemplate>
@@ -138,7 +148,8 @@
                                                     </ItemsControl>
                                                 </DockPanel>
 
-                                                <Panel Grid.Column="1" Width="160" Height="160" Margin="{styles:Spacing Left=S}">
+                                                <Panel Grid.Column="1" Width="160" Height="160" Margin="{styles:Spacing Left=S}"
+                                                       DoubleTapped="OnExpandedArtworkDoubleTapped">
                                                     <Image Source="{Binding ArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
                                                            IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
                                                            Stretch="UniformToFill" />

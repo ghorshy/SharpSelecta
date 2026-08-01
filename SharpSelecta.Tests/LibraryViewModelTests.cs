@@ -524,8 +524,8 @@ public class LibraryViewModelTests
         }
     }
 
-    private static void AddTrack(LibraryViewModel vm, string filePath, string? album, string? artist, int? trackNumber = null, string? albumArtist = null) =>
-        vm.Tracks.Add(new LibraryTrackViewModel(new Track(filePath, filePath) { Album = album, Artist = artist, AlbumArtist = albumArtist, TrackNumber = trackNumber }, vm));
+    private static void AddTrack(LibraryViewModel vm, string filePath, string? album, string? artist, int? trackNumber = null, string? albumArtist = null, string? title = null) =>
+        vm.Tracks.Add(new LibraryTrackViewModel(new Track(filePath, filePath) { Album = album, Artist = artist, AlbumArtist = albumArtist, TrackNumber = trackNumber, Title = title }, vm));
 
     [Test]
     public async Task Albums_GroupsTracksByAlbumTitle_IgnoringArtist()
@@ -588,6 +588,42 @@ public class LibraryViewModelTests
 
         await Assert.That(vm.Albums[0].Tracks[0].Track.FilePath).IsEqualTo("/music/a.mp3");
         await Assert.That(vm.Albums[0].Tracks[1].Track.FilePath).IsEqualTo("/music/b.mp3");
+    }
+
+    [Test]
+    public async Task Albums_WithNoTrackNumber_FallsBackToOrderingByTitle()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+
+        AddTrack(vm, "/music/a.mp3", "Album", "Artist", title: "Zebra");
+        AddTrack(vm, "/music/b.mp3", "Album", "Artist", title: "Apple");
+
+        await Assert.That(vm.Albums[0].Tracks[0].Track.Title).IsEqualTo("Apple");
+        await Assert.That(vm.Albums[0].Tracks[1].Track.Title).IsEqualTo("Zebra");
+    }
+
+    [Test]
+    public async Task TrackRows_WithMultipleArtists_ShowsEachTracksArtistAsSuffix()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+
+        AddTrack(vm, "/music/a.mp3", "Compilation", "Artist One");
+        AddTrack(vm, "/music/b.mp3", "Compilation", "Artist Two");
+
+        var rows = vm.Albums[0].TrackRows;
+        await Assert.That(rows[0].ArtistSuffix).IsEqualTo("(Artist One)");
+        await Assert.That(rows[1].ArtistSuffix).IsEqualTo("(Artist Two)");
+    }
+
+    [Test]
+    public async Task TrackRows_WithASingleArtist_HasNoArtistSuffix()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+
+        AddTrack(vm, "/music/a.mp3", "Album", "Only Artist");
+        AddTrack(vm, "/music/b.mp3", "Album", "Only Artist");
+
+        await Assert.That(vm.Albums[0].TrackRows.Select(r => r.ArtistSuffix)).IsEquivalentTo(new string?[] { null, null });
     }
 
     [Test]
