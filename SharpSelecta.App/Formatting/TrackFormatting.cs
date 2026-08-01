@@ -25,4 +25,7 @@ public static class TrackFormatting
 
     public static string TechnicalSummary(Track track) =>
         $"{track.FileType} {FormatSampleRate(track.SampleRate)}, {FormatBitrate(track.Bitrate)}, {FormatDuration(track.Duration)}";
+
+    public static string ArtistTitleLabel(string? artist, string displayName) =>
+        string.IsNullOrWhiteSpace(artist) ? displayName : $"{artist} - {displayName}";
 }

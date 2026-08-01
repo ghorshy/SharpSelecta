@@ -53,6 +53,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DisplayFileName))]
+    [NotifyPropertyChangedFor(nameof(DisplayTrackLabel))]
     private string? loadedFileName;
 
     [ObservableProperty]
@@ -60,9 +61,12 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CurrentTrackTechnicalSummary))]
+    [NotifyPropertyChangedFor(nameof(DisplayTrackLabel))]
     private Track? currentTrack;
 
     public string CurrentTrackTechnicalSummary => CurrentTrack is null ? string.Empty : TrackFormatting.TechnicalSummary(CurrentTrack);
+
+    public string DisplayTrackLabel => TrackFormatting.ArtistTitleLabel(CurrentTrack?.Artist, DisplayFileName);
 
     // Raw bytes rather than an Avalonia Bitmap — constructing a Bitmap requires the platform's
     // rendering backend to be initialized, which a plain unit test process doesn't have. The View

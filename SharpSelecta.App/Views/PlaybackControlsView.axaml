@@ -11,7 +11,7 @@
              x:DataType="vm:PlaybackControlsViewModel">
 
     <StackPanel Spacing="{styles:SpacingValue M}">
-        <TextBlock Text="{Binding DisplayFileName}" />
+        <TextBlock Text="{Binding DisplayTrackLabel}" />
         <TextBlock Text="{Binding StatusMessage}" Foreground="OrangeRed" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
 
         <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,80,Auto,Auto" ColumnSpacing="{styles:SpacingValue M}">
