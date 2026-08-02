@@ -126,6 +126,27 @@ public class PlaybackControlsViewModelTests
         await Assert.That(vm.NextTrackCommand.CanExecute(null)).IsTrue();
     }
 
+    // Regression coverage for the MPRIS Play/PlayPause cold-start fallback (MprisRoot.
+    // StartOrResumePlaybackAsync): tracks added via "Add to Queue" (never "Play Now") leave
+    // CurrentTrack null with CurrentIndex still at its default -1, but the queue itself already has
+    // something to advance to.
+    [Test]
+    public async Task NextTrackCommand_FromAQueueThatWasOnlyAddedToAndNeverPlayed_LoadsAndPlaysTheFirstTrack()
+    {
+        var vm = CreateViewModel(out var audioEngine, out var queue);
+        var a = new Track("/music/a.mp3", "a.mp3");
+        var b = new Track("/music/b.mp3", "b.mp3");
+        queue.AddToQueue(a);
+        queue.AddToQueue(b);
+        await Assert.That(vm.CurrentTrack).IsNull();
+
+        await vm.NextTrackCommand.ExecuteAsync(null);
+
+        audioEngine.Received(1).Load("/music/a.mp3");
+        await Assert.That(vm.CurrentTrack).IsEqualTo(a);
+        await Assert.That(vm.IsPlaying).IsTrue();
+    }
+
     [Test]
     public async Task NextTrackCommand_AdvancesQueueAndLoadsIntoEngine_WithoutDroppingHistory()
     {

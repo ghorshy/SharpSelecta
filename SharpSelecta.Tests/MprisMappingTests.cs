@@ -95,4 +95,34 @@ public class MprisMappingTests
 
         await Assert.That(trackId.ToString()).StartsWith("/org/sharpselecta/Track/");
     }
+
+    [Test]
+    public async Task CanPlay_WhenAbleToResumeAnAlreadyLoadedTrack_IsTrue()
+    {
+        await Assert.That(MprisMapping.CanPlay(canResumeOrPause: true, hasCurrentTrack: true, canGoNext: false)).IsTrue();
+    }
+
+    // The regression this guards against: tracks queued (e.g. via "Add to Queue") but nothing
+    // played yet this session - CanGoNext is true (the queue has something), but there's no
+    // current track to resume. playerctl skips a player reporting CanPlay=false for Play/PlayPause
+    // and falls through to a different one entirely, even though Next/Previous still worked fine.
+    [Test]
+    public async Task CanPlay_WithNoCurrentTrackButSomethingQueuedToAdvanceTo_IsTrue()
+    {
+        await Assert.That(MprisMapping.CanPlay(canResumeOrPause: false, hasCurrentTrack: false, canGoNext: true)).IsTrue();
+    }
+
+    [Test]
+    public async Task CanPlay_WithNoCurrentTrackAndNothingQueued_IsFalse()
+    {
+        await Assert.That(MprisMapping.CanPlay(canResumeOrPause: false, hasCurrentTrack: false, canGoNext: false)).IsFalse();
+    }
+
+    [Test]
+    public async Task CanPlay_WithACurrentTrackThatCannotBeResumed_IsFalse()
+    {
+        // e.g. TransportState.Finished with repeat off and nothing left queued - PlayPauseCommand's
+        // own CanExecute is false, and there's nothing left for Next to advance to either.
+        await Assert.That(MprisMapping.CanPlay(canResumeOrPause: false, hasCurrentTrack: true, canGoNext: false)).IsFalse();
+    }
 }

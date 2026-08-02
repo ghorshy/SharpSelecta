@@ -102,15 +102,45 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
         }
     }).GetTask();
 
-    Task IMediaPlayer2Player.PlayAsync() => Dispatcher.UIThread.InvokeAsync(() =>
+    Task IMediaPlayer2Player.PlayAsync() => Dispatcher.UIThread.InvokeAsync(async () =>
     {
-        if (!_playbackControls.IsPlaying)
+        if (_playbackControls.IsPlaying)
         {
-            _playbackControls.PlayPauseCommand.Execute(null);
+            return;
         }
-    }).GetTask();
 
-    Task IMediaPlayer2Player.PlayPauseAsync() => Dispatcher.UIThread.InvokeAsync(() => _playbackControls.PlayPauseCommand.Execute(null)).GetTask();
+        await StartOrResumePlaybackAsync();
+    });
+
+    Task IMediaPlayer2Player.PlayPauseAsync() => Dispatcher.UIThread.InvokeAsync(async () =>
+    {
+        if (_playbackControls.CurrentTrack is null)
+        {
+            await StartOrResumePlaybackAsync();
+            return;
+        }
+
+        _playbackControls.PlayPauseCommand.Execute(null);
+    });
+
+    // PlayPauseCommand only resumes an already-loaded track (gated on TransportState == Ready) -
+    // it silently no-ops with nothing loaded yet, e.g. tracks added via "Add to Queue" but never
+    // actually played this session. Falling through to Next mirrors what pressing Next already does
+    // from that same cold-start state (advances from CurrentIndex -1 to the first queued track and
+    // plays it) - without this, CanPlay had to report false whenever CurrentTrack was null even
+    // though the queue had something to play, which made playerctl skip SharpSelecta for Play/
+    // PlayPause specifically (it checks CanPlay/CanPause before sending them) while Next/Previous -
+    // gated only on the queue, not on CurrentTrack - still worked. See CanPlay below.
+    private Task StartOrResumePlaybackAsync()
+    {
+        if (_playbackControls.CurrentTrack is null)
+        {
+            return _playbackControls.NextTrackCommand.ExecuteAsync(null);
+        }
+
+        _playbackControls.PlayPauseCommand.Execute(null);
+        return Task.CompletedTask;
+    }
 
     // No distinct "stopped" transport beyond paused - the closest honest mapping of MPRIS Stop is
     // just ensuring playback is paused.
@@ -172,7 +202,10 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
     // Must run on the UI thread - reads several PlaybackControlsViewModel properties together.
     private IDictionary<string, object> GetAllPlayerProperties()
     {
+        var canGoNext = _playbackControls.NextTrackCommand.CanExecute(null);
+        var canResume = _playbackControls.PlayPauseCommand.CanExecute(null);
         var hasTrack = _playbackControls.CurrentTrack is not null;
+
         return new Dictionary<string, object>
         {
             ["PlaybackStatus"] = MprisMapping.PlaybackStatus(_playbackControls.TransportState, _playbackControls.IsPlaying),
@@ -181,10 +214,10 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
             ["Rate"] = 1.0,
             ["MinimumRate"] = 1.0,
             ["MaximumRate"] = 1.0,
-            ["CanGoNext"] = _playbackControls.NextTrackCommand.CanExecute(null),
+            ["CanGoNext"] = canGoNext,
             ["CanGoPrevious"] = _playbackControls.PreviousTrackCommand.CanExecute(null),
-            ["CanPlay"] = hasTrack,
-            ["CanPause"] = hasTrack,
+            ["CanPlay"] = MprisMapping.CanPlay(canResume, hasTrack, canGoNext),
+            ["CanPause"] = canResume,
             ["CanSeek"] = hasTrack,
             ["CanControl"] = true,
         };

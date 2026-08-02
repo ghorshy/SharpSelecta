@@ -48,4 +48,17 @@ public static class MprisMapping
     // consistent within the current process's lifetime (used to detect a stale SetPosition call),
     // not across app restarts, so the default randomized-per-process string hash is fine here.
     public static ObjectPath TrackId(Track track) => new($"/org/sharpselecta/Track/{(uint)track.FilePath.GetHashCode()}");
+
+    // CanGoNext/CanGoPrevious only depend on the queue having entries, independent of whether
+    // anything is currently loaded (PlaybackQueue.CanGoNext works off CurrentIndex, which starts at
+    // -1 until something's actually been played). CanPlay used to require hasCurrentTrack too,
+    // which made it false whenever tracks were queued (e.g. via "Add to Queue") but nothing had been
+    // played yet this session - playerctl checks CanPlay/CanPause before sending Play/PlayPause and
+    // skips a player reporting false for them (confirmed against a real session bus with two fake
+    // players differing only in this property), so it would fall through to a different MPRIS
+    // player entirely for play-pause while Next/Previous still correctly landed on this one. True
+    // here whenever there's *something* playable right now, matching what MprisRoot's Play/PlayPause
+    // handlers actually do in that state (fall through to Next instead of silently no-op'ing).
+    public static bool CanPlay(bool canResumeOrPause, bool hasCurrentTrack, bool canGoNext) =>
+        canResumeOrPause || (!hasCurrentTrack && canGoNext);
 }
