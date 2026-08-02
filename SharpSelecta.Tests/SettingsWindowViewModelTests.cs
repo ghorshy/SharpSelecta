@@ -22,7 +22,7 @@ public class SettingsWindowViewModelTests
     }
 
     private static PlaybackSettingsViewModel CreatePlaybackSettingsViewModel() =>
-        new(Path.Combine(Path.GetTempPath(), $"sharpselecta-settings-vm-tests-{Guid.NewGuid():N}.json"));
+        new(Path.Combine(Path.GetTempPath(), $"sharpselecta-settings-vm-tests-{Guid.NewGuid():N}.json"), Substitute.For<IAudioEngine>());
 
     private static SettingsWindowViewModel CreateViewModel() =>
         new(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel());

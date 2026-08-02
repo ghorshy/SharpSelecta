@@ -121,6 +121,12 @@
   <data name="RestoreQueueOnStartup" xml:space="preserve">
     <value>Restore previous queue on startup</value>
   </data>
+  <data name="OutputDevice" xml:space="preserve">
+    <value>Output device</value>
+  </data>
+  <data name="SystemDefaultAudioDevice" xml:space="preserve">
+    <value>System Default</value>
+  </data>
   <data name="NoLibraryFoldersAdded" xml:space="preserve">
     <value>No folders added yet</value>
   </data>

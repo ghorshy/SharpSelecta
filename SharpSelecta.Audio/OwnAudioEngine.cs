@@ -75,6 +75,39 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
         }
     }
 
+    public IReadOnlyList<AudioOutputDevice> GetOutputDevices() =>
+        OwnaudioNet.GetOutputDevices()
+            .Where(d => d.IsOutput)
+            .Select(d => new AudioOutputDevice(d.Name, d.IsDefault))
+            .ToList();
+
+    public void SetOutputDevice(string? deviceName)
+    {
+        if (OwnaudioNet.Engine is not { } engine)
+        {
+            throw new InvalidOperationException($"{nameof(OwnAudioEngine)} must be initialized before selecting an output device.");
+        }
+
+        // SetOutputDeviceByName is the only runtime device-switch API OwnaudioSharp exposes (unlike
+        // AudioConfig.OutputDeviceId, which only takes effect at Initialize time) - null resolves to
+        // whichever device the OS currently reports as default, rather than a fixed name, so it keeps
+        // tracking the system default if that changes later.
+        var targetDeviceName = deviceName ?? GetOutputDevices().FirstOrDefault(d => d.IsDefault)?.Name;
+        if (targetDeviceName is null)
+        {
+            return;
+        }
+
+        if (engine.SetOutputDeviceByName(targetDeviceName))
+        {
+            logger.LogInformation("Switched output device to {DeviceName}", targetDeviceName);
+        }
+        else
+        {
+            logger.LogWarning("Failed to switch output device to {DeviceName}", targetDeviceName);
+        }
+    }
+
     public void Dispose()
     {
         if (_currentTrack is not null)

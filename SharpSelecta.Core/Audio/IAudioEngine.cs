@@ -10,4 +10,9 @@ public interface IAudioEngine : IDisposable
     double Position { get; }
     double Duration { get; }
     float Volume { get; set; }
+
+    IReadOnlyList<AudioOutputDevice> GetOutputDevices();
+
+    // Null selects the system default device. Requires InitializeAsync to have completed.
+    void SetOutputDevice(string? deviceName);
 }

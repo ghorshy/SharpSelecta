@@ -42,7 +42,7 @@ public partial class MainWindowViewModel : ViewModelBase
         PlaybackControls = new PlaybackControlsViewModel(audioEngine, queue, playbackControlsLogger);
         Library = new LibraryViewModel(filePickerService, PlaybackControls, librarySettingsFilePath, libraryLogger);
         Queue = new QueueViewModel(PlaybackControls, queueLogger);
-        PlaybackSettings = new PlaybackSettingsViewModel(librarySettingsFilePath);
+        PlaybackSettings = new PlaybackSettingsViewModel(librarySettingsFilePath, audioEngine);
 
         // Assigning the backing field directly (not the generated property) so loading the saved
         // width on startup doesn't immediately re-save the same value it was just loaded from.

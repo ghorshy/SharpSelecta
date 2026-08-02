@@ -558,4 +558,68 @@ public class LibrarySettingsStoreTests
             File.Delete(settingsPath);
         }
     }
+
+    [Test]
+    public async Task LoadOutputDeviceName_WhenFileDoesNotExist_ReturnsNull()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        var loaded = LibrarySettingsStore.LoadOutputDeviceName(settingsPath);
+
+        await Assert.That(loaded).IsNull();
+    }
+
+    [Test]
+    public async Task SaveAndLoad_RoundTripsOutputDeviceName()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveOutputDeviceName(settingsPath, "Focusrite Scarlett 2i2");
+
+            var loaded = LibrarySettingsStore.LoadOutputDeviceName(settingsPath);
+
+            await Assert.That(loaded).IsEqualTo("Focusrite Scarlett 2i2");
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task SaveOutputDeviceName_WithNull_RoundTripsBackToNull()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveOutputDeviceName(settingsPath, "Focusrite Scarlett 2i2");
+
+            LibrarySettingsStore.SaveOutputDeviceName(settingsPath, null);
+
+            await Assert.That(LibrarySettingsStore.LoadOutputDeviceName(settingsPath)).IsNull();
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task SavingOutputDeviceName_DoesNotClobberOtherSettings()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
+
+            LibrarySettingsStore.SaveOutputDeviceName(settingsPath, "Focusrite Scarlett 2i2");
+
+            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
 }

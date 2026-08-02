@@ -70,20 +70,22 @@ public partial class App : Application
             // managed file I/O internally offloaded via its own Task.Run) — calling it directly
             // keeps its continuation on the UI thread, which it needs to safely mutate the
             // Tracks collection the DataGrid is bound to.
-            _ = InitializeAudioEngineAndRestoreQueueAsync(audioEngine, mainWindowViewModel);
+            _ = InitializeAudioEngineAndRestoreStateAsync(audioEngine, mainWindowViewModel);
             _ = mainWindowViewModel.Library.InitializeAsync();
         }
 
         base.OnFrameworkInitializationCompleted();
     }
 
-    // RestoreQueueIfEnabledAsync calls IAudioEngine.Load(), which throws until InitializeAsync has
-    // finished — chained after it (not run in parallel with it) to guarantee that ordering. The
-    // await itself doesn't need Task.Run's isolation the way the engine init call does: awaiting
+    // Everything chained after the engine init call — device selection, then queue restore — needs
+    // IAudioEngine to be fully initialized first (Load()/GetOutputDevices()/SetOutputDevice() all
+    // throw or no-op until then), hence sequencing rather than running in parallel with it. The
+    // awaits themselves don't need Task.Run's isolation the way the engine init call does: awaiting
     // (rather than blocking on) a continuation is safe even before the dispatcher loop has started.
-    private static async Task InitializeAudioEngineAndRestoreQueueAsync(IAudioEngine audioEngine, MainWindowViewModel mainWindowViewModel)
+    private static async Task InitializeAudioEngineAndRestoreStateAsync(IAudioEngine audioEngine, MainWindowViewModel mainWindowViewModel)
     {
         await Task.Run(() => audioEngine.InitializeAsync());
+        mainWindowViewModel.PlaybackSettings.ApplyPersistedOutputDevice();
         await mainWindowViewModel.RestoreQueueIfEnabledAsync();
     }
 }

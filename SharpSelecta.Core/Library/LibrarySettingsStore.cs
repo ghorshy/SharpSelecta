@@ -89,8 +89,14 @@ public static partial class LibrarySettingsStore
 
     public sealed record QueueState(IReadOnlyList<QueueEntryData> Entries, int CurrentIndex, double PositionSeconds);
 
+    // Null means "system default" — the same meaning IAudioEngine.SetOutputDevice(null) uses.
+    public static string? LoadOutputDeviceName(string settingsFilePath) => Load(settingsFilePath)?.OutputDeviceName;
+
+    public static void SaveOutputDeviceName(string settingsFilePath, string? deviceName) =>
+        Save(settingsFilePath, Default(settingsFilePath) with { OutputDeviceName = deviceName });
+
     private static LibrarySettingsData Default(string settingsFilePath) =>
-        Load(settingsFilePath) ?? new LibrarySettingsData(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        Load(settingsFilePath) ?? new LibrarySettingsData(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 
     private static LibrarySettingsData? Load(string settingsFilePath)
     {
@@ -136,7 +142,8 @@ public static partial class LibrarySettingsStore
         bool? RestoreQueueOnStartup,
         IReadOnlyList<QueueEntryData>? QueueEntries,
         int? QueueCurrentIndex,
-        double? QueuePositionSeconds);
+        double? QueuePositionSeconds,
+        string? OutputDeviceName);
 
     [JsonSerializable(typeof(LibrarySettingsData))]
     private partial class LibrarySettingsJsonContext : JsonSerializerContext

@@ -11,6 +11,13 @@
 
     <StackPanel Spacing="{styles:SpacingValue S}">
         <CheckBox Content="{x:Static res:Strings.RestoreQueueOnStartup}" IsChecked="{Binding RestoreQueueOnStartup}" />
+
+        <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}">
+            <TextBlock Text="{x:Static res:Strings.OutputDevice}" Opacity="0.7" />
+            <ComboBox ItemsSource="{Binding OutputDeviceDisplayNames}"
+                      SelectedItem="{Binding SelectedOutputDeviceDisplayName}"
+                      HorizontalAlignment="Stretch" />
+        </StackPanel>
     </StackPanel>
 
 </UserControl>
