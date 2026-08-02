@@ -80,6 +80,14 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
             return;
         }
 
+        NudgePriority();
+    }
+
+    // Unconditional (unlike the heartbeat): focusing the window is itself the user's claim on the
+    // media keys, playing or not. Must be called on the UI thread (reads _playbackControls), which
+    // Window.Activated - the one caller - already guarantees.
+    public void NudgePriority()
+    {
         _heartbeatTick++;
         _playerPropertiesChanged?.Invoke(new PropertyChanges(
             [

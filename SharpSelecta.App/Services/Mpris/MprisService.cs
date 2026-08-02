@@ -57,6 +57,9 @@ public sealed class MprisService : IAsyncDisposable
         }
     }
 
+    // See MprisRoot.NudgePriority - UI thread only.
+    public void NudgePriority() => _root.NudgePriority();
+
     public async ValueTask DisposeAsync()
     {
         _root.Dispose();

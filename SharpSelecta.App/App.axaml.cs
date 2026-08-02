@@ -61,6 +61,17 @@ public partial class App : Application
             var mprisServiceTask = MprisService.TryStartAsync(
                 mainWindowViewModel.PlaybackControls, provider.GetRequiredService<ILogger<MprisService>>());
 
+            // Focusing the window claims media-key priority (playerctld ranks players by most
+            // recent PropertiesChanged activity) - without this, only play/pause/track changes
+            // bump SharpSelecta above e.g. a browser tab that also registered an MPRIS player.
+            mainWindow.Activated += (_, _) =>
+            {
+                if (mprisServiceTask.IsCompletedSuccessfully && mprisServiceTask.Result is { } mpris)
+                {
+                    mpris.NudgePriority();
+                }
+            };
+
             // Disposes the singleton IAudioEngine (native mixer/source cleanup) on a normal exit,
             // instead of relying entirely on process teardown — but only after the current queue
             // state has been saved off (needs the engine's cached playback position, still alive).
