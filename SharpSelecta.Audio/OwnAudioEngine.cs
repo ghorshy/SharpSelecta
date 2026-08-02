@@ -75,11 +75,35 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
         }
     }
 
+    // OwnaudioSharp's Linux/cpal-based ALSA enumeration is extremely noisy: alongside real hardware
+    // ports it lists virtual routing endpoints (the PipeWire/PulseAudio/JACK servers themselves,
+    // ALSA's "null" device, and an ALSA "Default Output" alias that just redirects to whichever of
+    // those is currently active) - none of that is useful to pick from directly, since the "System
+    // Default" entry in Settings already covers letting the OS/PipeWire route it. Confirmed against
+    // a real desktop via a throwaway diagnostic: of 33 raw entries, only these 5 name fragments
+    // accounted for every non-hardware one.
+    private static readonly string[] VirtualDeviceNameFragments =
+    [
+        "JACK Audio Connection Kit",
+        "PipeWire Sound Server",
+        "PulseAudio Sound Server",
+        "Default ALSA Output",
+        "Discard all samples",
+    ];
+
     public IReadOnlyList<AudioOutputDevice> GetOutputDevices() =>
         OwnaudioNet.GetOutputDevices()
-            .Where(d => d.IsOutput)
+            .Where(d => d.IsOutput && !IsVirtualDevice(d.Name))
+            // The same physical port is also listed multiple times under different chmap/plughw
+            // variants with an identical Name (same diagnostic: every HDMI/analog port appeared
+            // twice, only MaxOutputChannels differed) - they all resolve to the same
+            // SetOutputDeviceByName(name) target anyway, so only the first is kept.
+            .DistinctBy(d => d.Name)
             .Select(d => new AudioOutputDevice(d.Name, d.IsDefault))
             .ToList();
+
+    private static bool IsVirtualDevice(string name) =>
+        VirtualDeviceNameFragments.Any(fragment => name.Contains(fragment, StringComparison.OrdinalIgnoreCase));
 
     public void SetOutputDevice(string? deviceName)
     {
