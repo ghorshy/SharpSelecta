@@ -338,7 +338,7 @@ public class LibraryViewModelTests
 
                 await vm.AddFolderCommand.ExecuteAsync(null);
 
-                await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo([root.FullName]);
+                await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo([root.FullName]);
             }
             finally
             {
@@ -359,7 +359,7 @@ public class LibraryViewModelTests
         try
         {
             File.WriteAllBytes(Path.Combine(root.FullName, "song.mp3"), []);
-            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, [root.FullName]);
+            SettingsStore.SaveLibraryFolderPaths(settingsPath, [root.FullName]);
             var vm = CreateViewModel(out _, out _, out _, settingsPath);
 
             await vm.InitializeAsync();

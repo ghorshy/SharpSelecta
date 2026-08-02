@@ -4,7 +4,7 @@ using SharpSelecta.Core.Playback;
 
 namespace SharpSelecta.Tests;
 
-public class LibrarySettingsStoreTests
+public class SettingsStoreTests
 {
     private static string CreateTempSettingsPath() =>
         Path.Combine(Path.GetTempPath(), $"sharpselecta-settings-tests-{Guid.NewGuid():N}.json");
@@ -15,9 +15,9 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library", "/music/other"]);
+            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library", "/music/other"]);
 
-            var loaded = LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath);
+            var loaded = SettingsStore.LoadLibraryFolderPaths(settingsPath);
 
             await Assert.That(loaded).IsEquivalentTo(["/music/library", "/music/other"]);
         }
@@ -32,7 +32,7 @@ public class LibrarySettingsStoreTests
     {
         var settingsPath = CreateTempSettingsPath();
 
-        var loaded = LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath);
+        var loaded = SettingsStore.LoadLibraryFolderPaths(settingsPath);
 
         await Assert.That(loaded).IsNull();
     }
@@ -45,7 +45,7 @@ public class LibrarySettingsStoreTests
         {
             File.WriteAllText(settingsPath, "{ not valid json");
 
-            var loaded = LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath);
+            var loaded = SettingsStore.LoadLibraryFolderPaths(settingsPath);
 
             await Assert.That(loaded).IsNull();
         }
@@ -61,10 +61,10 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/old"]);
-            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/new"]);
+            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/old"]);
+            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/new"]);
 
-            var loaded = LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath);
+            var loaded = SettingsStore.LoadLibraryFolderPaths(settingsPath);
 
             await Assert.That(loaded).IsEquivalentTo(["/music/new"]);
         }
@@ -87,9 +87,9 @@ public class LibrarySettingsStoreTests
                 ["FileType"] = false, ["Year"] = true,
             };
 
-            LibrarySettingsStore.SaveColumnVisibility(settingsPath, columns);
+            SettingsStore.SaveColumnVisibility(settingsPath, columns);
 
-            var loaded = LibrarySettingsStore.LoadColumnVisibility(settingsPath);
+            var loaded = SettingsStore.LoadColumnVisibility(settingsPath);
 
             await Assert.That(loaded).IsEquivalentTo(columns);
         }
@@ -105,11 +105,11 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
+            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
 
-            LibrarySettingsStore.SaveColumnVisibility(settingsPath, new Dictionary<string, bool> { ["TrackNumber"] = true });
+            SettingsStore.SaveColumnVisibility(settingsPath, new Dictionary<string, bool> { ["TrackNumber"] = true });
 
-            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
+            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
         }
         finally
         {
@@ -124,11 +124,11 @@ public class LibrarySettingsStoreTests
         try
         {
             var columns = new Dictionary<string, bool> { ["TrackNumber"] = true, ["Title"] = false };
-            LibrarySettingsStore.SaveColumnVisibility(settingsPath, columns);
+            SettingsStore.SaveColumnVisibility(settingsPath, columns);
 
-            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
+            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
 
-            await Assert.That(LibrarySettingsStore.LoadColumnVisibility(settingsPath)).IsEquivalentTo(columns);
+            await Assert.That(SettingsStore.LoadColumnVisibility(settingsPath)).IsEquivalentTo(columns);
         }
         finally
         {
@@ -141,7 +141,7 @@ public class LibrarySettingsStoreTests
     {
         var settingsPath = CreateTempSettingsPath();
 
-        var loaded = LibrarySettingsStore.LoadColumnVisibility(settingsPath);
+        var loaded = SettingsStore.LoadColumnVisibility(settingsPath);
 
         await Assert.That(loaded).IsNull();
     }
@@ -154,9 +154,9 @@ public class LibrarySettingsStoreTests
         {
             string[] order = ["Artist", "Title", "TrackNumber", "Year"];
 
-            LibrarySettingsStore.SaveColumnOrder(settingsPath, order);
+            SettingsStore.SaveColumnOrder(settingsPath, order);
 
-            var loaded = LibrarySettingsStore.LoadColumnOrder(settingsPath);
+            var loaded = SettingsStore.LoadColumnOrder(settingsPath);
 
             await Assert.That(loaded).IsEquivalentTo(order);
         }
@@ -172,14 +172,14 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
+            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
             var columns = new Dictionary<string, bool> { ["TrackNumber"] = true, ["Title"] = false };
-            LibrarySettingsStore.SaveColumnVisibility(settingsPath, columns);
+            SettingsStore.SaveColumnVisibility(settingsPath, columns);
 
-            LibrarySettingsStore.SaveColumnOrder(settingsPath, ["Title", "Artist"]);
+            SettingsStore.SaveColumnOrder(settingsPath, ["Title", "Artist"]);
 
-            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
-            await Assert.That(LibrarySettingsStore.LoadColumnVisibility(settingsPath)).IsEquivalentTo(columns);
+            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
+            await Assert.That(SettingsStore.LoadColumnVisibility(settingsPath)).IsEquivalentTo(columns);
         }
         finally
         {
@@ -192,7 +192,7 @@ public class LibrarySettingsStoreTests
     {
         var settingsPath = CreateTempSettingsPath();
 
-        var loaded = LibrarySettingsStore.LoadColumnOrder(settingsPath);
+        var loaded = SettingsStore.LoadColumnOrder(settingsPath);
 
         await Assert.That(loaded).IsNull();
     }
@@ -203,9 +203,9 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveRightColumnWidth(settingsPath, 275.5);
+            SettingsStore.SaveRightColumnWidth(settingsPath, 275.5);
 
-            var loaded = LibrarySettingsStore.LoadRightColumnWidth(settingsPath);
+            var loaded = SettingsStore.LoadRightColumnWidth(settingsPath);
 
             await Assert.That(loaded).IsEqualTo(275.5);
         }
@@ -223,9 +223,9 @@ public class LibrarySettingsStoreTests
         {
             var widths = new Dictionary<string, double> { ["Title"] = 250, ["Artist"] = 180 };
 
-            LibrarySettingsStore.SaveColumnWidths(settingsPath, widths);
+            SettingsStore.SaveColumnWidths(settingsPath, widths);
 
-            var loaded = LibrarySettingsStore.LoadColumnWidths(settingsPath);
+            var loaded = SettingsStore.LoadColumnWidths(settingsPath);
 
             await Assert.That(loaded!["Title"]).IsEqualTo(250);
             await Assert.That(loaded!["Artist"]).IsEqualTo(180);
@@ -242,13 +242,13 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
-            LibrarySettingsStore.SaveColumnOrder(settingsPath, ["Title", "Artist"]);
+            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
+            SettingsStore.SaveColumnOrder(settingsPath, ["Title", "Artist"]);
 
-            LibrarySettingsStore.SaveRightColumnWidth(settingsPath, 300);
+            SettingsStore.SaveRightColumnWidth(settingsPath, 300);
 
-            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
-            await Assert.That(LibrarySettingsStore.LoadColumnOrder(settingsPath)).IsEquivalentTo(["Title", "Artist"]);
+            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
+            await Assert.That(SettingsStore.LoadColumnOrder(settingsPath)).IsEquivalentTo(["Title", "Artist"]);
         }
         finally
         {
@@ -262,9 +262,9 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveSort(settingsPath, "Track.Bitrate", true);
+            SettingsStore.SaveSort(settingsPath, "Track.Bitrate", true);
 
-            var loaded = LibrarySettingsStore.LoadSort(settingsPath);
+            var loaded = SettingsStore.LoadSort(settingsPath);
 
             await Assert.That(loaded).IsEqualTo(("Track.Bitrate", true));
         }
@@ -279,7 +279,7 @@ public class LibrarySettingsStoreTests
     {
         var settingsPath = CreateTempSettingsPath();
 
-        var loaded = LibrarySettingsStore.LoadSort(settingsPath);
+        var loaded = SettingsStore.LoadSort(settingsPath);
 
         await Assert.That(loaded).IsNull();
     }
@@ -290,13 +290,13 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
-            LibrarySettingsStore.SaveColumnOrder(settingsPath, ["Title", "Artist"]);
+            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
+            SettingsStore.SaveColumnOrder(settingsPath, ["Title", "Artist"]);
 
-            LibrarySettingsStore.SaveSort(settingsPath, "Track.Title", false);
+            SettingsStore.SaveSort(settingsPath, "Track.Title", false);
 
-            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
-            await Assert.That(LibrarySettingsStore.LoadColumnOrder(settingsPath)).IsEquivalentTo(["Title", "Artist"]);
+            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
+            await Assert.That(SettingsStore.LoadColumnOrder(settingsPath)).IsEquivalentTo(["Title", "Artist"]);
         }
         finally
         {
@@ -310,9 +310,9 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveTileSize(settingsPath, 220);
+            SettingsStore.SaveTileSize(settingsPath, 220);
 
-            var loaded = LibrarySettingsStore.LoadTileSize(settingsPath);
+            var loaded = SettingsStore.LoadTileSize(settingsPath);
 
             await Assert.That(loaded).IsEqualTo(220);
         }
@@ -327,7 +327,7 @@ public class LibrarySettingsStoreTests
     {
         var settingsPath = CreateTempSettingsPath();
 
-        var loaded = LibrarySettingsStore.LoadTileSize(settingsPath);
+        var loaded = SettingsStore.LoadTileSize(settingsPath);
 
         await Assert.That(loaded).IsNull();
     }
@@ -338,9 +338,9 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveViewMode(settingsPath, LibraryViewMode.AlbumGrid);
+            SettingsStore.SaveViewMode(settingsPath, LibraryViewMode.AlbumGrid);
 
-            var loaded = LibrarySettingsStore.LoadViewMode(settingsPath);
+            var loaded = SettingsStore.LoadViewMode(settingsPath);
 
             await Assert.That(loaded).IsEqualTo(LibraryViewMode.AlbumGrid);
         }
@@ -355,7 +355,7 @@ public class LibrarySettingsStoreTests
     {
         var settingsPath = CreateTempSettingsPath();
 
-        var loaded = LibrarySettingsStore.LoadViewMode(settingsPath);
+        var loaded = SettingsStore.LoadViewMode(settingsPath);
 
         await Assert.That(loaded).IsNull();
     }
@@ -366,9 +366,9 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveAlbumSortMode(settingsPath, AlbumSortMode.Year);
+            SettingsStore.SaveAlbumSortMode(settingsPath, AlbumSortMode.Year);
 
-            var loaded = LibrarySettingsStore.LoadAlbumSortMode(settingsPath);
+            var loaded = SettingsStore.LoadAlbumSortMode(settingsPath);
 
             await Assert.That(loaded).IsEqualTo(AlbumSortMode.Year);
         }
@@ -383,7 +383,7 @@ public class LibrarySettingsStoreTests
     {
         var settingsPath = CreateTempSettingsPath();
 
-        var loaded = LibrarySettingsStore.LoadAlbumSortMode(settingsPath);
+        var loaded = SettingsStore.LoadAlbumSortMode(settingsPath);
 
         await Assert.That(loaded).IsNull();
     }
@@ -394,9 +394,9 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveAlbumSortDescending(settingsPath, true);
+            SettingsStore.SaveAlbumSortDescending(settingsPath, true);
 
-            var loaded = LibrarySettingsStore.LoadAlbumSortDescending(settingsPath);
+            var loaded = SettingsStore.LoadAlbumSortDescending(settingsPath);
 
             await Assert.That(loaded).IsTrue();
         }
@@ -411,7 +411,7 @@ public class LibrarySettingsStoreTests
     {
         var settingsPath = CreateTempSettingsPath();
 
-        var loaded = LibrarySettingsStore.LoadAlbumSortDescending(settingsPath);
+        var loaded = SettingsStore.LoadAlbumSortDescending(settingsPath);
 
         await Assert.That(loaded).IsNull();
     }
@@ -422,14 +422,14 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
-            LibrarySettingsStore.SaveTileSize(settingsPath, 200);
+            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
+            SettingsStore.SaveTileSize(settingsPath, 200);
 
-            LibrarySettingsStore.SaveAlbumSortMode(settingsPath, AlbumSortMode.Artist);
-            LibrarySettingsStore.SaveAlbumSortDescending(settingsPath, true);
+            SettingsStore.SaveAlbumSortMode(settingsPath, AlbumSortMode.Artist);
+            SettingsStore.SaveAlbumSortDescending(settingsPath, true);
 
-            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
-            await Assert.That(LibrarySettingsStore.LoadTileSize(settingsPath)).IsEqualTo(200);
+            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
+            await Assert.That(SettingsStore.LoadTileSize(settingsPath)).IsEqualTo(200);
         }
         finally
         {
@@ -443,14 +443,14 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
-            LibrarySettingsStore.SaveSort(settingsPath, "Track.Title", false);
+            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
+            SettingsStore.SaveSort(settingsPath, "Track.Title", false);
 
-            LibrarySettingsStore.SaveTileSize(settingsPath, 180);
-            LibrarySettingsStore.SaveViewMode(settingsPath, LibraryViewMode.AlbumGrid);
+            SettingsStore.SaveTileSize(settingsPath, 180);
+            SettingsStore.SaveViewMode(settingsPath, LibraryViewMode.AlbumGrid);
 
-            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
-            await Assert.That(LibrarySettingsStore.LoadSort(settingsPath)).IsEqualTo(("Track.Title", false));
+            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
+            await Assert.That(SettingsStore.LoadSort(settingsPath)).IsEqualTo(("Track.Title", false));
         }
         finally
         {
@@ -463,7 +463,7 @@ public class LibrarySettingsStoreTests
     {
         var settingsPath = CreateTempSettingsPath();
 
-        var loaded = LibrarySettingsStore.LoadRestoreQueueOnStartup(settingsPath);
+        var loaded = SettingsStore.LoadRestoreQueueOnStartup(settingsPath);
 
         await Assert.That(loaded).IsTrue();
     }
@@ -474,9 +474,9 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveRestoreQueueOnStartup(settingsPath, false);
+            SettingsStore.SaveRestoreQueueOnStartup(settingsPath, false);
 
-            var loaded = LibrarySettingsStore.LoadRestoreQueueOnStartup(settingsPath);
+            var loaded = SettingsStore.LoadRestoreQueueOnStartup(settingsPath);
 
             await Assert.That(loaded).IsFalse();
         }
@@ -491,7 +491,7 @@ public class LibrarySettingsStoreTests
     {
         var settingsPath = CreateTempSettingsPath();
 
-        var loaded = LibrarySettingsStore.LoadQueueState(settingsPath);
+        var loaded = SettingsStore.LoadQueueState(settingsPath);
 
         await Assert.That(loaded).IsNull();
     }
@@ -502,15 +502,15 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.QueueEntryData[] entries =
+            SettingsStore.QueueEntryData[] entries =
             [
                 new("/music/a.mp3", QueueEntrySource.Manual),
                 new("/music/b.mp3", QueueEntrySource.AutoDj),
             ];
 
-            LibrarySettingsStore.SaveQueueState(settingsPath, entries, 1, 42.5);
+            SettingsStore.SaveQueueState(settingsPath, entries, 1, 42.5);
 
-            var loaded = LibrarySettingsStore.LoadQueueState(settingsPath);
+            var loaded = SettingsStore.LoadQueueState(settingsPath);
 
             await Assert.That(loaded!.Entries).IsEquivalentTo(entries);
             await Assert.That(loaded.CurrentIndex).IsEqualTo(1);
@@ -528,11 +528,11 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveQueueState(settingsPath, [new LibrarySettingsStore.QueueEntryData("/music/a.mp3", QueueEntrySource.Manual)], 0, 0);
+            SettingsStore.SaveQueueState(settingsPath, [new SettingsStore.QueueEntryData("/music/a.mp3", QueueEntrySource.Manual)], 0, 0);
 
-            LibrarySettingsStore.SaveQueueState(settingsPath, [], -1, 0);
+            SettingsStore.SaveQueueState(settingsPath, [], -1, 0);
 
-            await Assert.That(LibrarySettingsStore.LoadQueueState(settingsPath)).IsNull();
+            await Assert.That(SettingsStore.LoadQueueState(settingsPath)).IsNull();
         }
         finally
         {
@@ -546,13 +546,13 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
-            LibrarySettingsStore.SaveRestoreQueueOnStartup(settingsPath, false);
+            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
+            SettingsStore.SaveRestoreQueueOnStartup(settingsPath, false);
 
-            LibrarySettingsStore.SaveQueueState(settingsPath, [new LibrarySettingsStore.QueueEntryData("/music/a.mp3", QueueEntrySource.Manual)], 0, 10);
+            SettingsStore.SaveQueueState(settingsPath, [new SettingsStore.QueueEntryData("/music/a.mp3", QueueEntrySource.Manual)], 0, 10);
 
-            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
-            await Assert.That(LibrarySettingsStore.LoadRestoreQueueOnStartup(settingsPath)).IsFalse();
+            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
+            await Assert.That(SettingsStore.LoadRestoreQueueOnStartup(settingsPath)).IsFalse();
         }
         finally
         {
@@ -565,7 +565,7 @@ public class LibrarySettingsStoreTests
     {
         var settingsPath = CreateTempSettingsPath();
 
-        var loaded = LibrarySettingsStore.LoadOutputDeviceName(settingsPath);
+        var loaded = SettingsStore.LoadOutputDeviceName(settingsPath);
 
         await Assert.That(loaded).IsNull();
     }
@@ -576,9 +576,9 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveOutputDeviceName(settingsPath, "Focusrite Scarlett 2i2");
+            SettingsStore.SaveOutputDeviceName(settingsPath, "Focusrite Scarlett 2i2");
 
-            var loaded = LibrarySettingsStore.LoadOutputDeviceName(settingsPath);
+            var loaded = SettingsStore.LoadOutputDeviceName(settingsPath);
 
             await Assert.That(loaded).IsEqualTo("Focusrite Scarlett 2i2");
         }
@@ -594,11 +594,11 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveOutputDeviceName(settingsPath, "Focusrite Scarlett 2i2");
+            SettingsStore.SaveOutputDeviceName(settingsPath, "Focusrite Scarlett 2i2");
 
-            LibrarySettingsStore.SaveOutputDeviceName(settingsPath, null);
+            SettingsStore.SaveOutputDeviceName(settingsPath, null);
 
-            await Assert.That(LibrarySettingsStore.LoadOutputDeviceName(settingsPath)).IsNull();
+            await Assert.That(SettingsStore.LoadOutputDeviceName(settingsPath)).IsNull();
         }
         finally
         {
@@ -612,11 +612,11 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
+            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
 
-            LibrarySettingsStore.SaveOutputDeviceName(settingsPath, "Focusrite Scarlett 2i2");
+            SettingsStore.SaveOutputDeviceName(settingsPath, "Focusrite Scarlett 2i2");
 
-            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
+            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
         }
         finally
         {
@@ -629,7 +629,7 @@ public class LibrarySettingsStoreTests
     {
         var settingsPath = CreateTempSettingsPath();
 
-        var loaded = LibrarySettingsStore.LoadVolume(settingsPath);
+        var loaded = SettingsStore.LoadVolume(settingsPath);
 
         await Assert.That(loaded).IsNull();
     }
@@ -640,9 +640,9 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveVolume(settingsPath, 0.35);
+            SettingsStore.SaveVolume(settingsPath, 0.35);
 
-            var loaded = LibrarySettingsStore.LoadVolume(settingsPath);
+            var loaded = SettingsStore.LoadVolume(settingsPath);
 
             await Assert.That(loaded).IsEqualTo(0.35);
         }
@@ -657,7 +657,7 @@ public class LibrarySettingsStoreTests
     {
         var settingsPath = CreateTempSettingsPath();
 
-        var loaded = LibrarySettingsStore.LoadVolumeCurve(settingsPath);
+        var loaded = SettingsStore.LoadVolumeCurve(settingsPath);
 
         await Assert.That(loaded).IsEqualTo(VolumeCurve.Linear);
     }
@@ -668,9 +668,9 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveVolumeCurve(settingsPath, VolumeCurve.Logarithmic);
+            SettingsStore.SaveVolumeCurve(settingsPath, VolumeCurve.Logarithmic);
 
-            var loaded = LibrarySettingsStore.LoadVolumeCurve(settingsPath);
+            var loaded = SettingsStore.LoadVolumeCurve(settingsPath);
 
             await Assert.That(loaded).IsEqualTo(VolumeCurve.Logarithmic);
         }
@@ -686,12 +686,12 @@ public class LibrarySettingsStoreTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
+            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
 
-            LibrarySettingsStore.SaveVolume(settingsPath, 0.7);
-            LibrarySettingsStore.SaveVolumeCurve(settingsPath, VolumeCurve.Logarithmic);
+            SettingsStore.SaveVolume(settingsPath, 0.7);
+            SettingsStore.SaveVolumeCurve(settingsPath, VolumeCurve.Logarithmic);
 
-            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
+            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
         }
         finally
         {

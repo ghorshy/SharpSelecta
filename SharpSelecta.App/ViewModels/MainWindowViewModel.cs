@@ -31,38 +31,35 @@ public partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel(
         IAudioEngine audioEngine,
         IFilePickerService filePickerService,
-        string librarySettingsFilePath,
+        string settingsFilePath,
         ILogger<PlaybackControlsViewModel> playbackControlsLogger,
         ILogger<LibraryViewModel> libraryLogger,
         ILogger<QueueViewModel> queueLogger)
     {
-        _settingsFilePath = librarySettingsFilePath;
+        _settingsFilePath = settingsFilePath;
 
         var queue = new PlaybackQueue();
         PlaybackControls = new PlaybackControlsViewModel(audioEngine, queue, playbackControlsLogger);
-        Library = new LibraryViewModel(filePickerService, PlaybackControls, librarySettingsFilePath, libraryLogger);
+        Library = new LibraryViewModel(filePickerService, PlaybackControls, settingsFilePath, libraryLogger);
         Queue = new QueueViewModel(PlaybackControls, queueLogger);
-        // Constructed after PlaybackControls so it can apply the saved volume curve to it
-        // immediately (see PlaybackSettingsViewModel's constructor) - PlaybackControls.Volume is
-        // then loaded below, after that curve is already in place, so it's the one actually used
-        // to compute the initial engine volume.
-        PlaybackSettings = new PlaybackSettingsViewModel(librarySettingsFilePath, audioEngine, PlaybackControls);
-        PlaybackControls.Volume = LibrarySettingsStore.LoadVolume(_settingsFilePath) ?? PlaybackControls.Volume;
+        // Constructed after PlaybackControls so it can hydrate the saved volume curve and volume
+        // into it immediately (see PlaybackSettingsViewModel's constructor).
+        PlaybackSettings = new PlaybackSettingsViewModel(settingsFilePath, audioEngine, PlaybackControls);
 
         // Assigning the backing field directly (not the generated property) so loading the saved
         // width on startup doesn't immediately re-save the same value it was just loaded from.
-        rightColumnWidth = new GridLength(LibrarySettingsStore.LoadRightColumnWidth(_settingsFilePath) ?? DefaultRightColumnWidth);
+        rightColumnWidth = new GridLength(SettingsStore.LoadRightColumnWidth(_settingsFilePath) ?? DefaultRightColumnWidth);
     }
 
     public void PersistRightColumnWidth() =>
-        LibrarySettingsStore.SaveRightColumnWidth(_settingsFilePath, RightColumnWidth.Value);
+        SettingsStore.SaveRightColumnWidth(_settingsFilePath, RightColumnWidth.Value);
 
     // Called on the volume slider's PointerReleased (not on every OnVolumeChanged tick) to avoid
     // writing the settings file dozens of times during a single drag - same debounce-on-commit
     // pattern as PersistRightColumnWidth (GridSplitter DragCompleted) and column widths (DataGrid
     // PointerReleased).
     public void PersistVolume() =>
-        LibrarySettingsStore.SaveVolume(_settingsFilePath, PlaybackControls.Volume);
+        SettingsStore.SaveVolume(_settingsFilePath, PlaybackControls.Volume);
 
     // Called once on startup, after the audio engine has finished initializing (Load() throws
     // until then). Reads tracks directly off disk rather than through the Library's own scan, since
@@ -73,7 +70,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (!PlaybackSettings.RestoreQueueOnStartup)
             return;
 
-        var state = LibrarySettingsStore.LoadQueueState(_settingsFilePath);
+        var state = SettingsStore.LoadQueueState(_settingsFilePath);
         if (state is null)
             return;
 
@@ -102,11 +99,9 @@ public partial class MainWindowViewModel : ViewModelBase
         if (restoredEntries.Count == 0)
             return;
 
-        // The previously-current track itself went missing since it was saved (moved/deleted) —
-        // fall back to the first still-available entry rather than restoring with nothing current.
-        if (restoredCurrentIndex < 0)
-            restoredCurrentIndex = 0;
-
+        // restoredCurrentIndex may still be -1 here (the previously-current track went missing
+        // since it was saved) - the queue's own Restore clamp resolves that to the first
+        // still-available entry, so it isn't patched up separately here.
         await PlaybackControls.RestoreQueueAsync(restoredEntries, restoredCurrentIndex, state.PositionSeconds);
     }
 
@@ -119,9 +114,9 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
 
         var entries = PlaybackControls.QueueEntries
-            .Select(e => new LibrarySettingsStore.QueueEntryData(e.Track.FilePath, e.Source))
+            .Select(e => new SettingsStore.QueueEntryData(e.Track.FilePath, e.Source))
             .ToList();
 
-        LibrarySettingsStore.SaveQueueState(_settingsFilePath, entries, PlaybackControls.QueueCurrentIndex, PlaybackControls.PositionSeconds);
+        SettingsStore.SaveQueueState(_settingsFilePath, entries, PlaybackControls.QueueCurrentIndex, PlaybackControls.PositionSeconds);
     }
 }

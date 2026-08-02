@@ -118,12 +118,12 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     partial void OnIsYearColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsYearColumnVisible = v);
 
-    private void SaveColumnVisibility() => LibrarySettingsStore.SaveColumnVisibility(
+    private void SaveColumnVisibility() => SettingsStore.SaveColumnVisibility(
         _settingsFilePath, ColumnVisibilityBindings().ToDictionary(c => c.Key, c => c.Get()));
 
     private void ApplySavedColumnVisibility()
     {
-        var columns = LibrarySettingsStore.LoadColumnVisibility(_settingsFilePath);
+        var columns = SettingsStore.LoadColumnVisibility(_settingsFilePath);
         if (columns is null)
             return;
 
@@ -171,7 +171,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     partial void OnViewModeChanged(LibraryViewMode value)
     {
-        LibrarySettingsStore.SaveViewMode(_settingsFilePath, value);
+        SettingsStore.SaveViewMode(_settingsFilePath, value);
         NotifyViewVisibilityChanged();
     }
 
@@ -324,7 +324,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     // Column order isn't modeled as a ViewModel property like visibility is — DataGridColumn's
     // DisplayIndex lives on the control itself — so LibraryView reads/writes it directly through
-    // LibrarySettingsStore using this path.
+    // SettingsStore using this path.
     public string SettingsFilePath => _settingsFilePath;
 
     public LibraryViewModel(
@@ -376,9 +376,9 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     public async Task InitializeAsync()
     {
         ApplySavedColumnVisibility();
-        ViewMode = LibrarySettingsStore.LoadViewMode(_settingsFilePath) ?? LibraryViewMode.TrackList;
+        ViewMode = SettingsStore.LoadViewMode(_settingsFilePath) ?? LibraryViewMode.TrackList;
 
-        var folderPaths = LibrarySettingsStore.LoadLibraryFolderPaths(_settingsFilePath);
+        var folderPaths = SettingsStore.LoadLibraryFolderPaths(_settingsFilePath);
         if (folderPaths is not null)
         {
             foreach (var folderPath in folderPaths)
@@ -398,7 +398,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             return;
 
         LibraryFolderPaths.Add(folderPath);
-        LibrarySettingsStore.SaveLibraryFolderPaths(_settingsFilePath, LibraryFolderPaths);
+        SettingsStore.SaveLibraryFolderPaths(_settingsFilePath, LibraryFolderPaths);
         await LoadFoldersAsync();
     }
 
@@ -431,7 +431,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             LibraryFolderPaths.Add(folderPath);
         }
 
-        LibrarySettingsStore.SaveLibraryFolderPaths(_settingsFilePath, LibraryFolderPaths);
+        SettingsStore.SaveLibraryFolderPaths(_settingsFilePath, LibraryFolderPaths);
         await LoadFoldersAsync();
     }
 

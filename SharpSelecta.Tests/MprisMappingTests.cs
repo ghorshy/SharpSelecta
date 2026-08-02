@@ -31,7 +31,9 @@ public class MprisMappingTests
     [Test]
     public async Task BuildMetadata_WithAFullyTaggedTrack_IncludesAllStandardKeys()
     {
-        var track = new Track("/music/song.mp3", "song.mp3")
+        // DisplayName mirrors Title here the same way MusicLibraryScanner constructs real tracks -
+        // BuildMetadata's xesam:title reads DisplayName, which owns the title-or-filename fallback.
+        var track = new Track("/music/song.mp3", "Song Title")
         {
             Title = "Song Title",
             Artist = "The Artist",

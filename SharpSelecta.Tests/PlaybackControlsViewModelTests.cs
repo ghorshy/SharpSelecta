@@ -127,7 +127,7 @@ public class PlaybackControlsViewModelTests
     }
 
     // Regression coverage for the MPRIS Play/PlayPause cold-start fallback (MprisRoot.
-    // StartOrResumePlaybackAsync): tracks added via "Add to Queue" (never "Play Now") leave
+    // ToggleOrStartPlaybackAsync): tracks added via "Add to Queue" (never "Play Now") leave
     // CurrentTrack null with CurrentIndex still at its default -1, but the queue itself already has
     // something to advance to.
     [Test]

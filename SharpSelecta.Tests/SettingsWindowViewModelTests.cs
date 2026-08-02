@@ -10,6 +10,9 @@ namespace SharpSelecta.Tests;
 
 public class SettingsWindowViewModelTests
 {
+    private static string CreateTempSettingsPath() =>
+        Path.Combine(Path.GetTempPath(), $"sharpselecta-settings-vm-tests-{Guid.NewGuid():N}.json");
+
     private static LibraryViewModel CreateLibraryViewModel()
     {
         var playbackControls = new PlaybackControlsViewModel(
@@ -17,7 +20,7 @@ public class SettingsWindowViewModelTests
         return new LibraryViewModel(
             Substitute.For<IFilePickerService>(),
             playbackControls,
-            Path.Combine(Path.GetTempPath(), $"sharpselecta-settings-vm-tests-{Guid.NewGuid():N}.json"),
+            CreateTempSettingsPath(),
             NullLogger<LibraryViewModel>.Instance);
     }
 
@@ -26,7 +29,7 @@ public class SettingsWindowViewModelTests
         var playbackControls = new PlaybackControlsViewModel(
             Substitute.For<IAudioEngine>(), new PlaybackQueue(), NullLogger<PlaybackControlsViewModel>.Instance);
         return new PlaybackSettingsViewModel(
-            Path.Combine(Path.GetTempPath(), $"sharpselecta-settings-vm-tests-{Guid.NewGuid():N}.json"),
+            CreateTempSettingsPath(),
             Substitute.For<IAudioEngine>(),
             playbackControls);
     }

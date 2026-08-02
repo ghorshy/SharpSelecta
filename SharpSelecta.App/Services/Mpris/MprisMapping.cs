@@ -18,17 +18,17 @@ public static class MprisMapping
 
     public static IDictionary<string, object> BuildMetadata(Track? track, long? heartbeatTick = null)
     {
-        var metadata = track is null
-            ? new Dictionary<string, object>()
-            : new Dictionary<string, object>
-            {
-                ["mpris:trackid"] = TrackId(track),
-                ["mpris:length"] = (long)track.Duration.TotalMicroseconds,
-                ["xesam:title"] = !string.IsNullOrWhiteSpace(track.Title) ? track.Title : track.DisplayName,
-            };
+        var metadata = new Dictionary<string, object>();
 
         if (track is not null)
         {
+            metadata["mpris:trackid"] = TrackId(track);
+            metadata["mpris:length"] = (long)track.Duration.TotalMicroseconds;
+            // DisplayName already carries the title-or-filename fallback (MusicLibraryScanner,
+            // the only production Track source, bakes it in) - re-deriving it here would be a
+            // second copy of that policy that could drift from what the rest of the UI shows.
+            metadata["xesam:title"] = track.DisplayName;
+
             if (!string.IsNullOrWhiteSpace(track.Artist))
             {
                 metadata["xesam:artist"] = new[] { track.Artist };

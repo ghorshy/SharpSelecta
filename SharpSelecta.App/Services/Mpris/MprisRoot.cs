@@ -63,12 +63,7 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
             return;
         }
 
-        _playerPropertiesChanged?.Invoke(new PropertyChanges(
-            [
-                new KeyValuePair<string, object>("PlaybackStatus", MprisMapping.PlaybackStatus(_playbackControls.TransportState, _playbackControls.IsPlaying)),
-                new KeyValuePair<string, object>("Metadata", MprisMapping.BuildMetadata(_playbackControls.CurrentTrack)),
-            ],
-            []));
+        EmitPlayerPropertiesChanged();
     }
 
     // Only nudges while actually playing - a paused/stopped SharpSelecta has no stronger claim to
@@ -89,13 +84,16 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
     public void NudgePriority()
     {
         _heartbeatTick++;
+        EmitPlayerPropertiesChanged(_heartbeatTick);
+    }
+
+    private void EmitPlayerPropertiesChanged(long? heartbeatTick = null) =>
         _playerPropertiesChanged?.Invoke(new PropertyChanges(
             [
                 new KeyValuePair<string, object>("PlaybackStatus", MprisMapping.PlaybackStatus(_playbackControls.TransportState, _playbackControls.IsPlaying)),
-                new KeyValuePair<string, object>("Metadata", MprisMapping.BuildMetadata(_playbackControls.CurrentTrack, _heartbeatTick)),
+                new KeyValuePair<string, object>("Metadata", MprisMapping.BuildMetadata(_playbackControls.CurrentTrack, heartbeatTick)),
             ],
             []));
-    }
 
     // --- org.mpris.MediaPlayer2 ---
     // Raise/Quit/DesktopEntry/UriSchemes/MimeTypes are all fixed "not supported" values - the base
@@ -116,9 +114,7 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
     Task<IDisposable> IMediaPlayer2.WatchPropertiesAsync(Action<PropertyChanges> handler) =>
         Task.FromResult<IDisposable>(new NoopSubscription());
 
-    private static object GetMediaPlayer2Property(string prop) => AllMediaPlayer2Properties.TryGetValue(prop, out var value)
-        ? value
-        : throw new DBusException("org.freedesktop.DBus.Error.UnknownProperty", $"Unknown property {prop}");
+    private static object GetMediaPlayer2Property(string prop) => GetPropertyOrThrow(AllMediaPlayer2Properties, prop);
 
     private static IDictionary<string, object> AllMediaPlayer2Properties { get; } = new Dictionary<string, object>
     {
@@ -134,10 +130,10 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
     // --- org.mpris.MediaPlayer2.Player ---
 
     Task IMediaPlayer2Player.NextAsync() =>
-        Dispatcher.UIThread.InvokeAsync(async () => await _playbackControls.NextTrackCommand.ExecuteAsync(null));
+        Dispatcher.UIThread.InvokeAsync(() => _playbackControls.NextTrackCommand.ExecuteAsync(null));
 
     Task IMediaPlayer2Player.PreviousAsync() =>
-        Dispatcher.UIThread.InvokeAsync(async () => await _playbackControls.PreviousTrackCommand.ExecuteAsync(null));
+        Dispatcher.UIThread.InvokeAsync(() => _playbackControls.PreviousTrackCommand.ExecuteAsync(null));
 
     Task IMediaPlayer2Player.PauseAsync() => Dispatcher.UIThread.InvokeAsync(() =>
     {
@@ -147,26 +143,10 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
         }
     }).GetTask();
 
-    Task IMediaPlayer2Player.PlayAsync() => Dispatcher.UIThread.InvokeAsync(async () =>
-    {
-        if (_playbackControls.IsPlaying)
-        {
-            return;
-        }
+    Task IMediaPlayer2Player.PlayAsync() => Dispatcher.UIThread.InvokeAsync(() =>
+        _playbackControls.IsPlaying ? Task.CompletedTask : ToggleOrStartPlaybackAsync());
 
-        await StartOrResumePlaybackAsync();
-    });
-
-    Task IMediaPlayer2Player.PlayPauseAsync() => Dispatcher.UIThread.InvokeAsync(async () =>
-    {
-        if (_playbackControls.CurrentTrack is null)
-        {
-            await StartOrResumePlaybackAsync();
-            return;
-        }
-
-        _playbackControls.PlayPauseCommand.Execute(null);
-    });
+    Task IMediaPlayer2Player.PlayPauseAsync() => Dispatcher.UIThread.InvokeAsync(ToggleOrStartPlaybackAsync);
 
     // PlayPauseCommand only resumes an already-loaded track (gated on TransportState == Ready) -
     // it silently no-ops with nothing loaded yet, e.g. tracks added via "Add to Queue" but never
@@ -176,7 +156,7 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
     // though the queue had something to play, which made playerctl skip SharpSelecta for Play/
     // PlayPause specifically (it checks CanPlay/CanPause before sending them) while Next/Previous -
     // gated only on the queue, not on CurrentTrack - still worked. See CanPlay below.
-    private Task StartOrResumePlaybackAsync()
+    private Task ToggleOrStartPlaybackAsync()
     {
         if (_playbackControls.CurrentTrack is null)
         {
@@ -192,11 +172,7 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
     Task IMediaPlayer2Player.StopAsync() => ((IMediaPlayer2Player)this).PauseAsync();
 
     Task IMediaPlayer2Player.SeekAsync(long offsetMicroseconds) => Dispatcher.UIThread.InvokeAsync(() =>
-    {
-        var newPosition = Math.Clamp(_playbackControls.PositionSeconds + offsetMicroseconds / 1_000_000.0, 0, _playbackControls.DurationSeconds);
-        _playbackControls.PositionSeconds = newPosition;
-        _seeked?.Invoke((long)(newPosition * 1_000_000));
-    }).GetTask();
+        ApplySeek(_playbackControls.PositionSeconds + offsetMicroseconds / 1_000_000.0)).GetTask();
 
     Task IMediaPlayer2Player.SetPositionAsync(ObjectPath trackId, long positionMicroseconds) => Dispatcher.UIThread.InvokeAsync(() =>
     {
@@ -208,10 +184,15 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
             return;
         }
 
-        var newPosition = Math.Clamp(positionMicroseconds / 1_000_000.0, 0, _playbackControls.DurationSeconds);
+        ApplySeek(positionMicroseconds / 1_000_000.0);
+    }).GetTask();
+
+    private void ApplySeek(double targetSeconds)
+    {
+        var newPosition = Math.Clamp(targetSeconds, 0, _playbackControls.DurationSeconds);
         _playbackControls.PositionSeconds = newPosition;
         _seeked?.Invoke((long)(newPosition * 1_000_000));
-    }).GetTask();
+    }
 
     Task IMediaPlayer2Player.OpenUriAsync(string uri) => Task.CompletedTask;
 
@@ -236,13 +217,12 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
     }
 
     // Must run on the UI thread - reads several PlaybackControlsViewModel properties together.
-    private object GetPlayerProperty(string prop)
-    {
-        var properties = GetAllPlayerProperties();
-        return properties.TryGetValue(prop, out var value)
+    private object GetPlayerProperty(string prop) => GetPropertyOrThrow(GetAllPlayerProperties(), prop);
+
+    private static object GetPropertyOrThrow(IDictionary<string, object> properties, string prop) =>
+        properties.TryGetValue(prop, out var value)
             ? value
             : throw new DBusException("org.freedesktop.DBus.Error.UnknownProperty", $"Unknown property {prop}");
-    }
 
     // Must run on the UI thread - reads several PlaybackControlsViewModel properties together.
     private IDictionary<string, object> GetAllPlayerProperties()

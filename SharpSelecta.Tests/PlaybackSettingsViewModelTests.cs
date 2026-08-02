@@ -35,9 +35,10 @@ public class PlaybackSettingsViewModelTests
             var vm = new PlaybackSettingsViewModel(settingsPath, audioEngine, CreatePlaybackControlsViewModel());
 
             vm.SelectedOutputDeviceDisplayName = "Focusrite Scarlett 2i2";
+            await vm.OutputDeviceSwitchTask;
 
             audioEngine.Received(1).SetOutputDevice("Focusrite Scarlett 2i2");
-            await Assert.That(LibrarySettingsStore.LoadOutputDeviceName(settingsPath)).IsEqualTo("Focusrite Scarlett 2i2");
+            await Assert.That(SettingsStore.LoadOutputDeviceName(settingsPath)).IsEqualTo("Focusrite Scarlett 2i2");
         }
         finally
         {
@@ -54,11 +55,13 @@ public class PlaybackSettingsViewModelTests
             var audioEngine = Substitute.For<IAudioEngine>();
             var vm = new PlaybackSettingsViewModel(settingsPath, audioEngine, CreatePlaybackControlsViewModel());
             vm.SelectedOutputDeviceDisplayName = "Focusrite Scarlett 2i2";
+            await vm.OutputDeviceSwitchTask;
 
             vm.SelectedOutputDeviceDisplayName = Strings.SystemDefaultAudioDevice;
+            await vm.OutputDeviceSwitchTask;
 
             audioEngine.Received(1).SetOutputDevice(null);
-            await Assert.That(LibrarySettingsStore.LoadOutputDeviceName(settingsPath)).IsNull();
+            await Assert.That(SettingsStore.LoadOutputDeviceName(settingsPath)).IsNull();
         }
         finally
         {
@@ -72,7 +75,7 @@ public class PlaybackSettingsViewModelTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveOutputDeviceName(settingsPath, "Focusrite Scarlett 2i2");
+            SettingsStore.SaveOutputDeviceName(settingsPath, "Focusrite Scarlett 2i2");
             var audioEngine = Substitute.For<IAudioEngine>();
 
             var vm = new PlaybackSettingsViewModel(settingsPath, audioEngine, CreatePlaybackControlsViewModel());
@@ -92,7 +95,7 @@ public class PlaybackSettingsViewModelTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveOutputDeviceName(settingsPath, "Focusrite Scarlett 2i2");
+            SettingsStore.SaveOutputDeviceName(settingsPath, "Focusrite Scarlett 2i2");
             var audioEngine = Substitute.For<IAudioEngine>();
             audioEngine.GetOutputDevices().Returns(
             [
@@ -120,7 +123,7 @@ public class PlaybackSettingsViewModelTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveOutputDeviceName(settingsPath, "Unplugged USB DAC");
+            SettingsStore.SaveOutputDeviceName(settingsPath, "Unplugged USB DAC");
             var audioEngine = Substitute.For<IAudioEngine>();
             audioEngine.GetOutputDevices().Returns([new AudioOutputDevice("Built-in Speakers", true)]);
             var vm = new PlaybackSettingsViewModel(settingsPath, audioEngine, CreatePlaybackControlsViewModel());
@@ -134,7 +137,7 @@ public class PlaybackSettingsViewModelTests
             audioEngine.DidNotReceive().SetOutputDevice(Arg.Any<string?>());
             // The fallback is a display-only affordance - the actual saved preference is left alone
             // in case the device (e.g. a USB DAC) gets plugged back in on a later launch.
-            await Assert.That(LibrarySettingsStore.LoadOutputDeviceName(settingsPath)).IsEqualTo("Unplugged USB DAC");
+            await Assert.That(SettingsStore.LoadOutputDeviceName(settingsPath)).IsEqualTo("Unplugged USB DAC");
         }
         finally
         {
@@ -162,7 +165,7 @@ public class PlaybackSettingsViewModelTests
             vm.UseLogarithmicVolumeScale = true;
 
             await Assert.That(playbackControls.VolumeCurve).IsEqualTo(VolumeCurve.Logarithmic);
-            await Assert.That(LibrarySettingsStore.LoadVolumeCurve(settingsPath)).IsEqualTo(VolumeCurve.Logarithmic);
+            await Assert.That(SettingsStore.LoadVolumeCurve(settingsPath)).IsEqualTo(VolumeCurve.Logarithmic);
         }
         finally
         {
@@ -176,7 +179,7 @@ public class PlaybackSettingsViewModelTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveVolumeCurve(settingsPath, VolumeCurve.Logarithmic);
+            SettingsStore.SaveVolumeCurve(settingsPath, VolumeCurve.Logarithmic);
             var playbackControls = CreatePlaybackControlsViewModel();
 
             var vm = new PlaybackSettingsViewModel(settingsPath, Substitute.For<IAudioEngine>(), playbackControls);

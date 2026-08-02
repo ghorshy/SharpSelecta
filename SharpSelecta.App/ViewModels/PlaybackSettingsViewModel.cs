@@ -17,9 +17,10 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     private readonly PlaybackControlsViewModel _playbackControls;
 
     // Guards OnSelectedOutputDeviceDisplayNameChanged's persist/apply side effects while
-    // ApplyPersistedOutputDevice resets the selection back to "System Default" internally (the
-    // previously selected device isn't currently present) - that reset shouldn't itself overwrite
-    // the saved preference, in case the device reappears later.
+    // ApplyPersistedOutputDeviceAsync resets the selection back to "System Default" internally
+    // (the previously selected device isn't currently present) - that reset shouldn't overwrite
+    // the saved preference. A direct backing-field write would be simpler, but the MVVM toolkit
+    // analyzer (MVVMTK0034) only permits that inside the constructor.
     private bool _suppressOutputDeviceChangeSideEffects;
 
     // "System Default" is a synthetic entry, not a real device name - it's what SetOutputDevice(null)
@@ -48,35 +49,44 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         _settingsFilePath = settingsFilePath;
         _audioEngine = audioEngine;
         _playbackControls = playbackControls;
-        restoreQueueOnStartup = LibrarySettingsStore.LoadRestoreQueueOnStartup(settingsFilePath);
+        restoreQueueOnStartup = SettingsStore.LoadRestoreQueueOnStartup(settingsFilePath);
 
         // Assigning the backing field directly (not the generated property): the saved device name
         // isn't in OutputDeviceDisplayNames yet (that only happens once the engine is ready, see
         // ApplyPersistedOutputDevice), so going through the setter here would just re-save the exact
         // value it was loaded from.
-        if (LibrarySettingsStore.LoadOutputDeviceName(settingsFilePath) is { } savedDeviceName)
+        if (SettingsStore.LoadOutputDeviceName(settingsFilePath) is { } savedDeviceName)
         {
             selectedOutputDeviceDisplayName = savedDeviceName;
         }
 
-        var savedVolumeCurve = LibrarySettingsStore.LoadVolumeCurve(settingsFilePath);
+        var savedVolumeCurve = SettingsStore.LoadVolumeCurve(settingsFilePath);
         useLogarithmicVolumeScale = savedVolumeCurve == VolumeCurve.Logarithmic;
         // Goes through PlaybackControlsViewModel's own public setter (not a direct field write -
         // that guard only applies to this class's own [ObservableProperty] fields), which
         // immediately re-applies it to the (possibly still uninitialized) engine, same as the
         // cached-volume pattern OwnAudioEngine already uses for Volume itself.
         _playbackControls.VolumeCurve = savedVolumeCurve;
+        // Volume must load after the curve is in place so the initial engine amplitude is computed
+        // with the curve actually used this session - keeping both loads here makes that ordering
+        // one class's internal concern instead of a cross-constructor invariant.
+        _playbackControls.Volume = SettingsStore.LoadVolume(settingsFilePath) ?? _playbackControls.Volume;
     }
 
     partial void OnRestoreQueueOnStartupChanged(bool value) =>
-        LibrarySettingsStore.SaveRestoreQueueOnStartup(_settingsFilePath, value);
+        SettingsStore.SaveRestoreQueueOnStartup(_settingsFilePath, value);
 
     partial void OnUseLogarithmicVolumeScaleChanged(bool value)
     {
         var curve = value ? VolumeCurve.Logarithmic : VolumeCurve.Linear;
-        LibrarySettingsStore.SaveVolumeCurve(_settingsFilePath, curve);
+        SettingsStore.SaveVolumeCurve(_settingsFilePath, curve);
         _playbackControls.VolumeCurve = curve;
     }
+
+    // The in-flight switch from OnSelectedOutputDeviceDisplayNameChanged - fire-and-forget from
+    // the UI's perspective (a property-changed handler can't await), kept awaitable so tests can
+    // deterministically wait for the engine call, same as RefreshPositionAsync's rationale.
+    public Task OutputDeviceSwitchTask { get; private set; } = Task.CompletedTask;
 
     partial void OnSelectedOutputDeviceDisplayNameChanged(string value)
     {
@@ -84,8 +94,10 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
             return;
 
         var deviceName = value == Strings.SystemDefaultAudioDevice ? null : value;
-        LibrarySettingsStore.SaveOutputDeviceName(_settingsFilePath, deviceName);
-        _audioEngine.SetOutputDevice(deviceName);
+        SettingsStore.SaveOutputDeviceName(_settingsFilePath, deviceName);
+        // Off the UI thread: this fires from the Settings ComboBox, and SetOutputDevice is a
+        // blocking ~1s native Stop/switch/Start cycle (see OwnAudioEngine).
+        OutputDeviceSwitchTask = Task.Run(() => _audioEngine.SetOutputDevice(deviceName));
     }
 
     // Called once after the engine finishes initializing (App.axaml.cs) - IAudioEngine.GetOutputDevices

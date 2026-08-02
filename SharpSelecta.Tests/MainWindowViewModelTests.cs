@@ -117,7 +117,7 @@ public class MainWindowViewModelTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            LibrarySettingsStore.SaveVolumeCurve(settingsPath, VolumeCurve.Logarithmic);
+            SettingsStore.SaveVolumeCurve(settingsPath, VolumeCurve.Logarithmic);
 
             var vm = CreateViewModel(out _, settingsPath);
 
@@ -194,7 +194,7 @@ public class MainWindowViewModelTests
 
             vm.PersistQueueStateIfEnabled();
 
-            await Assert.That(LibrarySettingsStore.LoadQueueState(settingsPath)).IsNull();
+            await Assert.That(SettingsStore.LoadQueueState(settingsPath)).IsNull();
         }
         finally
         {
@@ -211,12 +211,12 @@ public class MainWindowViewModelTests
             var vm = CreateViewModel(out _, settingsPath);
             await vm.PlaybackControls.PlayNowAsync(new Track(TaggedTrackFixturePath, "tagged-track.mp3"));
             vm.PersistQueueStateIfEnabled();
-            await Assert.That(LibrarySettingsStore.LoadQueueState(settingsPath)).IsNotNull();
+            await Assert.That(SettingsStore.LoadQueueState(settingsPath)).IsNotNull();
 
             var emptied = CreateViewModel(out _, settingsPath);
             emptied.PersistQueueStateIfEnabled();
 
-            await Assert.That(LibrarySettingsStore.LoadQueueState(settingsPath)).IsNull();
+            await Assert.That(SettingsStore.LoadQueueState(settingsPath)).IsNull();
         }
         finally
         {

@@ -5,7 +5,7 @@ using SharpSelecta.Core.Playback;
 
 namespace SharpSelecta.Core.Library;
 
-public static partial class LibrarySettingsStore
+public static partial class SettingsStore
 {
     public static IReadOnlyList<string>? LoadLibraryFolderPaths(string settingsFilePath) => Load(settingsFilePath)?.LibraryFolderPaths;
 
@@ -108,10 +108,10 @@ public static partial class LibrarySettingsStore
 
     // Every Save* above is a read-modify-write of the whole settings file - this is the "read"
     // half, falling back to an empty record on first-ever save.
-    private static LibrarySettingsData CurrentOrEmpty(string settingsFilePath) =>
-        Load(settingsFilePath) ?? new LibrarySettingsData();
+    private static SettingsData CurrentOrEmpty(string settingsFilePath) =>
+        Load(settingsFilePath) ?? new SettingsData();
 
-    private static LibrarySettingsData? Load(string settingsFilePath)
+    private static SettingsData? Load(string settingsFilePath)
     {
         if (!File.Exists(settingsFilePath))
         {
@@ -121,7 +121,7 @@ public static partial class LibrarySettingsStore
         try
         {
             var json = File.ReadAllText(settingsFilePath);
-            return JsonSerializer.Deserialize(json, LibrarySettingsJsonContext.Default.LibrarySettingsData);
+            return JsonSerializer.Deserialize(json, SettingsJsonContext.Default.SettingsData);
         }
         catch (Exception ex) when (ex is JsonException or IOException)
         {
@@ -129,7 +129,7 @@ public static partial class LibrarySettingsStore
         }
     }
 
-    private static void Save(string settingsFilePath, LibrarySettingsData data)
+    private static void Save(string settingsFilePath, SettingsData data)
     {
         var directory = Path.GetDirectoryName(settingsFilePath);
         if (!string.IsNullOrEmpty(directory))
@@ -137,10 +137,10 @@ public static partial class LibrarySettingsStore
             Directory.CreateDirectory(directory);
         }
 
-        File.WriteAllText(settingsFilePath, JsonSerializer.Serialize(data, LibrarySettingsJsonContext.Default.LibrarySettingsData));
+        File.WriteAllText(settingsFilePath, JsonSerializer.Serialize(data, SettingsJsonContext.Default.SettingsData));
     }
 
-    private sealed record LibrarySettingsData
+    private sealed record SettingsData
     {
         public IReadOnlyList<string>? LibraryFolderPaths { get; init; }
         public IReadOnlyDictionary<string, bool>? Columns { get; init; }
@@ -162,8 +162,8 @@ public static partial class LibrarySettingsStore
         public VolumeCurve? VolumeCurve { get; init; }
     }
 
-    [JsonSerializable(typeof(LibrarySettingsData))]
-    private partial class LibrarySettingsJsonContext : JsonSerializerContext
+    [JsonSerializable(typeof(SettingsData))]
+    private partial class SettingsJsonContext : JsonSerializerContext
     {
     }
 }

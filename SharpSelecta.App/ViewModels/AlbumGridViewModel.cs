@@ -52,9 +52,9 @@ public partial class AlbumGridViewModel : ViewModelBase
     {
         _library = library;
         _settingsFilePath = settingsFilePath;
-        tileSize = Math.Clamp(LibrarySettingsStore.LoadTileSize(settingsFilePath) ?? DefaultTileSize, MinTileSize, MaxTileSize);
-        sortMode = LibrarySettingsStore.LoadAlbumSortMode(settingsFilePath) ?? AlbumSortMode.Title;
-        sortDescending = LibrarySettingsStore.LoadAlbumSortDescending(settingsFilePath) ?? false;
+        tileSize = Math.Clamp(SettingsStore.LoadTileSize(settingsFilePath) ?? DefaultTileSize, MinTileSize, MaxTileSize);
+        sortMode = SettingsStore.LoadAlbumSortMode(settingsFilePath) ?? AlbumSortMode.Title;
+        sortDescending = SettingsStore.LoadAlbumSortDescending(settingsFilePath) ?? false;
 
         _library.Albums.CollectionChanged += (_, _) => RebuildRows(force: true);
     }
@@ -74,19 +74,19 @@ public partial class AlbumGridViewModel : ViewModelBase
 
     partial void OnTileSizeChanged(double value)
     {
-        LibrarySettingsStore.SaveTileSize(_settingsFilePath, value);
+        SettingsStore.SaveTileSize(_settingsFilePath, value);
         RebuildRows(force: false);
     }
 
     partial void OnSortModeChanged(AlbumSortMode value)
     {
-        LibrarySettingsStore.SaveAlbumSortMode(_settingsFilePath, value);
+        SettingsStore.SaveAlbumSortMode(_settingsFilePath, value);
         RebuildRows(force: true);
     }
 
     partial void OnSortDescendingChanged(bool value)
     {
-        LibrarySettingsStore.SaveAlbumSortDescending(_settingsFilePath, value);
+        SettingsStore.SaveAlbumSortDescending(_settingsFilePath, value);
         OnPropertyChanged(nameof(SortDirectionSymbol));
         RebuildRows(force: true);
     }

@@ -36,14 +36,14 @@ public partial class LibraryView : UserControl
         if (DataContext is not LibraryViewModel vm)
             return;
 
-        var order = LibrarySettingsStore.LoadColumnOrder(vm.SettingsFilePath);
+        var order = SettingsStore.LoadColumnOrder(vm.SettingsFilePath);
         if (order is not null)
         {
             var displayIndexByKey = order.Select((key, index) => (key, index)).ToDictionary(x => x.key, x => x.index);
             ApplyToTaggedColumns(displayIndexByKey, (column, index) => column.DisplayIndex = index);
         }
 
-        var widths = LibrarySettingsStore.LoadColumnWidths(vm.SettingsFilePath);
+        var widths = SettingsStore.LoadColumnWidths(vm.SettingsFilePath);
         if (widths is not null)
         {
             ApplyToTaggedColumns(widths, (column, width) => column.Width = new DataGridLength(width));
@@ -68,7 +68,7 @@ public partial class LibraryView : UserControl
 
     private void ApplySavedSort(LibraryViewModel vm)
     {
-        var sort = LibrarySettingsStore.LoadSort(vm.SettingsFilePath);
+        var sort = SettingsStore.LoadSort(vm.SettingsFilePath);
         if (sort is not { } savedSort || TracksGrid.CollectionView is not { } collectionView)
             return;
 
@@ -88,7 +88,7 @@ public partial class LibraryView : UserControl
             .OfType<string>()
             .ToList();
 
-        LibrarySettingsStore.SaveColumnOrder(vm.SettingsFilePath, orderedKeys);
+        SettingsStore.SaveColumnOrder(vm.SettingsFilePath, orderedKeys);
     }
 
     private void OnColumnPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
@@ -114,7 +114,7 @@ public partial class LibraryView : UserControl
                 .Where(c => c.Tag is string)
                 .ToDictionary(c => (string)c.Tag!, c => c.Width.Value);
 
-            LibrarySettingsStore.SaveColumnWidths(vm.SettingsFilePath, widths);
+            SettingsStore.SaveColumnWidths(vm.SettingsFilePath, widths);
         }
     }
 
@@ -123,7 +123,7 @@ public partial class LibraryView : UserControl
         if (DataContext is not LibraryViewModel vm || TracksGrid.CollectionView?.SortDescriptions.FirstOrDefault() is not { } sortDescription)
             return;
 
-        LibrarySettingsStore.SaveSort(
+        SettingsStore.SaveSort(
             vm.SettingsFilePath, sortDescription.PropertyPath, sortDescription.Direction == ListSortDirection.Descending);
     }
 

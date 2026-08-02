@@ -40,14 +40,14 @@ public partial class App : Application
 
             var audioEngine = provider.GetRequiredService<IAudioEngine>();
 
-            var librarySettingsFilePath = Path.Combine(
+            var settingsFilePath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "SharpSelecta", "library-settings.json");
 
             var mainWindowViewModel = new MainWindowViewModel(
                 audioEngine,
                 provider.GetRequiredService<IFilePickerService>(),
-                librarySettingsFilePath,
+                settingsFilePath,
                 provider.GetRequiredService<ILogger<PlaybackControlsViewModel>>(),
                 provider.GetRequiredService<ILogger<LibraryViewModel>>(),
                 provider.GetRequiredService<ILogger<QueueViewModel>>());
@@ -61,16 +61,15 @@ public partial class App : Application
             var mprisServiceTask = MprisService.TryStartAsync(
                 mainWindowViewModel.PlaybackControls, provider.GetRequiredService<ILogger<MprisService>>());
 
+            // Null until the not-awaited startup task above has actually finished successfully -
+            // both handlers below must tolerate the service never having come up.
+            MprisService? Mpris() =>
+                mprisServiceTask is { IsCompletedSuccessfully: true } ? mprisServiceTask.Result : null;
+
             // Focusing the window claims media-key priority (playerctld ranks players by most
             // recent PropertiesChanged activity) - without this, only play/pause/track changes
             // bump SharpSelecta above e.g. a browser tab that also registered an MPRIS player.
-            mainWindow.Activated += (_, _) =>
-            {
-                if (mprisServiceTask.IsCompletedSuccessfully && mprisServiceTask.Result is { } mpris)
-                {
-                    mpris.NudgePriority();
-                }
-            };
+            mainWindow.Activated += (_, _) => Mpris()?.NudgePriority();
 
             // Disposes the singleton IAudioEngine (native mixer/source cleanup) on a normal exit,
             // instead of relying entirely on process teardown — but only after the current queue
@@ -78,11 +77,15 @@ public partial class App : Application
             desktop.Exit += (_, _) =>
             {
                 mainWindowViewModel.PersistQueueStateIfEnabled();
+                // The slider's pointer-release save misses volume changes made any other way
+                // (keyboard on the focused slider, a future MPRIS Volume write) - this makes the
+                // final value durable regardless of which gesture set it.
+                mainWindowViewModel.PersistVolume();
 
                 // Not awaited (Exit isn't async-friendly) - a best-effort release of the D-Bus name;
                 // if the process exits before this completes, the bus daemon reclaims it anyway once
                 // the connection closes.
-                if (mprisServiceTask.IsCompletedSuccessfully && mprisServiceTask.Result is { } mprisService)
+                if (Mpris() is { } mprisService)
                 {
                     _ = mprisService.DisposeAsync();
                 }
