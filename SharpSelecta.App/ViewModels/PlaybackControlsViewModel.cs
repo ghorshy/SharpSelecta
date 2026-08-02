@@ -16,9 +16,6 @@ namespace SharpSelecta.App.ViewModels;
 
 public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 {
-    // Matches the common "restart vs. go back" convention (Spotify, Winamp, etc.): a deliberate
-    // press of Previous soon after starting a track means "go back," but once you're a few
-    // seconds in, it more likely means "restart this one" than "skip it entirely."
     private const double RestartThresholdSeconds = 3.0;
 
     private readonly IAudioEngine _audioEngine;
@@ -71,9 +68,6 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 
     public string DisplayTrackLabel => TrackFormatting.ArtistTitleLabel(CurrentTrack?.Artist, DisplayFileName);
 
-    // Raw bytes rather than an Avalonia Bitmap — constructing a Bitmap requires the platform's
-    // rendering backend to be initialized, which a plain unit test process doesn't have. The View
-    // converts these bytes to a Bitmap at render time instead (see ArtworkConverter).
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ArtworkBytes))]
     private byte[]? currentTrackArtworkBytes;
@@ -90,9 +84,6 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         _queue = queue;
         _logger = logger;
 
-        // Keeps Previous/Next enabled state in sync as the queue is edited or navigated,
-        // whether that happens here or from the Library's context menu. ReadOnlyObservableCollection
-        // implements CollectionChanged explicitly, hence the interface cast.
         ((INotifyCollectionChanged)_queue.Entries).CollectionChanged += (_, _) => RefreshNavigationCommands();
         _queue.CurrentIndexChanged += (_, _) =>
         {
@@ -101,8 +92,6 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         };
     }
 
-    // This class is the single owner of the shared PlaybackQueue — the Library and Queue
-    // components only ever reach it through these members, never touching PlaybackQueue directly.
     public ReadOnlyObservableCollection<QueueEntry> QueueEntries => _queue.Entries;
 
     public int QueueCurrentIndex => _queue.CurrentIndex;
@@ -143,8 +132,6 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         }
     }
 
-    // Dropping onto another entry lands the dragged entry immediately above it; dropping with no
-    // target (targetEntry is null, e.g. past the last row) moves it to the end of the queue instead.
     public void MoveQueueEntry(QueueEntry entry, QueueEntry? targetEntry)
     {
         var oldIndex = _queue.IndexOf(entry);
@@ -162,12 +149,6 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
             if (targetIndex < 0)
                 return;
 
-            // PlaybackQueue.Move's newIndex is interpreted against the list AFTER the source entry
-            // is removed. When dragging downward (oldIndex < targetIndex), the target has already
-            // shifted left by one by the time the insert happens, so landing "immediately above the
-            // target" — matching the Queue view's drop indicator — means using targetIndex - 1, not
-            // targetIndex. Dragging upward needs no adjustment: removing from below the target never
-            // moves it.
             newIndex = oldIndex < targetIndex ? targetIndex - 1 : targetIndex;
         }
 
@@ -202,8 +183,6 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 
     public string PositionDisplay => FormatTime(PositionSeconds);
 
-    // Toggled by clicking it: total duration, or time remaining (prefixed with "-"), like
-    // Spotify/Apple Music's duration-label toggle.
     public string DurationDisplay => ShowRemainingTime
         ? $"-{FormatTime(Math.Max(0, DurationSeconds - PositionSeconds))}"
         : FormatTime(DurationSeconds);
@@ -221,7 +200,6 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         _ => Strings.RepeatOff,
     };
 
-    // Cycles Off -> Repeat All -> Repeat One -> Off, matching SoundCloud's repeat toggle.
     [RelayCommand]
     private void ToggleRepeatMode()
     {
@@ -248,7 +226,6 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         }
     }
 
-    // Nothing to play/pause, go back to, or restart until something has actually been loaded.
     private bool HasCurrentTrack() => _queue.CurrentIndex >= 0;
 
     private bool CanPlayPause() => TransportState == TransportState.Ready;
@@ -269,7 +246,6 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         }
         else
         {
-            // Already at the start of history — nowhere to go back to, so restart instead.
             RestartCurrentTrack();
         }
     }
@@ -299,16 +275,12 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         NextTrackCommand.NotifyCanExecuteChanged();
     }
 
-    // Entry point for playing an arbitrary track "right now" (Library's Play Now/double-click) —
-    // it joins the queue right after the current position so it shows up (and is browsable via
-    // Previous/Next) alongside everything else, instead of bypassing the queue entirely.
     public async Task PlayNowAsync(Track track)
     {
         _queue.PlayNow(track);
         await LoadTrackAsync(track);
     }
 
-    // Whole-album version: queues every track in order, then loads/plays the first one.
     public async Task PlayNowAsync(IReadOnlyList<Track> tracks)
     {
         if (tracks.Count == 0)
@@ -318,20 +290,10 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         await LoadTrackAsync(tracks[0]);
     }
 
-    // Public so anything that has already positioned the queue (Next/Previous, PlayNowAsync,
-    // or the Queue view's own jump-to-entry) can trigger the actual load+play mechanics without
-    // also mutating the queue itself.
     public Task LoadTrackAsync(Track track) => LoadTrackCoreAsync(track, autoPlay: true, startPositionSeconds: null);
 
-    // Rebuilds the queue from a previous session's saved state (see QueueStateStore.QueueState)
-    // and loads whatever was current back to its saved position - without auto-playing, since the
-    // user should land back where they left off, paused, rather than have music start blasting the
-    // moment the app opens.
     public Task RestoreQueueAsync(IReadOnlyList<QueueEntry> entries, int currentIndex, double positionSeconds)
     {
-        // The queue's Restore clamp is the single owner of "which entry is current" - including
-        // an out-of-range or -1 saved index - so the loaded track is read back from the queue
-        // rather than re-derived from the raw inputs.
         _queue.Restore(entries, currentIndex);
 
         var current = _queue.CurrentIndex >= 0 ? _queue.Entries[_queue.CurrentIndex].Track : null;
@@ -380,16 +342,12 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 
     partial void OnVolumeChanged(double value) => ApplyVolumeToEngine();
 
-    // Re-applies immediately on a curve switch too, so toggling it in Settings takes effect right
-    // away instead of only on the next slider drag.
     partial void OnVolumeCurveChanged(VolumeCurve value) => ApplyVolumeToEngine();
 
     private void ApplyVolumeToEngine() => _audioEngine.Volume = (float)VolumeScale.ToAmplitude(Volume, VolumeCurve);
 
     public void RefreshPosition() => _ = RefreshPositionAsync();
 
-    // Awaitable form of RefreshPosition() so callers (tests, in particular) can deterministically
-    // wait for any end-of-stream reaction it triggers instead of racing a fire-and-forget Task.
     public async Task RefreshPositionAsync()
     {
         _isSyncingFromEngine = true;
@@ -397,10 +355,6 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         DurationSeconds = _audioEngine.Duration;
         _isSyncingFromEngine = false;
 
-        // OwnAudioSharp's IsEndOfStream/StateChanged(EndOfStream) never fire on this preview
-        // build — Position just keeps climbing past Duration indefinitely instead (confirmed via
-        // a throwaway diagnostic). Position >= Duration is the only reliable "track finished"
-        // signal available, so we detect it that way instead.
         if (DurationSeconds > 0 && PositionSeconds >= DurationSeconds && !_hasHandledEndOfStream)
         {
             _hasHandledEndOfStream = true;
@@ -415,9 +369,6 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
             RestartCurrentTrack();
             _audioEngine.Play();
             IsPlaying = true;
-            // Unlike the other branches, this doesn't go through LoadTrackAsync (which is what
-            // normally resets this flag for a new track) — reset it here so looping keeps working
-            // past the first repeat instead of only firing once.
             _hasHandledEndOfStream = false;
             return;
         }
@@ -440,9 +391,6 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         }
         else
         {
-            // End of the queue with Repeat off — actually stop the engine (it doesn't do this on
-            // its own; Position just keeps climbing past Duration, see the note above) and disable
-            // Play/Pause so nothing tries to resume a track that has already finished.
             _audioEngine.Pause();
             IsPlaying = false;
             TransportState = TransportState.Finished;

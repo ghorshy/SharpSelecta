@@ -132,11 +132,7 @@ public class PlaybackSettingsViewModelTests
             await vm.ApplyPersistedOutputDeviceAsync();
 
             await Assert.That(vm.SelectedOutputDeviceDisplayName).IsEqualTo(Strings.SystemDefaultAudioDevice);
-            // Falling back to System Default must not switch devices at all - the engine has just
-            // initialized on the system default, so there's nothing to move/re-apply.
             await outputDeviceService.DidNotReceive().SetOutputDeviceAsync(Arg.Any<string?>());
-            // The fallback is a display-only affordance - the actual saved preference is left alone
-            // in case the device (e.g. a USB DAC) gets plugged back in on a later launch.
             await Assert.That(SettingsStore.LoadOutputDeviceName(settingsPath)).IsEqualTo("Unplugged USB DAC");
         }
         finally

@@ -2,15 +2,6 @@ using Microsoft.Data.Sqlite;
 
 namespace SharpSelecta.Core.Library;
 
-// Persisted cache of scanned tracks, keyed by file path, so a startup doesn't have to re-read
-// every file's tags via ATL before anything appears in the UI. This is a pure derived cache (the
-// filesystem + tags are the real source of truth) — unlike SettingsStore/QueueStateStore, there's
-// deliberately no schema-version/migration story: if the schema ever changes, deleting the index
-// file and letting the next Reconcile rebuild it from scratch is cheap and safe, since nothing
-// here is irreplaceable user data.
-//
-// Per CLAUDE.md's mock-vs-real rule, SQLite is used directly (no repository interface) - same as
-// MusicLibraryScanner uses ATL.NET directly and SettingsStore uses System.Text.Json directly.
 public static class LibraryIndexStore
 {
     public sealed record ReconcileResult(IReadOnlyList<Track> Tracks, IReadOnlyList<string> FailedFolders);
@@ -19,9 +10,6 @@ public static class LibraryIndexStore
         "FilePath, FolderPath, DisplayName, TrackNumber, Title, Artist, Album, AlbumArtist, Year, " +
         "DurationSeconds, SampleRate, BitDepth, Bitrate, FileType, LastWriteTimeUtcTicks, FileSizeBytes";
 
-    // Instant hydration for startup: reads whatever a previous Reconcile persisted for these
-    // folders - no filesystem walk, no ATL reads. Empty (not an error) if the index file doesn't
-    // exist yet, e.g. the very first run.
     public static IReadOnlyList<Track> LoadIndexed(string settingsFilePath, IReadOnlyList<string> folderPaths)
     {
         var indexFilePath = IndexFilePath(settingsFilePath);
@@ -40,11 +28,6 @@ public static class LibraryIndexStore
         return tracks;
     }
 
-    // Walks folderPaths on disk (same recursive, extension-filtered enumeration
-    // MusicLibraryScanner.Scan uses), re-reading tags via ATL only for files that are new or
-    // whose last-write-time/size changed since they were last indexed; unchanged files reuse
-    // their indexed Track without touching disk beyond a stat. Persists the net result and
-    // returns the full current track list for folderPaths, plus any folder that failed to scan.
     public static ReconcileResult Reconcile(string settingsFilePath, IReadOnlyList<string> folderPaths)
     {
         var indexFilePath = IndexFilePath(settingsFilePath);
@@ -92,10 +75,6 @@ public static class LibraryIndexStore
                     var lastWriteTimeUtc = fileInfo.LastWriteTimeUtc;
                     var fileSizeBytes = fileInfo.Length;
 
-                    // Reuse the indexed Track when the file's stamp hasn't changed - this is the
-                    // whole point: skip the expensive ATL read for anything already known-good.
-                    // Changed also gates the DB write below - a steady-state reconcile where
-                    // nothing changed on disk should write nothing at all, not just skip ATL.
                     if (existing.TryGetValue(path, out var indexed)
                         && indexed.LastWriteTimeUtc == lastWriteTimeUtc
                         && indexed.FileSizeBytes == fileSizeBytes)
@@ -109,9 +88,6 @@ public static class LibraryIndexStore
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // Folder is temporarily unreachable (unmounted external drive, disconnected network
-            // share) - degrade to "last known tracks, reported as failed" rather than blanking it
-            // out of the library for the whole session, and don't touch its rows either.
             return (existing.Values.Select(v => v.Track).ToList(), true);
         }
 
@@ -215,9 +191,6 @@ public static class LibraryIndexStore
         }
     }
 
-    // Prunes tracks belonging to a folder no longer in the configured list at all - distinct from
-    // ReconcileFolder's per-folder failure handling, which keeps a *still-configured* but
-    // currently-unreachable folder's tracks around instead of deleting them.
     private static void PruneFoldersNotIn(SqliteConnection connection, IReadOnlyList<string> folderPaths)
     {
         if (folderPaths.Count == 0)
@@ -302,8 +275,6 @@ public static class LibraryIndexStore
         var connection = new SqliteConnection($"Data Source={indexFilePath}");
         connection.Open();
 
-        // Cheap insurance against a transient "database is locked" error if two calls briefly
-        // overlap (e.g. a double-tapped Rescan) - no other reentrancy guard exists for this store.
         using var pragma = connection.CreateCommand();
         pragma.CommandText = "PRAGMA busy_timeout=3000;";
         pragma.ExecuteNonQuery();
@@ -311,9 +282,6 @@ public static class LibraryIndexStore
         return connection;
     }
 
-    // A sibling of the main settings file, named after it rather than a fixed name - see
-    // QueueStateStore.QueueStateFilePath for why a fixed name would collide across every test
-    // fixture sharing the OS temp directory.
     private static string IndexFilePath(string settingsFilePath)
     {
         var directory = Path.GetDirectoryName(settingsFilePath);

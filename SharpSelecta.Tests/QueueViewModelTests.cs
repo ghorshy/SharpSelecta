@@ -45,8 +45,6 @@ public class QueueViewModelTests
         await Assert.That(vm.Entries.Count).IsEqualTo(3);
     }
 
-    // Called from QueueView's code-behind when DragDrop.DoDragDropAsync throws — must not itself
-    // throw, since that would defeat the point of catching the original exception there.
     [Test]
     public void ReportDragReorderFailure_DoesNotThrow()
     {

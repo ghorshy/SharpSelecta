@@ -31,8 +31,6 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     public bool HasLibraryFolders => LibraryFolderPaths.Count > 0;
 
-    // Settings edits this working copy; nothing touches LibraryFolderPaths (and triggers a
-    // rescan) until Apply is confirmed. Cancel just resets it back to the applied list.
     public ObservableCollection<string> PendingLibraryFolderPaths { get; } = [];
 
     public bool HasPendingLibraryFolders => PendingLibraryFolderPaths.Count > 0;
@@ -43,7 +41,6 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     ICommand ISettingsCategoryViewModel.CancelCommand => CancelPendingFolderChangesCommand;
 
-    // Toggled from the column header's right-click menu; all visible by default.
     [ObservableProperty]
     private bool isTrackNumberColumnVisible = true;
 
@@ -88,8 +85,6 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         ("Year", () => IsYearColumnVisible, v => IsYearColumnVisible = v),
     ];
 
-    // CommunityToolkit's generated setters can't be canceled, so hiding the last visible column
-    // is undone here instead of blocked up front.
     private bool AnyColumnVisible() => ColumnVisibilityBindings().Any(c => c.Get());
 
     private void OnColumnVisibilityChanged(bool value, Action<bool> revert)
@@ -145,9 +140,6 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     [ObservableProperty]
     private bool isLoadingLibrary;
 
-    // NoTracks alone can't distinguish "nothing configured yet" from "a scan of already-configured
-    // folders is in progress" — without this, the empty-state "Add Folder" button would flash up
-    // misleadingly on every app startup while the remembered folders are still being (re)scanned.
     public bool ShowEmptyState => NoTracks && !IsLoadingLibrary;
 
     partial void OnIsLoadingLibraryChanged(bool value)
@@ -178,24 +170,12 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     [RelayCommand]
     private void SetViewMode(LibraryViewMode mode) => ViewMode = mode;
 
-    // The album grid view's data source — grouped from Tracks (not scanned independently), keyed
-    // by a trimmed, case-insensitive Album title so tag whitespace/casing differences don't fork
-    // one album into two tiles. Also keyed by AlbumArtist (when tagged) so two different real
-    // albums that happen to share a title (e.g. two different releases both called "Bassline")
-    // don't get merged into one tile. Compilations tagged with a shared AlbumArtist (or none at
-    // all — the common case for loosely-tagged files) still collapse into a single tile, since
-    // every track in that group then shares the same (possibly empty) AlbumArtist key.
     public BulkObservableCollection<AlbumViewModel> Albums { get; } = [];
 
     public AlbumGridViewModel Grid { get; }
 
     private void RebuildAlbums()
     {
-        // The raw (trimmed, original-case) group key is kept alongside each AlbumViewModel so the
-        // artwork cache can be keyed off it directly — using the localized "Unknown Album" display
-        // fallback as a cache key would tie cache filenames to the current UI language. It combines
-        // both parts of the grouping key (not just the album title) so two distinct albums sharing
-        // a title don't collide on the same cached artwork file.
         var groups = Tracks
             .GroupBy(
                 t => (Album: (t.Track.Album ?? string.Empty).Trim(), AlbumArtist: (t.Track.AlbumArtist ?? string.Empty).Trim()),
@@ -214,7 +194,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
                     orderedTracks.Select(t => t.Track.Year).FirstOrDefault(y => y.HasValue),
                     orderedTracks,
                     this);
-                return (RawKey: $"{g.Key.Album}{g.Key.AlbumArtist}", Album: album);
+                return (RawKey: $"{g.Key.Album}{g.Key.AlbumArtist}", Album: album);
             })
             .ToList();
 
@@ -223,10 +203,6 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         _ = LoadAlbumArtworkAsync(groups);
     }
 
-    // Bounded parallelism (half the cores): sequential was far too slow on a cold cache (minutes
-    // for a large library), but running fully unbounded would peg every core decoding/resizing
-    // cover art at once, right back to the CPU contention with the real-time audio thread that
-    // this whole perf pass was fixing in the first place.
     private static readonly int ArtworkLoadConcurrency = Math.Max(1, Environment.ProcessorCount / 2);
 
     private string ArtworkCacheDirectory => Path.Combine(Path.GetDirectoryName(_settingsFilePath)!, "artwork-cache");
@@ -236,12 +212,6 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     {
         if (Directory.Exists(ArtworkCacheDirectory))
         {
-            // Deleted file-by-file rather than Directory.Delete(recursive: true) — a
-            // LoadAlbumArtworkAsync pass from an earlier rescan/startup may still be writing new
-            // thumbnails into this same directory concurrently, and a recursive directory delete
-            // throws IOException ("Directory not empty") if a writer adds a file between its
-            // internal enumeration and the final directory removal. Deleting files individually
-            // (and tolerating one being mid-write) avoids that race entirely.
             foreach (var file in Directory.EnumerateFiles(ArtworkCacheDirectory))
             {
                 try
@@ -254,9 +224,6 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             }
         }
 
-        // Re-groups from the already-scanned Tracks (no rescan needed) and kicks off a fresh
-        // LoadAlbumArtworkAsync pass, which regenerates every thumbnail since the disk cache it
-        // would otherwise have hit was just deleted.
         RebuildAlbums();
     }
 
@@ -278,9 +245,6 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
                 var artwork = AlbumArtworkCache.GetOrCreate(
                     cacheDirectory, rawKey, () => MusicLibraryScanner.LoadArtwork(firstTrackPath));
 
-                // GetOrCreate above runs on this Parallel.ForEachAsync worker thread, not the UI
-                // thread — ArtworkBytes is an ObservableProperty, so its change notification has
-                // to be raised back on the UI thread for bindings to update safely.
                 await Dispatcher.UIThread.InvokeAsync(() => album.ArtworkBytes = artwork);
             }
             catch (Exception ex)
@@ -322,9 +286,6 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         };
     }
 
-    // Column order isn't modeled as a ViewModel property like visibility is — DataGridColumn's
-    // DisplayIndex lives on the control itself — so LibraryView reads/writes it directly through
-    // SettingsStore using this path.
     public string SettingsFilePath => _settingsFilePath;
 
     public LibraryViewModel(
@@ -372,7 +333,6 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         }
     }
 
-    // Re-scans whatever library folders were remembered from a previous session, if any.
     public async Task InitializeAsync()
     {
         ApplySavedColumnVisibility();
@@ -386,11 +346,6 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
                 LibraryFolderPaths.Add(folderPath);
             }
 
-            // Paints whatever a previous session's Reconcile already persisted immediately - no
-            // filesystem walk, no ATL reads - before ReconcileFoldersAsync below verifies it
-            // against disk in the background. On a cold index (first-ever run) this is a no-op:
-            // hydrated is empty, so ReconcileFoldersAsync's own spinner-showing full scan runs
-            // exactly like it always has.
             var hydrateStopwatch = Stopwatch.StartNew();
             var hydrated = await Task.Run(() => LibraryIndexStore.LoadIndexed(_settingsFilePath, folderPaths));
             if (hydrated.Count > 0)
@@ -434,8 +389,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         if (!HasPendingChanges)
             return;
 
-        // Snapshotted first: clearing LibraryFolderPaths below re-syncs PendingLibraryFolderPaths
-        // as a side effect, which would otherwise wipe out the list being enumerated here.
+        // ToList() snapshots before Clear() re-syncs PendingLibraryFolderPaths as a side effect.
         var folderPaths = PendingLibraryFolderPaths.ToList();
 
         LibraryFolderPaths.Clear();
@@ -451,15 +405,9 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     [RelayCommand]
     private void CancelPendingFolderChanges() => SyncPendingLibraryFolderPaths();
 
-    // Manual refresh entry point (e.g. an F5 action) — re-verifies the currently configured
-    // folders against the index, picking up tag/file changes without requiring a folder add/
-    // remove round trip.
     [RelayCommand]
     private Task RescanAsync() => ReconcileFoldersAsync();
 
-    // Diffs the configured folders against LibraryIndexStore's persisted index instead of
-    // re-reading every file's tags from scratch - ATL only runs for files that are new or whose
-    // last-write-time/size changed since they were last indexed (see LibraryIndexStore.Reconcile).
     private async Task ReconcileFoldersAsync()
     {
         if (LibraryFolderPaths.Count == 0)
@@ -470,10 +418,6 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         }
 
         var folderPaths = LibraryFolderPaths.ToList();
-
-        // Only shows the spinner when there's nothing on screen yet - if Tracks already has
-        // content (from InitializeAsync's hydration step, or just from being the currently-loaded
-        // library), the grid keeps showing it while this reconcile verifies/updates underneath.
         var showSpinner = Tracks.Count == 0;
         if (showSpinner)
         {
@@ -509,8 +453,6 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     [RelayCommand]
     private Task AddToQueue(Track track) => _playbackControls.AddToQueue(track);
 
-    // Whole-album actions (right-click a tile in the album grid) — same commands as the
-    // per-track ones above, just applied to every track in the album, in TrackNumber order.
     [RelayCommand]
     private Task PlayAlbumNowAsync(AlbumViewModel album) => _playbackControls.PlayNowAsync(album.UnderlyingTracks);
 

@@ -43,29 +43,17 @@ public partial class MainWindowViewModel : ViewModelBase
         PlaybackControls = new PlaybackControlsViewModel(audioEngine, queue, playbackControlsLogger);
         Library = new LibraryViewModel(filePickerService, PlaybackControls, settingsFilePath, libraryLogger);
         Queue = new QueueViewModel(PlaybackControls, queueLogger);
-        // Constructed after PlaybackControls so it can hydrate the saved volume curve and volume
-        // into it immediately (see PlaybackSettingsViewModel's constructor).
         PlaybackSettings = new PlaybackSettingsViewModel(settingsFilePath, outputDeviceService, PlaybackControls);
 
-        // Assigning the backing field directly (not the generated property) so loading the saved
-        // width on startup doesn't immediately re-save the same value it was just loaded from.
         rightColumnWidth = new GridLength(SettingsStore.LoadRightColumnWidth(_settingsFilePath) ?? DefaultRightColumnWidth);
     }
 
     public void PersistRightColumnWidth() =>
         SettingsStore.SaveRightColumnWidth(_settingsFilePath, RightColumnWidth.Value);
 
-    // Called on the volume slider's PointerReleased (not on every OnVolumeChanged tick) to avoid
-    // writing the settings file dozens of times during a single drag - same debounce-on-commit
-    // pattern as PersistRightColumnWidth (GridSplitter DragCompleted) and column widths (DataGrid
-    // PointerReleased).
     public void PersistVolume() =>
         SettingsStore.SaveVolume(_settingsFilePath, PlaybackControls.Volume);
 
-    // Called once on startup, after the audio engine has finished initializing (Load() throws
-    // until then). Reads tracks directly off disk rather than through the Library's own scan, since
-    // a saved queue entry doesn't have to live under a currently configured library folder, and
-    // restoring shouldn't have to wait on a full folder rescan to finish first.
     public async Task RestoreQueueIfEnabledAsync()
     {
         if (!PlaybackSettings.RestoreQueueOnStartup)
@@ -75,8 +63,6 @@ public partial class MainWindowViewModel : ViewModelBase
         if (state is null)
             return;
 
-        // ReadTrackIfExists re-parses each entry's tags from disk - pushed off the UI thread so a
-        // long saved queue can't stall first paint (this runs during startup, on the dispatcher).
         var (restoredEntries, restoredCurrentIndex) = await Task.Run(() =>
         {
             var entries = new List<QueueEntry>();
@@ -100,15 +86,9 @@ public partial class MainWindowViewModel : ViewModelBase
         if (restoredEntries.Count == 0)
             return;
 
-        // restoredCurrentIndex may still be -1 here (the previously-current track went missing
-        // since it was saved) - the queue's own Restore clamp resolves that to the first
-        // still-available entry, so it isn't patched up separately here.
         await PlaybackControls.RestoreQueueAsync(restoredEntries, restoredCurrentIndex, state.PositionSeconds);
     }
 
-    // Called on app exit. Always overwrites the saved queue state (even with an empty queue) so a
-    // session that ends with nothing queued doesn't leave a stale queue for RestoreQueueIfEnabledAsync
-    // to resurrect next launch.
     public void PersistQueueStateIfEnabled()
     {
         if (!PlaybackSettings.RestoreQueueOnStartup)

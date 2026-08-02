@@ -18,12 +18,6 @@ public partial class AlbumGridView : UserControl
     {
         InitializeComponent();
 
-        // Registered as a Tunnel handler (not the XAML PointerWheelChanged="..." attribute, which
-        // is Bubble-only) so this runs BEFORE ScrollViewer's own built-in wheel-scroll handling, not
-        // after it. Both phases exist on this event; a Bubble handler on the same element the
-        // ScrollViewer itself is built from loses the race - the ScrollViewer already scrolled (and
-        // sometimes already marked the event handled) by the time it fires, so Ctrl+scroll only
-        // reliably zoomed at the very top of the list, and plain scroll got janky fighting the resize.
         Scroller.AddHandler(PointerWheelChangedEvent, OnPointerWheelChanged, RoutingStrategies.Tunnel);
     }
 
@@ -35,7 +29,6 @@ public partial class AlbumGridView : UserControl
         }
     }
 
-    // Ctrl+scroll zooms the tiles; a plain scroll passes through to the ScrollViewer as normal.
     private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
     {
         if (DataContext is not AlbumGridViewModel vm || !e.KeyModifiers.HasFlag(KeyModifiers.Control))

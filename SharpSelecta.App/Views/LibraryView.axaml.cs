@@ -49,9 +49,6 @@ public partial class LibraryView : UserControl
             ApplyToTaggedColumns(widths, (column, width) => column.Width = new DataGridLength(width));
         }
 
-        // CollectionView is still null right here — TracksGrid's ItemsSource binding to Tracks
-        // hasn't caught up with this DataContext yet — so the saved sort is (re)applied once
-        // Tracks actually gets populated instead, when CollectionView is guaranteed to exist.
         vm.Tracks.CollectionChanged += (_, _) => ApplySavedSort(vm);
     }
 
@@ -108,8 +105,6 @@ public partial class LibraryView : UserControl
         {
             _columnWidthsDirty = false;
 
-            // Width.Value (set synchronously as part of the property itself) rather than ActualWidth
-            // (a layout-computed value that may not have caught up yet at the exact moment this fires).
             var widths = TracksGrid.Columns
                 .Where(c => c.Tag is string)
                 .ToDictionary(c => (string)c.Tag!, c => c.Width.Value);
@@ -129,9 +124,6 @@ public partial class LibraryView : UserControl
 
     private void OnTrackDoubleTapped(object? sender, TappedEventArgs e)
     {
-        // DoubleTapped bubbles up from anywhere in the DataGrid, including a column header —
-        // double-clicking a header to flip the sort direction shouldn't play whatever row
-        // happens to be selected.
         if (e.Source is Visual source && source.FindAncestorOfType<DataGridColumnHeader>() is not null)
         {
             return;

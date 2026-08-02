@@ -4,19 +4,12 @@ using SharpSelecta.Core.Playback;
 
 namespace SharpSelecta.Core.Library;
 
-// Split out of SettingsStore into its own sibling file: unlike every other setting, the queue is
-// unbounded (grows with the queue) and session-shaped, so embedding it in the shared
-// read-modify-write settings payload meant every unrelated settings save (a Ctrl+Scroll zoom
-// notch, a column-width drag) paid a full serialize/deserialize of however large the last saved
-// queue was.
 public static partial class QueueStateStore
 {
     public sealed record QueueEntryData(string FilePath, QueueEntrySource Source);
 
     public sealed record QueueState(IReadOnlyList<QueueEntryData> Entries, int CurrentIndex, double PositionSeconds);
 
-    // Null when nothing was ever saved AND when the last saved queue was empty — both cases mean
-    // "nothing to restore," so callers don't need to distinguish them.
     public static QueueState? Load(string settingsFilePath)
     {
         var data = LoadRaw(settingsFilePath);
@@ -25,8 +18,6 @@ public static partial class QueueStateStore
             : null;
     }
 
-    // Unlike SettingsStore's Save, this is a plain overwrite, not a read-modify-write — this file
-    // holds nothing but queue state, so there's nothing else to preserve across a save.
     public static void Save(string settingsFilePath, IReadOnlyList<QueueEntryData> entries, int currentIndex, double positionSeconds)
     {
         var path = QueueStateFilePath(settingsFilePath);
@@ -40,13 +31,6 @@ public static partial class QueueStateStore
         File.WriteAllText(path, JsonSerializer.Serialize(data, QueueStateJsonContext.Default.QueueStateData));
     }
 
-    // A sibling of the main settings file, in the same directory, named after it - mirrors how
-    // LibraryViewModel.ArtworkCacheDirectory derives its own sibling path from the same settings
-    // file path, rather than threading a second path parameter through every constructor. Basing
-    // the file name on the settings file's own name (not a fixed "queue-state.json") matters for
-    // test isolation in particular: every test fixture's settings path already gets a unique GUID
-    // in its file name, but several fixtures share the same directory (the OS temp folder) - a
-    // fixed sibling name would collide across all of them.
     private static string QueueStateFilePath(string settingsFilePath)
     {
         var directory = Path.GetDirectoryName(settingsFilePath);

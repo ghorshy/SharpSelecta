@@ -5,10 +5,6 @@ using SharpSelecta.App.Views;
 
 namespace SharpSelecta.App;
 
-/// <summary>
-/// Given a view model, returns the corresponding view. Explicit pattern matching, not reflection,
-/// so this stays NativeAOT-compatible — add a new arm here whenever a new ViewModel/View pair is added.
-/// </summary>
 public class ViewLocator : IDataTemplate
 {
     public Control? Build(object? param) => param switch

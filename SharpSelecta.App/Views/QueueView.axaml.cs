@@ -9,12 +9,9 @@ namespace SharpSelecta.App.Views;
 
 public partial class QueueView : UserControl
 {
-    // In-process only — carries the dragged row across a drag, never leaves this AppDomain.
     private static readonly DataFormat<QueueEntryViewModel> DragEntryFormat =
         DataFormat.CreateInProcessFormat<QueueEntryViewModel>("SharpSelecta.QueueEntry");
 
-    // A minimum pixel distance the pointer must travel (while still held down) before a press
-    // turns into a drag — without this, DoDragDropAsync would fire on every plain click/select.
     private const double DragThreshold = 4;
 
     private PointerPressedEventArgs? _pressedArgs;
@@ -27,10 +24,6 @@ public partial class QueueView : UserControl
     {
         InitializeComponent();
 
-        // handledEventsToo: true — ListBoxItem's own selection handling marks these pointer
-        // events handled, which would otherwise stop them from ever reaching a bubbling handler
-        // here. Safe to do now that we only act after real movement (see OnEntryPointerMoved),
-        // not on the press itself, so a plain click or right-click is never affected.
         QueueList.AddHandler(InputElement.PointerPressedEvent, OnEntryPointerPressed, handledEventsToo: true);
         QueueList.AddHandler(InputElement.PointerMovedEvent, OnEntryPointerMoved, handledEventsToo: true);
         QueueList.AddHandler(InputElement.PointerReleasedEvent, OnEntryPointerReleased, handledEventsToo: true);
@@ -72,7 +65,7 @@ public partial class QueueView : UserControl
             return;
 
         var pressedArgs = _pressedArgs;
-        ClearPressedState(); // only ever start one drag per press
+        ClearPressedState();
 
         container.Classes.Add("dragging");
         try
@@ -83,8 +76,6 @@ public partial class QueueView : UserControl
         }
         catch (Exception ex)
         {
-            // A platform-level drag/drop failure shouldn't crash the app — this is an async void
-            // event handler, so an uncaught exception here would otherwise propagate unhandled.
             (DataContext as QueueViewModel)?.ReportDragReorderFailure(ex);
         }
         finally
@@ -112,15 +103,10 @@ public partial class QueueView : UserControl
 
         e.DragEffects = DragDropEffects.Move;
 
-        // Highlights the row the drop would land on top of — the closest thing to an insertion
-        // marker without a custom adorner layer, since dropping always inserts at that row's index.
         var container = e.Source is Visual source ? source.FindAncestorOfType<ListBoxItem>(includeSelf: true) : null;
         var isEnd = false;
         if (container is null && QueueList.ItemCount > 0)
         {
-            // Nothing under the cursor — e.g. past the last row, in the empty space below the
-            // list — still lands the drop at the end of the queue (see OnDrop), so highlight the
-            // last row instead, with the line on its far side, rather than showing no indicator.
             container = QueueList.ContainerFromIndex(QueueList.ItemCount - 1) as ListBoxItem;
             isEnd = true;
         }
@@ -159,8 +145,6 @@ public partial class QueueView : UserControl
         if (draggedItem is null)
             return;
 
-        // Dropped past the last item (or anywhere else with no item under the cursor) means
-        // "move to the end" rather than doing nothing.
         QueueEntryViewModel? targetItem = null;
         if (e.Source is Visual targetSource && targetSource.FindAncestorOfType<ListBoxItem>(includeSelf: true) is { } targetContainer)
         {

@@ -249,7 +249,7 @@ public class PlaybackQueueTests
     public async Task Move_OfTheCurrentEntry_KeepsCurrentIndexPointingAtIt()
     {
         var queue = new PlaybackQueue();
-        queue.PlayNow(TrackA); // CurrentIndex = 0
+        queue.PlayNow(TrackA);
         queue.AddToQueue(TrackB);
         queue.AddToQueue(TrackC);
 
@@ -266,9 +266,9 @@ public class PlaybackQueueTests
         queue.PlayNow(TrackA);
         queue.AddToQueue(TrackB);
         queue.AddToQueue(TrackC);
-        queue.MoveNext(); // CurrentIndex = 1 (TrackB)
+        queue.MoveNext();
 
-        queue.Move(2, 0); // TrackC moves from after TrackB to before TrackA
+        queue.Move(2, 0);
 
         await Assert.That(queue.CurrentIndex).IsEqualTo(2);
         await Assert.That(queue.Entries[2].Track).IsEqualTo(TrackB);
@@ -280,7 +280,7 @@ public class PlaybackQueueTests
         var queue = new PlaybackQueue();
         queue.PlayNow(TrackA);
         queue.AddToQueue(TrackB);
-        queue.MoveNext(); // CurrentIndex = 1 (TrackB)
+        queue.MoveNext();
 
         queue.RemoveAt(0);
 
@@ -319,7 +319,7 @@ public class PlaybackQueueTests
         var queue = new PlaybackQueue();
         queue.PlayNow(TrackA);
         queue.AddToQueue(TrackB);
-        queue.AddToQueue(TrackA); // structurally equal to Entries[0], but a distinct instance
+        queue.AddToQueue(TrackA);
 
         await Assert.That(queue.IndexOf(queue.Entries[0])).IsEqualTo(0);
         await Assert.That(queue.IndexOf(queue.Entries[2])).IsEqualTo(2);
@@ -338,7 +338,7 @@ public class PlaybackQueueTests
     public async Task Restore_ReplacesEntriesAndSetsCurrentIndex()
     {
         var queue = new PlaybackQueue();
-        queue.PlayNow(TrackA); // pre-existing state that Restore should discard entirely
+        queue.PlayNow(TrackA);
 
         QueueEntry[] entries =
         [

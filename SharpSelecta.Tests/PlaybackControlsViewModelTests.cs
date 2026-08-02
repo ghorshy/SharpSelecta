@@ -22,8 +22,6 @@ public class PlaybackControlsViewModelTests
         var vm = CreateViewModel(out _, out _);
         await Assert.That(vm.PlayPauseCommand.CanExecute(null)).IsFalse();
 
-        // Mutating the queue alone isn't enough — Play/Pause reflects TransportState, which only
-        // becomes Ready once the track has actually been loaded into the engine.
         await vm.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
 
         await Assert.That(vm.PlayPauseCommand.CanExecute(null)).IsTrue();
@@ -75,7 +73,7 @@ public class PlaybackControlsViewModelTests
         vm.Volume = 0.5;
 
         audioEngine.Received(1).Volume = 0.25f;
-        await Assert.That(vm.Volume).IsEqualTo(0.5); // the slider position itself stays linear
+        await Assert.That(vm.Volume).IsEqualTo(0.5);
     }
 
     [Test]
@@ -126,10 +124,6 @@ public class PlaybackControlsViewModelTests
         await Assert.That(vm.NextTrackCommand.CanExecute(null)).IsTrue();
     }
 
-    // Regression coverage for the MPRIS Play/PlayPause cold-start fallback (MprisRoot.
-    // ToggleOrStartPlaybackAsync): tracks added via "Add to Queue" (never "Play Now") leave
-    // CurrentTrack null with CurrentIndex still at its default -1, but the queue itself already has
-    // something to advance to.
     [Test]
     public async Task NextTrackCommand_FromAQueueThatWasOnlyAddedToAndNeverPlayed_LoadsAndPlaysTheFirstTrack()
     {
@@ -231,11 +225,11 @@ public class PlaybackControlsViewModelTests
         var vm = CreateViewModel(out var audioEngine, out var queue);
         queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
         audioEngine.Duration.Returns(180.0);
-        audioEngine.Position.Returns(200.0); // triggers natural end-of-queue -> _isQueueFinished
+        audioEngine.Position.Returns(200.0);
         await vm.RefreshPositionAsync();
         await Assert.That(vm.PlayPauseCommand.CanExecute(null)).IsFalse();
 
-        await vm.PreviousTrackCommand.ExecuteAsync(null); // past threshold -> restarts current track
+        await vm.PreviousTrackCommand.ExecuteAsync(null);
 
         await Assert.That(vm.PlayPauseCommand.CanExecute(null)).IsTrue();
     }
@@ -246,12 +240,9 @@ public class PlaybackControlsViewModelTests
         var vm = CreateViewModel(out var audioEngine, out var queue);
         queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
         audioEngine.Duration.Returns(180.0);
-        audioEngine.Position.Returns(200.0); // triggers natural end-of-queue -> TransportState.Finished
+        audioEngine.Position.Returns(200.0);
         await vm.RefreshPositionAsync();
         audioEngine.ClearReceivedCalls();
-        // Reset the stale "finished" position/duration — otherwise LoadTrackAsync's own internal
-        // RefreshPosition() call (for the newly loaded track) would immediately see the same
-        // Position >= Duration reading and re-trigger end-of-stream before this method returns.
         audioEngine.Position.Returns(0.0);
         audioEngine.Duration.Returns(0.0);
         var next = new Track("/music/b.mp3", "b.mp3");
@@ -269,11 +260,9 @@ public class PlaybackControlsViewModelTests
         var vm = CreateViewModel(out var audioEngine, out var queue);
         queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
         audioEngine.Duration.Returns(180.0);
-        audioEngine.Position.Returns(200.0); // triggers natural end-of-queue -> TransportState.Finished
+        audioEngine.Position.Returns(200.0);
         await vm.RefreshPositionAsync();
         audioEngine.ClearReceivedCalls();
-        // Reset the stale "finished" position/duration — see the equivalent comment in
-        // PlayNext_AfterQueueFinished_StartsPlayingTheQueuedTrack above.
         audioEngine.Position.Returns(0.0);
         audioEngine.Duration.Returns(0.0);
         var next = new Track("/music/b.mp3", "b.mp3");
@@ -384,8 +373,8 @@ public class PlaybackControlsViewModelTests
         var vm = CreateViewModel(out var audioEngine, out var queue);
         queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
         audioEngine.ClearReceivedCalls();
-        vm.ToggleRepeatModeCommand.Execute(null); // Off -> RepeatAll
-        vm.ToggleRepeatModeCommand.Execute(null); // RepeatAll -> RepeatOne
+        vm.ToggleRepeatModeCommand.Execute(null);
+        vm.ToggleRepeatModeCommand.Execute(null);
         audioEngine.Duration.Returns(180.0);
         audioEngine.Position.Returns(200.0);
 
@@ -402,15 +391,15 @@ public class PlaybackControlsViewModelTests
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
         queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
-        vm.ToggleRepeatModeCommand.Execute(null); // Off -> RepeatAll
-        vm.ToggleRepeatModeCommand.Execute(null); // RepeatAll -> RepeatOne
+        vm.ToggleRepeatModeCommand.Execute(null);
+        vm.ToggleRepeatModeCommand.Execute(null);
         audioEngine.Duration.Returns(180.0);
         audioEngine.Position.Returns(200.0);
 
-        await vm.RefreshPositionAsync(); // first time reaching the end
-        audioEngine.Position.Returns(0.0); // simulates playback having restarted and progressed a bit
-        await vm.RefreshPositionAsync(); // should NOT re-trigger while position is back under duration
-        audioEngine.Position.Returns(200.0); // reaches the end again
+        await vm.RefreshPositionAsync();
+        audioEngine.Position.Returns(0.0);
+        await vm.RefreshPositionAsync();
+        audioEngine.Position.Returns(200.0);
         audioEngine.ClearReceivedCalls();
 
         await vm.RefreshPositionAsync();
@@ -425,10 +414,8 @@ public class PlaybackControlsViewModelTests
         var vm = CreateViewModel(out var audioEngine, out var queue);
         queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
         queue.AddToQueue(new Track("/music/b.mp3", "b.mp3"));
-        await vm.NextTrackCommand.ExecuteAsync(null); // now at b.mp3, end of queue
-        vm.ToggleRepeatModeCommand.Execute(null); // Off -> RepeatAll
-        // The freshly (re)loaded track isn't itself at its end — only the first check should
-        // report end-of-stream, or the fire-and-forget refresh after loading it would cascade.
+        await vm.NextTrackCommand.ExecuteAsync(null);
+        vm.ToggleRepeatModeCommand.Execute(null);
         audioEngine.Duration.Returns(180.0);
         audioEngine.Position.Returns(200.0, 0.0);
 
@@ -528,7 +515,7 @@ public class PlaybackControlsViewModelTests
     public async Task DurationDisplay_ShowsHoursOnceTrackIsAnHourOrLonger()
     {
         var vm = CreateViewModel(out var audioEngine, out _);
-        audioEngine.Duration.Returns(3725.0); // 1h 02m 05s
+        audioEngine.Duration.Returns(3725.0);
 
         await vm.RefreshPositionAsync();
 
@@ -568,9 +555,6 @@ public class PlaybackControlsViewModelTests
         await Assert.That(queue.Entries[1].Track).IsEqualTo(a);
     }
 
-    // ObservableCollection<T>.Move interprets its target index against the list AFTER the source
-    // entry is removed, so dropping an entry further down the queue would otherwise land it one
-    // slot past where the drop indicator (a line above the target row) shows.
     [Test]
     public async Task MoveQueueEntry_DownwardDrag_LandsImmediatelyBeforeTheTargetEntry()
     {
@@ -582,17 +566,13 @@ public class PlaybackControlsViewModelTests
         queue.AddToQueue(b);
         queue.AddToQueue(c);
 
-        vm.MoveQueueEntry(queue.Entries[0], queue.Entries[2]); // drag a onto c
+        vm.MoveQueueEntry(queue.Entries[0], queue.Entries[2]);
 
         await Assert.That(queue.Entries[0].Track).IsEqualTo(b);
         await Assert.That(queue.Entries[1].Track).IsEqualTo(a);
         await Assert.That(queue.Entries[2].Track).IsEqualTo(c);
     }
 
-    // QueueEntry is a record, so IndexOf-by-value would resolve to the FIRST structurally-equal
-    // entry when the same track is queued twice — MoveQueueEntry must act on the exact instance
-    // it was given instead. Under the old value-equality lookup, both the dragged duplicate and
-    // the target here resolve to the same (first) index, so the move would have silently no-op'd.
     [Test]
     public async Task MoveQueueEntry_WithTheSameTrackQueuedTwice_ActsOnTheExactEntryInstance()
     {
@@ -601,7 +581,7 @@ public class PlaybackControlsViewModelTests
         var b = new Track("/music/b.mp3", "b.mp3");
         queue.PlayNow(a);
         queue.AddToQueue(b);
-        queue.AddToQueue(a); // same track queued again -> structurally equal to Entries[0]
+        queue.AddToQueue(a);
         var currentEntry = queue.Entries[0];
         var duplicateEntry = queue.Entries[2];
 
@@ -629,8 +609,6 @@ public class PlaybackControlsViewModelTests
         await Assert.That(queue.Entries[0].Track).IsEqualTo(a);
     }
 
-    // Under the old value-equality lookup, removing the duplicate here would have resolved to the
-    // first (currently-playing) occurrence and silently no-op'd instead of removing the row clicked.
     [Test]
     public async Task RemoveFromQueue_WithTheSameTrackQueuedTwice_RemovesTheExactEntryInstance()
     {
@@ -639,7 +617,7 @@ public class PlaybackControlsViewModelTests
         var b = new Track("/music/b.mp3", "b.mp3");
         queue.PlayNow(a);
         queue.AddToQueue(b);
-        queue.AddToQueue(a); // same track queued again -> structurally equal to the current entry
+        queue.AddToQueue(a);
         var currentEntry = queue.Entries[0];
         var duplicateEntry = queue.Entries[2];
 
@@ -651,8 +629,6 @@ public class PlaybackControlsViewModelTests
         await Assert.That(queue.CurrentIndex).IsEqualTo(0);
     }
 
-    // Under the old value-equality lookup, jumping to the duplicate here would have resolved to
-    // index 0 (already current) and done nothing, instead of jumping to the clicked row at index 2.
     [Test]
     public async Task PlayQueueEntryAsync_WithTheSameTrackQueuedTwice_JumpsToTheExactEntryInstance()
     {
@@ -661,7 +637,7 @@ public class PlaybackControlsViewModelTests
         var b = new Track("/music/b.mp3", "b.mp3");
         queue.PlayNow(a);
         queue.AddToQueue(b);
-        queue.AddToQueue(a); // duplicate, structurally equal to Entries[0]
+        queue.AddToQueue(a);
 
         await vm.PlayQueueEntryAsync(queue.Entries[2]);
 

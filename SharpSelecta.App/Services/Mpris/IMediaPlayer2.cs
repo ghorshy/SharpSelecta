@@ -5,8 +5,6 @@ using Tmds.DBus;
 
 namespace SharpSelecta.App.Services.Mpris;
 
-// The base MPRIS interface every media player exposes at /org/mpris/MediaPlayer2, independent of
-// the actual Player interface below. See https://specifications.freedesktop.org/mpris-spec/latest/.
 [DBusInterface("org.mpris.MediaPlayer2")]
 public interface IMediaPlayer2 : IDBusObject
 {

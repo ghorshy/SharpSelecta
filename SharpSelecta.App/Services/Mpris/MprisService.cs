@@ -6,10 +6,6 @@ using Tmds.DBus;
 
 namespace SharpSelecta.App.Services.Mpris;
 
-// D-Bus/MPRIS only exists on Linux (and BSD, but SharpSelecta doesn't target that) - this is what
-// lets playerctl and Hyprland's/GNOME's/KDE's global media-key bindings control playback. Never
-// lets a missing/unavailable session bus (or anything else D-Bus related) crash startup: every
-// failure is caught and logged, and the app just runs without remote-control integration.
 public sealed class MprisService : IAsyncDisposable
 {
     private const string BusName = "org.mpris.MediaPlayer2.sharpselecta";
@@ -57,7 +53,6 @@ public sealed class MprisService : IAsyncDisposable
         }
     }
 
-    // See MprisRoot.NudgePriority - UI thread only.
     public void NudgePriority() => _root.NudgePriority();
 
     public async ValueTask DisposeAsync()
@@ -69,7 +64,6 @@ public sealed class MprisService : IAsyncDisposable
         }
         catch (Exception)
         {
-            // Best-effort - the connection is being torn down either way right after.
         }
 
         _connection.Dispose();

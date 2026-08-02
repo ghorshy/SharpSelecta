@@ -4,8 +4,6 @@ namespace SharpSelecta.Tests;
 
 public class PactlJsonTests
 {
-    // Trimmed `pactl -f json list sinks` shape - captured against a real PipeWire session
-    // (see PipeWireOutputDeviceService's comments for why pactl over wpctl/pw-dump).
     private const string SinksJson = """
         [
             {
@@ -39,10 +37,6 @@ public class PactlJsonTests
         await Assert.That(sinks).IsEmpty();
     }
 
-    // Real sink-input properties captured for SharpSelecta's own stream on a live session -
-    // OwnAudioSharp's cpal/ALSA output surfaces through PipeWire's ALSA compatibility bridge, not
-    // as a native pipewire-pulse client, so there is deliberately no "application.process.id"
-    // here (unlike a browser tab's stream, which does carry one).
     private const string OwnSinkInputJson = """
         [
             {
@@ -87,8 +81,6 @@ public class PactlJsonTests
         await Assert.That(indexes).IsEmpty();
     }
 
-    // node.name is the fallback match target if application.name ever stops carrying the
-    // bracketed process name in a future pipewire-alsa version.
     [Test]
     public async Task FindSinkInputIndexes_FallsBackToNodeNameWhenApplicationNameDoesNotMatch()
     {

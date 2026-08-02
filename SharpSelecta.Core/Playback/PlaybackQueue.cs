@@ -12,9 +12,6 @@ public sealed class PlaybackQueue
         Entries = new ReadOnlyObservableCollection<QueueEntry>(_entries);
     }
 
-    // Read-only from the outside — every mutation must go through a named method below (PlayNow,
-    // AddToQueue, Move, RemoveAt, ...) so invariants like "never remove the currently playing
-    // entry" can't be bypassed by a caller reaching in and mutating the collection directly.
     public ReadOnlyObservableCollection<QueueEntry> Entries { get; }
 
     public int CurrentIndex { get; private set; } = -1;
@@ -25,10 +22,6 @@ public sealed class PlaybackQueue
 
     public event EventHandler? CurrentIndexChanged;
 
-    // Finds an entry by reference identity, not QueueEntry's record (structural) equality — the
-    // same track can legitimately be queued more than once, and callers (Move/RemoveFromQueue/
-    // PlayQueueEntryAsync) need to act on the exact row they were given, not "whichever occurrence
-    // happens to compare equal first."
     public int IndexOf(QueueEntry entry)
     {
         for (var i = 0; i < _entries.Count; i++)
@@ -42,15 +35,8 @@ public sealed class PlaybackQueue
         return -1;
     }
 
-    // A track played "right now" is inserted right after wherever we currently are and becomes
-    // the new current entry — anything already queued ahead stays queued, just pushed further out,
-    // so nothing gets lost and the whole play history (including ad-hoc picks) stays browsable.
     public void PlayNow(Track track) => PlayNow([track]);
 
-    // Whole-album version: all tracks are inserted in order starting right after the current
-    // position, and the first one becomes the new current entry — same placement rule as the
-    // single-track overload, just for a batch instead of looping single inserts (which would
-    // need reversing to preserve order, since repeated single inserts at the same index don't).
     public void PlayNow(IReadOnlyList<Track> tracks)
     {
         if (tracks.Count == 0)
@@ -77,8 +63,6 @@ public sealed class PlaybackQueue
         }
     }
 
-    // Manual additions go after any earlier manual entries but always ahead of the auto-DJ tail,
-    // so the auto-DJ's random picks never bury something the user deliberately queued up.
     public void AddToQueue(Track track) => AddToQueue([track]);
 
     public void AddToQueue(IReadOnlyList<Track> tracks)
@@ -97,13 +81,8 @@ public sealed class PlaybackQueue
         }
     }
 
-    // Seeds an auto-DJ tail entry. No auto-DJ feature exists yet to call this from production
-    // code, but AddToQueue's "insert before the auto-DJ tail" logic needs a supported way to
-    // create one now that Entries is read-only from the outside — this is that seam.
     public void AddAutoDjEntry(Track track) => _entries.Add(new QueueEntry(track, QueueEntrySource.AutoDj));
 
-    // Drag-and-drop reordering in the Queue view. Keeps CurrentIndex pointing at the same entry
-    // it did before the move, mirroring how a ListBox's SelectedIndex tracks an item across reorder.
     public void Move(int oldIndex, int newIndex)
     {
         if (oldIndex == newIndex || oldIndex < 0 || oldIndex >= _entries.Count || newIndex < 0 || newIndex >= _entries.Count)
@@ -127,10 +106,6 @@ public sealed class PlaybackQueue
         }
     }
 
-    // "Remove from Queue" — refuses to remove the currently playing entry. The engine already has
-    // that file loaded and playing; there's no queue position left to fall back to that wouldn't
-    // either silently keep the old audio running under a stale CurrentIndex or require stopping
-    // playback out from under the user, so the simplest correct rule is: it just can't be removed.
     public void RemoveAt(int index)
     {
         if (index < 0 || index >= _entries.Count || index == CurrentIndex)
@@ -168,10 +143,8 @@ public sealed class PlaybackQueue
         return _entries[CurrentIndex].Track;
     }
 
-    // Used to wrap back around for RepeatMode.RepeatAll once the end of the queue is reached.
     public Track? MoveToStart() => JumpTo(0);
 
-    // Jumps straight to an arbitrary entry — e.g. double-clicking a row in the Queue view.
     public Track? JumpTo(int index)
     {
         if (index < 0 || index >= _entries.Count)
@@ -183,9 +156,6 @@ public sealed class PlaybackQueue
         return _entries[index].Track;
     }
 
-    // Replaces the whole queue in one shot from a previously-saved snapshot (app startup) — unlike
-    // PlayNow/AddToQueue/PlayNext, this isn't inserting something new relative to wherever playback
-    // currently is, it's reconstructing an existing state from scratch.
     public void Restore(IReadOnlyList<QueueEntry> entries, int currentIndex)
     {
         _entries.Clear();

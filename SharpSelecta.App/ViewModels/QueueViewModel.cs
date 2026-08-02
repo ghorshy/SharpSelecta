@@ -13,9 +13,6 @@ public partial class QueueViewModel : ViewModelBase
     private readonly PlaybackControlsViewModel _playbackControls;
     private readonly ILogger<QueueViewModel> _logger;
 
-    // Mirrors _playbackControls.QueueEntries item-for-item (see OnQueueEntriesChanged), wrapping
-    // each QueueEntry so the view's DataTemplate/ContextMenu can reach back to this view model's
-    // commands via QueueEntryViewModel.Queue instead of an untyped $parent/RelativeSource lookup.
     public ObservableCollection<QueueEntryViewModel> Entries { get; } = [];
 
     public QueueViewModel(PlaybackControlsViewModel playbackControls, ILogger<QueueViewModel> logger)
@@ -28,7 +25,6 @@ public partial class QueueViewModel : ViewModelBase
             Entries.Add(new QueueEntryViewModel(entry, this));
         }
 
-        // ReadOnlyObservableCollection implements CollectionChanged explicitly, hence the cast.
         ((INotifyCollectionChanged)_playbackControls.QueueEntries).CollectionChanged += OnQueueEntriesChanged;
         _playbackControls.PropertyChanged += (_, e) =>
         {
@@ -87,8 +83,6 @@ public partial class QueueViewModel : ViewModelBase
         RefreshIsCurrent();
     }
 
-    // Every entry's index can shift on any add/remove/move, so all of them are re-checked rather
-    // than trying to track which ones actually moved.
     private void RefreshIsCurrent()
     {
         foreach (var entry in Entries)
@@ -105,16 +99,11 @@ public partial class QueueViewModel : ViewModelBase
     [RelayCommand(CanExecute = nameof(CanRemoveFromQueue))]
     private void RemoveFromQueue(QueueEntryViewModel entry) => _playbackControls.RemoveFromQueue(entry.Entry);
 
-    // The currently playing entry can't be removed — see PlaybackQueue.RemoveAt.
     private bool CanRemoveFromQueue(QueueEntryViewModel entry) => Entries.IndexOf(entry) != CurrentIndex;
 
-    // Called from the Queue view's drag-and-drop reorder handling in code-behind.
     public void MoveEntry(QueueEntryViewModel entry, QueueEntryViewModel? targetEntry) =>
         _playbackControls.MoveQueueEntry(entry.Entry, targetEntry?.Entry);
 
-    // Called from the Queue view's code-behind if DragDrop.DoDragDropAsync throws — a platform-level
-    // drag/drop failure (more plausible than usual since this app runs on the still-experimental
-    // native Wayland backend) shouldn't crash the app, just fail that one drag silently past this log.
     public void ReportDragReorderFailure(Exception exception) =>
         _logger.LogError(exception, "Queue drag-and-drop reorder failed");
 }

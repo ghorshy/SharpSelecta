@@ -68,20 +68,11 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
         get => _mixer?.MasterVolume ?? _pendingVolume;
         set
         {
-            // Cached separately since Load()/Volume may be set before InitializeAsync has
-            // created the mixer (e.g. the ViewModel's default volume, applied at construction).
             _pendingVolume = value;
             _mixer?.MasterVolume = value;
         }
     }
 
-    // OwnaudioSharp's Linux/cpal-based ALSA enumeration is extremely noisy: alongside real hardware
-    // ports it lists virtual routing endpoints (the PipeWire/PulseAudio/JACK servers themselves,
-    // ALSA's "null" device, and an ALSA "Default Output" alias that just redirects to whichever of
-    // those is currently active) - none of that is useful to pick from directly, since the "System
-    // Default" entry in Settings already covers letting the OS/PipeWire route it. Confirmed against
-    // a real desktop via a throwaway diagnostic: of 33 raw entries, only these 5 name fragments
-    // accounted for every non-hardware one.
     private static readonly string[] VirtualDeviceNameFragments =
     [
         "JACK Audio Connection Kit",
@@ -94,10 +85,6 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
     public IReadOnlyList<AudioOutputDevice> GetOutputDevices() =>
         OwnaudioNet.GetOutputDevices()
             .Where(d => d.IsOutput && !IsVirtualDevice(d.Name))
-            // The same physical port is also listed multiple times under different chmap/plughw
-            // variants with an identical Name (same diagnostic: every HDMI/analog port appeared
-            // twice, only MaxOutputChannels differed) - they all resolve to the same
-            // SetOutputDeviceByName(name) target anyway, so only the first is kept.
             .DistinctBy(d => d.Name)
             .Select(d => new AudioOutputDevice(d.Name, d.IsDefault))
             .ToList();
@@ -112,10 +99,6 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
             throw new InvalidOperationException($"{nameof(OwnAudioEngine)} must be initialized before selecting an output device.");
         }
 
-        // SetOutputDeviceByName is the only runtime device-switch API OwnaudioSharp exposes (unlike
-        // AudioConfig.OutputDeviceId, which only takes effect at Initialize time) - null resolves to
-        // whichever device the OS currently reports as default, rather than a fixed name, so it keeps
-        // tracking the system default if that changes later.
         var targetDeviceName = deviceName ?? ResolveSystemDefaultDeviceName();
         if (targetDeviceName is null)
         {
@@ -123,16 +106,6 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
             return;
         }
 
-        // This whole sequence turned out considerably more fragile than the docs suggest, confirmed
-        // via a throwaway diagnostic against real hardware: SetOutputDeviceByName (1) throws if
-        // called while the engine is running rather than accepting a live switch, so Stop() first is
-        // mandatory; (2) can itself throw - not just return false - when the target device rejects
-        // the current stream config (one onboard analog output required a fixed 1024-frame buffer
-        // against our default config's 512); and (3) even the *bracketing* engine.Stop() call was
-        // observed to throw AudioEngineException on its own in the same diagnostic (a second
-        // Stop()-switch-Start() cycle right after a successful one). None of that should ever crash
-        // playback control - every step is caught independently, and Start() is always attempted in
-        // a finally (with its own catch) so a failed switch doesn't leave the engine stuck stopped.
         try
         {
             engine.Stop();
@@ -162,14 +135,6 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
         }
     }
 
-    // IsDefault is unreliable on Linux/cpal's ALSA backend - confirmed via the same diagnostic as
-    // GetOutputDevices() above that it was false for every one of 33 raw devices on a real PipeWire
-    // desktop, despite the docs describing it as "system default device for its type" (likely
-    // populated correctly on backends with a real default-device query, e.g. Windows/macOS). Falls
-    // back to ALSA's own dynamic "Default ALSA Output" alias, which resolves at the OS level to
-    // whatever's actually active and was confirmed switchable via SetOutputDeviceByName in the same
-    // diagnostic - deliberately read from the raw device list, not the filtered GetOutputDevices()
-    // above, since that alias is intentionally hidden from the picker as a virtual entry.
     private static string? ResolveSystemDefaultDeviceName()
     {
         var rawDevices = OwnaudioNet.GetOutputDevices().Where(d => d.IsOutput).ToList();
@@ -188,8 +153,6 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
             _currentTrack = null;
         }
 
-        // Guards against disposing when InitializeAsync never ran (_mixer stays null in that
-        // case) — OwnaudioNet.Shutdown() would have nothing to release.
         if (_mixer is not null)
         {
             _mixer.Stop();

@@ -65,9 +65,6 @@ public class QueueStateStoreTests
         }
     }
 
-    // The whole point of splitting queue state out of SettingsStore: a queue save must not touch
-    // the settings file at all, so unrelated settings (a zoom notch, a column-width drag) never
-    // pay for serializing/deserializing however large the last saved queue was.
     [Test]
     public async Task Save_WritesOnlyToItsOwnSiblingFile_NeverTheSettingsFile()
     {

@@ -60,14 +60,11 @@ public static partial class SettingsStore
     public static void SaveAlbumSortDescending(string settingsFilePath, bool descending) =>
         Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { AlbumSortDescending = descending });
 
-    // Defaults to true (opt-out, not opt-in) so a first-ever run behaves the same as every run
-    // after it — no separate "first launch" special case needed.
     public static bool LoadRestoreQueueOnStartup(string settingsFilePath) => Load(settingsFilePath)?.RestoreQueueOnStartup ?? true;
 
     public static void SaveRestoreQueueOnStartup(string settingsFilePath, bool enabled) =>
         Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { RestoreQueueOnStartup = enabled });
 
-    // Null means "system default" — the same meaning IAudioEngine.SetOutputDevice(null) uses.
     public static string? LoadOutputDeviceName(string settingsFilePath) => Load(settingsFilePath)?.OutputDeviceName;
 
     public static void SaveOutputDeviceName(string settingsFilePath, string? deviceName) =>
@@ -83,8 +80,6 @@ public static partial class SettingsStore
     public static void SaveVolumeCurve(string settingsFilePath, VolumeCurve curve) =>
         Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { VolumeCurve = curve });
 
-    // Every Save* above is a read-modify-write of the whole settings file - this is the "read"
-    // half, falling back to an empty record on first-ever save.
     private static SettingsData CurrentOrEmpty(string settingsFilePath) =>
         Load(settingsFilePath) ?? new SettingsData();
 

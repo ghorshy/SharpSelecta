@@ -17,8 +17,6 @@ public class MusicLibraryScannerTests
 
             var tracks = MusicLibraryScanner.Scan(root.FullName);
 
-            // Tag content isn't the concern here (these are empty dummy files) — just that
-            // recursive scanning finds the right files and ignores non-audio ones.
             await Assert.That(tracks.Count).IsEqualTo(2);
             await Assert.That(tracks.Select(t => t.FilePath)).Contains(Path.Combine(root.FullName, "top-level.mp3"));
             await Assert.That(tracks.Select(t => t.FilePath)).Contains(Path.Combine(albumDir.FullName, "01 - track.flac"));

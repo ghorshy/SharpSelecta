@@ -2,9 +2,6 @@ using System.Text.Json;
 
 namespace SharpSelecta.Audio;
 
-// Pure parsers for `pactl -f json` output, split from PipeWireOutputDeviceService so they're
-// testable against captured JSON without spawning processes. JsonDocument (not serialization)
-// keeps this reflection-free.
 public static class PactlJson
 {
     public static IReadOnlyList<(string Name, string Description)> ParseSinks(string sinksJson)
@@ -23,13 +20,6 @@ public static class PactlJson
         return sinks;
     }
 
-    // Matches this process's playback streams by process NAME, not PID - confirmed against a
-    // real PipeWire session that OwnAudioSharp's cpal/ALSA output on Linux never appears as a
-    // native pipewire-pulse client (which would carry "application.process.id"). It surfaces
-    // through PipeWire's ALSA compatibility bridge instead, named "PipeWire ALSA [ProcessName]"
-    // (application.name) / "alsa_playback.ProcessName" (node.name), with no process-id property
-    // at all. Checking both properties is resilience against either one changing format in a
-    // future pipewire-alsa version.
     public static IReadOnlyList<long> FindSinkInputIndexes(string sinkInputsJson, string processName)
     {
         using var document = JsonDocument.Parse(sinkInputsJson);

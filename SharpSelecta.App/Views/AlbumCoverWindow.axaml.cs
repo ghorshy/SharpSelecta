@@ -17,8 +17,6 @@ public partial class AlbumCoverWindow : Window
             }
         };
 
-        // Click-away-to-dismiss, matching the usual "preview" convention for a window with no
-        // close button of its own.
         Deactivated += (_, _) => Close();
     }
 }

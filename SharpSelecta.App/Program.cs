@@ -7,9 +7,6 @@ namespace SharpSelecta.App;
 
 sealed class Program
 {
-    // Initialization code. Don't use any Avalonia, third-party APIs or any
-    // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
-    // yet and stuff might break.
     [STAThread]
     public static void Main(string[] args)
     {
@@ -52,9 +49,6 @@ sealed class Program
             .WithInterFont()
             .LogToTrace();
 
-        // Native Wayland backend (Avalonia 12.1+) is still experimental, so UsePlatformDetect()
-        // doesn't pick it up on its own — opt in explicitly when a Wayland session is present,
-        // instead of running through the XWayland compatibility layer.
         if (OperatingSystem.IsLinux() && Environment.GetEnvironmentVariable("WAYLAND_DISPLAY") is not null)
         {
             builder = builder.UseWayland();

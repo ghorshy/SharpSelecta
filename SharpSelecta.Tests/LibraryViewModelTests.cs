@@ -15,9 +15,6 @@ public class LibraryViewModelTests
     private static string CreateTempSettingsPath() =>
         Path.Combine(Path.GetTempPath(), $"sharpselecta-library-vm-settings-{Guid.NewGuid():N}.json");
 
-    // Mirrors LibraryIndexStore's own private IndexFilePath derivation - ReconcileFoldersAsync
-    // creates this sibling file whenever a test configures at least one folder, same as
-    // QueueStateStore's sibling file for queue-touching tests in MainWindowViewModelTests.
     private static string IndexFilePath(string settingsPath) =>
         Path.Combine(Path.GetDirectoryName(settingsPath)!, $"{Path.GetFileNameWithoutExtension(settingsPath)}.library-index.db");
 
@@ -191,9 +188,6 @@ public class LibraryViewModelTests
     [Test]
     public async Task ApplyPendingFolderChangesCommand_WithNoPendingChanges_DoesNotRescan()
     {
-        // Settings' OK button applies unconditionally (it means "apply + close"), so clicking it
-        // without having changed anything must not trigger a rescan (and, transitively, a full
-        // artwork-cache reload) — regression test for that behavior.
         var vm = CreateViewModel(out _, out var filePickerService, out _);
         var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
         try
@@ -203,8 +197,6 @@ public class LibraryViewModelTests
             await vm.AddFolderCommand.ExecuteAsync(null);
             await Assert.That(vm.Tracks.Count).IsEqualTo(1);
 
-            // Added after the initial scan, with no pending folder changes — if Apply rescanned
-            // anyway, this would show up.
             File.WriteAllBytes(Path.Combine(root.FullName, "songB.mp3"), []);
             await vm.ApplyPendingFolderChangesCommand.ExecuteAsync(null);
 
@@ -402,8 +394,6 @@ public class LibraryViewModelTests
             var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
             File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), trackPath);
             SettingsStore.SaveLibraryFolderPaths(settingsPath, [root.FullName]);
-            // Pre-populates the index directly (not through a LibraryViewModel) - simulates a
-            // previous session having already reconciled this folder.
             LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
 
             var vm = CreateViewModel(out _, out _, out _, settingsPath);
@@ -699,9 +689,6 @@ public class LibraryViewModelTests
     [Test]
     public async Task ViewVisibility_WhileLibraryIsLoading_IsFalseEvenWithTracksAlreadyShown()
     {
-        // A rescan of an already-populated library leaves HasTracks true (the old Tracks aren't
-        // cleared until the new scan finishes) - the loading indicator must still take over rather
-        // than rendering on top of the still-live track/album grid.
         var vm = CreateViewModel(out _, out _, out _);
         AddTrack(vm, "/music/a.mp3", "Album A", "Artist");
         await Assert.That(vm.HasTracks).IsTrue();

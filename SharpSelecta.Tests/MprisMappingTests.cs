@@ -31,8 +31,6 @@ public class MprisMappingTests
     [Test]
     public async Task BuildMetadata_WithAFullyTaggedTrack_IncludesAllStandardKeys()
     {
-        // DisplayName mirrors Title here the same way MusicLibraryScanner constructs real tracks -
-        // BuildMetadata's xesam:title reads DisplayName, which owns the title-or-filename fallback.
         var track = new Track("/music/song.mp3", "Song Title")
         {
             Title = "Song Title",
@@ -124,10 +122,6 @@ public class MprisMappingTests
         await Assert.That(MprisMapping.CanPlay(canResumeOrPause: true, hasCurrentTrack: true, canGoNext: false)).IsTrue();
     }
 
-    // The regression this guards against: tracks queued (e.g. via "Add to Queue") but nothing
-    // played yet this session - CanGoNext is true (the queue has something), but there's no
-    // current track to resume. playerctl skips a player reporting CanPlay=false for Play/PlayPause
-    // and falls through to a different one entirely, even though Next/Previous still worked fine.
     [Test]
     public async Task CanPlay_WithNoCurrentTrackButSomethingQueuedToAdvanceTo_IsTrue()
     {
@@ -143,8 +137,6 @@ public class MprisMappingTests
     [Test]
     public async Task CanPlay_WithACurrentTrackThatCannotBeResumed_IsFalse()
     {
-        // e.g. TransportState.Finished with repeat off and nothing left queued - PlayPauseCommand's
-        // own CanExecute is false, and there's nothing left for Next to advance to either.
         await Assert.That(MprisMapping.CanPlay(canResumeOrPause: false, hasCurrentTrack: true, canGoNext: false)).IsFalse();
     }
 }

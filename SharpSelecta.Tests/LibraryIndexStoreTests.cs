@@ -10,8 +10,6 @@ public class LibraryIndexStoreTests
     private static string CreateTempSettingsPath() =>
         Path.Combine(Path.GetTempPath(), $"sharpselecta-library-index-tests-{Guid.NewGuid():N}.json");
 
-    // Mirrors LibraryIndexStore's own private IndexFilePath derivation - needed here to reach
-    // into the index file directly (raw connection) for tests that simulate an out-of-band change.
     private static string IndexFilePath(string settingsPath) =>
         Path.Combine(Path.GetDirectoryName(settingsPath)!, $"{Path.GetFileNameWithoutExtension(settingsPath)}.library-index.db");
 
@@ -43,8 +41,6 @@ public class LibraryIndexStoreTests
             await Assert.That(result.Tracks[0].Title).IsEqualTo("Test Song");
             await Assert.That(result.FailedFolders).IsEmpty();
 
-            // Prove hydration is DB-only: delete the folder from disk entirely and confirm
-            // LoadIndexed still returns the previously-persisted track.
             root.Delete(recursive: true);
 
             var hydrated = LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName]);
@@ -71,7 +67,6 @@ public class LibraryIndexStoreTests
 
             LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
 
-            // Mutate the indexed row directly, out-of-band, without touching the file itself.
             await using (var connection = new SqliteConnection($"Data Source={IndexFilePath(settingsPath)}"))
             {
                 await connection.OpenAsync();
@@ -84,8 +79,6 @@ public class LibraryIndexStoreTests
             var unchanged = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
             await Assert.That(unchanged.Tracks[0].Title).IsEqualTo("mutated");
 
-            // Now genuinely change the file (new mtime + size) and confirm the stamp mismatch
-            // does trigger a fresh ATL read, reverting to the file's real tag.
             await File.WriteAllBytesAsync(trackPath, await File.ReadAllBytesAsync(TaggedTrackFixturePath));
             File.SetLastWriteTimeUtc(trackPath, DateTime.UtcNow);
 

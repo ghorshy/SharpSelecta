@@ -7,16 +7,10 @@ using Avalonia.Media.Imaging;
 
 namespace SharpSelecta.App.Services;
 
-// Disk-backed thumbnail cache for the album grid view. Lives in the App layer (not alongside
-// MusicLibraryScanner in Core) because resizing/re-encoding needs Avalonia's Bitmap, which
-// requires the platform rendering backend to be initialized - see the "Bitmap in ViewModel"
-// gotcha. That also means this class can't be covered by a TUnit test; verify by running the app.
 public static class AlbumArtworkCache
 {
     private const int ThumbnailSize = 300;
 
-    // No continuous file-watching or staleness checks - the cache is only ever (re)populated
-    // when this is called, which callers tie to app startup and a manual rescan.
     public static byte[]? GetOrCreate(string cacheDirectory, string albumKey, Func<byte[]?> loadOriginalArtwork)
     {
         var cachePath = GetCachePath(cacheDirectory, albumKey);

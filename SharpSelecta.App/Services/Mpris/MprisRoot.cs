@@ -8,28 +8,8 @@ using Tmds.DBus;
 
 namespace SharpSelecta.App.Services.Mpris;
 
-// A single object implementing BOTH org.mpris.MediaPlayer2 and org.mpris.MediaPlayer2.Player at
-// /org/mpris/MediaPlayer2 - confirmed via a throwaway diagnostic against a real session bus that
-// this has to be one object, not two registered separately at the same path (Tmds.DBus's
-// RegisterObjectsAsync keys its internal handler table by ObjectPath and throws on a duplicate).
-// Explicit interface implementation disambiguates the two interfaces' identically-named property
-// boilerplate (GetAsync/GetAllAsync/SetAsync/WatchPropertiesAsync).
-//
-// Every PlaybackControlsViewModel read/write is marshaled onto the Avalonia UI thread - D-Bus
-// method calls and property queries arrive on Tmds.DBus's own connection thread, not the UI
-// thread, matching this codebase's existing convention for cross-thread ViewModel access (see
-// LibraryViewModel.LoadAlbumArtworkAsync).
 public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
 {
-    // playerctld (and similar media-key routers) rank the "active" player by recency: whichever
-    // MPRIS player most recently emitted a PropertiesChanged carrying a real value delta wins the
-    // next media-key press, and that ranking can be stolen back by another player's own unrelated
-    // D-Bus activity (a browser tab's metadata refresh, a new tab registering) at any point during
-    // a track SharpSelecta is silently playing through - PropertiesChanged here is otherwise only
-    // ever raised at Play/Pause/track-change transitions. This periodic nudge re-asserts priority
-    // throughout playback instead of just at transitions. Position changes don't count towards
-    // that recency check (deliberately excluded by playerctld, since every player's position ticks
-    // constantly), hence the Metadata heartbeat key instead of relying on Position/Seeked.
     private static readonly TimeSpan HeartbeatInterval = TimeSpan.FromSeconds(5);
 
     private readonly PlaybackControlsViewModel _playbackControls;
@@ -66,8 +46,6 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
         EmitPlayerPropertiesChanged();
     }
 
-    // Only nudges while actually playing - a paused/stopped SharpSelecta has no stronger claim to
-    // the media keys than anything else sitting idle on the bus.
     private void OnHeartbeatTick(object? sender, EventArgs e)
     {
         if (!_playbackControls.IsPlaying)
@@ -78,9 +56,6 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
         NudgePriority();
     }
 
-    // Unconditional (unlike the heartbeat): focusing the window is itself the user's claim on the
-    // media keys, playing or not. Must be called on the UI thread (reads _playbackControls), which
-    // Window.Activated - the one caller - already guarantees.
     public void NudgePriority()
     {
         _heartbeatTick++;
@@ -94,12 +69,6 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
                 new KeyValuePair<string, object>("Metadata", MprisMapping.BuildMetadata(_playbackControls.CurrentTrack, heartbeatTick)),
             ],
             []));
-
-    // --- org.mpris.MediaPlayer2 ---
-    // Raise/Quit/DesktopEntry/UriSchemes/MimeTypes are all fixed "not supported" values - the base
-    // interface still has to exist (playerctl's metadata/status commands silently fail to find the
-    // player at all without it, confirmed via the same diagnostic), even though SharpSelecta has no
-    // window-raise or quit-from-tray affordance to wire up yet.
 
     Task IMediaPlayer2.RaiseAsync() => Task.CompletedTask;
 
@@ -127,8 +96,6 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
         ["SupportedMimeTypes"] = Array.Empty<string>(),
     };
 
-    // --- org.mpris.MediaPlayer2.Player ---
-
     Task IMediaPlayer2Player.NextAsync() =>
         Dispatcher.UIThread.InvokeAsync(() => _playbackControls.NextTrackCommand.ExecuteAsync(null));
 
@@ -148,14 +115,6 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
 
     Task IMediaPlayer2Player.PlayPauseAsync() => Dispatcher.UIThread.InvokeAsync(ToggleOrStartPlaybackAsync);
 
-    // PlayPauseCommand only resumes an already-loaded track (gated on TransportState == Ready) -
-    // it silently no-ops with nothing loaded yet, e.g. tracks added via "Add to Queue" but never
-    // actually played this session. Falling through to Next mirrors what pressing Next already does
-    // from that same cold-start state (advances from CurrentIndex -1 to the first queued track and
-    // plays it) - without this, CanPlay had to report false whenever CurrentTrack was null even
-    // though the queue had something to play, which made playerctl skip SharpSelecta for Play/
-    // PlayPause specifically (it checks CanPlay/CanPause before sending them) while Next/Previous -
-    // gated only on the queue, not on CurrentTrack - still worked. See CanPlay below.
     private Task ToggleOrStartPlaybackAsync()
     {
         if (_playbackControls.CurrentTrack is null)
@@ -167,8 +126,6 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
         return Task.CompletedTask;
     }
 
-    // No distinct "stopped" transport beyond paused - the closest honest mapping of MPRIS Stop is
-    // just ensuring playback is paused.
     Task IMediaPlayer2Player.StopAsync() => ((IMediaPlayer2Player)this).PauseAsync();
 
     Task IMediaPlayer2Player.SeekAsync(long offsetMicroseconds) => Dispatcher.UIThread.InvokeAsync(() =>
@@ -176,9 +133,6 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
 
     Task IMediaPlayer2Player.SetPositionAsync(ObjectPath trackId, long positionMicroseconds) => Dispatcher.UIThread.InvokeAsync(() =>
     {
-        // A stale TrackId means the client's view of "current track" is out of date - per spec,
-        // just ignore the call rather than seeking the wrong (current) track to a position that
-        // made sense for a track that's no longer loaded.
         if (_playbackControls.CurrentTrack is not { } track || MprisMapping.TrackId(track) != trackId)
         {
             return;
@@ -216,7 +170,6 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
         return Task.FromResult<IDisposable>(new Unsubscriber(() => _playerPropertiesChanged -= handler));
     }
 
-    // Must run on the UI thread - reads several PlaybackControlsViewModel properties together.
     private object GetPlayerProperty(string prop) => GetPropertyOrThrow(GetAllPlayerProperties(), prop);
 
     private static object GetPropertyOrThrow(IDictionary<string, object> properties, string prop) =>
@@ -224,7 +177,6 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
             ? value
             : throw new DBusException("org.freedesktop.DBus.Error.UnknownProperty", $"Unknown property {prop}");
 
-    // Must run on the UI thread - reads several PlaybackControlsViewModel properties together.
     private IDictionary<string, object> GetAllPlayerProperties()
     {
         var canGoNext = _playbackControls.NextTrackCommand.CanExecute(null);
@@ -253,8 +205,6 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
         public void Dispose() => action();
     }
 
-    // WatchPropertiesAsync on the base interface has nothing to ever notify (its properties are
-    // all fixed), but still needs to return a disposable subscription per the interface contract.
     private sealed class NoopSubscription : IDisposable
     {
         public void Dispose()
