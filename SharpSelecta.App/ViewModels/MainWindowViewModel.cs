@@ -71,7 +71,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (!PlaybackSettings.RestoreQueueOnStartup)
             return;
 
-        var state = SettingsStore.LoadQueueState(_settingsFilePath);
+        var state = QueueStateStore.Load(_settingsFilePath);
         if (state is null)
             return;
 
@@ -115,9 +115,9 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
 
         var entries = PlaybackControls.QueueEntries
-            .Select(e => new SettingsStore.QueueEntryData(e.Track.FilePath, e.Source))
+            .Select(e => new QueueStateStore.QueueEntryData(e.Track.FilePath, e.Source))
             .ToList();
 
-        SettingsStore.SaveQueueState(_settingsFilePath, entries, PlaybackControls.QueueCurrentIndex, PlaybackControls.PositionSeconds);
+        QueueStateStore.Save(_settingsFilePath, entries, PlaybackControls.QueueCurrentIndex, PlaybackControls.PositionSeconds);
     }
 }

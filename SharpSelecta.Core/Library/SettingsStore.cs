@@ -1,7 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using SharpSelecta.Core.Audio;
-using SharpSelecta.Core.Playback;
 
 namespace SharpSelecta.Core.Library;
 
@@ -68,28 +67,6 @@ public static partial class SettingsStore
     public static void SaveRestoreQueueOnStartup(string settingsFilePath, bool enabled) =>
         Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { RestoreQueueOnStartup = enabled });
 
-    // Null when nothing was ever saved AND when the last saved queue was empty — both cases mean
-    // "nothing to restore," so callers don't need to distinguish them.
-    public static QueueState? LoadQueueState(string settingsFilePath)
-    {
-        var data = Load(settingsFilePath);
-        return data?.QueueEntries is { Count: > 0 } entries
-            ? new QueueState(entries, data.QueueCurrentIndex ?? -1, data.QueuePositionSeconds ?? 0)
-            : null;
-    }
-
-    public static void SaveQueueState(string settingsFilePath, IReadOnlyList<QueueEntryData> entries, int currentIndex, double positionSeconds) =>
-        Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with
-        {
-            QueueEntries = entries,
-            QueueCurrentIndex = currentIndex,
-            QueuePositionSeconds = positionSeconds,
-        });
-
-    public sealed record QueueEntryData(string FilePath, QueueEntrySource Source);
-
-    public sealed record QueueState(IReadOnlyList<QueueEntryData> Entries, int CurrentIndex, double PositionSeconds);
-
     // Null means "system default" — the same meaning IAudioEngine.SetOutputDevice(null) uses.
     public static string? LoadOutputDeviceName(string settingsFilePath) => Load(settingsFilePath)?.OutputDeviceName;
 
@@ -154,9 +131,6 @@ public static partial class SettingsStore
         public AlbumSortMode? AlbumSortMode { get; init; }
         public bool? AlbumSortDescending { get; init; }
         public bool? RestoreQueueOnStartup { get; init; }
-        public IReadOnlyList<QueueEntryData>? QueueEntries { get; init; }
-        public int? QueueCurrentIndex { get; init; }
-        public double? QueuePositionSeconds { get; init; }
         public string? OutputDeviceName { get; init; }
         public double? Volume { get; init; }
         public VolumeCurve? VolumeCurve { get; init; }

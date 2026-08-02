@@ -323,7 +323,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     // also mutating the queue itself.
     public Task LoadTrackAsync(Track track) => LoadTrackCoreAsync(track, autoPlay: true, startPositionSeconds: null);
 
-    // Rebuilds the queue from a previous session's saved state (see SettingsStore.QueueState)
+    // Rebuilds the queue from a previous session's saved state (see QueueStateStore.QueueState)
     // and loads whatever was current back to its saved position - without auto-playing, since the
     // user should land back where they left off, paused, rather than have music start blasting the
     // moment the app opens.

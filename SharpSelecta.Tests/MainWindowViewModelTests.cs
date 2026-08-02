@@ -13,6 +13,9 @@ public class MainWindowViewModelTests
     private static string CreateTempSettingsPath() =>
         Path.Combine(Path.GetTempPath(), $"sharpselecta-mainwindow-vm-settings-{Guid.NewGuid():N}.json");
 
+    private static string QueueStateFilePath(string settingsPath) =>
+        Path.Combine(Path.GetDirectoryName(settingsPath)!, $"{Path.GetFileNameWithoutExtension(settingsPath)}.queue-state.json");
+
     private static MainWindowViewModel CreateViewModel(out IAudioEngine audioEngine, string? settingsFilePath = null)
     {
         audioEngine = Substitute.For<IAudioEngine>();
@@ -156,6 +159,7 @@ public class MainWindowViewModelTests
         finally
         {
             File.Delete(settingsPath);
+            File.Delete(QueueStateFilePath(settingsPath));
         }
     }
 
@@ -180,6 +184,7 @@ public class MainWindowViewModelTests
         finally
         {
             File.Delete(settingsPath);
+            File.Delete(QueueStateFilePath(settingsPath));
         }
     }
 
@@ -195,11 +200,12 @@ public class MainWindowViewModelTests
 
             vm.PersistQueueStateIfEnabled();
 
-            await Assert.That(SettingsStore.LoadQueueState(settingsPath)).IsNull();
+            await Assert.That(QueueStateStore.Load(settingsPath)).IsNull();
         }
         finally
         {
             File.Delete(settingsPath);
+            File.Delete(QueueStateFilePath(settingsPath));
         }
     }
 
@@ -212,16 +218,17 @@ public class MainWindowViewModelTests
             var vm = CreateViewModel(out _, settingsPath);
             await vm.PlaybackControls.PlayNowAsync(new Track(TaggedTrackFixturePath, "tagged-track.mp3"));
             vm.PersistQueueStateIfEnabled();
-            await Assert.That(SettingsStore.LoadQueueState(settingsPath)).IsNotNull();
+            await Assert.That(QueueStateStore.Load(settingsPath)).IsNotNull();
 
             var emptied = CreateViewModel(out _, settingsPath);
             emptied.PersistQueueStateIfEnabled();
 
-            await Assert.That(SettingsStore.LoadQueueState(settingsPath)).IsNull();
+            await Assert.That(QueueStateStore.Load(settingsPath)).IsNull();
         }
         finally
         {
             File.Delete(settingsPath);
+            File.Delete(QueueStateFilePath(settingsPath));
         }
     }
 }

@@ -1,6 +1,5 @@
 using SharpSelecta.Core.Audio;
 using SharpSelecta.Core.Library;
-using SharpSelecta.Core.Playback;
 
 namespace SharpSelecta.Tests;
 
@@ -479,80 +478,6 @@ public class SettingsStoreTests
             var loaded = SettingsStore.LoadRestoreQueueOnStartup(settingsPath);
 
             await Assert.That(loaded).IsFalse();
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task LoadQueueState_WhenFileDoesNotExist_ReturnsNull()
-    {
-        var settingsPath = CreateTempSettingsPath();
-
-        var loaded = SettingsStore.LoadQueueState(settingsPath);
-
-        await Assert.That(loaded).IsNull();
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsQueueState()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.QueueEntryData[] entries =
-            [
-                new("/music/a.mp3", QueueEntrySource.Manual),
-                new("/music/b.mp3", QueueEntrySource.AutoDj),
-            ];
-
-            SettingsStore.SaveQueueState(settingsPath, entries, 1, 42.5);
-
-            var loaded = SettingsStore.LoadQueueState(settingsPath);
-
-            await Assert.That(loaded!.Entries).IsEquivalentTo(entries);
-            await Assert.That(loaded.CurrentIndex).IsEqualTo(1);
-            await Assert.That(loaded.PositionSeconds).IsEqualTo(42.5);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task SaveQueueState_WithNoEntries_MakesLoadQueueStateReturnNull()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveQueueState(settingsPath, [new SettingsStore.QueueEntryData("/music/a.mp3", QueueEntrySource.Manual)], 0, 0);
-
-            SettingsStore.SaveQueueState(settingsPath, [], -1, 0);
-
-            await Assert.That(SettingsStore.LoadQueueState(settingsPath)).IsNull();
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task SavingQueueState_DoesNotClobberOtherSettings()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
-            SettingsStore.SaveRestoreQueueOnStartup(settingsPath, false);
-
-            SettingsStore.SaveQueueState(settingsPath, [new SettingsStore.QueueEntryData("/music/a.mp3", QueueEntrySource.Manual)], 0, 10);
-
-            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
-            await Assert.That(SettingsStore.LoadRestoreQueueOnStartup(settingsPath)).IsFalse();
         }
         finally
         {
