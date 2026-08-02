@@ -116,20 +116,65 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
         // AudioConfig.OutputDeviceId, which only takes effect at Initialize time) - null resolves to
         // whichever device the OS currently reports as default, rather than a fixed name, so it keeps
         // tracking the system default if that changes later.
-        var targetDeviceName = deviceName ?? GetOutputDevices().FirstOrDefault(d => d.IsDefault)?.Name;
+        var targetDeviceName = deviceName ?? ResolveSystemDefaultDeviceName();
         if (targetDeviceName is null)
         {
+            logger.LogWarning("Could not resolve a system default output device to switch to");
             return;
         }
 
-        if (engine.SetOutputDeviceByName(targetDeviceName))
+        // This whole sequence turned out considerably more fragile than the docs suggest, confirmed
+        // via a throwaway diagnostic against real hardware: SetOutputDeviceByName (1) throws if
+        // called while the engine is running rather than accepting a live switch, so Stop() first is
+        // mandatory; (2) can itself throw - not just return false - when the target device rejects
+        // the current stream config (one onboard analog output required a fixed 1024-frame buffer
+        // against our default config's 512); and (3) even the *bracketing* engine.Stop() call was
+        // observed to throw AudioEngineException on its own in the same diagnostic (a second
+        // Stop()-switch-Start() cycle right after a successful one). None of that should ever crash
+        // playback control - every step is caught independently, and Start() is always attempted in
+        // a finally (with its own catch) so a failed switch doesn't leave the engine stuck stopped.
+        try
         {
-            logger.LogInformation("Switched output device to {DeviceName}", targetDeviceName);
+            engine.Stop();
+            if (engine.SetOutputDeviceByName(targetDeviceName))
+            {
+                logger.LogInformation("Switched output device to {DeviceName}", targetDeviceName);
+            }
+            else
+            {
+                logger.LogWarning("Failed to switch output device to {DeviceName}", targetDeviceName);
+            }
         }
-        else
+        catch (Exception ex)
         {
-            logger.LogWarning("Failed to switch output device to {DeviceName}", targetDeviceName);
+            logger.LogError(ex, "Failed to switch output device to {DeviceName}", targetDeviceName);
         }
+        finally
+        {
+            try
+            {
+                engine.Start();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to restart the audio engine after switching output device");
+            }
+        }
+    }
+
+    // IsDefault is unreliable on Linux/cpal's ALSA backend - confirmed via the same diagnostic as
+    // GetOutputDevices() above that it was false for every one of 33 raw devices on a real PipeWire
+    // desktop, despite the docs describing it as "system default device for its type" (likely
+    // populated correctly on backends with a real default-device query, e.g. Windows/macOS). Falls
+    // back to ALSA's own dynamic "Default ALSA Output" alias, which resolves at the OS level to
+    // whatever's actually active and was confirmed switchable via SetOutputDeviceByName in the same
+    // diagnostic - deliberately read from the raw device list, not the filtered GetOutputDevices()
+    // above, since that alias is intentionally hidden from the picker as a virtual entry.
+    private static string? ResolveSystemDefaultDeviceName()
+    {
+        var rawDevices = OwnaudioNet.GetOutputDevices().Where(d => d.IsOutput).ToList();
+        return rawDevices.FirstOrDefault(d => d.IsDefault)?.Name
+            ?? rawDevices.FirstOrDefault(d => d.Name.Contains("Default ALSA Output", StringComparison.OrdinalIgnoreCase))?.Name;
     }
 
     public void Dispose()
