@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -263,6 +264,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     {
         var cacheDirectory = ArtworkCacheDirectory;
         var options = new ParallelOptions { MaxDegreeOfParallelism = ArtworkLoadConcurrency };
+        var stopwatch = Stopwatch.StartNew();
 
         await Parallel.ForEachAsync(groups, options, async (group, cancellationToken) =>
         {
@@ -286,6 +288,8 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
                 _logger.LogError(ex, "Failed to load artwork for album {Album}", album.Title);
             }
         });
+
+        _logger.LogInformation("Loaded artwork for {AlbumCount} albums in {ElapsedMs} ms", groups.Count, stopwatch.ElapsedMilliseconds);
     }
 
     private sealed class AlbumGroupKeyComparer : IEqualityComparer<(string Album, string AlbumArtist)>
@@ -454,6 +458,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         IsLoadingLibrary = true;
         try
         {
+            var stopwatch = Stopwatch.StartNew();
             var tracks = await Task.Run(() =>
             {
                 var scanned = new List<Track>();
@@ -473,6 +478,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
                 return scanned.DistinctBy(t => t.FilePath).ToList();
             });
 
+            _logger.LogInformation("Scanned {TrackCount} tracks in {ElapsedMs} ms", tracks.Count, stopwatch.ElapsedMilliseconds);
             Tracks.ReplaceAll(tracks.Select(track => new LibraryTrackViewModel(track, this)));
             StatusMessage = failedFolders.Count > 0 ? Strings.FailedToScanFolder(string.Join(", ", failedFolders)) : null;
         }
