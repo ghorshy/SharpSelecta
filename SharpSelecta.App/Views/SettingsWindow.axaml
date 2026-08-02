@@ -20,7 +20,16 @@
                  SelectedItem="{Binding SelectedCategory}" />
 
         <Border Grid.Row="0" Grid.Column="1" Padding="{styles:Spacing Uniform=M}">
-            <views:LibrarySettingsView DataContext="{Binding Library}" />
+            <ContentControl Content="{Binding SelectedCategoryViewModel}">
+                <ContentControl.DataTemplates>
+                    <DataTemplate DataType="vm:LibraryViewModel">
+                        <views:LibrarySettingsView />
+                    </DataTemplate>
+                    <DataTemplate DataType="vm:PlaybackSettingsViewModel">
+                        <views:PlaybackSettingsView />
+                    </DataTemplate>
+                </ContentControl.DataTemplates>
+            </ContentControl>
         </Border>
 
         <StackPanel Grid.Row="1" Grid.Column="1"

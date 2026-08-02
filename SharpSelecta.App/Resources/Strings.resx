@@ -115,6 +115,12 @@
   <data name="SettingsCategoryLibrary" xml:space="preserve">
     <value>Library</value>
   </data>
+  <data name="SettingsCategoryPlayback" xml:space="preserve">
+    <value>Playback</value>
+  </data>
+  <data name="RestoreQueueOnStartup" xml:space="preserve">
+    <value>Restore previous queue on startup</value>
+  </data>
   <data name="NoLibraryFoldersAdded" xml:space="preserve">
     <value>No folders added yet</value>
   </data>

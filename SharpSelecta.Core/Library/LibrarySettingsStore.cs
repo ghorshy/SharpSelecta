@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SharpSelecta.Core.Playback;
 
 namespace SharpSelecta.Core.Library;
 
@@ -59,8 +60,37 @@ public static partial class LibrarySettingsStore
     public static void SaveAlbumSortDescending(string settingsFilePath, bool descending) =>
         Save(settingsFilePath, Default(settingsFilePath) with { AlbumSortDescending = descending });
 
+    // Defaults to true (opt-out, not opt-in) so a first-ever run behaves the same as every run
+    // after it — no separate "first launch" special case needed.
+    public static bool LoadRestoreQueueOnStartup(string settingsFilePath) => Load(settingsFilePath)?.RestoreQueueOnStartup ?? true;
+
+    public static void SaveRestoreQueueOnStartup(string settingsFilePath, bool enabled) =>
+        Save(settingsFilePath, Default(settingsFilePath) with { RestoreQueueOnStartup = enabled });
+
+    // Null when nothing was ever saved AND when the last saved queue was empty — both cases mean
+    // "nothing to restore," so callers don't need to distinguish them.
+    public static QueueState? LoadQueueState(string settingsFilePath)
+    {
+        var data = Load(settingsFilePath);
+        return data?.QueueEntries is { Count: > 0 } entries
+            ? new QueueState(entries, data.QueueCurrentIndex ?? -1, data.QueuePositionSeconds ?? 0)
+            : null;
+    }
+
+    public static void SaveQueueState(string settingsFilePath, IReadOnlyList<QueueEntryData> entries, int currentIndex, double positionSeconds) =>
+        Save(settingsFilePath, Default(settingsFilePath) with
+        {
+            QueueEntries = entries,
+            QueueCurrentIndex = currentIndex,
+            QueuePositionSeconds = positionSeconds,
+        });
+
+    public sealed record QueueEntryData(string FilePath, QueueEntrySource Source);
+
+    public sealed record QueueState(IReadOnlyList<QueueEntryData> Entries, int CurrentIndex, double PositionSeconds);
+
     private static LibrarySettingsData Default(string settingsFilePath) =>
-        Load(settingsFilePath) ?? new LibrarySettingsData(null, null, null, null, null, null, null, null, null, null, null);
+        Load(settingsFilePath) ?? new LibrarySettingsData(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 
     private static LibrarySettingsData? Load(string settingsFilePath)
     {
@@ -102,7 +132,11 @@ public static partial class LibrarySettingsStore
         double? TileSize,
         LibraryViewMode? ViewMode,
         AlbumSortMode? AlbumSortMode,
-        bool? AlbumSortDescending);
+        bool? AlbumSortDescending,
+        bool? RestoreQueueOnStartup,
+        IReadOnlyList<QueueEntryData>? QueueEntries,
+        int? QueueCurrentIndex,
+        double? QueuePositionSeconds);
 
     [JsonSerializable(typeof(LibrarySettingsData))]
     private partial class LibrarySettingsJsonContext : JsonSerializerContext

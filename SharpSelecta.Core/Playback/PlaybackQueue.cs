@@ -183,6 +183,20 @@ public sealed class PlaybackQueue
         return _entries[index].Track;
     }
 
+    // Replaces the whole queue in one shot from a previously-saved snapshot (app startup) — unlike
+    // PlayNow/AddToQueue/PlayNext, this isn't inserting something new relative to wherever playback
+    // currently is, it's reconstructing an existing state from scratch.
+    public void Restore(IReadOnlyList<QueueEntry> entries, int currentIndex)
+    {
+        _entries.Clear();
+        foreach (var entry in entries)
+        {
+            _entries.Add(entry);
+        }
+
+        SetCurrentIndex(_entries.Count == 0 ? -1 : Math.Clamp(currentIndex, 0, _entries.Count - 1));
+    }
+
     private void SetCurrentIndex(int value)
     {
         CurrentIndex = value;

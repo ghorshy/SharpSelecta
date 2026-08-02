@@ -6,20 +6,23 @@ namespace SharpSelecta.App.ViewModels;
 
 public partial class SettingsWindowViewModel : ViewModelBase
 {
-    public IReadOnlyList<string> Categories { get; } = [Strings.SettingsCategoryLibrary];
+    public IReadOnlyList<string> Categories { get; } = [Strings.SettingsCategoryLibrary, Strings.SettingsCategoryPlayback];
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedCategoryViewModel))]
     private string selectedCategory;
 
     public LibraryViewModel Library { get; }
 
-    // Only one category exists so far, so this always resolves to Library — once a second
-    // category is added, this switches on SelectedCategory to pick the right one.
-    public ISettingsCategoryViewModel SelectedCategoryViewModel => Library;
+    public PlaybackSettingsViewModel Playback { get; }
 
-    public SettingsWindowViewModel(LibraryViewModel library)
+    public ISettingsCategoryViewModel SelectedCategoryViewModel =>
+        SelectedCategory == Strings.SettingsCategoryPlayback ? Playback : Library;
+
+    public SettingsWindowViewModel(LibraryViewModel library, PlaybackSettingsViewModel playback)
     {
         Library = library;
+        Playback = playback;
         selectedCategory = Categories[0];
     }
 }

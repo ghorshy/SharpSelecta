@@ -637,6 +637,56 @@ public class PlaybackControlsViewModelTests
     }
 
     [Test]
+    public async Task RestoreQueueAsync_LoadsTheCurrentEntryWithoutAutoPlaying()
+    {
+        var vm = CreateViewModel(out var audioEngine, out var queue);
+        var a = new Track("/music/a.mp3", "a.mp3");
+        var b = new Track("/music/b.mp3", "b.mp3");
+        QueueEntry[] entries = [new(a, QueueEntrySource.Manual), new(b, QueueEntrySource.Manual)];
+
+        await vm.RestoreQueueAsync(entries, 1, 0);
+
+        audioEngine.Received(1).Load("/music/b.mp3");
+        await Assert.That(vm.LoadedFileName).IsEqualTo("b.mp3");
+        await Assert.That(vm.IsPlaying).IsFalse();
+        await Assert.That(queue.Entries.Select(e => e.Track)).IsEquivalentTo([a, b]);
+        await Assert.That(queue.CurrentIndex).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task RestoreQueueAsync_SeeksToTheSavedPosition()
+    {
+        var vm = CreateViewModel(out var audioEngine, out _);
+        var a = new Track("/music/a.mp3", "a.mp3");
+
+        await vm.RestoreQueueAsync([new QueueEntry(a, QueueEntrySource.Manual)], 0, 37.5);
+
+        audioEngine.Received(1).Seek(37.5);
+    }
+
+    [Test]
+    public async Task RestoreQueueAsync_WithNoSavedPosition_DoesNotSeek()
+    {
+        var vm = CreateViewModel(out var audioEngine, out _);
+        var a = new Track("/music/a.mp3", "a.mp3");
+
+        await vm.RestoreQueueAsync([new QueueEntry(a, QueueEntrySource.Manual)], 0, 0);
+
+        audioEngine.DidNotReceive().Seek(Arg.Any<double>());
+    }
+
+    [Test]
+    public async Task RestoreQueueAsync_WithEmptyEntries_DoesNothing()
+    {
+        var vm = CreateViewModel(out var audioEngine, out var queue);
+
+        await vm.RestoreQueueAsync([], -1, 0);
+
+        audioEngine.DidNotReceive().Load(Arg.Any<string>());
+        await Assert.That(queue.Entries.Count).IsEqualTo(0);
+    }
+
+    [Test]
     public async Task PlayNowAsync_WithATrackList_QueuesAllAndLoadsTheFirst()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);

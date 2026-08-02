@@ -37,10 +37,6 @@ public partial class App : Application
             services.AddSingleton<IFilePickerService>(new AvaloniaFilePickerService(mainWindow));
             var provider = services.BuildServiceProvider();
 
-            // Disposes the singleton IAudioEngine (native mixer/source cleanup, temp transcode
-            // file) on a normal exit, instead of relying entirely on process teardown.
-            desktop.Exit += (_, _) => provider.Dispose();
-
             var audioEngine = provider.GetRequiredService<IAudioEngine>();
 
             var librarySettingsFilePath = Path.Combine(
@@ -57,6 +53,15 @@ public partial class App : Application
             mainWindow.DataContext = mainWindowViewModel;
             desktop.MainWindow = mainWindow;
 
+            // Disposes the singleton IAudioEngine (native mixer/source cleanup) on a normal exit,
+            // instead of relying entirely on process teardown — but only after the current queue
+            // state has been saved off (needs the engine's cached playback position, still alive).
+            desktop.Exit += (_, _) =>
+            {
+                mainWindowViewModel.PersistQueueStateIfEnabled();
+                provider.Dispose();
+            };
+
             // Task.Run escapes Avalonia's SynchronizationContext: at this point the classic desktop
             // lifetime hasn't started pumping its dispatcher loop yet, so blocking the UI thread here
             // while awaiting a continuation that expects that loop to be running would deadlock.
@@ -65,10 +70,20 @@ public partial class App : Application
             // managed file I/O internally offloaded via its own Task.Run) — calling it directly
             // keeps its continuation on the UI thread, which it needs to safely mutate the
             // Tracks collection the DataGrid is bound to.
-            Task.Run(() => audioEngine.InitializeAsync());
+            _ = InitializeAudioEngineAndRestoreQueueAsync(audioEngine, mainWindowViewModel);
             _ = mainWindowViewModel.Library.InitializeAsync();
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    // RestoreQueueIfEnabledAsync calls IAudioEngine.Load(), which throws until InitializeAsync has
+    // finished — chained after it (not run in parallel with it) to guarantee that ordering. The
+    // await itself doesn't need Task.Run's isolation the way the engine init call does: awaiting
+    // (rather than blocking on) a continuation is safe even before the dispatcher loop has started.
+    private static async Task InitializeAudioEngineAndRestoreQueueAsync(IAudioEngine audioEngine, MainWindowViewModel mainWindowViewModel)
+    {
+        await Task.Run(() => audioEngine.InitializeAsync());
+        await mainWindowViewModel.RestoreQueueIfEnabledAsync();
     }
 }

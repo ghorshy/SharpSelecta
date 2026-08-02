@@ -318,7 +318,23 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     // Public so anything that has already positioned the queue (Next/Previous, PlayNowAsync,
     // or the Queue view's own jump-to-entry) can trigger the actual load+play mechanics without
     // also mutating the queue itself.
-    public async Task LoadTrackAsync(Track track)
+    public Task LoadTrackAsync(Track track) => LoadTrackCoreAsync(track, autoPlay: true, startPositionSeconds: null);
+
+    // Rebuilds the queue from a previous session's saved state (see LibrarySettingsStore.QueueState)
+    // and loads whatever was current back to its saved position - without auto-playing, since the
+    // user should land back where they left off, paused, rather than have music start blasting the
+    // moment the app opens.
+    public Task RestoreQueueAsync(IReadOnlyList<QueueEntry> entries, int currentIndex, double positionSeconds)
+    {
+        _queue.Restore(entries, currentIndex);
+
+        var current = currentIndex >= 0 && currentIndex < entries.Count ? entries[currentIndex].Track : null;
+        return current is null
+            ? Task.CompletedTask
+            : LoadTrackCoreAsync(current, autoPlay: false, positionSeconds);
+    }
+
+    private async Task LoadTrackCoreAsync(Track track, bool autoPlay, double? startPositionSeconds)
     {
         try
         {
@@ -330,8 +346,16 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
             TransportState = TransportState.Ready;
             CurrentTrack = track;
             CurrentTrackArtworkBytes = await Task.Run(() => MusicLibraryScanner.LoadArtwork(track.FilePath));
+            if (startPositionSeconds is > 0)
+            {
+                _audioEngine.Seek(startPositionSeconds.Value);
+            }
+
             RefreshPosition();
-            PlayPauseCommand.Execute(null);
+            if (autoPlay)
+            {
+                PlayPauseCommand.Execute(null);
+            }
         }
         catch (Exception ex)
         {

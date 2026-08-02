@@ -1,0 +1,16 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SharpSelecta.App.ViewModels"
+             xmlns:res="using:SharpSelecta.App.Resources"
+             xmlns:styles="using:SharpSelecta.App.Styles"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="200"
+             x:Class="SharpSelecta.App.Views.PlaybackSettingsView"
+             x:DataType="vm:PlaybackSettingsViewModel">
+
+    <StackPanel Spacing="{styles:SpacingValue S}">
+        <CheckBox Content="{x:Static res:Strings.RestoreQueueOnStartup}" IsChecked="{Binding RestoreQueueOnStartup}" />
+    </StackPanel>
+
+</UserControl>

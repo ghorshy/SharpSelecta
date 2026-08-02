@@ -21,18 +21,24 @@ public class SettingsWindowViewModelTests
             NullLogger<LibraryViewModel>.Instance);
     }
 
-    [Test]
-    public async Task Categories_ContainsLibraryAsTheOnlyEntrySoFar()
-    {
-        var vm = new SettingsWindowViewModel(CreateLibraryViewModel());
+    private static PlaybackSettingsViewModel CreatePlaybackSettingsViewModel() =>
+        new(Path.Combine(Path.GetTempPath(), $"sharpselecta-settings-vm-tests-{Guid.NewGuid():N}.json"));
 
-        await Assert.That(vm.Categories).IsEquivalentTo([Strings.SettingsCategoryLibrary]);
+    private static SettingsWindowViewModel CreateViewModel() =>
+        new(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel());
+
+    [Test]
+    public async Task Categories_ContainsLibraryAndPlayback()
+    {
+        var vm = CreateViewModel();
+
+        await Assert.That(vm.Categories).IsEquivalentTo([Strings.SettingsCategoryLibrary, Strings.SettingsCategoryPlayback]);
     }
 
     [Test]
     public async Task SelectedCategory_DefaultsToTheFirstCategory()
     {
-        var vm = new SettingsWindowViewModel(CreateLibraryViewModel());
+        var vm = CreateViewModel();
 
         await Assert.That(vm.SelectedCategory).IsEqualTo(Strings.SettingsCategoryLibrary);
     }
@@ -42,9 +48,19 @@ public class SettingsWindowViewModelTests
     {
         var library = CreateLibraryViewModel();
 
-        var vm = new SettingsWindowViewModel(library);
+        var vm = new SettingsWindowViewModel(library, CreatePlaybackSettingsViewModel());
 
         await Assert.That(vm.Library).IsEqualTo(library);
+    }
+
+    [Test]
+    public async Task Playback_ExposesTheSameInstancePassedIn()
+    {
+        var playback = CreatePlaybackSettingsViewModel();
+
+        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), playback);
+
+        await Assert.That(vm.Playback).IsEqualTo(playback);
     }
 
     [Test]
@@ -52,8 +68,19 @@ public class SettingsWindowViewModelTests
     {
         var library = CreateLibraryViewModel();
 
-        var vm = new SettingsWindowViewModel(library);
+        var vm = new SettingsWindowViewModel(library, CreatePlaybackSettingsViewModel());
 
         await Assert.That(vm.SelectedCategoryViewModel).IsEqualTo(library);
+    }
+
+    [Test]
+    public async Task SelectedCategoryViewModel_AfterSwitchingToPlayback_ResolvesToPlayback()
+    {
+        var playback = CreatePlaybackSettingsViewModel();
+        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), playback);
+
+        vm.SelectedCategory = Strings.SettingsCategoryPlayback;
+
+        await Assert.That(vm.SelectedCategoryViewModel).IsEqualTo(playback);
     }
 }

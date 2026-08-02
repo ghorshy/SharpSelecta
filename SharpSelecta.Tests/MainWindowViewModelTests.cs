@@ -82,4 +82,98 @@ public class MainWindowViewModelTests
             File.Delete(settingsPath);
         }
     }
+
+    private static readonly string TaggedTrackFixturePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3");
+
+    [Test]
+    public async Task PersistThenRestoreQueueState_RoundTripsTheQueueAcrossInstances()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            var vm = CreateViewModel(out _, settingsPath);
+            await vm.PlaybackControls.PlayNowAsync(new Track(TaggedTrackFixturePath, "tagged-track.mp3"));
+            vm.PlaybackControls.PositionSeconds = 12.0;
+
+            vm.PersistQueueStateIfEnabled();
+
+            var restarted = CreateViewModel(out var restartedAudioEngine, settingsPath);
+            await restarted.RestoreQueueIfEnabledAsync();
+
+            restartedAudioEngine.Received(1).Load(TaggedTrackFixturePath);
+            restartedAudioEngine.Received(1).Seek(12.0);
+            await Assert.That(restarted.PlaybackControls.IsPlaying).IsFalse();
+            await Assert.That(restarted.Queue.Entries.Count).IsEqualTo(1);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task RestoreQueueIfEnabledAsync_WhenDisabled_LeavesQueueEmpty()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            var vm = CreateViewModel(out _, settingsPath);
+            await vm.PlaybackControls.PlayNowAsync(new Track(TaggedTrackFixturePath, "tagged-track.mp3"));
+            vm.PersistQueueStateIfEnabled();
+
+            var restarted = CreateViewModel(out var restartedAudioEngine, settingsPath);
+            restarted.PlaybackSettings.RestoreQueueOnStartup = false;
+
+            await restarted.RestoreQueueIfEnabledAsync();
+
+            restartedAudioEngine.DidNotReceive().Load(Arg.Any<string>());
+            await Assert.That(restarted.Queue.Entries.Count).IsEqualTo(0);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task PersistQueueStateIfEnabled_WhenDisabled_DoesNotSaveAnything()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            var vm = CreateViewModel(out _, settingsPath);
+            await vm.PlaybackControls.PlayNowAsync(new Track(TaggedTrackFixturePath, "tagged-track.mp3"));
+            vm.PlaybackSettings.RestoreQueueOnStartup = false;
+
+            vm.PersistQueueStateIfEnabled();
+
+            await Assert.That(LibrarySettingsStore.LoadQueueState(settingsPath)).IsNull();
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task PersistQueueStateIfEnabled_WithAnEmptyQueue_ClearsAnyPreviouslySavedState()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            var vm = CreateViewModel(out _, settingsPath);
+            await vm.PlaybackControls.PlayNowAsync(new Track(TaggedTrackFixturePath, "tagged-track.mp3"));
+            vm.PersistQueueStateIfEnabled();
+            await Assert.That(LibrarySettingsStore.LoadQueueState(settingsPath)).IsNotNull();
+
+            var emptied = CreateViewModel(out _, settingsPath);
+            emptied.PersistQueueStateIfEnabled();
+
+            await Assert.That(LibrarySettingsStore.LoadQueueState(settingsPath)).IsNull();
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
 }

@@ -333,4 +333,44 @@ public class PlaybackQueueTests
 
         await Assert.That(queue.IndexOf(new QueueEntry(TrackB, QueueEntrySource.Manual))).IsEqualTo(-1);
     }
+
+    [Test]
+    public async Task Restore_ReplacesEntriesAndSetsCurrentIndex()
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow(TrackA); // pre-existing state that Restore should discard entirely
+
+        QueueEntry[] entries =
+        [
+            new(TrackA, QueueEntrySource.Manual),
+            new(TrackB, QueueEntrySource.AutoDj),
+            new(TrackC, QueueEntrySource.Manual),
+        ];
+        queue.Restore(entries, 1);
+
+        await Assert.That(queue.Entries).IsEquivalentTo(entries);
+        await Assert.That(queue.CurrentIndex).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task Restore_WithEmptyEntries_SetsCurrentIndexToMinusOne()
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow(TrackA);
+
+        queue.Restore([], 0);
+
+        await Assert.That(queue.Entries.Count).IsEqualTo(0);
+        await Assert.That(queue.CurrentIndex).IsEqualTo(-1);
+    }
+
+    [Test]
+    public async Task Restore_WithOutOfRangeCurrentIndex_ClampsToTheLastEntry()
+    {
+        var queue = new PlaybackQueue();
+
+        queue.Restore([new QueueEntry(TrackA, QueueEntrySource.Manual), new QueueEntry(TrackB, QueueEntrySource.Manual)], 99);
+
+        await Assert.That(queue.CurrentIndex).IsEqualTo(1);
+    }
 }

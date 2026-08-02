@@ -52,6 +52,13 @@ public static class MusicLibraryScanner
         }
     }
 
+    // Reconstructs a single Track directly from disk, bypassing a full folder Scan — used to
+    // restore a saved queue on startup, where the file may not even live under a currently
+    // configured library folder. Returns null instead of the private ReadTrack's filename-only
+    // fallback when the file is simply gone, so a stale saved path is dropped rather than
+    // resurrected as a bogus queue entry.
+    public static Track? ReadTrackIfExists(string filePath) => File.Exists(filePath) ? ReadTrack(filePath) : null;
+
     // Not read during Scan — decoding embedded pictures for an entire library upfront would be
     public static byte[]? LoadArtwork(string filePath)
     {

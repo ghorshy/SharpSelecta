@@ -1,4 +1,5 @@
 using SharpSelecta.Core.Library;
+using SharpSelecta.Core.Playback;
 
 namespace SharpSelecta.Tests;
 
@@ -449,6 +450,108 @@ public class LibrarySettingsStoreTests
 
             await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
             await Assert.That(LibrarySettingsStore.LoadSort(settingsPath)).IsEqualTo(("Track.Title", false));
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task LoadRestoreQueueOnStartup_WhenFileDoesNotExist_DefaultsToTrue()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        var loaded = LibrarySettingsStore.LoadRestoreQueueOnStartup(settingsPath);
+
+        await Assert.That(loaded).IsTrue();
+    }
+
+    [Test]
+    public async Task SaveAndLoad_RoundTripsRestoreQueueOnStartup()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveRestoreQueueOnStartup(settingsPath, false);
+
+            var loaded = LibrarySettingsStore.LoadRestoreQueueOnStartup(settingsPath);
+
+            await Assert.That(loaded).IsFalse();
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task LoadQueueState_WhenFileDoesNotExist_ReturnsNull()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        var loaded = LibrarySettingsStore.LoadQueueState(settingsPath);
+
+        await Assert.That(loaded).IsNull();
+    }
+
+    [Test]
+    public async Task SaveAndLoad_RoundTripsQueueState()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.QueueEntryData[] entries =
+            [
+                new("/music/a.mp3", QueueEntrySource.Manual),
+                new("/music/b.mp3", QueueEntrySource.AutoDj),
+            ];
+
+            LibrarySettingsStore.SaveQueueState(settingsPath, entries, 1, 42.5);
+
+            var loaded = LibrarySettingsStore.LoadQueueState(settingsPath);
+
+            await Assert.That(loaded!.Entries).IsEquivalentTo(entries);
+            await Assert.That(loaded.CurrentIndex).IsEqualTo(1);
+            await Assert.That(loaded.PositionSeconds).IsEqualTo(42.5);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task SaveQueueState_WithNoEntries_MakesLoadQueueStateReturnNull()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveQueueState(settingsPath, [new LibrarySettingsStore.QueueEntryData("/music/a.mp3", QueueEntrySource.Manual)], 0, 0);
+
+            LibrarySettingsStore.SaveQueueState(settingsPath, [], -1, 0);
+
+            await Assert.That(LibrarySettingsStore.LoadQueueState(settingsPath)).IsNull();
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task SavingQueueState_DoesNotClobberOtherSettings()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
+            LibrarySettingsStore.SaveRestoreQueueOnStartup(settingsPath, false);
+
+            LibrarySettingsStore.SaveQueueState(settingsPath, [new LibrarySettingsStore.QueueEntryData("/music/a.mp3", QueueEntrySource.Manual)], 0, 10);
+
+            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
+            await Assert.That(LibrarySettingsStore.LoadRestoreQueueOnStartup(settingsPath)).IsFalse();
         }
         finally
         {
