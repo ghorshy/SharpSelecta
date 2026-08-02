@@ -70,6 +70,26 @@ public class MprisMappingTests
     }
 
     [Test]
+    public async Task BuildMetadata_WithoutAHeartbeatTick_OmitsTheHeartbeatKey()
+    {
+        var track = new Track("/music/song.mp3", "song.mp3");
+
+        var metadata = MprisMapping.BuildMetadata(track);
+
+        await Assert.That(metadata.ContainsKey("x-sharpselecta:heartbeat")).IsFalse();
+    }
+
+    [Test]
+    public async Task BuildMetadata_WithAHeartbeatTick_IncludesIt()
+    {
+        var track = new Track("/music/song.mp3", "song.mp3");
+
+        var metadata = MprisMapping.BuildMetadata(track, heartbeatTick: 42);
+
+        await Assert.That(metadata["x-sharpselecta:heartbeat"]).IsEqualTo(42L);
+    }
+
+    [Test]
     public async Task TrackId_IsStableForTheSameTrack()
     {
         var track = new Track("/music/song.mp3", "song.mp3");

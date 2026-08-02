@@ -16,28 +16,36 @@ public static class MprisMapping
         _ => isPlaying ? "Playing" : "Paused",
     };
 
-    public static IDictionary<string, object> BuildMetadata(Track? track)
+    public static IDictionary<string, object> BuildMetadata(Track? track, long? heartbeatTick = null)
     {
-        if (track is null)
+        var metadata = track is null
+            ? new Dictionary<string, object>()
+            : new Dictionary<string, object>
+            {
+                ["mpris:trackid"] = TrackId(track),
+                ["mpris:length"] = (long)track.Duration.TotalMicroseconds,
+                ["xesam:title"] = !string.IsNullOrWhiteSpace(track.Title) ? track.Title : track.DisplayName,
+            };
+
+        if (track is not null)
         {
-            return new Dictionary<string, object>();
+            if (!string.IsNullOrWhiteSpace(track.Artist))
+            {
+                metadata["xesam:artist"] = new[] { track.Artist };
+            }
+
+            if (!string.IsNullOrWhiteSpace(track.Album))
+            {
+                metadata["xesam:album"] = track.Album;
+            }
         }
 
-        var metadata = new Dictionary<string, object>
+        // A private, vendor-prefixed key - spec-compliant clients ignore metadata keys they don't
+        // recognize, so this doesn't affect display anywhere. Only present when a heartbeat tick is
+        // supplied (see MprisRoot's heartbeat timer); Get/GetAll responses never include it.
+        if (heartbeatTick is { } tick)
         {
-            ["mpris:trackid"] = TrackId(track),
-            ["mpris:length"] = (long)track.Duration.TotalMicroseconds,
-            ["xesam:title"] = !string.IsNullOrWhiteSpace(track.Title) ? track.Title : track.DisplayName,
-        };
-
-        if (!string.IsNullOrWhiteSpace(track.Artist))
-        {
-            metadata["xesam:artist"] = new[] { track.Artist };
-        }
-
-        if (!string.IsNullOrWhiteSpace(track.Album))
-        {
-            metadata["xesam:album"] = track.Album;
+            metadata["x-sharpselecta:heartbeat"] = tick;
         }
 
         return metadata;

@@ -21,7 +21,20 @@ namespace SharpSelecta.App.Services.Mpris;
 // LibraryViewModel.LoadAlbumArtworkAsync).
 public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
 {
+    // playerctld (and similar media-key routers) rank the "active" player by recency: whichever
+    // MPRIS player most recently emitted a PropertiesChanged carrying a real value delta wins the
+    // next media-key press, and that ranking can be stolen back by another player's own unrelated
+    // D-Bus activity (a browser tab's metadata refresh, a new tab registering) at any point during
+    // a track SharpSelecta is silently playing through - PropertiesChanged here is otherwise only
+    // ever raised at Play/Pause/track-change transitions. This periodic nudge re-asserts priority
+    // throughout playback instead of just at transitions. Position changes don't count towards
+    // that recency check (deliberately excluded by playerctld, since every player's position ticks
+    // constantly), hence the Metadata heartbeat key instead of relying on Position/Seeked.
+    private static readonly TimeSpan HeartbeatInterval = TimeSpan.FromSeconds(5);
+
     private readonly PlaybackControlsViewModel _playbackControls;
+    private readonly DispatcherTimer _heartbeatTimer;
+    private long _heartbeatTick;
     private Action<PropertyChanges>? _playerPropertiesChanged;
     private Action<long>? _seeked;
 
@@ -31,9 +44,15 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
     {
         _playbackControls = playbackControls;
         _playbackControls.PropertyChanged += OnPlaybackControlsPropertyChanged;
+
+        _heartbeatTimer = new DispatcherTimer(HeartbeatInterval, DispatcherPriority.Background, OnHeartbeatTick);
     }
 
-    public void Dispose() => _playbackControls.PropertyChanged -= OnPlaybackControlsPropertyChanged;
+    public void Dispose()
+    {
+        _playbackControls.PropertyChanged -= OnPlaybackControlsPropertyChanged;
+        _heartbeatTimer.Stop();
+    }
 
     private void OnPlaybackControlsPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -48,6 +67,24 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
             [
                 new KeyValuePair<string, object>("PlaybackStatus", MprisMapping.PlaybackStatus(_playbackControls.TransportState, _playbackControls.IsPlaying)),
                 new KeyValuePair<string, object>("Metadata", MprisMapping.BuildMetadata(_playbackControls.CurrentTrack)),
+            ],
+            []));
+    }
+
+    // Only nudges while actually playing - a paused/stopped SharpSelecta has no stronger claim to
+    // the media keys than anything else sitting idle on the bus.
+    private void OnHeartbeatTick(object? sender, EventArgs e)
+    {
+        if (!_playbackControls.IsPlaying)
+        {
+            return;
+        }
+
+        _heartbeatTick++;
+        _playerPropertiesChanged?.Invoke(new PropertyChanges(
+            [
+                new KeyValuePair<string, object>("PlaybackStatus", MprisMapping.PlaybackStatus(_playbackControls.TransportState, _playbackControls.IsPlaying)),
+                new KeyValuePair<string, object>("Metadata", MprisMapping.BuildMetadata(_playbackControls.CurrentTrack, _heartbeatTick)),
             ],
             []));
     }
