@@ -18,6 +18,10 @@
                       SelectedItem="{Binding SelectedOutputDeviceDisplayName}"
                       HorizontalAlignment="Stretch" />
         </StackPanel>
+
+        <CheckBox Content="{x:Static res:Strings.UseLogarithmicVolumeScale}"
+                  IsChecked="{Binding UseLogarithmicVolumeScale}"
+                  Margin="{styles:Spacing Top=S}" />
     </StackPanel>
 
 </UserControl>

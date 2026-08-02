@@ -24,7 +24,7 @@
             <Button Grid.Column="5" Content="{Binding DurationDisplay}" Command="{Binding ToggleDurationDisplayCommand}"
                     Width="70" HorizontalContentAlignment="Left" />
             <TextBlock Grid.Column="6" Text="{x:Static res:Strings.Volume}" VerticalAlignment="Center" />
-            <Slider Grid.Column="7" VerticalAlignment="Center" Minimum="0" Maximum="1" Value="{Binding Volume}" />
+            <Slider x:Name="VolumeSlider" Grid.Column="7" VerticalAlignment="Center" Minimum="0" Maximum="1" Value="{Binding Volume}" />
             <Button Grid.Column="8" Content="{Binding RepeatModeLabel}" Command="{Binding ToggleRepeatModeCommand}" />
             <Button Grid.Column="9" Content="{x:Static res:Strings.Options}" Click="OnOptionsClick" />
         </Grid>

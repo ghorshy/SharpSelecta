@@ -52,6 +52,9 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     private double volume = 1.0;
 
     [ObservableProperty]
+    private VolumeCurve volumeCurve = VolumeCurve.Linear;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DisplayFileName))]
     [NotifyPropertyChangedFor(nameof(DisplayTrackLabel))]
     private string? loadedFileName;
@@ -372,7 +375,13 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         _audioEngine.Seek(value);
     }
 
-    partial void OnVolumeChanged(double value) => _audioEngine.Volume = (float)value;
+    partial void OnVolumeChanged(double value) => ApplyVolumeToEngine();
+
+    // Re-applies immediately on a curve switch too, so toggling it in Settings takes effect right
+    // away instead of only on the next slider drag.
+    partial void OnVolumeCurveChanged(VolumeCurve value) => ApplyVolumeToEngine();
+
+    private void ApplyVolumeToEngine() => _audioEngine.Volume = (float)VolumeScale.ToAmplitude(Volume, VolumeCurve);
 
     public void RefreshPosition() => _ = RefreshPositionAsync();
 

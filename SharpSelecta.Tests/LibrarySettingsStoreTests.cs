@@ -1,3 +1,4 @@
+using SharpSelecta.Core.Audio;
 using SharpSelecta.Core.Library;
 using SharpSelecta.Core.Playback;
 
@@ -614,6 +615,81 @@ public class LibrarySettingsStoreTests
             LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
 
             LibrarySettingsStore.SaveOutputDeviceName(settingsPath, "Focusrite Scarlett 2i2");
+
+            await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task LoadVolume_WhenFileDoesNotExist_ReturnsNull()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        var loaded = LibrarySettingsStore.LoadVolume(settingsPath);
+
+        await Assert.That(loaded).IsNull();
+    }
+
+    [Test]
+    public async Task SaveAndLoad_RoundTripsVolume()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveVolume(settingsPath, 0.35);
+
+            var loaded = LibrarySettingsStore.LoadVolume(settingsPath);
+
+            await Assert.That(loaded).IsEqualTo(0.35);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task LoadVolumeCurve_WhenFileDoesNotExist_DefaultsToLinear()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        var loaded = LibrarySettingsStore.LoadVolumeCurve(settingsPath);
+
+        await Assert.That(loaded).IsEqualTo(VolumeCurve.Linear);
+    }
+
+    [Test]
+    public async Task SaveAndLoad_RoundTripsVolumeCurve()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveVolumeCurve(settingsPath, VolumeCurve.Logarithmic);
+
+            var loaded = LibrarySettingsStore.LoadVolumeCurve(settingsPath);
+
+            await Assert.That(loaded).IsEqualTo(VolumeCurve.Logarithmic);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task SavingVolumeAndVolumeCurve_DoesNotClobberOtherSettings()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
+
+            LibrarySettingsStore.SaveVolume(settingsPath, 0.7);
+            LibrarySettingsStore.SaveVolumeCurve(settingsPath, VolumeCurve.Logarithmic);
 
             await Assert.That(LibrarySettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
         }

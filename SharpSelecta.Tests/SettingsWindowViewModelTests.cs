@@ -21,8 +21,15 @@ public class SettingsWindowViewModelTests
             NullLogger<LibraryViewModel>.Instance);
     }
 
-    private static PlaybackSettingsViewModel CreatePlaybackSettingsViewModel() =>
-        new(Path.Combine(Path.GetTempPath(), $"sharpselecta-settings-vm-tests-{Guid.NewGuid():N}.json"), Substitute.For<IAudioEngine>());
+    private static PlaybackSettingsViewModel CreatePlaybackSettingsViewModel()
+    {
+        var playbackControls = new PlaybackControlsViewModel(
+            Substitute.For<IAudioEngine>(), new PlaybackQueue(), NullLogger<PlaybackControlsViewModel>.Instance);
+        return new PlaybackSettingsViewModel(
+            Path.Combine(Path.GetTempPath(), $"sharpselecta-settings-vm-tests-{Guid.NewGuid():N}.json"),
+            Substitute.For<IAudioEngine>(),
+            playbackControls);
+    }
 
     private static SettingsWindowViewModel CreateViewModel() =>
         new(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel());

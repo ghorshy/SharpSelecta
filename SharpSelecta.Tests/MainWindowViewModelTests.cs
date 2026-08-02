@@ -83,6 +83,53 @@ public class MainWindowViewModelTests
         }
     }
 
+    [Test]
+    public async Task Volume_DefaultsTo1WhenNothingIsSaved()
+    {
+        var vm = CreateViewModel(out _);
+
+        await Assert.That(vm.PlaybackControls.Volume).IsEqualTo(1.0);
+    }
+
+    [Test]
+    public async Task Volume_PersistsAcrossInstancesForTheSameSettingsFile()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            var vm = CreateViewModel(out _, settingsPath);
+
+            vm.PlaybackControls.Volume = 0.3;
+            vm.PersistVolume();
+
+            var restarted = CreateViewModel(out _, settingsPath);
+            await Assert.That(restarted.PlaybackControls.Volume).IsEqualTo(0.3);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task PlaybackSettings_LoadsASavedVolumeCurve_AndAppliesItToPlaybackControls()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibrarySettingsStore.SaveVolumeCurve(settingsPath, VolumeCurve.Logarithmic);
+
+            var vm = CreateViewModel(out _, settingsPath);
+
+            await Assert.That(vm.PlaybackSettings.UseLogarithmicVolumeScale).IsTrue();
+            await Assert.That(vm.PlaybackControls.VolumeCurve).IsEqualTo(VolumeCurve.Logarithmic);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
     private static readonly string TaggedTrackFixturePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3");
 
     [Test]

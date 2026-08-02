@@ -42,7 +42,12 @@ public partial class MainWindowViewModel : ViewModelBase
         PlaybackControls = new PlaybackControlsViewModel(audioEngine, queue, playbackControlsLogger);
         Library = new LibraryViewModel(filePickerService, PlaybackControls, librarySettingsFilePath, libraryLogger);
         Queue = new QueueViewModel(PlaybackControls, queueLogger);
-        PlaybackSettings = new PlaybackSettingsViewModel(librarySettingsFilePath, audioEngine);
+        // Constructed after PlaybackControls so it can apply the saved volume curve to it
+        // immediately (see PlaybackSettingsViewModel's constructor) - PlaybackControls.Volume is
+        // then loaded below, after that curve is already in place, so it's the one actually used
+        // to compute the initial engine volume.
+        PlaybackSettings = new PlaybackSettingsViewModel(librarySettingsFilePath, audioEngine, PlaybackControls);
+        PlaybackControls.Volume = LibrarySettingsStore.LoadVolume(_settingsFilePath) ?? PlaybackControls.Volume;
 
         // Assigning the backing field directly (not the generated property) so loading the saved
         // width on startup doesn't immediately re-save the same value it was just loaded from.
@@ -51,6 +56,13 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public void PersistRightColumnWidth() =>
         LibrarySettingsStore.SaveRightColumnWidth(_settingsFilePath, RightColumnWidth.Value);
+
+    // Called on the volume slider's PointerReleased (not on every OnVolumeChanged tick) to avoid
+    // writing the settings file dozens of times during a single drag - same debounce-on-commit
+    // pattern as PersistRightColumnWidth (GridSplitter DragCompleted) and column widths (DataGrid
+    // PointerReleased).
+    public void PersistVolume() =>
+        LibrarySettingsStore.SaveVolume(_settingsFilePath, PlaybackControls.Volume);
 
     // Called once on startup, after the audio engine has finished initializing (Load() throws
     // until then). Reads tracks directly off disk rather than through the Library's own scan, since

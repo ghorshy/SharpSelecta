@@ -127,6 +127,9 @@
   <data name="SystemDefaultAudioDevice" xml:space="preserve">
     <value>System Default</value>
   </data>
+  <data name="UseLogarithmicVolumeScale" xml:space="preserve">
+    <value>Use logarithmic volume scale</value>
+  </data>
   <data name="NoLibraryFoldersAdded" xml:space="preserve">
     <value>No folders added yet</value>
   </data>

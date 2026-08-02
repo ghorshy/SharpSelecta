@@ -66,6 +66,31 @@ public class PlaybackControlsViewModelTests
     }
 
     [Test]
+    public async Task SettingVolume_WithLogarithmicCurve_AppliesTheSquaredAmplitudeToTheEngine()
+    {
+        var vm = CreateViewModel(out var audioEngine, out _);
+        vm.VolumeCurve = VolumeCurve.Logarithmic;
+        audioEngine.ClearReceivedCalls();
+
+        vm.Volume = 0.5;
+
+        audioEngine.Received(1).Volume = 0.25f;
+        await Assert.That(vm.Volume).IsEqualTo(0.5); // the slider position itself stays linear
+    }
+
+    [Test]
+    public async Task SettingVolumeCurve_ReappliesTheCurrentVolumeToTheEngineImmediately()
+    {
+        var vm = CreateViewModel(out var audioEngine, out _);
+        vm.Volume = 0.5;
+        audioEngine.ClearReceivedCalls();
+
+        vm.VolumeCurve = VolumeCurve.Logarithmic;
+
+        audioEngine.Received(1).Volume = 0.25f;
+    }
+
+    [Test]
     public async Task SettingPositionSeconds_SeeksTheEngine()
     {
         var vm = CreateViewModel(out var audioEngine, out _);

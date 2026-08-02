@@ -13,6 +13,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 {
     private readonly string _settingsFilePath;
     private readonly IAudioEngine _audioEngine;
+    private readonly PlaybackControlsViewModel _playbackControls;
 
     // Guards OnSelectedOutputDeviceDisplayNameChanged's persist/apply side effects while
     // ApplyPersistedOutputDevice resets the selection back to "System Default" internally (the
@@ -30,6 +31,9 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     [ObservableProperty]
     private string selectedOutputDeviceDisplayName = Strings.SystemDefaultAudioDevice;
 
+    [ObservableProperty]
+    private bool useLogarithmicVolumeScale;
+
     // Toggle saves immediately, like the Library column-visibility checkboxes - there's nothing
     // expensive to batch behind Apply/Cancel here, unlike folder paths which trigger a rescan.
     public bool HasPendingChanges => false;
@@ -38,10 +42,11 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
     public ICommand CancelCommand { get; } = new RelayCommand(() => { });
 
-    public PlaybackSettingsViewModel(string settingsFilePath, IAudioEngine audioEngine)
+    public PlaybackSettingsViewModel(string settingsFilePath, IAudioEngine audioEngine, PlaybackControlsViewModel playbackControls)
     {
         _settingsFilePath = settingsFilePath;
         _audioEngine = audioEngine;
+        _playbackControls = playbackControls;
         restoreQueueOnStartup = LibrarySettingsStore.LoadRestoreQueueOnStartup(settingsFilePath);
 
         // Assigning the backing field directly (not the generated property): the saved device name
@@ -52,10 +57,25 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         {
             selectedOutputDeviceDisplayName = savedDeviceName;
         }
+
+        var savedVolumeCurve = LibrarySettingsStore.LoadVolumeCurve(settingsFilePath);
+        useLogarithmicVolumeScale = savedVolumeCurve == VolumeCurve.Logarithmic;
+        // Goes through PlaybackControlsViewModel's own public setter (not a direct field write -
+        // that guard only applies to this class's own [ObservableProperty] fields), which
+        // immediately re-applies it to the (possibly still uninitialized) engine, same as the
+        // cached-volume pattern OwnAudioEngine already uses for Volume itself.
+        _playbackControls.VolumeCurve = savedVolumeCurve;
     }
 
     partial void OnRestoreQueueOnStartupChanged(bool value) =>
         LibrarySettingsStore.SaveRestoreQueueOnStartup(_settingsFilePath, value);
+
+    partial void OnUseLogarithmicVolumeScaleChanged(bool value)
+    {
+        var curve = value ? VolumeCurve.Logarithmic : VolumeCurve.Linear;
+        LibrarySettingsStore.SaveVolumeCurve(_settingsFilePath, curve);
+        _playbackControls.VolumeCurve = curve;
+    }
 
     partial void OnSelectedOutputDeviceDisplayNameChanged(string value)
     {

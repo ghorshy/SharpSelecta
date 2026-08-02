@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SharpSelecta.Core.Audio;
 using SharpSelecta.Core.Playback;
 
 namespace SharpSelecta.Core.Library;
@@ -95,8 +96,18 @@ public static partial class LibrarySettingsStore
     public static void SaveOutputDeviceName(string settingsFilePath, string? deviceName) =>
         Save(settingsFilePath, Default(settingsFilePath) with { OutputDeviceName = deviceName });
 
+    public static double? LoadVolume(string settingsFilePath) => Load(settingsFilePath)?.Volume;
+
+    public static void SaveVolume(string settingsFilePath, double volume) =>
+        Save(settingsFilePath, Default(settingsFilePath) with { Volume = volume });
+
+    public static VolumeCurve LoadVolumeCurve(string settingsFilePath) => Load(settingsFilePath)?.VolumeCurve ?? VolumeCurve.Linear;
+
+    public static void SaveVolumeCurve(string settingsFilePath, VolumeCurve curve) =>
+        Save(settingsFilePath, Default(settingsFilePath) with { VolumeCurve = curve });
+
     private static LibrarySettingsData Default(string settingsFilePath) =>
-        Load(settingsFilePath) ?? new LibrarySettingsData(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        Load(settingsFilePath) ?? new LibrarySettingsData(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 
     private static LibrarySettingsData? Load(string settingsFilePath)
     {
@@ -143,7 +154,9 @@ public static partial class LibrarySettingsStore
         IReadOnlyList<QueueEntryData>? QueueEntries,
         int? QueueCurrentIndex,
         double? QueuePositionSeconds,
-        string? OutputDeviceName);
+        string? OutputDeviceName,
+        double? Volume,
+        VolumeCurve? VolumeCurve);
 
     [JsonSerializable(typeof(LibrarySettingsData))]
     private partial class LibrarySettingsJsonContext : JsonSerializerContext
