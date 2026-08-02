@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -89,12 +90,17 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
     // Called once after the engine finishes initializing (App.axaml.cs) - IAudioEngine.GetOutputDevices
     // and SetOutputDevice both require that. Refreshes the device list and re-applies whatever device
-    // was selected in a previous session.
-    public void ApplyPersistedOutputDevice()
+    // was selected in a previous session. Both engine calls run off the calling (UI) thread -
+    // GetOutputDevices is a native enumeration and SetOutputDevice a full Stop/switch/Start cycle
+    // (~1s measured, see OwnAudioEngine) that was stalling first paint - while the UI-bound
+    // ObservableCollection updates stay on it.
+    public async Task ApplyPersistedOutputDeviceAsync()
     {
+        var devices = await Task.Run(_audioEngine.GetOutputDevices);
+
         OutputDeviceDisplayNames.Clear();
         OutputDeviceDisplayNames.Add(Strings.SystemDefaultAudioDevice);
-        foreach (var device in _audioEngine.GetOutputDevices())
+        foreach (var device in devices)
         {
             OutputDeviceDisplayNames.Add(device.Name);
         }
@@ -102,14 +108,21 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         if (!OutputDeviceDisplayNames.Contains(SelectedOutputDeviceDisplayName))
         {
             // The previously selected device isn't currently present (unplugged, renamed) - fall
-            // back to displaying "System Default" without touching the saved preference or calling
-            // SetOutputDevice a second time (that happens explicitly below regardless).
+            // back to displaying "System Default" without touching the saved preference, in case
+            // the device reappears on a later launch.
             _suppressOutputDeviceChangeSideEffects = true;
             SelectedOutputDeviceDisplayName = Strings.SystemDefaultAudioDevice;
             _suppressOutputDeviceChangeSideEffects = false;
         }
 
-        var deviceNameToApply = SelectedOutputDeviceDisplayName == Strings.SystemDefaultAudioDevice ? null : SelectedOutputDeviceDisplayName;
-        _audioEngine.SetOutputDevice(deviceNameToApply);
+        // The engine has just initialized on the system default, so "System Default" (whether
+        // saved as such or fallen back to above) needs no switch at all - re-applying it was a
+        // redundant ~1s Stop/switch/Start of the device the engine is already on. Only an
+        // explicitly saved, currently present device actually moves the engine off the default.
+        if (SelectedOutputDeviceDisplayName != Strings.SystemDefaultAudioDevice)
+        {
+            var deviceName = SelectedOutputDeviceDisplayName;
+            await Task.Run(() => _audioEngine.SetOutputDevice(deviceName));
+        }
     }
 }

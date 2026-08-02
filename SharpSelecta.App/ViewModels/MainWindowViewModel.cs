@@ -77,20 +77,27 @@ public partial class MainWindowViewModel : ViewModelBase
         if (state is null)
             return;
 
-        var restoredEntries = new List<QueueEntry>();
-        var restoredCurrentIndex = -1;
-        for (var i = 0; i < state.Entries.Count; i++)
+        // ReadTrackIfExists re-parses each entry's tags from disk - pushed off the UI thread so a
+        // long saved queue can't stall first paint (this runs during startup, on the dispatcher).
+        var (restoredEntries, restoredCurrentIndex) = await Task.Run(() =>
         {
-            var savedEntry = state.Entries[i];
-            var track = MusicLibraryScanner.ReadTrackIfExists(savedEntry.FilePath);
-            if (track is null)
-                continue;
+            var entries = new List<QueueEntry>();
+            var currentIndex = -1;
+            for (var i = 0; i < state.Entries.Count; i++)
+            {
+                var savedEntry = state.Entries[i];
+                var track = MusicLibraryScanner.ReadTrackIfExists(savedEntry.FilePath);
+                if (track is null)
+                    continue;
 
-            if (i == state.CurrentIndex)
-                restoredCurrentIndex = restoredEntries.Count;
+                if (i == state.CurrentIndex)
+                    currentIndex = entries.Count;
 
-            restoredEntries.Add(new QueueEntry(track, savedEntry.Source));
-        }
+                entries.Add(new QueueEntry(track, savedEntry.Source));
+            }
+
+            return (entries, currentIndex);
+        });
 
         if (restoredEntries.Count == 0)
             return;

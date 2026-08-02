@@ -113,7 +113,7 @@ public partial class App : Application
     private static async Task InitializeAudioEngineAndRestoreStateAsync(IAudioEngine audioEngine, MainWindowViewModel mainWindowViewModel)
     {
         await Task.Run(() => audioEngine.InitializeAsync());
-        mainWindowViewModel.PlaybackSettings.ApplyPersistedOutputDevice();
+        await mainWindowViewModel.PlaybackSettings.ApplyPersistedOutputDeviceAsync();
         await mainWindowViewModel.RestoreQueueIfEnabledAsync();
     }
 }

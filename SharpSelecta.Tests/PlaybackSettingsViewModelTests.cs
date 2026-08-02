@@ -101,7 +101,7 @@ public class PlaybackSettingsViewModelTests
             ]);
             var vm = new PlaybackSettingsViewModel(settingsPath, audioEngine, CreatePlaybackControlsViewModel());
 
-            vm.ApplyPersistedOutputDevice();
+            await vm.ApplyPersistedOutputDeviceAsync();
 
             await Assert.That(vm.OutputDeviceDisplayNames).IsEquivalentTo(
                 [Strings.SystemDefaultAudioDevice, "Built-in Speakers", "Focusrite Scarlett 2i2"]);
@@ -125,10 +125,13 @@ public class PlaybackSettingsViewModelTests
             audioEngine.GetOutputDevices().Returns([new AudioOutputDevice("Built-in Speakers", true)]);
             var vm = new PlaybackSettingsViewModel(settingsPath, audioEngine, CreatePlaybackControlsViewModel());
 
-            vm.ApplyPersistedOutputDevice();
+            await vm.ApplyPersistedOutputDeviceAsync();
 
             await Assert.That(vm.SelectedOutputDeviceDisplayName).IsEqualTo(Strings.SystemDefaultAudioDevice);
-            audioEngine.Received(1).SetOutputDevice(null);
+            // Falling back to System Default must not switch devices at all - the engine has just
+            // initialized on the system default, and re-applying it costs a full ~1s native
+            // Stop/switch/Start cycle at startup.
+            audioEngine.DidNotReceive().SetOutputDevice(Arg.Any<string?>());
             // The fallback is a display-only affordance - the actual saved preference is left alone
             // in case the device (e.g. a USB DAC) gets plugged back in on a later launch.
             await Assert.That(LibrarySettingsStore.LoadOutputDeviceName(settingsPath)).IsEqualTo("Unplugged USB DAC");
