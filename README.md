@@ -11,7 +11,9 @@ Early stage, but already usable day to day:
 - Click an album tile to expand its tracklist in place; double-click to queue and play the whole album
 - Double-click any cover art for a full-resolution preview
 - Queue with drag-to-reorder, play-next, and repeat modes (off/all/one)
-- Play/pause, seek, volume, and a toggle between elapsed and remaining time
+- Play/pause, seek, volume (linear or logarithmic), and a toggle between elapsed and remaining time
+- Playback device selection, and the queue/current track/volume all persist across restarts
+- On Linux, integrates with playerctl and desktop media-key bindings (MPRIS)
 
 ## Requirements
 
@@ -37,6 +39,7 @@ dotnet test
 - [OwnAudioSharp](https://github.com/ModernMube/OwnAudioSharp) — audio engine (decode, mix, output)
 - [ATL.NET](https://github.com/Zeugma440/atldotnet) — reading audio tags and properties
 - [Serilog](https://github.com/serilog/serilog) — logging
+- [Tmds.DBus](https://github.com/tmds/Tmds.DBus) — MPRIS/playerctl integration on Linux
 - [TUnit](https://github.com/thomhurst/TUnit) + [NSubstitute](https://github.com/nsubstitute/NSubstitute) — testing
 
 ## TODO

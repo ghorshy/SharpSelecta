@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using SharpSelecta.App.Services;
+using SharpSelecta.App.Services.Mpris;
 using SharpSelecta.App.ViewModels;
 using SharpSelecta.App.Views;
 using SharpSelecta.Audio;
@@ -53,12 +54,28 @@ public partial class App : Application
             mainWindow.DataContext = mainWindowViewModel;
             desktop.MainWindow = mainWindow;
 
+            // Linux-only (MprisService.TryStartAsync no-ops elsewhere) - lets playerctl and
+            // Hyprland/GNOME/KDE's global media-key bindings control playback. Not awaited here
+            // (D-Bus connection setup shouldn't hold up showing the window); the Exit handler below
+            // only disposes it if it actually finished starting in time.
+            var mprisServiceTask = MprisService.TryStartAsync(
+                mainWindowViewModel.PlaybackControls, provider.GetRequiredService<ILogger<MprisService>>());
+
             // Disposes the singleton IAudioEngine (native mixer/source cleanup) on a normal exit,
             // instead of relying entirely on process teardown — but only after the current queue
             // state has been saved off (needs the engine's cached playback position, still alive).
             desktop.Exit += (_, _) =>
             {
                 mainWindowViewModel.PersistQueueStateIfEnabled();
+
+                // Not awaited (Exit isn't async-friendly) - a best-effort release of the D-Bus name;
+                // if the process exits before this completes, the bus daemon reclaims it anyway once
+                // the connection closes.
+                if (mprisServiceTask.IsCompletedSuccessfully && mprisServiceTask.Result is { } mprisService)
+                {
+                    _ = mprisService.DisposeAsync();
+                }
+
                 provider.Dispose();
             };
 
