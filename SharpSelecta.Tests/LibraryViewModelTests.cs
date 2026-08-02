@@ -15,6 +15,12 @@ public class LibraryViewModelTests
     private static string CreateTempSettingsPath() =>
         Path.Combine(Path.GetTempPath(), $"sharpselecta-library-vm-settings-{Guid.NewGuid():N}.json");
 
+    // Mirrors LibraryIndexStore's own private IndexFilePath derivation - ReconcileFoldersAsync
+    // creates this sibling file whenever a test configures at least one folder, same as
+    // QueueStateStore's sibling file for queue-touching tests in MainWindowViewModelTests.
+    private static string IndexFilePath(string settingsPath) =>
+        Path.Combine(Path.GetDirectoryName(settingsPath)!, $"{Path.GetFileNameWithoutExtension(settingsPath)}.library-index.db");
+
     private static LibraryViewModel CreateViewModel(
         out IAudioEngine audioEngine,
         out IFilePickerService filePickerService,
@@ -348,6 +354,7 @@ public class LibraryViewModelTests
         finally
         {
             File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
         }
     }
 
@@ -371,6 +378,7 @@ public class LibraryViewModelTests
         {
             root.Delete(recursive: true);
             File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
         }
     }
 
@@ -382,6 +390,35 @@ public class LibraryViewModelTests
         await vm.InitializeAsync();
 
         await Assert.That(vm.Tracks).IsEmpty();
+    }
+
+    [Test]
+    public async Task InitializeAsync_WhenIndexAlreadyHasMatchingTracks_HydratesFromIndexImmediately()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+        try
+        {
+            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+            File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), trackPath);
+            SettingsStore.SaveLibraryFolderPaths(settingsPath, [root.FullName]);
+            // Pre-populates the index directly (not through a LibraryViewModel) - simulates a
+            // previous session having already reconciled this folder.
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+            var vm = CreateViewModel(out _, out _, out _, settingsPath);
+            await vm.InitializeAsync();
+
+            await Assert.That(vm.Tracks.Count).IsEqualTo(1);
+            await Assert.That(vm.Tracks[0].Track.FilePath).IsEqualTo(trackPath);
+            await Assert.That(vm.Tracks[0].Track.Title).IsEqualTo("Test Song");
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+        }
     }
 
     [Test]
@@ -521,6 +558,7 @@ public class LibraryViewModelTests
         finally
         {
             File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
         }
     }
 
@@ -711,6 +749,7 @@ public class LibraryViewModelTests
         finally
         {
             File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
             if (Directory.Exists(cacheDirectory))
             {
                 Directory.Delete(cacheDirectory, recursive: true);

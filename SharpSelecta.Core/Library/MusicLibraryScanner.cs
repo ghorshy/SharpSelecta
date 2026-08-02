@@ -4,7 +4,9 @@ namespace SharpSelecta.Core.Library;
 
 public static class MusicLibraryScanner
 {
-    private static readonly string[] SupportedExtensions = [".mp3", ".flac", ".wav", ".m4a"];
+    // internal, not private: LibraryIndexStore's Reconcile reuses this same enumeration/filter
+    // logic rather than duplicating it.
+    internal static readonly string[] SupportedExtensions = [".mp3", ".flac", ".wav", ".m4a"];
 
     public static IReadOnlyList<Track> Scan(string folderPath)
     {
@@ -17,7 +19,9 @@ public static class MusicLibraryScanner
             .ToList();
     }
 
-    private static Track ReadTrack(string path)
+    // internal, not private: LibraryIndexStore's Reconcile reuses this same ATL tag-read for
+    // files it determines are new or changed, rather than duplicating the read/fallback logic.
+    internal static Track ReadTrack(string path)
     {
         var fileName = Path.GetFileName(path);
         var fileType = Path.GetExtension(path).TrimStart('.').ToUpperInvariant();

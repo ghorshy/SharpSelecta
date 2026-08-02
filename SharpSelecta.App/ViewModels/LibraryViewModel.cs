@@ -386,7 +386,20 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
                 LibraryFolderPaths.Add(folderPath);
             }
 
-            await LoadFoldersAsync();
+            // Paints whatever a previous session's Reconcile already persisted immediately - no
+            // filesystem walk, no ATL reads - before ReconcileFoldersAsync below verifies it
+            // against disk in the background. On a cold index (first-ever run) this is a no-op:
+            // hydrated is empty, so ReconcileFoldersAsync's own spinner-showing full scan runs
+            // exactly like it always has.
+            var hydrateStopwatch = Stopwatch.StartNew();
+            var hydrated = await Task.Run(() => LibraryIndexStore.LoadIndexed(_settingsFilePath, folderPaths));
+            if (hydrated.Count > 0)
+            {
+                _logger.LogInformation("Hydrated {TrackCount} tracks from index in {ElapsedMs} ms", hydrated.Count, hydrateStopwatch.ElapsedMilliseconds);
+                Tracks.ReplaceAll(hydrated.Select(track => new LibraryTrackViewModel(track, this)));
+            }
+
+            await ReconcileFoldersAsync();
         }
     }
 
@@ -399,7 +412,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
         LibraryFolderPaths.Add(folderPath);
         SettingsStore.SaveLibraryFolderPaths(_settingsFilePath, LibraryFolderPaths);
-        await LoadFoldersAsync();
+        await ReconcileFoldersAsync();
     }
 
     [RelayCommand]
@@ -432,18 +445,22 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         }
 
         SettingsStore.SaveLibraryFolderPaths(_settingsFilePath, LibraryFolderPaths);
-        await LoadFoldersAsync();
+        await ReconcileFoldersAsync();
     }
 
     [RelayCommand]
     private void CancelPendingFolderChanges() => SyncPendingLibraryFolderPaths();
 
-    // Manual refresh entry point (e.g. an F5 action) — re-scans the currently configured folders
-    // from scratch, picking up tag/file changes without requiring a folder add/remove round trip.
+    // Manual refresh entry point (e.g. an F5 action) — re-verifies the currently configured
+    // folders against the index, picking up tag/file changes without requiring a folder add/
+    // remove round trip.
     [RelayCommand]
-    private Task RescanAsync() => LoadFoldersAsync();
+    private Task RescanAsync() => ReconcileFoldersAsync();
 
-    private async Task LoadFoldersAsync()
+    // Diffs the configured folders against LibraryIndexStore's persisted index instead of
+    // re-reading every file's tags from scratch - ATL only runs for files that are new or whose
+    // last-write-time/size changed since they were last indexed (see LibraryIndexStore.Reconcile).
+    private async Task ReconcileFoldersAsync()
     {
         if (LibraryFolderPaths.Count == 0)
         {
@@ -453,38 +470,33 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         }
 
         var folderPaths = LibraryFolderPaths.ToList();
-        var failedFolders = new List<string>();
 
-        IsLoadingLibrary = true;
+        // Only shows the spinner when there's nothing on screen yet - if Tracks already has
+        // content (from InitializeAsync's hydration step, or just from being the currently-loaded
+        // library), the grid keeps showing it while this reconcile verifies/updates underneath.
+        var showSpinner = Tracks.Count == 0;
+        if (showSpinner)
+        {
+            IsLoadingLibrary = true;
+        }
+
         try
         {
             var stopwatch = Stopwatch.StartNew();
-            var tracks = await Task.Run(() =>
-            {
-                var scanned = new List<Track>();
-                foreach (var folderPath in folderPaths)
-                {
-                    try
-                    {
-                        scanned.AddRange(MusicLibraryScanner.Scan(folderPath));
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to scan library folder {FolderPath}", folderPath);
-                        failedFolders.Add(folderPath);
-                    }
-                }
+            var result = await Task.Run(() => LibraryIndexStore.Reconcile(_settingsFilePath, folderPaths));
 
-                return scanned.DistinctBy(t => t.FilePath).ToList();
-            });
-
-            _logger.LogInformation("Scanned {TrackCount} tracks in {ElapsedMs} ms", tracks.Count, stopwatch.ElapsedMilliseconds);
-            Tracks.ReplaceAll(tracks.Select(track => new LibraryTrackViewModel(track, this)));
-            StatusMessage = failedFolders.Count > 0 ? Strings.FailedToScanFolder(string.Join(", ", failedFolders)) : null;
+            _logger.LogInformation("Reconciled {TrackCount} tracks in {ElapsedMs} ms", result.Tracks.Count, stopwatch.ElapsedMilliseconds);
+            Tracks.ReplaceAll(result.Tracks.Select(track => new LibraryTrackViewModel(track, this)));
+            StatusMessage = result.FailedFolders.Count > 0
+                ? Strings.FailedToScanFolder(string.Join(", ", result.FailedFolders))
+                : null;
         }
         finally
         {
-            IsLoadingLibrary = false;
+            if (showSpinner)
+            {
+                IsLoadingLibrary = false;
+            }
         }
     }
 
