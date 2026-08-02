@@ -19,25 +19,25 @@ public class PlaybackSettingsViewModelTests
     [Test]
     public async Task SelectedOutputDeviceDisplayName_DefaultsToSystemDefault()
     {
-        var vm = new PlaybackSettingsViewModel(CreateTempSettingsPath(), Substitute.For<IAudioEngine>(), CreatePlaybackControlsViewModel());
+        var vm = new PlaybackSettingsViewModel(CreateTempSettingsPath(), Substitute.For<IOutputDeviceService>(), CreatePlaybackControlsViewModel());
 
         await Assert.That(vm.SelectedOutputDeviceDisplayName).IsEqualTo(Strings.SystemDefaultAudioDevice);
         await Assert.That(vm.OutputDeviceDisplayNames).IsEquivalentTo([Strings.SystemDefaultAudioDevice]);
     }
 
     [Test]
-    public async Task SettingSelectedOutputDeviceDisplayName_PersistsAndAppliesToTheEngine()
+    public async Task SettingSelectedOutputDeviceDisplayName_PersistsAndAppliesToTheService()
     {
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            var audioEngine = Substitute.For<IAudioEngine>();
-            var vm = new PlaybackSettingsViewModel(settingsPath, audioEngine, CreatePlaybackControlsViewModel());
+            var outputDeviceService = Substitute.For<IOutputDeviceService>();
+            var vm = new PlaybackSettingsViewModel(settingsPath, outputDeviceService, CreatePlaybackControlsViewModel());
 
             vm.SelectedOutputDeviceDisplayName = "Focusrite Scarlett 2i2";
             await vm.OutputDeviceSwitchTask;
 
-            audioEngine.Received(1).SetOutputDevice("Focusrite Scarlett 2i2");
+            await outputDeviceService.Received(1).SetOutputDeviceAsync("Focusrite Scarlett 2i2");
             await Assert.That(SettingsStore.LoadOutputDeviceName(settingsPath)).IsEqualTo("Focusrite Scarlett 2i2");
         }
         finally
@@ -52,15 +52,15 @@ public class PlaybackSettingsViewModelTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            var audioEngine = Substitute.For<IAudioEngine>();
-            var vm = new PlaybackSettingsViewModel(settingsPath, audioEngine, CreatePlaybackControlsViewModel());
+            var outputDeviceService = Substitute.For<IOutputDeviceService>();
+            var vm = new PlaybackSettingsViewModel(settingsPath, outputDeviceService, CreatePlaybackControlsViewModel());
             vm.SelectedOutputDeviceDisplayName = "Focusrite Scarlett 2i2";
             await vm.OutputDeviceSwitchTask;
 
             vm.SelectedOutputDeviceDisplayName = Strings.SystemDefaultAudioDevice;
             await vm.OutputDeviceSwitchTask;
 
-            audioEngine.Received(1).SetOutputDevice(null);
+            await outputDeviceService.Received(1).SetOutputDeviceAsync(null);
             await Assert.That(SettingsStore.LoadOutputDeviceName(settingsPath)).IsNull();
         }
         finally
@@ -70,18 +70,18 @@ public class PlaybackSettingsViewModelTests
     }
 
     [Test]
-    public async Task Constructor_LoadsAPreviouslySavedDeviceNameWithoutReSavingOrTouchingTheEngine()
+    public async Task Constructor_LoadsAPreviouslySavedDeviceNameWithoutReSavingOrTouchingTheService()
     {
         var settingsPath = CreateTempSettingsPath();
         try
         {
             SettingsStore.SaveOutputDeviceName(settingsPath, "Focusrite Scarlett 2i2");
-            var audioEngine = Substitute.For<IAudioEngine>();
+            var outputDeviceService = Substitute.For<IOutputDeviceService>();
 
-            var vm = new PlaybackSettingsViewModel(settingsPath, audioEngine, CreatePlaybackControlsViewModel());
+            var vm = new PlaybackSettingsViewModel(settingsPath, outputDeviceService, CreatePlaybackControlsViewModel());
 
             await Assert.That(vm.SelectedOutputDeviceDisplayName).IsEqualTo("Focusrite Scarlett 2i2");
-            audioEngine.DidNotReceive().SetOutputDevice(Arg.Any<string?>());
+            await outputDeviceService.DidNotReceive().SetOutputDeviceAsync(Arg.Any<string?>());
         }
         finally
         {
@@ -96,20 +96,20 @@ public class PlaybackSettingsViewModelTests
         try
         {
             SettingsStore.SaveOutputDeviceName(settingsPath, "Focusrite Scarlett 2i2");
-            var audioEngine = Substitute.For<IAudioEngine>();
-            audioEngine.GetOutputDevices().Returns(
+            var outputDeviceService = Substitute.For<IOutputDeviceService>();
+            outputDeviceService.GetOutputDevicesAsync().Returns(Task.FromResult<IReadOnlyList<AudioOutputDevice>>(
             [
                 new AudioOutputDevice("Built-in Speakers", true),
                 new AudioOutputDevice("Focusrite Scarlett 2i2", false),
-            ]);
-            var vm = new PlaybackSettingsViewModel(settingsPath, audioEngine, CreatePlaybackControlsViewModel());
+            ]));
+            var vm = new PlaybackSettingsViewModel(settingsPath, outputDeviceService, CreatePlaybackControlsViewModel());
 
             await vm.ApplyPersistedOutputDeviceAsync();
 
             await Assert.That(vm.OutputDeviceDisplayNames).IsEquivalentTo(
                 [Strings.SystemDefaultAudioDevice, "Built-in Speakers", "Focusrite Scarlett 2i2"]);
             await Assert.That(vm.SelectedOutputDeviceDisplayName).IsEqualTo("Focusrite Scarlett 2i2");
-            audioEngine.Received(1).SetOutputDevice("Focusrite Scarlett 2i2");
+            await outputDeviceService.Received(1).SetOutputDeviceAsync("Focusrite Scarlett 2i2");
         }
         finally
         {
@@ -124,17 +124,17 @@ public class PlaybackSettingsViewModelTests
         try
         {
             SettingsStore.SaveOutputDeviceName(settingsPath, "Unplugged USB DAC");
-            var audioEngine = Substitute.For<IAudioEngine>();
-            audioEngine.GetOutputDevices().Returns([new AudioOutputDevice("Built-in Speakers", true)]);
-            var vm = new PlaybackSettingsViewModel(settingsPath, audioEngine, CreatePlaybackControlsViewModel());
+            var outputDeviceService = Substitute.For<IOutputDeviceService>();
+            outputDeviceService.GetOutputDevicesAsync().Returns(Task.FromResult<IReadOnlyList<AudioOutputDevice>>(
+                [new AudioOutputDevice("Built-in Speakers", true)]));
+            var vm = new PlaybackSettingsViewModel(settingsPath, outputDeviceService, CreatePlaybackControlsViewModel());
 
             await vm.ApplyPersistedOutputDeviceAsync();
 
             await Assert.That(vm.SelectedOutputDeviceDisplayName).IsEqualTo(Strings.SystemDefaultAudioDevice);
             // Falling back to System Default must not switch devices at all - the engine has just
-            // initialized on the system default, and re-applying it costs a full ~1s native
-            // Stop/switch/Start cycle at startup.
-            audioEngine.DidNotReceive().SetOutputDevice(Arg.Any<string?>());
+            // initialized on the system default, so there's nothing to move/re-apply.
+            await outputDeviceService.DidNotReceive().SetOutputDeviceAsync(Arg.Any<string?>());
             // The fallback is a display-only affordance - the actual saved preference is left alone
             // in case the device (e.g. a USB DAC) gets plugged back in on a later launch.
             await Assert.That(SettingsStore.LoadOutputDeviceName(settingsPath)).IsEqualTo("Unplugged USB DAC");
@@ -148,7 +148,7 @@ public class PlaybackSettingsViewModelTests
     [Test]
     public async Task UseLogarithmicVolumeScale_DefaultsToFalse()
     {
-        var vm = new PlaybackSettingsViewModel(CreateTempSettingsPath(), Substitute.For<IAudioEngine>(), CreatePlaybackControlsViewModel());
+        var vm = new PlaybackSettingsViewModel(CreateTempSettingsPath(), Substitute.For<IOutputDeviceService>(), CreatePlaybackControlsViewModel());
 
         await Assert.That(vm.UseLogarithmicVolumeScale).IsFalse();
     }
@@ -160,7 +160,7 @@ public class PlaybackSettingsViewModelTests
         try
         {
             var playbackControls = CreatePlaybackControlsViewModel();
-            var vm = new PlaybackSettingsViewModel(settingsPath, Substitute.For<IAudioEngine>(), playbackControls);
+            var vm = new PlaybackSettingsViewModel(settingsPath, Substitute.For<IOutputDeviceService>(), playbackControls);
 
             vm.UseLogarithmicVolumeScale = true;
 
@@ -182,7 +182,7 @@ public class PlaybackSettingsViewModelTests
             SettingsStore.SaveVolumeCurve(settingsPath, VolumeCurve.Logarithmic);
             var playbackControls = CreatePlaybackControlsViewModel();
 
-            var vm = new PlaybackSettingsViewModel(settingsPath, Substitute.For<IAudioEngine>(), playbackControls);
+            var vm = new PlaybackSettingsViewModel(settingsPath, Substitute.For<IOutputDeviceService>(), playbackControls);
 
             await Assert.That(vm.UseLogarithmicVolumeScale).IsTrue();
             await Assert.That(playbackControls.VolumeCurve).IsEqualTo(VolumeCurve.Logarithmic);

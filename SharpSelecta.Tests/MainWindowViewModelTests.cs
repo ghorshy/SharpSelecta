@@ -19,6 +19,7 @@ public class MainWindowViewModelTests
         var filePickerService = Substitute.For<IFilePickerService>();
         return new MainWindowViewModel(
             audioEngine,
+            Substitute.For<IOutputDeviceService>(),
             filePickerService,
             settingsFilePath ?? CreateTempSettingsPath(),
             NullLogger<PlaybackControlsViewModel>.Instance,

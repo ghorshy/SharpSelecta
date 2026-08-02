@@ -30,6 +30,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public MainWindowViewModel(
         IAudioEngine audioEngine,
+        IOutputDeviceService outputDeviceService,
         IFilePickerService filePickerService,
         string settingsFilePath,
         ILogger<PlaybackControlsViewModel> playbackControlsLogger,
@@ -44,7 +45,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Queue = new QueueViewModel(PlaybackControls, queueLogger);
         // Constructed after PlaybackControls so it can hydrate the saved volume curve and volume
         // into it immediately (see PlaybackSettingsViewModel's constructor).
-        PlaybackSettings = new PlaybackSettingsViewModel(settingsFilePath, audioEngine, PlaybackControls);
+        PlaybackSettings = new PlaybackSettingsViewModel(settingsFilePath, outputDeviceService, PlaybackControls);
 
         // Assigning the backing field directly (not the generated property) so loading the saved
         // width on startup doesn't immediately re-save the same value it was just loaded from.

@@ -13,7 +13,7 @@ namespace SharpSelecta.App.ViewModels;
 public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategoryViewModel
 {
     private readonly string _settingsFilePath;
-    private readonly IAudioEngine _audioEngine;
+    private readonly IOutputDeviceService _outputDeviceService;
     private readonly PlaybackControlsViewModel _playbackControls;
 
     // Guards OnSelectedOutputDeviceDisplayNameChanged's persist/apply side effects while
@@ -44,10 +44,10 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
     public ICommand CancelCommand { get; } = new RelayCommand(() => { });
 
-    public PlaybackSettingsViewModel(string settingsFilePath, IAudioEngine audioEngine, PlaybackControlsViewModel playbackControls)
+    public PlaybackSettingsViewModel(string settingsFilePath, IOutputDeviceService outputDeviceService, PlaybackControlsViewModel playbackControls)
     {
         _settingsFilePath = settingsFilePath;
-        _audioEngine = audioEngine;
+        _outputDeviceService = outputDeviceService;
         _playbackControls = playbackControls;
         restoreQueueOnStartup = SettingsStore.LoadRestoreQueueOnStartup(settingsFilePath);
 
@@ -85,7 +85,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
     // The in-flight switch from OnSelectedOutputDeviceDisplayNameChanged - fire-and-forget from
     // the UI's perspective (a property-changed handler can't await), kept awaitable so tests can
-    // deterministically wait for the engine call, same as RefreshPositionAsync's rationale.
+    // deterministically wait for the device call, same as RefreshPositionAsync's rationale.
     public Task OutputDeviceSwitchTask { get; private set; } = Task.CompletedTask;
 
     partial void OnSelectedOutputDeviceDisplayNameChanged(string value)
@@ -95,20 +95,17 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
         var deviceName = value == Strings.SystemDefaultAudioDevice ? null : value;
         SettingsStore.SaveOutputDeviceName(_settingsFilePath, deviceName);
-        // Off the UI thread: this fires from the Settings ComboBox, and SetOutputDevice is a
-        // blocking ~1s native Stop/switch/Start cycle (see OwnAudioEngine).
-        OutputDeviceSwitchTask = Task.Run(() => _audioEngine.SetOutputDevice(deviceName));
+        OutputDeviceSwitchTask = _outputDeviceService.SetOutputDeviceAsync(deviceName);
     }
 
-    // Called once after the engine finishes initializing (App.axaml.cs) - IAudioEngine.GetOutputDevices
-    // and SetOutputDevice both require that. Refreshes the device list and re-applies whatever device
-    // was selected in a previous session. Both engine calls run off the calling (UI) thread -
-    // GetOutputDevices is a native enumeration and SetOutputDevice a full Stop/switch/Start cycle
-    // (~1s measured, see OwnAudioEngine) that was stalling first paint - while the UI-bound
-    // ObservableCollection updates stay on it.
+    // Called once after the engine finishes initializing (App.axaml.cs) - the engine-backed
+    // service requires that, and the sound-server one needs the engine's stream to exist before a
+    // move can target it. Refreshes the device list and re-applies whatever device was selected
+    // in a previous session. The service owns keeping its blocking work off the calling (UI)
+    // thread; only the UI-bound ObservableCollection updates happen on it.
     public async Task ApplyPersistedOutputDeviceAsync()
     {
-        var devices = await Task.Run(_audioEngine.GetOutputDevices);
+        var devices = await _outputDeviceService.GetOutputDevicesAsync();
 
         OutputDeviceDisplayNames.Clear();
         OutputDeviceDisplayNames.Add(Strings.SystemDefaultAudioDevice);
@@ -127,14 +124,13 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
             _suppressOutputDeviceChangeSideEffects = false;
         }
 
-        // The engine has just initialized on the system default, so "System Default" (whether
-        // saved as such or fallen back to above) needs no switch at all - re-applying it was a
-        // redundant ~1s Stop/switch/Start of the device the engine is already on. Only an
-        // explicitly saved, currently present device actually moves the engine off the default.
+        // "System Default" (whether saved as such or fallen back to above) needs no call at all
+        // at startup: the engine has just initialized on the system default, and under the
+        // sound-server service the stream lands wherever WirePlumber last remembered anyway.
+        // Only an explicitly saved, currently present device is worth actually applying.
         if (SelectedOutputDeviceDisplayName != Strings.SystemDefaultAudioDevice)
         {
-            var deviceName = SelectedOutputDeviceDisplayName;
-            await Task.Run(() => _audioEngine.SetOutputDevice(deviceName));
+            await _outputDeviceService.SetOutputDeviceAsync(SelectedOutputDeviceDisplayName);
         }
     }
 }

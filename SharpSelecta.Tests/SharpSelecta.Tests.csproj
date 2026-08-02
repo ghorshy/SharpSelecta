@@ -13,6 +13,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\SharpSelecta.App\SharpSelecta.App.csproj" />
+      <ProjectReference Include="..\SharpSelecta.Audio\SharpSelecta.Audio.csproj" />
       <ProjectReference Include="..\SharpSelecta.Core\SharpSelecta.Core.csproj" />
     </ItemGroup>
 

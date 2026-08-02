@@ -30,7 +30,7 @@ public class SettingsWindowViewModelTests
             Substitute.For<IAudioEngine>(), new PlaybackQueue(), NullLogger<PlaybackControlsViewModel>.Instance);
         return new PlaybackSettingsViewModel(
             CreateTempSettingsPath(),
-            Substitute.For<IAudioEngine>(),
+            Substitute.For<IOutputDeviceService>(),
             playbackControls);
     }
 

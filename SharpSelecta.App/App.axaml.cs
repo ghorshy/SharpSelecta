@@ -46,6 +46,7 @@ public partial class App : Application
 
             var mainWindowViewModel = new MainWindowViewModel(
                 audioEngine,
+                provider.GetRequiredService<IOutputDeviceService>(),
                 provider.GetRequiredService<IFilePickerService>(),
                 settingsFilePath,
                 provider.GetRequiredService<ILogger<PlaybackControlsViewModel>>(),
@@ -109,10 +110,12 @@ public partial class App : Application
     }
 
     // Everything chained after the engine init call — device selection, then queue restore — needs
-    // IAudioEngine to be fully initialized first (Load()/GetOutputDevices()/SetOutputDevice() all
-    // throw or no-op until then), hence sequencing rather than running in parallel with it. The
-    // awaits themselves don't need Task.Run's isolation the way the engine init call does: awaiting
-    // (rather than blocking on) a continuation is safe even before the dispatcher loop has started.
+    // the engine to be fully initialized first: Load() throws until then, and so does the
+    // engine-backed IOutputDeviceService fallback; the PipeWire-routing one additionally needs the
+    // engine's output stream to already exist (there's nothing to move otherwise). Hence sequencing
+    // rather than running in parallel with it. The awaits themselves don't need Task.Run's isolation
+    // the way the engine init call does: awaiting (rather than blocking on) a continuation is safe
+    // even before the dispatcher loop has started.
     private static async Task InitializeAudioEngineAndRestoreStateAsync(IAudioEngine audioEngine, MainWindowViewModel mainWindowViewModel)
     {
         await Task.Run(() => audioEngine.InitializeAsync());
