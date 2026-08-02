@@ -6,7 +6,7 @@ Cross-platform, open-source music player built on .NET 10 + Avalonia.
 
 Early stage, but already usable day to day:
 
-- Point it at one or more folders and it scans your library (MP3, FLAC, WAV, M4A — including AAC and ALAC)
+- Point it at one or more folders and it scans your library (MP3, FLAC, WAV, M4A — including AAC and ALAC), then remembers it in a local index so later launches start instantly and only re-check what actually changed on disk
 - Browse as a sortable, column-configurable table, or as an album grid with cover art (zoomable, sortable by title/artist/year)
 - Click an album tile to expand its tracklist in place; double-click to queue and play the whole album
 - Double-click any cover art for a full-resolution preview
@@ -38,6 +38,7 @@ dotnet test
 - [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) — MVVM (observable properties, commands)
 - [OwnAudioSharp](https://github.com/ModernMube/OwnAudioSharp) — audio engine (decode, mix, output)
 - [ATL.NET](https://github.com/Zeugma440/atldotnet) — reading audio tags and properties
+- [Microsoft.Data.Sqlite](https://github.com/dotnet/efcore) — local library index
 - [Serilog](https://github.com/serilog/serilog) — logging
 - [Tmds.DBus](https://github.com/tmds/Tmds.DBus) — MPRIS/playerctl integration on Linux
 - [TUnit](https://github.com/thomhurst/TUnit) + [NSubstitute](https://github.com/nsubstitute/NSubstitute) — testing
