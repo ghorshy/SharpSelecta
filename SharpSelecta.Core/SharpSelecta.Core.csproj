@@ -7,8 +7,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="z440.atl.core" Version="7.15.3"/>
-        <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.10"/>
+        <PackageReference Include="z440.atl.core" Version="7.16.0" />
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
         <!-- Microsoft.Data.Sqlite 10.0.10 pulls SQLitePCLRaw 2.1.11 transitively, which carries a
              known high-severity advisory (GHSA-2m69-gcr7-jv3q) - pinned up to the patched 3.0.5
              directly until Microsoft.Data.Sqlite itself bumps its own dependency. -->

@@ -7,8 +7,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="NSubstitute" Version="6.0.0" />
-      <PackageReference Include="TUnit" Version="1.63.0" />
+      <PackageReference Include="NSubstitute" Version="6.2.0" />
+      <PackageReference Include="TUnit" Version="1.65.68" />
     </ItemGroup>
 
     <ItemGroup>
