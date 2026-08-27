@@ -1,0 +1,22 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SharpSelecta.App.ViewModels"
+             xmlns:styles="using:SharpSelecta.App.Styles"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="200"
+             x:Class="SharpSelecta.App.Views.KeyboardShortcutsSettingsView"
+             x:DataType="vm:KeyboardShortcutsViewModel">
+
+    <ItemsControl ItemsSource="{Binding Shortcuts}">
+        <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:ShortcutEntry">
+                <Grid ColumnDefinitions="120,*" Margin="{styles:Spacing Bottom=XXS}">
+                    <TextBlock Grid.Column="0" Text="{Binding Shortcut}" FontWeight="Bold" />
+                    <TextBlock Grid.Column="1" Text="{Binding Description}" TextWrapping="Wrap" />
+                </Grid>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+</UserControl>

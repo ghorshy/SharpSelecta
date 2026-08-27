@@ -28,6 +28,9 @@
                     <DataTemplate DataType="vm:PlaybackSettingsViewModel">
                         <views:PlaybackSettingsView />
                     </DataTemplate>
+                    <DataTemplate DataType="vm:KeyboardShortcutsViewModel">
+                        <views:KeyboardShortcutsSettingsView />
+                    </DataTemplate>
                 </ContentControl.DataTemplates>
             </ContentControl>
         </Border>

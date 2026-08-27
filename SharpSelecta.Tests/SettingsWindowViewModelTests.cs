@@ -38,11 +38,12 @@ public class SettingsWindowViewModelTests
         new(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel());
 
     [Test]
-    public async Task Categories_ContainsLibraryAndPlayback()
+    public async Task Categories_ContainsLibraryPlaybackAndKeyboardShortcuts()
     {
         var vm = CreateViewModel();
 
-        await Assert.That(vm.Categories).IsEquivalentTo([Strings.SettingsCategoryLibrary, Strings.SettingsCategoryPlayback]);
+        await Assert.That(vm.Categories).IsEquivalentTo(
+            [Strings.SettingsCategoryLibrary, Strings.SettingsCategoryPlayback, Strings.SettingsCategoryKeyboardShortcuts]);
     }
 
     [Test]
@@ -92,5 +93,15 @@ public class SettingsWindowViewModelTests
         vm.SelectedCategory = Strings.SettingsCategoryPlayback;
 
         await Assert.That(vm.SelectedCategoryViewModel).IsEqualTo(playback);
+    }
+
+    [Test]
+    public async Task SelectedCategoryViewModel_AfterSwitchingToKeyboardShortcuts_ResolvesToKeyboardShortcuts()
+    {
+        var vm = CreateViewModel();
+
+        vm.SelectedCategory = Strings.SettingsCategoryKeyboardShortcuts;
+
+        await Assert.That(vm.SelectedCategoryViewModel).IsEqualTo(vm.KeyboardShortcuts);
     }
 }
