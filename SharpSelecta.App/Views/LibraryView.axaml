@@ -15,7 +15,7 @@
 
     <DockPanel LastChildFill="True">
         <!-- Temporary: minimal view-mode switcher, not yet styled to show which one is active. -->
-        <DockPanel DockPanel.Dock="Top" Margin="{styles:Spacing Bottom=XS}" IsVisible="{Binding HasTracks}">
+        <DockPanel DockPanel.Dock="Top" LastChildFill="False" Margin="{styles:Spacing Bottom=XS}" IsVisible="{Binding HasTracks}">
             <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="{styles:SpacingValue XS}">
                 <Button Content="List" Command="{Binding SetViewModeCommand}" CommandParameter="{x:Static core:LibraryViewMode.TrackList}" />
                 <Button Content="Albums" Command="{Binding SetViewModeCommand}" CommandParameter="{x:Static core:LibraryViewMode.AlbumGrid}" />
