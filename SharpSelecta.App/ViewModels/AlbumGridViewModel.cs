@@ -125,20 +125,45 @@ public partial class AlbumGridViewModel : ViewModelBase
 
         var query = _library.SearchQuery;
         var albums = string.IsNullOrWhiteSpace(query)
-            ? _library.Albums
-            : _library.Albums.Where(a => MatchesSearch(a, query));
+            ? SortAlbums(_library.Albums)
+            : _library.Albums
+                .Select(a => (Album: a, Score: SearchScore(a, query)))
+                .Where(x => x.Score is not null)
+                .OrderByDescending(x => x.Score)
+                .Select(x => x.Album);
 
-        var rows = SortAlbums(albums)
+        var rows = albums
             .Chunk(_columnCount)
             .Select(tiles => new AlbumRowViewModel(tiles));
 
         Rows.ReplaceAll(rows);
     }
 
-    private static bool MatchesSearch(AlbumViewModel album, string query) =>
-        FuzzySearch.Score(album.Title, query) is not null ||
-        FuzzySearch.Score(album.Artist, query) is not null ||
-        album.Tracks.Any(t => FuzzySearch.Score(t.Track, query) is not null);
+    private static int? SearchScore(AlbumViewModel album, string query)
+    {
+        int? best = null;
+
+        var titleScore = FuzzySearch.Score(album.Title, query);
+        if (titleScore is not null)
+            best = titleScore.Value + 30;
+
+        var artistScore = FuzzySearch.Score(album.Artist, query);
+        if (artistScore is not null)
+        {
+            var weighted = artistScore.Value + 15;
+            if (best is null || weighted > best)
+                best = weighted;
+        }
+
+        foreach (var track in album.Tracks)
+        {
+            var trackScore = FuzzySearch.Score(track.Track, query);
+            if (trackScore is not null && (best is null || trackScore.Value > best))
+                best = trackScore.Value;
+        }
+
+        return best;
+    }
 
     private IEnumerable<AlbumViewModel> SortAlbums(IEnumerable<AlbumViewModel> albums) => SortMode switch
     {

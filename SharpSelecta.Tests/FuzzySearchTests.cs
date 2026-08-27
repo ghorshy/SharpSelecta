@@ -95,4 +95,34 @@ public class FuzzySearchTests
 
         await Assert.That(FuzzySearch.Score(track, "untagged")).IsNotNull();
     }
+
+    [Test]
+    public async Task Score_Track_PrefersATitleMatchOverAnEquallyStrongArtistOrAlbumMatch()
+    {
+        var titleMatch = new Track("/music/a.mp3", "a.mp3") { Title = "Wonder", Artist = "Unrelated", Album = "Unrelated" };
+        var artistMatch = new Track("/music/b.mp3", "b.mp3") { Title = "Unrelated", Artist = "Wonder", Album = "Unrelated" };
+        var albumMatch = new Track("/music/c.mp3", "c.mp3") { Title = "Unrelated", Artist = "Unrelated", Album = "Wonder" };
+
+        var titleScore = FuzzySearch.Score(titleMatch, "wonder");
+        var artistScore = FuzzySearch.Score(artistMatch, "wonder");
+        var albumScore = FuzzySearch.Score(albumMatch, "wonder");
+
+        await Assert.That(titleScore!.Value).IsGreaterThan(artistScore!.Value);
+        await Assert.That(artistScore!.Value).IsGreaterThan(albumScore!.Value);
+    }
+
+    [Test]
+    public async Task Score_Track_TitleMatchOutranksAnArtistMatchThatWouldOtherwiseTie()
+    {
+        // Both fields match "milli" as an exact, word-start substring - same raw Score(string?,
+        // string) result - so without field weighting these would tie and fall back to whatever
+        // order the tracks happened to be in.
+        var militaryDance = new Track("/music/a.mp3", "a.mp3") { Title = "Millitary Dance", Artist = "Some Artist" };
+        var milliVanilli = new Track("/music/b.mp3", "b.mp3") { Title = "Girl You Know It's True", Artist = "Milli Vanilli" };
+
+        var militaryDanceScore = FuzzySearch.Score(militaryDance, "milli");
+        var milliVanilliScore = FuzzySearch.Score(milliVanilli, "milli");
+
+        await Assert.That(militaryDanceScore!.Value).IsGreaterThan(milliVanilliScore!.Value);
+    }
 }

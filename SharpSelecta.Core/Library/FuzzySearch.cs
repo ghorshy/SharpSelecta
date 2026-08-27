@@ -37,11 +37,20 @@ public static class FuzzySearch
     public static int? Score(Track track, string query)
     {
         int? best = null;
-        foreach (var candidate in new[] { track.Title ?? track.DisplayName, track.Artist, track.Album })
+        foreach (var (candidate, fieldWeight) in new[]
+                 {
+                     (track.Title ?? track.DisplayName, 30),
+                     (track.Artist, 15),
+                     (track.Album, 0),
+                 })
         {
             var score = Score(candidate, query);
-            if (score is not null && (best is null || score > best))
-                best = score;
+            if (score is null)
+                continue;
+
+            var weighted = score.Value + fieldWeight;
+            if (best is null || weighted > best)
+                best = weighted;
         }
 
         return best;

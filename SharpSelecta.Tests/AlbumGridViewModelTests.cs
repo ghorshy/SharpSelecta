@@ -307,4 +307,25 @@ public class AlbumGridViewModelTests
 
         await Assert.That(vm.Grid.Rows.Sum(r => r.Tiles.Count)).IsEqualTo(2);
     }
+
+    [Test]
+    public async Task SearchQuery_RanksAlbumsByRelevanceInsteadOfTheCurrentSortMode()
+    {
+        // Alphabetically-by-artist, "Aardvark" (artist starting with A) would always sort before
+        // "Millitary Dance" (artist "Thirtzy", starting with T) - but the album whose own Title
+        // matches the query should still rank first once a search is active, regardless of the
+        // manually selected sort mode.
+        var vm = CreateLibraryViewModel();
+        vm.Tracks.Add(new LibraryTrackViewModel(
+            new Track("/music/a.mp3", "a.mp3") { Album = "Aardvark", Artist = "Milli Vanilli", Title = "Aardvark" }, vm));
+        vm.Tracks.Add(new LibraryTrackViewModel(
+            new Track("/music/b.mp3", "b.mp3") { Album = "Millitary Dance", Artist = "Thirtzy", Title = "Millitary Dance" }, vm));
+        vm.Grid.SetViewportWidth(2000);
+        vm.Grid.SetSortModeCommand.Execute(AlbumSortMode.Artist);
+
+        vm.SearchQuery = "milli";
+
+        await Assert.That(vm.Grid.Rows.Sum(r => r.Tiles.Count)).IsEqualTo(2);
+        await Assert.That(vm.Grid.Rows[0].Tiles[0].Title).IsEqualTo("Millitary Dance");
+    }
 }
