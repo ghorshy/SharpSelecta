@@ -169,6 +169,30 @@ public class PlaybackControlsViewModelTests
     }
 
     [Test]
+    public async Task NavigationEnabledFlags_TrackCanExecuteAndRaisePropertyChanged()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        await Assert.That(vm.IsPreviousEnabled).IsFalse();
+        await Assert.That(vm.IsNextEnabled).IsFalse();
+        await Assert.That(vm.IsPlayPauseEnabled).IsFalse();
+
+        var raisedProperties = new List<string?>();
+        vm.PropertyChanged += (_, e) => raisedProperties.Add(e.PropertyName);
+
+        await vm.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
+
+        await Assert.That(vm.IsPreviousEnabled).IsTrue();
+        await Assert.That(vm.IsPlayPauseEnabled).IsTrue();
+        await Assert.That(raisedProperties).Contains(nameof(PlaybackControlsViewModel.IsPreviousEnabled));
+        await Assert.That(raisedProperties).Contains(nameof(PlaybackControlsViewModel.IsPlayPauseEnabled));
+
+        queue.AddToQueue(new Track("/music/b.mp3", "b.mp3"));
+
+        await Assert.That(vm.IsNextEnabled).IsTrue();
+        await Assert.That(raisedProperties).Contains(nameof(PlaybackControlsViewModel.IsNextEnabled));
+    }
+
+    [Test]
     public async Task PreviousTrackCommand_WithinThreshold_GoesBackAndReloadsThePriorTrack()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);

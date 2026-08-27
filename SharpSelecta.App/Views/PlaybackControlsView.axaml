@@ -19,15 +19,15 @@
         <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,80,Auto,Auto" ColumnSpacing="{styles:SpacingValue M}">
             <Button Grid.Column="0" Classes="toolbar-button toolbar-button-hover" Command="{Binding PreviousTrackCommand}" ToolTip.Tip="{x:Static res:Strings.Previous}">
                 <svg:Svg Width="18" Height="18" Path="avares://SharpSelecta.App/Assets/Icons/player-track-prev.svg" CurrentColor="{DynamicResource IconForegroundColor}"
-                         Opacity="{Binding $parent[Button].IsEnabled, Converter={x:Static converters:BoolToDisabledOpacityConverter.Instance}}" />
+                         Opacity="{Binding IsPreviousEnabled, Converter={x:Static converters:BoolToDisabledOpacityConverter.Instance}}" />
             </Button>
             <Button Grid.Column="1" Classes="toolbar-button toolbar-button-hover" Command="{Binding PlayPauseCommand}" ToolTip.Tip="{Binding PlayPauseLabel}">
                 <svg:Svg Width="18" Height="18" Path="{Binding IsPlaying, Converter={x:Static converters:PlayPauseIconConverter.Instance}}" CurrentColor="{DynamicResource IconForegroundColor}"
-                         Opacity="{Binding $parent[Button].IsEnabled, Converter={x:Static converters:BoolToDisabledOpacityConverter.Instance}}" />
+                         Opacity="{Binding IsPlayPauseEnabled, Converter={x:Static converters:BoolToDisabledOpacityConverter.Instance}}" />
             </Button>
             <Button Grid.Column="2" Classes="toolbar-button toolbar-button-hover" Command="{Binding NextTrackCommand}" ToolTip.Tip="{x:Static res:Strings.Next}">
                 <svg:Svg Width="18" Height="18" Path="avares://SharpSelecta.App/Assets/Icons/player-track-next.svg" CurrentColor="{DynamicResource IconForegroundColor}"
-                         Opacity="{Binding $parent[Button].IsEnabled, Converter={x:Static converters:BoolToDisabledOpacityConverter.Instance}}" />
+                         Opacity="{Binding IsNextEnabled, Converter={x:Static converters:BoolToDisabledOpacityConverter.Instance}}" />
             </Button>
             <TextBlock Grid.Column="3" Text="{Binding PositionDisplay}" VerticalAlignment="Center"
                        Width="70" TextAlignment="Right" />
@@ -40,12 +40,10 @@
                      ToolTip.Tip="{x:Static res:Strings.Volume}" />
             <Slider x:Name="VolumeSlider" Grid.Column="7" VerticalAlignment="Center" Minimum="0" Maximum="1" Value="{Binding Volume}" />
             <Button Grid.Column="8" Classes="toolbar-button toolbar-button-hover" Command="{Binding ToggleRepeatModeCommand}" ToolTip.Tip="{Binding RepeatModeLabel}">
-                <svg:Svg Width="18" Height="18" Path="{Binding RepeatMode, Converter={x:Static converters:RepeatModeIconConverter.Instance}}" CurrentColor="{DynamicResource IconForegroundColor}"
-                         Opacity="{Binding $parent[Button].IsEnabled, Converter={x:Static converters:BoolToDisabledOpacityConverter.Instance}}" />
+                <svg:Svg Width="18" Height="18" Path="{Binding RepeatMode, Converter={x:Static converters:RepeatModeIconConverter.Instance}}" CurrentColor="{DynamicResource IconForegroundColor}" />
             </Button>
             <Button Grid.Column="9" Classes="toolbar-button toolbar-button-hover" Click="OnSettingsClick" ToolTip.Tip="{x:Static res:Strings.Settings}">
-                <svg:Svg Width="18" Height="18" Path="avares://SharpSelecta.App/Assets/Icons/settings.svg" CurrentColor="{DynamicResource IconForegroundColor}"
-                         Opacity="{Binding $parent[Button].IsEnabled, Converter={x:Static converters:BoolToDisabledOpacityConverter.Instance}}" />
+                <svg:Svg Width="18" Height="18" Path="avares://SharpSelecta.App/Assets/Icons/settings.svg" CurrentColor="{DynamicResource IconForegroundColor}" />
             </Button>
         </Grid>
     </StackPanel>
