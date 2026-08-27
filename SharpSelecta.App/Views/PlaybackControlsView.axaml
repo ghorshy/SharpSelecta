@@ -18,16 +18,13 @@
 
         <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,80,Auto,Auto" ColumnSpacing="{styles:SpacingValue M}">
             <Button Grid.Column="0" Classes="toolbar-button toolbar-button-hover" Command="{Binding PreviousTrackCommand}" ToolTip.Tip="{x:Static res:Strings.Previous}">
-                <svg:Svg Width="18" Height="18" Path="avares://SharpSelecta.App/Assets/Icons/player-track-prev.svg" CurrentColor="{DynamicResource IconForegroundColor}"
-                         Opacity="{Binding IsPreviousEnabled, Converter={x:Static converters:BoolToDisabledOpacityConverter.Instance}}" />
+                <svg:Svg Width="18" Height="18" Path="{Binding PreviousIconName, Converter={x:Static converters:IconNameToPathConverter.Instance}}" CurrentColor="{DynamicResource IconForegroundColor}" />
             </Button>
             <Button Grid.Column="1" Classes="toolbar-button toolbar-button-hover" Command="{Binding PlayPauseCommand}" ToolTip.Tip="{Binding PlayPauseLabel}">
-                <svg:Svg Width="18" Height="18" Path="{Binding IsPlaying, Converter={x:Static converters:PlayPauseIconConverter.Instance}}" CurrentColor="{DynamicResource IconForegroundColor}"
-                         Opacity="{Binding IsPlayPauseEnabled, Converter={x:Static converters:BoolToDisabledOpacityConverter.Instance}}" />
+                <svg:Svg Width="18" Height="18" Path="{Binding PlayPauseIconName, Converter={x:Static converters:IconNameToPathConverter.Instance}}" CurrentColor="{DynamicResource IconForegroundColor}" />
             </Button>
             <Button Grid.Column="2" Classes="toolbar-button toolbar-button-hover" Command="{Binding NextTrackCommand}" ToolTip.Tip="{x:Static res:Strings.Next}">
-                <svg:Svg Width="18" Height="18" Path="avares://SharpSelecta.App/Assets/Icons/player-track-next.svg" CurrentColor="{DynamicResource IconForegroundColor}"
-                         Opacity="{Binding IsNextEnabled, Converter={x:Static converters:BoolToDisabledOpacityConverter.Instance}}" />
+                <svg:Svg Width="18" Height="18" Path="{Binding NextIconName, Converter={x:Static converters:IconNameToPathConverter.Instance}}" CurrentColor="{DynamicResource IconForegroundColor}" />
             </Button>
             <TextBlock Grid.Column="3" Text="{Binding PositionDisplay}" VerticalAlignment="Center"
                        Width="70" TextAlignment="Right" />

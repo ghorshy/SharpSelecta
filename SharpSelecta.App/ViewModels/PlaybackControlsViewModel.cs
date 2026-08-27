@@ -27,10 +27,12 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(PlayPauseCommand))]
     [NotifyPropertyChangedFor(nameof(IsPlayPauseEnabled))]
+    [NotifyPropertyChangedFor(nameof(PlayPauseIconName))]
     private TransportState transportState = TransportState.NoTrack;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PlayPauseLabel))]
+    [NotifyPropertyChangedFor(nameof(PlayPauseIconName))]
     private bool isPlaying;
 
     [ObservableProperty]
@@ -233,7 +235,17 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 
     public bool IsPreviousEnabled => HasCurrentTrack();
 
+    public string PreviousIconName => IsPreviousEnabled ? "player-track-prev" : "player-track-prev-disabled";
+
     public bool IsPlayPauseEnabled => CanPlayPause();
+
+    public string PlayPauseIconName => (IsPlaying, IsPlayPauseEnabled) switch
+    {
+        (true, false) => "player-pause-disabled",
+        (true, true) => "player-pause",
+        (false, false) => "player-play-disabled",
+        (false, true) => "player-play",
+    };
 
     [RelayCommand(CanExecute = nameof(HasCurrentTrack))]
     private async Task PreviousTrackAsync()
@@ -275,13 +287,17 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 
     public bool IsNextEnabled => CanGoNext();
 
+    public string NextIconName => IsNextEnabled ? "player-track-next" : "player-track-next-disabled";
+
     private void RefreshNavigationCommands()
     {
         PlayPauseCommand.NotifyCanExecuteChanged();
         PreviousTrackCommand.NotifyCanExecuteChanged();
         NextTrackCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(IsPreviousEnabled));
+        OnPropertyChanged(nameof(PreviousIconName));
         OnPropertyChanged(nameof(IsNextEnabled));
+        OnPropertyChanged(nameof(NextIconName));
     }
 
     public async Task PlayNowAsync(Track track)

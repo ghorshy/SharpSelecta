@@ -175,6 +175,9 @@ public class PlaybackControlsViewModelTests
         await Assert.That(vm.IsPreviousEnabled).IsFalse();
         await Assert.That(vm.IsNextEnabled).IsFalse();
         await Assert.That(vm.IsPlayPauseEnabled).IsFalse();
+        await Assert.That(vm.PreviousIconName).IsEqualTo("player-track-prev-disabled");
+        await Assert.That(vm.NextIconName).IsEqualTo("player-track-next-disabled");
+        await Assert.That(vm.PlayPauseIconName).IsEqualTo("player-play-disabled");
 
         var raisedProperties = new List<string?>();
         vm.PropertyChanged += (_, e) => raisedProperties.Add(e.PropertyName);
@@ -183,13 +186,19 @@ public class PlaybackControlsViewModelTests
 
         await Assert.That(vm.IsPreviousEnabled).IsTrue();
         await Assert.That(vm.IsPlayPauseEnabled).IsTrue();
+        await Assert.That(vm.PreviousIconName).IsEqualTo("player-track-prev");
+        await Assert.That(vm.PlayPauseIconName).IsEqualTo("player-pause");
         await Assert.That(raisedProperties).Contains(nameof(PlaybackControlsViewModel.IsPreviousEnabled));
         await Assert.That(raisedProperties).Contains(nameof(PlaybackControlsViewModel.IsPlayPauseEnabled));
+        await Assert.That(raisedProperties).Contains(nameof(PlaybackControlsViewModel.PreviousIconName));
+        await Assert.That(raisedProperties).Contains(nameof(PlaybackControlsViewModel.PlayPauseIconName));
 
         queue.AddToQueue(new Track("/music/b.mp3", "b.mp3"));
 
         await Assert.That(vm.IsNextEnabled).IsTrue();
+        await Assert.That(vm.NextIconName).IsEqualTo("player-track-next");
         await Assert.That(raisedProperties).Contains(nameof(PlaybackControlsViewModel.IsNextEnabled));
+        await Assert.That(raisedProperties).Contains(nameof(PlaybackControlsViewModel.NextIconName));
     }
 
     [Test]
