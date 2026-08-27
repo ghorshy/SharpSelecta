@@ -36,4 +36,16 @@
         <Setter Property="svg:Svg.CurrentColor" Value="{DynamicResource IconDisabledColor}" />
     </Style>
 
+    <!-- FluentTheme's TextBox paints its pointerover/focus border and background straight onto an
+         internal template part (PART_BorderElement) via these resource keys, bypassing the
+         TextBox's own BorderBrush/Background properties entirely - overriding those properties
+         from outside has no effect, so the resources themselves are neutralized here instead. -->
+    <Styles.Resources>
+        <SolidColorBrush x:Key="TextControlBorderBrushPointerOver">Transparent</SolidColorBrush>
+        <SolidColorBrush x:Key="TextControlBorderBrushFocused">Transparent</SolidColorBrush>
+        <SolidColorBrush x:Key="TextControlBackgroundPointerOver">Transparent</SolidColorBrush>
+        <SolidColorBrush x:Key="TextControlBackgroundFocused">Transparent</SolidColorBrush>
+        <Thickness x:Key="TextControlBorderThemeThicknessFocused">0</Thickness>
+    </Styles.Resources>
+
 </Styles>
