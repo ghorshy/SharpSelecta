@@ -1,19 +1,29 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
+    <!-- FluentTheme's own Button template paints its disabled/pointerover backgrounds on an
+         internal part that a plain Setter override can't reach, so this toolbar variant gets its
+         own minimal template instead of fighting it. -->
     <Style Selector="Button.toolbar-button">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Template">
+            <ControlTemplate TargetType="Button">
+                <Border Background="{TemplateBinding Background}"
+                        CornerRadius="4"
+                        Padding="{TemplateBinding Padding}">
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
     </Style>
     <Style Selector="Button.toolbar-button-hover:pointerover">
         <Setter Property="Background" Value="#28808080" />
     </Style>
     <Style Selector="Button.toolbar-button-hover:pressed">
         <Setter Property="Background" Value="#40808080" />
-    </Style>
-    <Style Selector="Button.toolbar-button:disabled">
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Opacity" Value="0.35" />
     </Style>
 
 </Styles>
