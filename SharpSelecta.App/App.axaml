@@ -14,9 +14,11 @@
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
                     <Color x:Key="IconForegroundColor">#FF1A1A1A</Color>
+                    <Color x:Key="IconDisabledColor">#FFA0A0A0</Color>
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <Color x:Key="IconForegroundColor">#FFEDEDED</Color>
+                    <Color x:Key="IconDisabledColor">#FF808080</Color>
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
             <ResourceDictionary.MergedDictionaries>

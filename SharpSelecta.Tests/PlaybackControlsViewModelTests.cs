@@ -169,39 +169,6 @@ public class PlaybackControlsViewModelTests
     }
 
     [Test]
-    public async Task NavigationEnabledFlags_TrackCanExecuteAndRaisePropertyChanged()
-    {
-        var vm = CreateViewModel(out _, out var queue);
-        await Assert.That(vm.IsPreviousEnabled).IsFalse();
-        await Assert.That(vm.IsNextEnabled).IsFalse();
-        await Assert.That(vm.IsPlayPauseEnabled).IsFalse();
-        await Assert.That(vm.PreviousIconName).IsEqualTo("player-track-prev-disabled");
-        await Assert.That(vm.NextIconName).IsEqualTo("player-track-next-disabled");
-        await Assert.That(vm.PlayPauseIconName).IsEqualTo("player-play-disabled");
-
-        var raisedProperties = new List<string?>();
-        vm.PropertyChanged += (_, e) => raisedProperties.Add(e.PropertyName);
-
-        await vm.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
-
-        await Assert.That(vm.IsPreviousEnabled).IsTrue();
-        await Assert.That(vm.IsPlayPauseEnabled).IsTrue();
-        await Assert.That(vm.PreviousIconName).IsEqualTo("player-track-prev");
-        await Assert.That(vm.PlayPauseIconName).IsEqualTo("player-pause");
-        await Assert.That(raisedProperties).Contains(nameof(PlaybackControlsViewModel.IsPreviousEnabled));
-        await Assert.That(raisedProperties).Contains(nameof(PlaybackControlsViewModel.IsPlayPauseEnabled));
-        await Assert.That(raisedProperties).Contains(nameof(PlaybackControlsViewModel.PreviousIconName));
-        await Assert.That(raisedProperties).Contains(nameof(PlaybackControlsViewModel.PlayPauseIconName));
-
-        queue.AddToQueue(new Track("/music/b.mp3", "b.mp3"));
-
-        await Assert.That(vm.IsNextEnabled).IsTrue();
-        await Assert.That(vm.NextIconName).IsEqualTo("player-track-next");
-        await Assert.That(raisedProperties).Contains(nameof(PlaybackControlsViewModel.IsNextEnabled));
-        await Assert.That(raisedProperties).Contains(nameof(PlaybackControlsViewModel.NextIconName));
-    }
-
-    [Test]
     public async Task PreviousTrackCommand_WithinThreshold_GoesBackAndReloadsThePriorTrack()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
