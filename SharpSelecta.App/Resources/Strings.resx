@@ -193,4 +193,16 @@
   <data name="SortBy" xml:space="preserve">
     <value>Sort by</value>
   </data>
+  <data name="Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="SettingsCategoryKeyboardShortcuts" xml:space="preserve">
+    <value>Keyboard Shortcuts</value>
+  </data>
+  <data name="ShortcutSearchLibrary" xml:space="preserve">
+    <value>Search the library</value>
+  </data>
+  <data name="ShortcutResizeAlbumTiles" xml:space="preserve">
+    <value>Resize album tiles</value>
+  </data>
 </root>

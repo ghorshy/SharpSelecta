@@ -43,6 +43,11 @@ public partial class AlbumGridViewModel : ViewModelBase
         sortDescending = SettingsStore.LoadAlbumSortDescending(settingsFilePath) ?? false;
 
         _library.Albums.CollectionChanged += (_, _) => RebuildRows(force: true);
+        _library.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(LibraryViewModel.SearchQuery))
+                RebuildRows(force: true);
+        };
     }
 
     public void SetViewportWidth(double width)
@@ -118,12 +123,22 @@ public partial class AlbumGridViewModel : ViewModelBase
         _columnCount = newColumnCount;
         ExpandedAlbum = null;
 
-        var rows = SortAlbums(_library.Albums)
+        var query = _library.SearchQuery;
+        var albums = string.IsNullOrWhiteSpace(query)
+            ? _library.Albums
+            : _library.Albums.Where(a => MatchesSearch(a, query));
+
+        var rows = SortAlbums(albums)
             .Chunk(_columnCount)
             .Select(tiles => new AlbumRowViewModel(tiles));
 
         Rows.ReplaceAll(rows);
     }
+
+    private static bool MatchesSearch(AlbumViewModel album, string query) =>
+        FuzzySearch.Score(album.Title, query) is not null ||
+        FuzzySearch.Score(album.Artist, query) is not null ||
+        album.Tracks.Any(t => FuzzySearch.Score(t.Track, query) is not null);
 
     private IEnumerable<AlbumViewModel> SortAlbums(IEnumerable<AlbumViewModel> albums) => SortMode switch
     {

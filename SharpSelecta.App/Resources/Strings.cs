@@ -51,6 +51,10 @@ public static class Strings
     public static string LoadingLibrary => Get(nameof(LoadingLibrary));
     public static string ClearArtworkCache => Get(nameof(ClearArtworkCache));
     public static string SortBy => Get(nameof(SortBy));
+    public static string Search => Get(nameof(Search));
+    public static string SettingsCategoryKeyboardShortcuts => Get(nameof(SettingsCategoryKeyboardShortcuts));
+    public static string ShortcutSearchLibrary => Get(nameof(ShortcutSearchLibrary));
+    public static string ShortcutResizeAlbumTiles => Get(nameof(ShortcutResizeAlbumTiles));
 
     public static string FailedToLoadFile(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToLoadFileFormat"), reason);

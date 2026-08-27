@@ -743,4 +743,68 @@ public class LibraryViewModelTests
             }
         }
     }
+
+    [Test]
+    public async Task DisplayedTracks_WithNoSearchQuery_MirrorsTracks()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+
+        AddTrack(vm, "/music/a.mp3", "Album A", "Artist A", title: "Song A");
+        AddTrack(vm, "/music/b.mp3", "Album B", "Artist B", title: "Song B");
+
+        await Assert.That(vm.DisplayedTracks.Select(t => t.Track.FilePath)).IsEquivalentTo(vm.Tracks.Select(t => t.Track.FilePath));
+    }
+
+    [Test]
+    public async Task DisplayedTracks_WithASearchQuery_FiltersAndRanksByTitleArtistOrAlbum()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+        AddTrack(vm, "/music/a.mp3", "Morning Glory", "Oasis", title: "Wonderwall");
+        AddTrack(vm, "/music/b.mp3", "Legend", "Bob Marley", title: "No Woman No Cry");
+        AddTrack(vm, "/music/c.mp3", "Some Album", "Some Artist", title: "Unrelated Song");
+
+        vm.SearchQuery = "oasis";
+
+        await Assert.That(vm.DisplayedTracks.Count).IsEqualTo(1);
+        await Assert.That(vm.DisplayedTracks[0].Track.FilePath).IsEqualTo("/music/a.mp3");
+    }
+
+    [Test]
+    public async Task DisplayedTracks_UpdatesWhenTracksChangeWhileAQueryIsActive()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+        AddTrack(vm, "/music/a.mp3", "Morning Glory", "Oasis", title: "Wonderwall");
+        vm.SearchQuery = "oasis";
+        await Assert.That(vm.DisplayedTracks.Count).IsEqualTo(1);
+
+        AddTrack(vm, "/music/b.mp3", "Definitely Maybe", "Oasis", title: "Live Forever");
+
+        await Assert.That(vm.DisplayedTracks.Count).IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task ClearSearchCommand_ResetsSearchQueryAndRestoresAllTracks()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+        AddTrack(vm, "/music/a.mp3", "Morning Glory", "Oasis", title: "Wonderwall");
+        AddTrack(vm, "/music/b.mp3", "Legend", "Bob Marley", title: "No Woman No Cry");
+        vm.SearchQuery = "oasis";
+
+        vm.ClearSearchCommand.Execute(null);
+
+        await Assert.That(vm.SearchQuery).IsEqualTo("");
+        await Assert.That(vm.DisplayedTracks.Count).IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task FocusSearchCommand_RaisesSearchFocusRequested()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+        var raised = false;
+        vm.SearchFocusRequested += (_, _) => raised = true;
+
+        vm.FocusSearchCommand.Execute(null);
+
+        await Assert.That(raised).IsTrue();
+    }
 }

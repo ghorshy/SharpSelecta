@@ -287,4 +287,24 @@ public class AlbumGridViewModelTests
         await Assert.That(min).IsGreaterThanOrEqualTo(144);
         await Assert.That(max).IsLessThanOrEqualTo(320);
     }
+
+    [Test]
+    public async Task SearchQuery_FiltersRowsToAlbumsMatchingByTitleArtistOrMemberTrack()
+    {
+        var vm = CreateLibraryViewModel();
+        vm.Tracks.Add(new LibraryTrackViewModel(
+            new Track("/music/a.mp3", "a.mp3") { Album = "Morning Glory", Artist = "Oasis", Title = "Wonderwall" }, vm));
+        vm.Tracks.Add(new LibraryTrackViewModel(
+            new Track("/music/b.mp3", "b.mp3") { Album = "Legend", Artist = "Bob Marley", Title = "One Love" }, vm));
+        vm.Grid.SetViewportWidth(2000);
+
+        vm.SearchQuery = "wonderwall";
+
+        await Assert.That(vm.Grid.Rows.Count).IsEqualTo(1);
+        await Assert.That(vm.Grid.Rows[0].Tiles[0].Title).IsEqualTo("Morning Glory");
+
+        vm.SearchQuery = "";
+
+        await Assert.That(vm.Grid.Rows.Sum(r => r.Tiles.Count)).IsEqualTo(2);
+    }
 }

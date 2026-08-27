@@ -50,6 +50,11 @@ public partial class LibraryView : UserControl
         }
 
         vm.Tracks.CollectionChanged += (_, _) => ApplySavedSort(vm);
+        vm.SearchFocusRequested += (_, _) =>
+        {
+            SearchBox.Focus();
+            SearchBox.SelectAll();
+        };
     }
 
     private void ApplyToTaggedColumns<T>(IReadOnlyDictionary<string, T> valuesByKey, Action<DataGridColumn, T> apply)

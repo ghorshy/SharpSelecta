@@ -13,5 +13,7 @@
     <x:String x:Key="Icon.Volume2">avares://SharpSelecta.App/Assets/Icons/volume-2.svg</x:String>
     <x:String x:Key="Icon.Volume4">avares://SharpSelecta.App/Assets/Icons/volume-4.svg</x:String>
     <x:String x:Key="Icon.VolumeOff">avares://SharpSelecta.App/Assets/Icons/volume-off.svg</x:String>
+    <x:String x:Key="Icon.Search">avares://SharpSelecta.App/Assets/Icons/search.svg</x:String>
+    <x:String x:Key="Icon.X">avares://SharpSelecta.App/Assets/Icons/x.svg</x:String>
 
 </ResourceDictionary>

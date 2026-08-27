@@ -6,6 +6,7 @@
              xmlns:views="using:SharpSelecta.App.Views"
              xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:styles="using:SharpSelecta.App.Styles"
+             xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Svg.Controls.Skia.Avalonia"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="400"
@@ -14,11 +15,27 @@
 
     <DockPanel LastChildFill="True">
         <!-- Temporary: minimal view-mode switcher, not yet styled to show which one is active. -->
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="{styles:SpacingValue XS}"
-                    Margin="{styles:Spacing Bottom=XS}" IsVisible="{Binding HasTracks}">
-            <Button Content="List" Command="{Binding SetViewModeCommand}" CommandParameter="{x:Static core:LibraryViewMode.TrackList}" />
-            <Button Content="Albums" Command="{Binding SetViewModeCommand}" CommandParameter="{x:Static core:LibraryViewMode.AlbumGrid}" />
-        </StackPanel>
+        <DockPanel DockPanel.Dock="Top" Margin="{styles:Spacing Bottom=XS}" IsVisible="{Binding HasTracks}">
+            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="{styles:SpacingValue XS}">
+                <Button Content="List" Command="{Binding SetViewModeCommand}" CommandParameter="{x:Static core:LibraryViewMode.TrackList}" />
+                <Button Content="Albums" Command="{Binding SetViewModeCommand}" CommandParameter="{x:Static core:LibraryViewMode.AlbumGrid}" />
+            </StackPanel>
+
+            <Border DockPanel.Dock="Right" BorderBrush="Gray" BorderThickness="1" CornerRadius="4"
+                    Padding="{styles:Spacing Left=XS, Right=XS}">
+                <Grid ColumnDefinitions="Auto,Auto,Auto" VerticalAlignment="Center">
+                    <svg:Svg Grid.Column="0" Classes="toolbar-icon" Width="14" Height="14"
+                             Path="{DynamicResource Icon.Search}" Margin="{styles:Spacing Right=XXS}" />
+                    <TextBox Grid.Column="1" x:Name="SearchBox" Text="{Binding SearchQuery, Mode=TwoWay}"
+                             PlaceholderText="{x:Static res:Strings.Search}" BorderThickness="0" Background="Transparent"
+                             MinWidth="160" VerticalAlignment="Center" />
+                    <Button Grid.Column="2" Classes="toolbar-button toolbar-button-hover" Command="{Binding ClearSearchCommand}"
+                            IsVisible="{Binding SearchQuery, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}">
+                        <svg:Svg Classes="toolbar-icon" Width="12" Height="12" Path="{DynamicResource Icon.X}" />
+                    </Button>
+                </Grid>
+            </Border>
+        </DockPanel>
 
     <Grid>
         <!-- Empty state: no library folder chosen (or remembered) yet — the button takes center
@@ -41,7 +58,7 @@
 
         <DockPanel IsVisible="{Binding IsTrackListViewVisible}" LastChildFill="True">
             <DataGrid x:Name="TracksGrid"
-                      ItemsSource="{Binding Tracks}"
+                      ItemsSource="{Binding DisplayedTracks}"
                       AutoGenerateColumns="False"
                       CanUserSortColumns="True"
                       CanUserResizeColumns="True"

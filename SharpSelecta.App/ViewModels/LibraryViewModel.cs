@@ -133,6 +133,38 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     public BulkObservableCollection<LibraryTrackViewModel> Tracks { get; } = [];
 
+    public BulkObservableCollection<LibraryTrackViewModel> DisplayedTracks { get; } = [];
+
+    [ObservableProperty]
+    private string searchQuery = "";
+
+    partial void OnSearchQueryChanged(string value) => RefreshDisplayedTracks();
+
+    [RelayCommand]
+    private void ClearSearch() => SearchQuery = "";
+
+    public event EventHandler? SearchFocusRequested;
+
+    [RelayCommand]
+    private void FocusSearch() => SearchFocusRequested?.Invoke(this, EventArgs.Empty);
+
+    private void RefreshDisplayedTracks()
+    {
+        if (string.IsNullOrWhiteSpace(SearchQuery))
+        {
+            DisplayedTracks.ReplaceAll(Tracks);
+            return;
+        }
+
+        var ranked = Tracks
+            .Select(t => (Vm: t, Score: FuzzySearch.Score(t.Track, SearchQuery)))
+            .Where(x => x.Score is not null)
+            .OrderByDescending(x => x.Score)
+            .Select(x => x.Vm);
+
+        DisplayedTracks.ReplaceAll(ranked);
+    }
+
     public bool HasTracks => Tracks.Count > 0;
 
     public bool NoTracks => Tracks.Count == 0;
@@ -308,6 +340,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             OnPropertyChanged(nameof(ShowEmptyState));
             NotifyViewVisibilityChanged();
             RebuildAlbums();
+            RefreshDisplayedTracks();
         };
 
         LibraryFolderPaths.CollectionChanged += (_, _) =>
