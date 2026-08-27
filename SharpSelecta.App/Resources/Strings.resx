@@ -109,8 +109,8 @@
   <data name="Playing" xml:space="preserve">
     <value>Playing</value>
   </data>
-  <data name="Options" xml:space="preserve">
-    <value>Options</value>
+  <data name="Settings" xml:space="preserve">
+    <value>Settings</value>
   </data>
   <data name="SettingsCategoryLibrary" xml:space="preserve">
     <value>Library</value>

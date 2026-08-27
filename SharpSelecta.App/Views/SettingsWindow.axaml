@@ -9,7 +9,7 @@
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="400"
         x:Class="SharpSelecta.App.Views.SettingsWindow"
         x:DataType="vm:SettingsWindowViewModel"
-        Title="{x:Static res:Strings.Options}"
+        Title="{x:Static res:Strings.Settings}"
         Width="600"
         Height="400"
         Closing="OnClosing">

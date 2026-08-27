@@ -22,7 +22,7 @@ public static class Strings
     public static string RemoveFromQueue => Get(nameof(RemoveFromQueue));
     public static string Queue => Get(nameof(Queue));
     public static string Playing => Get(nameof(Playing));
-    public static string Options => Get(nameof(Options));
+    public static string Settings => Get(nameof(Settings));
     public static string SettingsCategoryLibrary => Get(nameof(SettingsCategoryLibrary));
     public static string SettingsCategoryPlayback => Get(nameof(SettingsCategoryPlayback));
     public static string RestoreQueueOnStartup => Get(nameof(RestoreQueueOnStartup));

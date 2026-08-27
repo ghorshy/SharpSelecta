@@ -11,6 +11,14 @@
 
     <Application.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <Color x:Key="IconForegroundColor">#FF1A1A1A</Color>
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <Color x:Key="IconForegroundColor">#FFEDEDED</Color>
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceInclude Source="avares://SharpSelecta.App/Styles/Spacing.axaml" />
             </ResourceDictionary.MergedDictionaries>
@@ -20,5 +28,6 @@
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+        <StyleInclude Source="avares://SharpSelecta.App/Styles/DefaultTheme.axaml" />
     </Application.Styles>
 </Application>

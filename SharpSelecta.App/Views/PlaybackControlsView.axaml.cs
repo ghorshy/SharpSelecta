@@ -34,7 +34,7 @@ public partial class PlaybackControlsView : UserControl
         }
     }
 
-    private void OnOptionsClick(object? sender, RoutedEventArgs e)
+    private void OnSettingsClick(object? sender, RoutedEventArgs e)
     {
         if (this.FindAncestorOfType<Window>() is not { DataContext: MainWindowViewModel mainWindowViewModel } window)
             return;
