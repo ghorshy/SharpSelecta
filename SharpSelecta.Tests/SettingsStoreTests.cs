@@ -486,6 +486,34 @@ public class SettingsStoreTests
     }
 
     [Test]
+    public async Task LoadSeekStepSeconds_WhenFileDoesNotExist_DefaultsToFive()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        var loaded = SettingsStore.LoadSeekStepSeconds(settingsPath);
+
+        await Assert.That(loaded).IsEqualTo(5);
+    }
+
+    [Test]
+    public async Task SaveAndLoad_RoundTripsSeekStepSeconds()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            SettingsStore.SaveSeekStepSeconds(settingsPath, 8);
+
+            var loaded = SettingsStore.LoadSeekStepSeconds(settingsPath);
+
+            await Assert.That(loaded).IsEqualTo(8);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
     public async Task LoadOutputDeviceName_WhenFileDoesNotExist_ReturnsNull()
     {
         var settingsPath = CreateTempSettingsPath();

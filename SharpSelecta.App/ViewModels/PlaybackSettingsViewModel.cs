@@ -30,6 +30,9 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     [ObservableProperty]
     private bool useLogarithmicVolumeScale;
 
+    [ObservableProperty]
+    private int seekStepSeconds = 5;
+
     public bool HasPendingChanges => false;
 
     public ICommand ApplyCommand { get; } = new RelayCommand(() => { });
@@ -52,6 +55,15 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         useLogarithmicVolumeScale = savedVolumeCurve == VolumeCurve.Logarithmic;
         _playbackControls.VolumeCurve = savedVolumeCurve;
         _playbackControls.Volume = SettingsStore.LoadVolume(settingsFilePath) ?? _playbackControls.Volume;
+
+        seekStepSeconds = SettingsStore.LoadSeekStepSeconds(settingsFilePath);
+        _playbackControls.SeekStepSeconds = seekStepSeconds;
+    }
+
+    partial void OnSeekStepSecondsChanged(int value)
+    {
+        SettingsStore.SaveSeekStepSeconds(_settingsFilePath, value);
+        _playbackControls.SeekStepSeconds = value;
     }
 
     partial void OnRestoreQueueOnStartupChanged(bool value) =>

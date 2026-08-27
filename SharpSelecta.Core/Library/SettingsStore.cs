@@ -80,6 +80,11 @@ public static partial class SettingsStore
     public static void SaveVolumeCurve(string settingsFilePath, VolumeCurve curve) =>
         Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { VolumeCurve = curve });
 
+    public static int LoadSeekStepSeconds(string settingsFilePath) => Load(settingsFilePath)?.SeekStepSeconds ?? 5;
+
+    public static void SaveSeekStepSeconds(string settingsFilePath, int seconds) =>
+        Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { SeekStepSeconds = seconds });
+
     private static SettingsData CurrentOrEmpty(string settingsFilePath) =>
         Load(settingsFilePath) ?? new SettingsData();
 
@@ -129,6 +134,7 @@ public static partial class SettingsStore
         public string? OutputDeviceName { get; init; }
         public double? Volume { get; init; }
         public VolumeCurve? VolumeCurve { get; init; }
+        public int? SeekStepSeconds { get; init; }
     }
 
     [JsonSerializable(typeof(SettingsData))]

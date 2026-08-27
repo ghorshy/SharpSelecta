@@ -205,4 +205,10 @@
   <data name="ShortcutResizeAlbumTiles" xml:space="preserve">
     <value>Resize album tiles</value>
   </data>
+  <data name="ShortcutSeek" xml:space="preserve">
+    <value>Seek backward/forward</value>
+  </data>
+  <data name="SeekStepSeconds" xml:space="preserve">
+    <value>Seek step (seconds)</value>
+  </data>
 </root>

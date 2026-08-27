@@ -721,4 +721,77 @@ public class PlaybackControlsViewModelTests
         await Assert.That(queue.Entries.Select(e => e.Track)).IsEquivalentTo([a, b]);
         await Assert.That(queue.CurrentIndex).IsEqualTo(0);
     }
+
+    [Test]
+    public async Task SeekStepSeconds_DefaultsToFive()
+    {
+        var vm = CreateViewModel(out _, out _);
+
+        await Assert.That(vm.SeekStepSeconds).IsEqualTo(5);
+    }
+
+    [Test]
+    public async Task SeekForwardCommand_AdvancesPositionBySeekStepSeconds()
+    {
+        var vm = CreateViewModel(out _, out _);
+        vm.DurationSeconds = 100;
+        vm.PositionSeconds = 10;
+        vm.SeekStepSeconds = 5;
+
+        vm.SeekForwardCommand.Execute(null);
+
+        await Assert.That(vm.PositionSeconds).IsEqualTo(15);
+    }
+
+    [Test]
+    public async Task SeekBackwardCommand_RewindsPositionBySeekStepSeconds()
+    {
+        var vm = CreateViewModel(out _, out _);
+        vm.DurationSeconds = 100;
+        vm.PositionSeconds = 10;
+        vm.SeekStepSeconds = 5;
+
+        vm.SeekBackwardCommand.Execute(null);
+
+        await Assert.That(vm.PositionSeconds).IsEqualTo(5);
+    }
+
+    [Test]
+    public async Task SeekForwardCommand_ClampsToDuration()
+    {
+        var vm = CreateViewModel(out _, out _);
+        vm.DurationSeconds = 12;
+        vm.PositionSeconds = 10;
+        vm.SeekStepSeconds = 5;
+
+        vm.SeekForwardCommand.Execute(null);
+
+        await Assert.That(vm.PositionSeconds).IsEqualTo(12);
+    }
+
+    [Test]
+    public async Task SeekBackwardCommand_ClampsToZero()
+    {
+        var vm = CreateViewModel(out _, out _);
+        vm.DurationSeconds = 100;
+        vm.PositionSeconds = 2;
+        vm.SeekStepSeconds = 5;
+
+        vm.SeekBackwardCommand.Execute(null);
+
+        await Assert.That(vm.PositionSeconds).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task SeekCommands_CannotExecute_WhileArrowKeyNavigationIsFocused()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await Assert.That(vm.SeekForwardCommand.CanExecute(null)).IsTrue();
+        await Assert.That(vm.SeekBackwardCommand.CanExecute(null)).IsTrue();
+
+        vm.IsArrowKeyNavigationFocused = true;
+
+        await Assert.That(vm.SeekForwardCommand.CanExecute(null)).IsFalse();
+        await Assert.That(vm.SeekBackwardCommand.CanExecute(null)).IsFalse();
+    }
 }

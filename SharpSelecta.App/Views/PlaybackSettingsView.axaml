@@ -22,6 +22,12 @@
         <CheckBox Content="{x:Static res:Strings.UseLogarithmicVolumeScale}"
                   IsChecked="{Binding UseLogarithmicVolumeScale}"
                   Margin="{styles:Spacing Top=S}" />
+
+        <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}">
+            <TextBlock Text="{x:Static res:Strings.SeekStepSeconds}" Opacity="0.7" />
+            <NumericUpDown Value="{Binding SeekStepSeconds}" Minimum="1" Maximum="10" Increment="1"
+                            FormatString="0" HorizontalAlignment="Left" Width="100" />
+        </StackPanel>
     </StackPanel>
 
 </UserControl>

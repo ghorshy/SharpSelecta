@@ -188,4 +188,52 @@ public class PlaybackSettingsViewModelTests
             File.Delete(settingsPath);
         }
     }
+
+    [Test]
+    public async Task SeekStepSeconds_DefaultsToFive()
+    {
+        var vm = new PlaybackSettingsViewModel(CreateTempSettingsPath(), Substitute.For<IOutputDeviceService>(), CreatePlaybackControlsViewModel());
+
+        await Assert.That(vm.SeekStepSeconds).IsEqualTo(5);
+    }
+
+    [Test]
+    public async Task SettingSeekStepSeconds_PersistsAndAppliesToPlaybackControls()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            var playbackControls = CreatePlaybackControlsViewModel();
+            var vm = new PlaybackSettingsViewModel(settingsPath, Substitute.For<IOutputDeviceService>(), playbackControls);
+
+            vm.SeekStepSeconds = 8;
+
+            await Assert.That(playbackControls.SeekStepSeconds).IsEqualTo(8);
+            await Assert.That(SettingsStore.LoadSeekStepSeconds(settingsPath)).IsEqualTo(8);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task Constructor_AppliesAPreviouslySavedSeekStepSecondsToPlaybackControls()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            SettingsStore.SaveSeekStepSeconds(settingsPath, 3);
+            var playbackControls = CreatePlaybackControlsViewModel();
+
+            var vm = new PlaybackSettingsViewModel(settingsPath, Substitute.For<IOutputDeviceService>(), playbackControls);
+
+            await Assert.That(vm.SeekStepSeconds).IsEqualTo(3);
+            await Assert.That(playbackControls.SeekStepSeconds).IsEqualTo(3);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
 }

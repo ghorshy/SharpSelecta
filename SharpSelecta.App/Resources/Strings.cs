@@ -55,6 +55,8 @@ public static class Strings
     public static string SettingsCategoryKeyboardShortcuts => Get(nameof(SettingsCategoryKeyboardShortcuts));
     public static string ShortcutSearchLibrary => Get(nameof(ShortcutSearchLibrary));
     public static string ShortcutResizeAlbumTiles => Get(nameof(ShortcutResizeAlbumTiles));
+    public static string ShortcutSeek => Get(nameof(ShortcutSeek));
+    public static string SeekStepSeconds => Get(nameof(SeekStepSeconds));
 
     public static string FailedToLoadFile(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToLoadFileFormat"), reason);

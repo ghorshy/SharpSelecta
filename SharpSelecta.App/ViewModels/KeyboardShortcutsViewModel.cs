@@ -13,6 +13,7 @@ public sealed class KeyboardShortcutsViewModel : ISettingsCategoryViewModel
     [
         new("Ctrl+F", Strings.ShortcutSearchLibrary),
         new("Ctrl+Scroll", Strings.ShortcutResizeAlbumTiles),
+        new("←/→", Strings.ShortcutSeek),
     ];
 
     public bool HasPendingChanges => false;

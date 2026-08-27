@@ -52,6 +52,14 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     private VolumeCurve volumeCurve = VolumeCurve.Linear;
 
     [ObservableProperty]
+    private int seekStepSeconds = 5;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SeekBackwardCommand))]
+    [NotifyCanExecuteChangedFor(nameof(SeekForwardCommand))]
+    private bool isArrowKeyNavigationFocused;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DisplayFileName))]
     [NotifyPropertyChangedFor(nameof(DisplayTrackLabel))]
     private string? loadedFileName;
@@ -255,6 +263,16 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         PositionSeconds = 0;
         TransportState = TransportState.Ready;
     }
+
+    [RelayCommand(CanExecute = nameof(CanSeek))]
+    private void SeekBackward() => Seek(-SeekStepSeconds);
+
+    [RelayCommand(CanExecute = nameof(CanSeek))]
+    private void SeekForward() => Seek(SeekStepSeconds);
+
+    private bool CanSeek() => !IsArrowKeyNavigationFocused;
+
+    private void Seek(double deltaSeconds) => PositionSeconds = Math.Clamp(PositionSeconds + deltaSeconds, 0, DurationSeconds);
 
     [RelayCommand(CanExecute = nameof(CanGoNext))]
     private async Task NextTrackAsync()
