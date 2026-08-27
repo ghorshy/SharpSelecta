@@ -9,6 +9,7 @@ Early stage, but already usable day to day:
 - Point it at one or more folders and it scans your library (MP3, FLAC, WAV, M4A — including AAC and ALAC), then remembers it in a local index so later launches start instantly and only re-check what actually changed on disk
 - Browse as a sortable, column-configurable table, or as an album grid with cover art (zoomable, sortable by title/artist/year)
 - Click an album tile to expand its tracklist in place; double-click to queue and play the whole album
+- Fuzzy search across track title, artist, and album, filtering both views live as you type
 - Double-click any cover art for a full-resolution preview
 - Queue with drag-to-reorder, play-next, and repeat modes (off/all/one)
 - Play/pause, seek, volume (linear or logarithmic), and a toggle between elapsed and remaining time
@@ -41,6 +42,8 @@ dotnet test
 - [Microsoft.Data.Sqlite](https://github.com/dotnet/efcore) — local library index
 - [Serilog](https://github.com/serilog/serilog) — logging
 - [Tmds.DBus](https://github.com/tmds/Tmds.DBus) — MPRIS/playerctl integration on Linux
+- [Svg.Skia](https://github.com/wieslawsoltes/Svg.Skia) — SVG icon rendering
+- [Tabler Icons](https://tabler.io/icons) — toolbar icon set
 - [TUnit](https://github.com/thomhurst/TUnit) + [NSubstitute](https://github.com/nsubstitute/NSubstitute) — testing
 
 ## TODO
