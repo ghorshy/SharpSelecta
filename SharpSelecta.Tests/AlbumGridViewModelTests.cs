@@ -188,6 +188,42 @@ public class AlbumGridViewModelTests
     }
 
     [Test]
+    public async Task SetSortMode_ClickedAgainWithTheSameMode_TogglesDirectionInstead()
+    {
+        var vm = CreateLibraryViewModel();
+        AddTrack(vm, "/music/a.mp3", "Album A", "Artist", 2010);
+        AddTrack(vm, "/music/b.mp3", "Album B", "Artist", 1999);
+        vm.Grid.SetViewportWidth(2000);
+        vm.Grid.SetSortModeCommand.Execute(AlbumSortMode.Year);
+        await Assert.That(vm.Grid.SortDescending).IsFalse();
+
+        vm.Grid.SetSortModeCommand.Execute(AlbumSortMode.Year);
+
+        await Assert.That(vm.Grid.SortMode).IsEqualTo(AlbumSortMode.Year);
+        await Assert.That(vm.Grid.SortDescending).IsTrue();
+        await Assert.That(vm.Grid.Rows[0].Tiles[0].Title).IsEqualTo("Album A");
+        await Assert.That(vm.Grid.Rows[0].Tiles[1].Title).IsEqualTo("Album B");
+
+        vm.Grid.SetSortModeCommand.Execute(AlbumSortMode.Year);
+
+        await Assert.That(vm.Grid.SortDescending).IsFalse();
+    }
+
+    [Test]
+    public async Task SetSortMode_SwitchedToADifferentMode_ResetsDirectionToAscending()
+    {
+        var vm = CreateLibraryViewModel();
+        vm.Grid.SetSortModeCommand.Execute(AlbumSortMode.Year);
+        vm.Grid.ToggleSortDirectionCommand.Execute(null);
+        await Assert.That(vm.Grid.SortDescending).IsTrue();
+
+        vm.Grid.SetSortModeCommand.Execute(AlbumSortMode.Artist);
+
+        await Assert.That(vm.Grid.SortMode).IsEqualTo(AlbumSortMode.Artist);
+        await Assert.That(vm.Grid.SortDescending).IsFalse();
+    }
+
+    [Test]
     public async Task ToggleSortDirection_ReversesTheOrder()
     {
         var vm = CreateLibraryViewModel();

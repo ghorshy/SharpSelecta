@@ -78,7 +78,18 @@ public partial class AlbumGridViewModel : ViewModelBase
     public string SortDirectionSymbol => SortDescending ? "↓" : "↑";
 
     [RelayCommand]
-    private void SetSortMode(AlbumSortMode mode) => SortMode = mode;
+    private void SetSortMode(AlbumSortMode mode)
+    {
+        if (SortMode == mode)
+        {
+            SortDescending = !SortDescending;
+        }
+        else
+        {
+            SortMode = mode;
+            SortDescending = false;
+        }
+    }
 
     [RelayCommand]
     private void ToggleSortDirection() => SortDescending = !SortDescending;
