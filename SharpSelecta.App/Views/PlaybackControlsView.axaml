@@ -18,13 +18,13 @@
 
         <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,80,Auto,Auto" ColumnSpacing="{styles:SpacingValue M}">
             <Button Grid.Column="0" Classes="toolbar-button toolbar-button-hover" Command="{Binding PreviousTrackCommand}" ToolTip.Tip="{x:Static res:Strings.Previous}">
-                <svg:Svg Classes="toolbar-icon" Width="18" Height="18" Path="avares://SharpSelecta.App/Assets/Icons/player-track-prev.svg" />
+                <svg:Svg Classes="toolbar-icon" Width="18" Height="18" Path="{DynamicResource Icon.PlayerTrackPrev}" />
             </Button>
             <Button Grid.Column="1" Classes="toolbar-button toolbar-button-hover" Command="{Binding PlayPauseCommand}" ToolTip.Tip="{Binding PlayPauseLabel}">
                 <svg:Svg Classes="toolbar-icon" Width="18" Height="18" Path="{Binding IsPlaying, Converter={x:Static converters:PlayPauseIconConverter.Instance}}" />
             </Button>
             <Button Grid.Column="2" Classes="toolbar-button toolbar-button-hover" Command="{Binding NextTrackCommand}" ToolTip.Tip="{x:Static res:Strings.Next}">
-                <svg:Svg Classes="toolbar-icon" Width="18" Height="18" Path="avares://SharpSelecta.App/Assets/Icons/player-track-next.svg" />
+                <svg:Svg Classes="toolbar-icon" Width="18" Height="18" Path="{DynamicResource Icon.PlayerTrackNext}" />
             </Button>
             <TextBlock Grid.Column="3" Text="{Binding PositionDisplay}" VerticalAlignment="Center"
                        Width="70" TextAlignment="Right" />
@@ -39,7 +39,7 @@
                 <svg:Svg Classes="toolbar-icon" Width="18" Height="18" Path="{Binding RepeatMode, Converter={x:Static converters:RepeatModeIconConverter.Instance}}" />
             </Button>
             <Button Grid.Column="9" Classes="toolbar-button toolbar-button-hover" Click="OnSettingsClick" ToolTip.Tip="{x:Static res:Strings.Settings}">
-                <svg:Svg Classes="toolbar-icon" Width="18" Height="18" Path="avares://SharpSelecta.App/Assets/Icons/settings.svg" />
+                <svg:Svg Classes="toolbar-icon" Width="18" Height="18" Path="{DynamicResource Icon.Settings}" />
             </Button>
         </Grid>
     </StackPanel>

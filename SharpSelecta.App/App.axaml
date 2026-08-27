@@ -23,6 +23,7 @@
             </ResourceDictionary.ThemeDictionaries>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceInclude Source="avares://SharpSelecta.App/Styles/Spacing.axaml" />
+                <ResourceInclude Source="avares://SharpSelecta.App/Styles/Icons.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

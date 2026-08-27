@@ -14,9 +14,9 @@ public sealed class RepeatModeIconConverter : IValueConverter
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         value switch
         {
-            RepeatMode.RepeatAll => $"{BasePath}repeat.svg",
-            RepeatMode.RepeatOne => $"{BasePath}repeat-once.svg",
-            _ => $"{BasePath}repeat-off.svg",
+            RepeatMode.RepeatAll => IconPaths.Resolve("Icon.Repeat", $"{BasePath}repeat.svg"),
+            RepeatMode.RepeatOne => IconPaths.Resolve("Icon.RepeatOnce", $"{BasePath}repeat-once.svg"),
+            _ => IconPaths.Resolve("Icon.RepeatOff", $"{BasePath}repeat-off.svg"),
         };
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>

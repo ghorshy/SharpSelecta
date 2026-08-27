@@ -10,8 +10,8 @@ public sealed class PlayPauseIconConverter : IValueConverter
 
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         value is true
-            ? "avares://SharpSelecta.App/Assets/Icons/player-pause.svg"
-            : "avares://SharpSelecta.App/Assets/Icons/player-play.svg";
+            ? IconPaths.Resolve("Icon.PlayerPause", "avares://SharpSelecta.App/Assets/Icons/player-pause.svg")
+            : IconPaths.Resolve("Icon.PlayerPlay", "avares://SharpSelecta.App/Assets/Icons/player-play.svg");
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         throw new NotSupportedException();

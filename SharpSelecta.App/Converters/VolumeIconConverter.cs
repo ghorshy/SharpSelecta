@@ -14,12 +14,12 @@ public sealed class VolumeIconConverter : IValueConverter
         value is double volume
             ? volume switch
             {
-                <= 0 => $"{BasePath}volume-off.svg",
-                < 0.33 => $"{BasePath}volume-4.svg",
-                < 0.66 => $"{BasePath}volume-2.svg",
-                _ => $"{BasePath}volume.svg",
+                <= 0 => IconPaths.Resolve("Icon.VolumeOff", $"{BasePath}volume-off.svg"),
+                < 0.33 => IconPaths.Resolve("Icon.Volume4", $"{BasePath}volume-4.svg"),
+                < 0.66 => IconPaths.Resolve("Icon.Volume2", $"{BasePath}volume-2.svg"),
+                _ => IconPaths.Resolve("Icon.Volume", $"{BasePath}volume.svg"),
             }
-            : $"{BasePath}volume.svg";
+            : IconPaths.Resolve("Icon.Volume", $"{BasePath}volume.svg");
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         throw new NotSupportedException();

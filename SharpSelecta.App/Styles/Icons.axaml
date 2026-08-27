@@ -1,0 +1,17 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <x:String x:Key="Icon.PlayerTrackPrev">avares://SharpSelecta.App/Assets/Icons/player-track-prev.svg</x:String>
+    <x:String x:Key="Icon.PlayerTrackNext">avares://SharpSelecta.App/Assets/Icons/player-track-next.svg</x:String>
+    <x:String x:Key="Icon.PlayerPlay">avares://SharpSelecta.App/Assets/Icons/player-play.svg</x:String>
+    <x:String x:Key="Icon.PlayerPause">avares://SharpSelecta.App/Assets/Icons/player-pause.svg</x:String>
+    <x:String x:Key="Icon.Settings">avares://SharpSelecta.App/Assets/Icons/settings.svg</x:String>
+    <x:String x:Key="Icon.Repeat">avares://SharpSelecta.App/Assets/Icons/repeat.svg</x:String>
+    <x:String x:Key="Icon.RepeatOff">avares://SharpSelecta.App/Assets/Icons/repeat-off.svg</x:String>
+    <x:String x:Key="Icon.RepeatOnce">avares://SharpSelecta.App/Assets/Icons/repeat-once.svg</x:String>
+    <x:String x:Key="Icon.Volume">avares://SharpSelecta.App/Assets/Icons/volume.svg</x:String>
+    <x:String x:Key="Icon.Volume2">avares://SharpSelecta.App/Assets/Icons/volume-2.svg</x:String>
+    <x:String x:Key="Icon.Volume4">avares://SharpSelecta.App/Assets/Icons/volume-4.svg</x:String>
+    <x:String x:Key="Icon.VolumeOff">avares://SharpSelecta.App/Assets/Icons/volume-off.svg</x:String>
+
+</ResourceDictionary>
