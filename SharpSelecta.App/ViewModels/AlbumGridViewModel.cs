@@ -1,9 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 using SharpSelecta.App.Collections;
+using SharpSelecta.App.Resources;
+using SharpSelecta.App.Services;
 using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.ViewModels;
@@ -17,8 +24,11 @@ public partial class AlbumGridViewModel : ViewModelBase
 
     public const double TileSizeStep = 10;
 
+    private static readonly int ArtworkLoadConcurrency = Math.Max(1, Environment.ProcessorCount / 2);
+
     private readonly LibraryViewModel _library;
     private readonly string _settingsFilePath;
+    private readonly ILogger _logger;
     private double _viewportWidth;
     private int _columnCount = -1;
 
@@ -34,17 +44,20 @@ public partial class AlbumGridViewModel : ViewModelBase
     [ObservableProperty]
     private bool sortDescending;
 
+    public BulkObservableCollection<AlbumViewModel> Albums { get; } = [];
+
     public BulkObservableCollection<AlbumRowViewModel> Rows { get; } = [];
 
-    public AlbumGridViewModel(LibraryViewModel library, string settingsFilePath)
+    public AlbumGridViewModel(LibraryViewModel library, string settingsFilePath, ILogger logger)
     {
         _library = library;
         _settingsFilePath = settingsFilePath;
+        _logger = logger;
         tileSize = Math.Clamp(SettingsStore.LoadTileSize(settingsFilePath) ?? DefaultTileSize, MinTileSize, MaxTileSize);
         sortMode = SettingsStore.LoadAlbumSortMode(settingsFilePath) ?? AlbumSortMode.Title;
         sortDescending = SettingsStore.LoadAlbumSortDescending(settingsFilePath) ?? false;
 
-        _library.Albums.CollectionChanged += (_, _) => RebuildRows(force: true);
+        _library.Tracks.CollectionChanged += (_, _) => RebuildAlbums();
         _library.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(LibraryViewModel.SearchQuery))
@@ -122,6 +135,117 @@ public partial class AlbumGridViewModel : ViewModelBase
         }
     }
 
+    private void RebuildAlbums()
+    {
+        var groups = _library.Tracks
+            .GroupBy(
+                t => (Album: (t.Track.Album ?? string.Empty).Trim(), AlbumArtist: (t.Track.AlbumArtist ?? string.Empty).Trim()),
+                AlbumGroupKeyComparer.Instance)
+            .OrderBy(g => g.Key.Album, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(g => g.Key.AlbumArtist, StringComparer.OrdinalIgnoreCase)
+            .Select(g =>
+            {
+                var orderedTracks = g
+                    .OrderBy(t => t.Track.TrackNumber ?? int.MaxValue)
+                    .ThenBy(t => t.Track.Title, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                var album = new AlbumViewModel(
+                    g.Key.Album.Length > 0 ? g.Key.Album : Strings.UnknownAlbum,
+                    ResolveArtistLabel(orderedTracks),
+                    orderedTracks.Select(t => t.Track.Year).FirstOrDefault(y => y.HasValue),
+                    orderedTracks,
+                    _library);
+                return (RawKey: $"{g.Key.Album}{g.Key.AlbumArtist}", Album: album);
+            })
+            .ToList();
+
+        Albums.ReplaceAll(groups.Select(g => g.Album));
+        RebuildRows(force: true);
+
+        _ = LoadAlbumArtworkAsync(groups);
+    }
+
+    private string ArtworkCacheDirectory => Path.Combine(Path.GetDirectoryName(_settingsFilePath)!, "artwork-cache");
+
+    [RelayCommand]
+    private void ClearArtworkCache()
+    {
+        if (Directory.Exists(ArtworkCacheDirectory))
+        {
+            foreach (var file in Directory.EnumerateFiles(ArtworkCacheDirectory))
+            {
+                try
+                {
+                    File.Delete(file);
+                }
+                catch (IOException)
+                {
+                }
+            }
+        }
+
+        RebuildAlbums();
+    }
+
+    private async Task LoadAlbumArtworkAsync(IReadOnlyList<(string RawKey, AlbumViewModel Album)> groups)
+    {
+        var cacheDirectory = ArtworkCacheDirectory;
+        var options = new ParallelOptions { MaxDegreeOfParallelism = ArtworkLoadConcurrency };
+        var stopwatch = Stopwatch.StartNew();
+
+        await Parallel.ForEachAsync(groups, options, async (group, cancellationToken) =>
+        {
+            var (rawKey, album) = group;
+            var firstTrackPath = album.Tracks.Count > 0 ? album.Tracks[0].Track.FilePath : null;
+            if (firstTrackPath is null)
+                return;
+
+            try
+            {
+                var artwork = AlbumArtworkCache.GetOrCreate(
+                    cacheDirectory, rawKey, () => MusicLibraryScanner.LoadArtwork(firstTrackPath));
+
+                await Dispatcher.UIThread.InvokeAsync(() => album.ArtworkBytes = artwork);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load artwork for album {Album}", album.Title);
+            }
+        });
+
+        _logger.LogInformation("Loaded artwork for {AlbumCount} albums in {ElapsedMs} ms", groups.Count, stopwatch.ElapsedMilliseconds);
+    }
+
+    private sealed class AlbumGroupKeyComparer : IEqualityComparer<(string Album, string AlbumArtist)>
+    {
+        public static readonly AlbumGroupKeyComparer Instance = new();
+
+        public bool Equals((string Album, string AlbumArtist) x, (string Album, string AlbumArtist) y) =>
+            string.Equals(x.Album, y.Album, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(x.AlbumArtist, y.AlbumArtist, StringComparison.OrdinalIgnoreCase);
+
+        public int GetHashCode((string Album, string AlbumArtist) key) =>
+            HashCode.Combine(
+                key.Album.ToUpperInvariant(),
+                key.AlbumArtist.ToUpperInvariant());
+    }
+
+    private static string ResolveArtistLabel(IEnumerable<LibraryTrackViewModel> tracks)
+    {
+        var distinctArtists = tracks
+            .Select(t => (t.Track.Artist ?? string.Empty).Trim())
+            .Where(artist => artist.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        return distinctArtists.Count switch
+        {
+            0 => string.Empty,
+            1 => distinctArtists[0],
+            _ => Strings.VariousArtists,
+        };
+    }
+
     private void RebuildRows(bool force)
     {
         var newColumnCount = ComputeColumnCount(_viewportWidth, TileSize);
@@ -133,8 +257,8 @@ public partial class AlbumGridViewModel : ViewModelBase
 
         var query = _library.SearchQuery;
         var albums = string.IsNullOrWhiteSpace(query)
-            ? SortAlbums(_library.Albums)
-            : _library.Albums
+            ? SortAlbums(Albums)
+            : Albums
                 .Select(a => (Album: a, Score: SearchScore(a, query)))
                 .Where(x => x.Score is not null)
                 .OrderByDescending(x => x.Score)

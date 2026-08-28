@@ -66,7 +66,7 @@ public class AlbumGridViewModelTests
         AddTrack(vm, "/music/b.mp3", "Album B");
         vm.Grid.SetViewportWidth(400);
 
-        var albumB = vm.Albums[1];
+        var albumB = vm.Grid.Albums[1];
         vm.Grid.ToggleExpandCommand.Execute(albumB);
 
         await Assert.That(vm.Grid.ExpandedAlbum).IsEqualTo(albumB);
@@ -79,7 +79,7 @@ public class AlbumGridViewModelTests
         var vm = CreateLibraryViewModel();
         AddTrack(vm, "/music/a.mp3", "Album A");
         vm.Grid.SetViewportWidth(400);
-        var album = vm.Albums[0];
+        var album = vm.Grid.Albums[0];
 
         vm.Grid.ToggleExpandCommand.Execute(album);
         vm.Grid.ToggleExpandCommand.Execute(album);
@@ -96,11 +96,11 @@ public class AlbumGridViewModelTests
         AddTrack(vm, "/music/b.mp3", "Album B");
         vm.Grid.SetViewportWidth(400);
 
-        vm.Grid.ToggleExpandCommand.Execute(vm.Albums[0]);
-        vm.Grid.ToggleExpandCommand.Execute(vm.Albums[1]);
+        vm.Grid.ToggleExpandCommand.Execute(vm.Grid.Albums[0]);
+        vm.Grid.ToggleExpandCommand.Execute(vm.Grid.Albums[1]);
 
-        await Assert.That(vm.Grid.ExpandedAlbum).IsEqualTo(vm.Albums[1]);
-        await Assert.That(vm.Grid.Rows[0].ExpandedAlbum).IsEqualTo(vm.Albums[1]);
+        await Assert.That(vm.Grid.ExpandedAlbum).IsEqualTo(vm.Grid.Albums[1]);
+        await Assert.That(vm.Grid.Rows[0].ExpandedAlbum).IsEqualTo(vm.Grid.Albums[1]);
     }
 
     [Test]
@@ -110,7 +110,7 @@ public class AlbumGridViewModelTests
         AddTrack(vm, "/music/a.mp3", "Album A");
         AddTrack(vm, "/music/b.mp3", "Album B");
         vm.Grid.SetViewportWidth(400);
-        vm.Grid.ToggleExpandCommand.Execute(vm.Albums[0]);
+        vm.Grid.ToggleExpandCommand.Execute(vm.Grid.Albums[0]);
 
         vm.Grid.AdjustTileSize(160);
 
@@ -123,11 +123,11 @@ public class AlbumGridViewModelTests
         var vm = CreateLibraryViewModel();
         AddTrack(vm, "/music/a.mp3", "Album A");
         vm.Grid.SetViewportWidth(2000);
-        vm.Grid.ToggleExpandCommand.Execute(vm.Albums[0]);
+        vm.Grid.ToggleExpandCommand.Execute(vm.Grid.Albums[0]);
 
         vm.Grid.AdjustTileSize(2);
 
-        await Assert.That(vm.Grid.ExpandedAlbum).IsEqualTo(vm.Albums[0]);
+        await Assert.That(vm.Grid.ExpandedAlbum).IsEqualTo(vm.Grid.Albums[0]);
     }
 
     [Test]

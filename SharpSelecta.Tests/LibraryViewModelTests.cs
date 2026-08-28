@@ -563,9 +563,9 @@ public class LibraryViewModelTests
         AddTrack(vm, "/music/a.mp3", "Compilation", "Artist One");
         AddTrack(vm, "/music/b.mp3", "Compilation", "Artist Two");
 
-        await Assert.That(vm.Albums.Count).IsEqualTo(1);
-        await Assert.That(vm.Albums[0].Tracks.Count).IsEqualTo(2);
-        await Assert.That(vm.Albums[0].Artist).IsEqualTo(Strings.VariousArtists);
+        await Assert.That(vm.Grid.Albums.Count).IsEqualTo(1);
+        await Assert.That(vm.Grid.Albums[0].Tracks.Count).IsEqualTo(2);
+        await Assert.That(vm.Grid.Albums[0].Artist).IsEqualTo(Strings.VariousArtists);
     }
 
     [Test]
@@ -576,10 +576,10 @@ public class LibraryViewModelTests
         AddTrack(vm, "/music/a.mp3", "Bassline", "Capital", albumArtist: "Capital");
         AddTrack(vm, "/music/b.mp3", "Bassline", "K Dot", albumArtist: "K Dot & DJ Q");
 
-        await Assert.That(vm.Albums.Count).IsEqualTo(2);
-        await Assert.That(vm.Albums[0].Title).IsEqualTo("Bassline");
-        await Assert.That(vm.Albums[1].Title).IsEqualTo("Bassline");
-        await Assert.That(vm.Albums.Select(a => a.Tracks.Count)).IsEquivalentTo([1, 1]);
+        await Assert.That(vm.Grid.Albums.Count).IsEqualTo(2);
+        await Assert.That(vm.Grid.Albums[0].Title).IsEqualTo("Bassline");
+        await Assert.That(vm.Grid.Albums[1].Title).IsEqualTo("Bassline");
+        await Assert.That(vm.Grid.Albums.Select(a => a.Tracks.Count)).IsEquivalentTo([1, 1]);
     }
 
     [Test]
@@ -590,8 +590,8 @@ public class LibraryViewModelTests
         AddTrack(vm, "/music/a.mp3", "Discovery", "Daft Punk");
         AddTrack(vm, "/music/b.mp3", "  discovery ", "Daft Punk");
 
-        await Assert.That(vm.Albums.Count).IsEqualTo(1);
-        await Assert.That(vm.Albums[0].Tracks.Count).IsEqualTo(2);
+        await Assert.That(vm.Grid.Albums.Count).IsEqualTo(1);
+        await Assert.That(vm.Grid.Albums[0].Tracks.Count).IsEqualTo(2);
     }
 
     [Test]
@@ -602,8 +602,8 @@ public class LibraryViewModelTests
         AddTrack(vm, "/music/a.mp3", album: null, artist: "Some Artist");
         AddTrack(vm, "/music/b.mp3", album: null, artist: "Some Artist");
 
-        await Assert.That(vm.Albums.Count).IsEqualTo(1);
-        await Assert.That(vm.Albums[0].Title).IsEqualTo(Strings.UnknownAlbum);
+        await Assert.That(vm.Grid.Albums.Count).IsEqualTo(1);
+        await Assert.That(vm.Grid.Albums[0].Title).IsEqualTo(Strings.UnknownAlbum);
     }
 
     [Test]
@@ -614,8 +614,8 @@ public class LibraryViewModelTests
         AddTrack(vm, "/music/b.mp3", "Album", "Artist", trackNumber: 2);
         AddTrack(vm, "/music/a.mp3", "Album", "Artist", trackNumber: 1);
 
-        await Assert.That(vm.Albums[0].Tracks[0].Track.FilePath).IsEqualTo("/music/a.mp3");
-        await Assert.That(vm.Albums[0].Tracks[1].Track.FilePath).IsEqualTo("/music/b.mp3");
+        await Assert.That(vm.Grid.Albums[0].Tracks[0].Track.FilePath).IsEqualTo("/music/a.mp3");
+        await Assert.That(vm.Grid.Albums[0].Tracks[1].Track.FilePath).IsEqualTo("/music/b.mp3");
     }
 
     [Test]
@@ -626,8 +626,8 @@ public class LibraryViewModelTests
         AddTrack(vm, "/music/a.mp3", "Album", "Artist", title: "Zebra");
         AddTrack(vm, "/music/b.mp3", "Album", "Artist", title: "Apple");
 
-        await Assert.That(vm.Albums[0].Tracks[0].Track.Title).IsEqualTo("Apple");
-        await Assert.That(vm.Albums[0].Tracks[1].Track.Title).IsEqualTo("Zebra");
+        await Assert.That(vm.Grid.Albums[0].Tracks[0].Track.Title).IsEqualTo("Apple");
+        await Assert.That(vm.Grid.Albums[0].Tracks[1].Track.Title).IsEqualTo("Zebra");
     }
 
     [Test]
@@ -638,7 +638,7 @@ public class LibraryViewModelTests
         AddTrack(vm, "/music/a.mp3", "Compilation", "Artist One");
         AddTrack(vm, "/music/b.mp3", "Compilation", "Artist Two");
 
-        var rows = vm.Albums[0].TrackRows;
+        var rows = vm.Grid.Albums[0].TrackRows;
         await Assert.That(rows[0].ArtistSuffix).IsEqualTo("(Artist One)");
         await Assert.That(rows[1].ArtistSuffix).IsEqualTo("(Artist Two)");
     }
@@ -651,7 +651,7 @@ public class LibraryViewModelTests
         AddTrack(vm, "/music/a.mp3", "Album", "Only Artist");
         AddTrack(vm, "/music/b.mp3", "Album", "Only Artist");
 
-        await Assert.That(vm.Albums[0].TrackRows.Select(r => r.ArtistSuffix)).IsEquivalentTo(new string?[] { null, null });
+        await Assert.That(vm.Grid.Albums[0].TrackRows.Select(r => r.ArtistSuffix)).IsEquivalentTo(new string?[] { null, null });
     }
 
     [Test]
@@ -662,7 +662,7 @@ public class LibraryViewModelTests
         AddTrack(vm, "/music/a.mp3", "Album", "Only Artist");
         AddTrack(vm, "/music/b.mp3", "Album", "Only Artist");
 
-        await Assert.That(vm.Albums[0].Artist).IsEqualTo("Only Artist");
+        await Assert.That(vm.Grid.Albums[0].Artist).IsEqualTo("Only Artist");
     }
 
     [Test]
@@ -672,7 +672,7 @@ public class LibraryViewModelTests
 
         AddTrack(vm, "/music/a.mp3", "Album", artist: null);
 
-        await Assert.That(vm.Albums[0].Artist).IsEqualTo(string.Empty);
+        await Assert.That(vm.Grid.Albums[0].Artist).IsEqualTo(string.Empty);
     }
 
     [Test]
@@ -729,7 +729,7 @@ public class LibraryViewModelTests
             Directory.CreateDirectory(cacheDirectory);
             File.WriteAllBytes(Path.Combine(cacheDirectory, "fake.jpg"), [1, 2, 3]);
 
-            vm.ClearArtworkCacheCommand.Execute(null);
+            vm.Grid.ClearArtworkCacheCommand.Execute(null);
 
             await Assert.That(Directory.EnumerateFiles(cacheDirectory)).IsEmpty();
         }
