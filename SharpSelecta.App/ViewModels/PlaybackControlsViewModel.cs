@@ -172,6 +172,8 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         }
     }
 
+    public void ClearQueueExceptCurrent() => _queue.ClearExceptCurrent();
+
     public async Task PlayQueueEntryAsync(QueueEntry entry)
     {
         var index = _queue.IndexOf(entry);

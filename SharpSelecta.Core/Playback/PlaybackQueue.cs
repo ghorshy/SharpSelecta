@@ -156,6 +156,19 @@ public sealed class PlaybackQueue
         return _entries[index].Track;
     }
 
+    public void ClearExceptCurrent()
+    {
+        var current = CurrentIndex >= 0 && CurrentIndex < _entries.Count ? _entries[CurrentIndex] : null;
+
+        _entries.Clear();
+        if (current is not null)
+        {
+            _entries.Add(current);
+        }
+
+        SetCurrentIndex(current is null ? -1 : 0);
+    }
+
     public void Restore(IReadOnlyList<QueueEntry> entries, int currentIndex)
     {
         _entries.Clear();

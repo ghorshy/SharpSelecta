@@ -80,6 +80,7 @@ public partial class QueueViewModel : ViewModelBase
         }
 
         RemoveFromQueueCommand.NotifyCanExecuteChanged();
+        ClearQueueCommand.NotifyCanExecuteChanged();
         RefreshIsCurrent();
     }
 
@@ -100,6 +101,11 @@ public partial class QueueViewModel : ViewModelBase
     private void RemoveFromQueue(QueueEntryViewModel entry) => _playbackControls.RemoveFromQueue(entry.Entry);
 
     private bool CanRemoveFromQueue(QueueEntryViewModel entry) => Entries.IndexOf(entry) != CurrentIndex;
+
+    [RelayCommand(CanExecute = nameof(CanClearQueue))]
+    private void ClearQueue() => _playbackControls.ClearQueueExceptCurrent();
+
+    private bool CanClearQueue() => Entries.Count > 1;
 
     public void MoveEntry(QueueEntryViewModel entry, QueueEntryViewModel? targetEntry) =>
         _playbackControls.MoveQueueEntry(entry.Entry, targetEntry?.Entry);

@@ -46,6 +46,39 @@ public class QueueViewModelTests
     }
 
     [Test]
+    public async Task ClearQueueCommand_RemovesEveryEntryButTheCurrentOne()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
+        queue.AddToQueue(new Track("/music/b.mp3", "b.mp3"));
+        queue.AddToQueue(new Track("/music/c.mp3", "c.mp3"));
+
+        vm.ClearQueueCommand.Execute(null);
+
+        await Assert.That(vm.Entries.Count).IsEqualTo(1);
+        await Assert.That(vm.Entries[0].Title).IsEqualTo("a.mp3");
+    }
+
+    [Test]
+    public async Task ClearQueueCommand_WithOnlyTheCurrentEntryQueued_CannotExecute()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
+
+        await Assert.That(vm.ClearQueueCommand.CanExecute(null)).IsFalse();
+    }
+
+    [Test]
+    public async Task ClearQueueCommand_WithMoreThanTheCurrentEntryQueued_CanExecute()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
+        queue.AddToQueue(new Track("/music/b.mp3", "b.mp3"));
+
+        await Assert.That(vm.ClearQueueCommand.CanExecute(null)).IsTrue();
+    }
+
+    [Test]
     public void ReportDragReorderFailure_DoesNotThrow()
     {
         var vm = CreateViewModel(out _, out _);

@@ -314,6 +314,31 @@ public class PlaybackQueueTests
     }
 
     [Test]
+    public async Task ClearExceptCurrent_RemovesEveryEntryButTheCurrentOne()
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow(TrackA);
+        queue.AddToQueue(TrackB);
+        queue.AddToQueue(TrackC);
+
+        queue.ClearExceptCurrent();
+
+        await Assert.That(queue.Entries.Select(e => e.Track)).IsEquivalentTo([TrackA]);
+        await Assert.That(queue.CurrentIndex).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task ClearExceptCurrent_WithNoCurrentEntry_EmptiesTheQueue()
+    {
+        var queue = new PlaybackQueue();
+
+        queue.ClearExceptCurrent();
+
+        await Assert.That(queue.Entries).IsEmpty();
+        await Assert.That(queue.CurrentIndex).IsEqualTo(-1);
+    }
+
+    [Test]
     public async Task IndexOf_FindsAnEntryByReferenceNotByValue()
     {
         var queue = new PlaybackQueue();

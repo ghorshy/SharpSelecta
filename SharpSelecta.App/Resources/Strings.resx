@@ -106,6 +106,9 @@
   <data name="Queue" xml:space="preserve">
     <value>Queue</value>
   </data>
+  <data name="Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
   <data name="Playing" xml:space="preserve">
     <value>Playing</value>
   </data>
