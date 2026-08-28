@@ -34,7 +34,7 @@ public partial class AlbumGridView : UserControl
         if (DataContext is not AlbumGridViewModel vm || !e.KeyModifiers.HasFlag(KeyModifiers.Control))
             return;
 
-        vm.AdjustTileSize(e.Delta.Y * 10);
+        vm.AdjustTileSize(e.Delta.Y * AlbumGridViewModel.TileSizeStep);
         e.Handled = true;
     }
 

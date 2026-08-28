@@ -1,22 +1,31 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SharpSelecta.App.ViewModels"
+             xmlns:res="using:SharpSelecta.App.Resources"
+             xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:styles="using:SharpSelecta.App.Styles"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="200"
+             mc:Ignorable="d" d:DesignWidth="420" d:DesignHeight="280"
              x:Class="SharpSelecta.App.Views.KeyboardShortcutsSettingsView"
              x:DataType="vm:KeyboardShortcutsViewModel">
 
-    <ItemsControl ItemsSource="{Binding Shortcuts}">
-        <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:ShortcutEntry">
-                <Grid ColumnDefinitions="120,*" Margin="{styles:Spacing Bottom=XXS}">
-                    <TextBlock Grid.Column="0" Text="{Binding Shortcut}" FontWeight="Bold" />
-                    <TextBlock Grid.Column="1" Text="{Binding Description}" TextWrapping="Wrap" />
-                </Grid>
-            </DataTemplate>
-        </ItemsControl.ItemTemplate>
-    </ItemsControl>
+    <StackPanel Spacing="{styles:SpacingValue XS}">
+        <ItemsControl ItemsSource="{Binding Rows}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:ShortcutRowViewModel">
+                    <StackPanel Margin="{styles:Spacing Bottom=XS}">
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding Description}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                            <Button Grid.Column="1" Content="{Binding DisplayGesture}" Click="OnRecordClick" Margin="{styles:Spacing Left=XS}" MinWidth="110" />
+                            <Button Grid.Column="2" Content="{x:Static res:Strings.Reset}" Click="OnResetClick" Margin="{styles:Spacing Left=XXS}" />
+                        </Grid>
+                        <TextBlock Text="{Binding ConflictWarning}" Foreground="OrangeRed" TextWrapping="Wrap"
+                                   IsVisible="{Binding ConflictWarning, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+                    </StackPanel>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </StackPanel>
 
 </UserControl>

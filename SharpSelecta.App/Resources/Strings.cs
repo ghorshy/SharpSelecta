@@ -54,15 +54,22 @@ public static class Strings
     public static string Search => Get(nameof(Search));
     public static string SettingsCategoryKeyboardShortcuts => Get(nameof(SettingsCategoryKeyboardShortcuts));
     public static string ShortcutSearchLibrary => Get(nameof(ShortcutSearchLibrary));
-    public static string ShortcutResizeAlbumTiles => Get(nameof(ShortcutResizeAlbumTiles));
-    public static string ShortcutSeek => Get(nameof(ShortcutSeek));
+    public static string ShortcutIncreaseTileSize => Get(nameof(ShortcutIncreaseTileSize));
+    public static string ShortcutDecreaseTileSize => Get(nameof(ShortcutDecreaseTileSize));
+    public static string ShortcutSeekBackward => Get(nameof(ShortcutSeekBackward));
+    public static string ShortcutSeekForward => Get(nameof(ShortcutSeekForward));
     public static string SeekStepSeconds => Get(nameof(SeekStepSeconds));
+    public static string Reset => Get(nameof(Reset));
+    public static string PressAKeyCombination => Get(nameof(PressAKeyCombination));
 
     public static string FailedToLoadFile(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToLoadFileFormat"), reason);
 
     public static string FailedToScanFolder(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToScanFolderFormat"), reason);
+
+    public static string ShortcutConflict(string otherDescription) =>
+        string.Format(CultureInfo.CurrentCulture, Get("ShortcutConflictFormat"), otherDescription);
 
     private static string Get(string name) => ResourceManager.GetString(name, CultureInfo.CurrentUICulture)!;
 }

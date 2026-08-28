@@ -15,6 +15,8 @@ public partial class AlbumGridViewModel : ViewModelBase
     private const double MaxTileSize = 320;
     private const double RowSpacing = 16;
 
+    public const double TileSizeStep = 10;
+
     private readonly LibraryViewModel _library;
     private readonly string _settingsFilePath;
     private double _viewportWidth;
@@ -60,6 +62,12 @@ public partial class AlbumGridViewModel : ViewModelBase
     }
 
     public void AdjustTileSize(double delta) => TileSize = Math.Clamp(TileSize + delta, MinTileSize, MaxTileSize);
+
+    [RelayCommand]
+    private void IncreaseTileSize() => AdjustTileSize(TileSizeStep);
+
+    [RelayCommand]
+    private void DecreaseTileSize() => AdjustTileSize(-TileSizeStep);
 
     partial void OnTileSizeChanged(double value)
     {

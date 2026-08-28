@@ -85,6 +85,11 @@ public static partial class SettingsStore
     public static void SaveSeekStepSeconds(string settingsFilePath, int seconds) =>
         Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { SeekStepSeconds = seconds });
 
+    public static IReadOnlyDictionary<string, string>? LoadShortcutOverrides(string settingsFilePath) => Load(settingsFilePath)?.ShortcutOverrides;
+
+    public static void SaveShortcutOverrides(string settingsFilePath, IReadOnlyDictionary<string, string> overrides) =>
+        Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { ShortcutOverrides = overrides });
+
     private static SettingsData CurrentOrEmpty(string settingsFilePath) =>
         Load(settingsFilePath) ?? new SettingsData();
 
@@ -135,6 +140,7 @@ public static partial class SettingsStore
         public double? Volume { get; init; }
         public VolumeCurve? VolumeCurve { get; init; }
         public int? SeekStepSeconds { get; init; }
+        public IReadOnlyDictionary<string, string>? ShortcutOverrides { get; init; }
     }
 
     [JsonSerializable(typeof(SettingsData))]

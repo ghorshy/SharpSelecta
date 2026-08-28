@@ -651,4 +651,56 @@ public class SettingsStoreTests
             File.Delete(settingsPath);
         }
     }
+
+    [Test]
+    public async Task LoadShortcutOverrides_WhenFileDoesNotExist_ReturnsNull()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        var loaded = SettingsStore.LoadShortcutOverrides(settingsPath);
+
+        await Assert.That(loaded).IsNull();
+    }
+
+    [Test]
+    public async Task SaveAndLoad_RoundTripsShortcutOverrides()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            var overrides = new Dictionary<string, string>
+            {
+                ["Library.FocusSearch"] = "Ctrl+Shift+Alt+F",
+                ["Playback.SeekBackward"] = "J",
+            };
+
+            SettingsStore.SaveShortcutOverrides(settingsPath, overrides);
+
+            var loaded = SettingsStore.LoadShortcutOverrides(settingsPath);
+
+            await Assert.That(loaded).IsEquivalentTo(overrides);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task SavingShortcutOverrides_DoesNotClobberOtherSettings()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
+
+            SettingsStore.SaveShortcutOverrides(settingsPath, new Dictionary<string, string> { ["Library.FocusSearch"] = "Ctrl+K" });
+
+            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
 }

@@ -13,11 +13,7 @@
         Width="1280"
         Height="720">
 
-    <Window.KeyBindings>
-        <KeyBinding Gesture="Ctrl+F" Command="{Binding Library.FocusSearchCommand}" />
-        <KeyBinding Gesture="Left" Command="{Binding PlaybackControls.SeekBackwardCommand}" />
-        <KeyBinding Gesture="Right" Command="{Binding PlaybackControls.SeekForwardCommand}" />
-    </Window.KeyBindings>
+    <!-- KeyBindings are rebindable, so they're built at runtime from ShortcutRegistry in MainWindow.axaml.cs. -->
 
     <DockPanel Margin="{styles:Spacing Uniform=M}" LastChildFill="True">
         <views:PlaybackControlsView DockPanel.Dock="Bottom" Margin="{styles:Spacing Top=M}" DataContext="{Binding PlaybackControls}" />

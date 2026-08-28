@@ -39,6 +39,9 @@ public partial class PlaybackControlsView : UserControl
         if (this.FindAncestorOfType<Window>() is not { DataContext: MainWindowViewModel mainWindowViewModel } window)
             return;
 
-        new SettingsWindow { DataContext = new SettingsWindowViewModel(mainWindowViewModel.Library, mainWindowViewModel.PlaybackSettings) }.ShowDialog(window);
+        new SettingsWindow
+        {
+            DataContext = new SettingsWindowViewModel(mainWindowViewModel.Library, mainWindowViewModel.PlaybackSettings, mainWindowViewModel.ShortcutSettings),
+        }.ShowDialog(window);
     }
 }

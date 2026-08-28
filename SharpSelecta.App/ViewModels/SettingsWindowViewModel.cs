@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CommunityToolkit.Mvvm.ComponentModel;
 using SharpSelecta.App.Resources;
+using SharpSelecta.App.Services;
 
 namespace SharpSelecta.App.ViewModels;
 
@@ -17,7 +18,7 @@ public partial class SettingsWindowViewModel : ViewModelBase
 
     public PlaybackSettingsViewModel Playback { get; }
 
-    public KeyboardShortcutsViewModel KeyboardShortcuts { get; } = new();
+    public KeyboardShortcutsViewModel KeyboardShortcuts { get; }
 
     public ISettingsCategoryViewModel SelectedCategoryViewModel => SelectedCategory switch
     {
@@ -26,10 +27,11 @@ public partial class SettingsWindowViewModel : ViewModelBase
         _ => Library,
     };
 
-    public SettingsWindowViewModel(LibraryViewModel library, PlaybackSettingsViewModel playback)
+    public SettingsWindowViewModel(LibraryViewModel library, PlaybackSettingsViewModel playback, ShortcutSettingsService shortcutSettings)
     {
         Library = library;
         Playback = playback;
+        KeyboardShortcuts = new KeyboardShortcutsViewModel(shortcutSettings);
         selectedCategory = Categories[0];
     }
 }

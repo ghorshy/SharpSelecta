@@ -34,8 +34,10 @@ public class SettingsWindowViewModelTests
             playbackControls);
     }
 
+    private static ShortcutSettingsService CreateShortcutSettingsService() => new(CreateTempSettingsPath());
+
     private static SettingsWindowViewModel CreateViewModel() =>
-        new(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel());
+        new(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel(), CreateShortcutSettingsService());
 
     [Test]
     public async Task Categories_ContainsLibraryPlaybackAndKeyboardShortcuts()
@@ -59,7 +61,7 @@ public class SettingsWindowViewModelTests
     {
         var library = CreateLibraryViewModel();
 
-        var vm = new SettingsWindowViewModel(library, CreatePlaybackSettingsViewModel());
+        var vm = new SettingsWindowViewModel(library, CreatePlaybackSettingsViewModel(), CreateShortcutSettingsService());
 
         await Assert.That(vm.Library).IsEqualTo(library);
     }
@@ -69,7 +71,7 @@ public class SettingsWindowViewModelTests
     {
         var playback = CreatePlaybackSettingsViewModel();
 
-        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), playback);
+        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), playback, CreateShortcutSettingsService());
 
         await Assert.That(vm.Playback).IsEqualTo(playback);
     }
@@ -79,7 +81,7 @@ public class SettingsWindowViewModelTests
     {
         var library = CreateLibraryViewModel();
 
-        var vm = new SettingsWindowViewModel(library, CreatePlaybackSettingsViewModel());
+        var vm = new SettingsWindowViewModel(library, CreatePlaybackSettingsViewModel(), CreateShortcutSettingsService());
 
         await Assert.That(vm.SelectedCategoryViewModel).IsEqualTo(library);
     }
@@ -88,7 +90,7 @@ public class SettingsWindowViewModelTests
     public async Task SelectedCategoryViewModel_AfterSwitchingToPlayback_ResolvesToPlayback()
     {
         var playback = CreatePlaybackSettingsViewModel();
-        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), playback);
+        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), playback, CreateShortcutSettingsService());
 
         vm.SelectedCategory = Strings.SettingsCategoryPlayback;
 

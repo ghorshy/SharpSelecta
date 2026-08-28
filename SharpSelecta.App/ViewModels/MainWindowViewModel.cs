@@ -25,6 +25,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public PlaybackSettingsViewModel PlaybackSettings { get; }
 
+    public ShortcutSettingsService ShortcutSettings { get; }
+
     [ObservableProperty]
     private GridLength rightColumnWidth;
 
@@ -44,6 +46,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Library = new LibraryViewModel(filePickerService, PlaybackControls, settingsFilePath, libraryLogger);
         Queue = new QueueViewModel(PlaybackControls, queueLogger);
         PlaybackSettings = new PlaybackSettingsViewModel(settingsFilePath, outputDeviceService, PlaybackControls);
+        ShortcutSettings = new ShortcutSettingsService(settingsFilePath);
 
         rightColumnWidth = new GridLength(SettingsStore.LoadRightColumnWidth(_settingsFilePath) ?? DefaultRightColumnWidth);
     }

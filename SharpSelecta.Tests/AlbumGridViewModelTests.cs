@@ -289,6 +289,28 @@ public class AlbumGridViewModelTests
     }
 
     [Test]
+    public async Task IncreaseTileSizeCommand_GrowsTheTileSizeByOneStep()
+    {
+        var vm = CreateLibraryViewModel();
+        var initialSize = vm.Grid.TileSize;
+
+        vm.Grid.IncreaseTileSizeCommand.Execute(null);
+
+        await Assert.That(vm.Grid.TileSize).IsEqualTo(initialSize + AlbumGridViewModel.TileSizeStep);
+    }
+
+    [Test]
+    public async Task DecreaseTileSizeCommand_ShrinksTheTileSizeByOneStep()
+    {
+        var vm = CreateLibraryViewModel();
+        var initialSize = vm.Grid.TileSize;
+
+        vm.Grid.DecreaseTileSizeCommand.Execute(null);
+
+        await Assert.That(vm.Grid.TileSize).IsEqualTo(initialSize - AlbumGridViewModel.TileSizeStep);
+    }
+
+    [Test]
     public async Task SearchQuery_FiltersRowsToAlbumsMatchingByTitleArtistOrMemberTrack()
     {
         var vm = CreateLibraryViewModel();

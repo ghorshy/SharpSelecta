@@ -202,13 +202,28 @@
   <data name="ShortcutSearchLibrary" xml:space="preserve">
     <value>Search the library</value>
   </data>
-  <data name="ShortcutResizeAlbumTiles" xml:space="preserve">
-    <value>Resize album tiles</value>
+  <data name="ShortcutIncreaseTileSize" xml:space="preserve">
+    <value>Increase album tile size</value>
   </data>
-  <data name="ShortcutSeek" xml:space="preserve">
-    <value>Seek backward/forward</value>
+  <data name="ShortcutDecreaseTileSize" xml:space="preserve">
+    <value>Decrease album tile size</value>
+  </data>
+  <data name="ShortcutSeekBackward" xml:space="preserve">
+    <value>Seek backward</value>
+  </data>
+  <data name="ShortcutSeekForward" xml:space="preserve">
+    <value>Seek forward</value>
   </data>
   <data name="SeekStepSeconds" xml:space="preserve">
     <value>Seek step (seconds)</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="PressAKeyCombination" xml:space="preserve">
+    <value>Press a key combination…</value>
+  </data>
+  <data name="ShortcutConflictFormat" xml:space="preserve">
+    <value>Also used by "{0}"</value>
   </data>
 </root>
