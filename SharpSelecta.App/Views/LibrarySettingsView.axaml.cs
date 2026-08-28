@@ -13,7 +13,7 @@ public partial class LibrarySettingsView : UserControl
 
     private void OnRemoveFolderClick(object? sender, RoutedEventArgs e)
     {
-        if (sender is not Button { DataContext: string folderPath } || DataContext is not LibraryViewModel vm)
+        if (!RowClickHelper.TryGetRowContext<string, LibraryViewModel>(sender, DataContext, out var folderPath, out var vm))
             return;
 
         vm.RemovePendingFolderCommand.Execute(folderPath);

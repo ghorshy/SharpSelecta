@@ -24,7 +24,7 @@ public partial class KeyboardShortcutsSettingsView : UserControl
 
     private void OnRecordClick(object? sender, RoutedEventArgs e)
     {
-        if (sender is not Button { DataContext: ShortcutRowViewModel row } || DataContext is not KeyboardShortcutsViewModel vm)
+        if (!RowClickHelper.TryGetRowContext<ShortcutRowViewModel, KeyboardShortcutsViewModel>(sender, DataContext, out var row, out var vm))
             return;
 
         _liveModifiers = KeyModifiers.None;
@@ -33,7 +33,7 @@ public partial class KeyboardShortcutsSettingsView : UserControl
 
     private void OnResetClick(object? sender, RoutedEventArgs e)
     {
-        if (sender is not Button { DataContext: ShortcutRowViewModel row } || DataContext is not KeyboardShortcutsViewModel vm)
+        if (!RowClickHelper.TryGetRowContext<ShortcutRowViewModel, KeyboardShortcutsViewModel>(sender, DataContext, out var row, out var vm))
             return;
 
         vm.ResetToDefault(row);
@@ -41,7 +41,7 @@ public partial class KeyboardShortcutsSettingsView : UserControl
 
     private void OnClearClick(object? sender, RoutedEventArgs e)
     {
-        if (sender is not Button { DataContext: ShortcutRowViewModel row } || DataContext is not KeyboardShortcutsViewModel vm)
+        if (!RowClickHelper.TryGetRowContext<ShortcutRowViewModel, KeyboardShortcutsViewModel>(sender, DataContext, out var row, out var vm))
             return;
 
         vm.ClearShortcut(row);
