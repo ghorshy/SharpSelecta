@@ -139,6 +139,9 @@
                                     <MenuItem Header="{x:Static res:Strings.AddToQueue}"
                                               Command="{Binding Library.AddToQueueCommand}"
                                               CommandParameter="{Binding Track}" />
+                                    <MenuItem Header="{Binding Library.ShowInFileManagerLabel}"
+                                              Command="{Binding Library.ShowInFileManagerCommand}"
+                                              CommandParameter="{Binding Track}" />
                                 </ContextMenu>
                             </Setter.Value>
                         </Setter>

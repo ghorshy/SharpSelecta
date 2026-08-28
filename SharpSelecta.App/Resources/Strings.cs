@@ -63,6 +63,7 @@ public static class Strings
     public static string Reset => Get(nameof(Reset));
     public static string PressAKeyCombination => Get(nameof(PressAKeyCombination));
     public static string ShortcutNotSet => Get(nameof(ShortcutNotSet));
+    public static string GenericFileManager => Get(nameof(GenericFileManager));
 
     public static string FailedToLoadFile(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToLoadFileFormat"), reason);
@@ -72,6 +73,9 @@ public static class Strings
 
     public static string ShortcutConflict(string otherDescription) =>
         string.Format(CultureInfo.CurrentCulture, Get("ShortcutConflictFormat"), otherDescription);
+
+    public static string ShowInFileManager(string name) =>
+        string.Format(CultureInfo.CurrentCulture, Get("ShowInFileManagerFormat"), name);
 
     private static string Get(string name) => ResourceManager.GetString(name, CultureInfo.CurrentUICulture)!;
 }

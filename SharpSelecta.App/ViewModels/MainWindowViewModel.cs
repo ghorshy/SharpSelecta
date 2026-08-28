@@ -34,6 +34,7 @@ public partial class MainWindowViewModel : ViewModelBase
         IAudioEngine audioEngine,
         IOutputDeviceService outputDeviceService,
         IFilePickerService filePickerService,
+        IFileManagerService fileManagerService,
         string settingsFilePath,
         ILogger<PlaybackControlsViewModel> playbackControlsLogger,
         ILogger<LibraryViewModel> libraryLogger,
@@ -43,7 +44,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         var queue = new PlaybackQueue();
         PlaybackControls = new PlaybackControlsViewModel(audioEngine, queue, playbackControlsLogger);
-        Library = new LibraryViewModel(filePickerService, PlaybackControls, settingsFilePath, libraryLogger);
+        Library = new LibraryViewModel(filePickerService, PlaybackControls, fileManagerService, settingsFilePath, libraryLogger);
         Queue = new QueueViewModel(PlaybackControls, queueLogger);
         PlaybackSettings = new PlaybackSettingsViewModel(settingsFilePath, outputDeviceService, PlaybackControls);
         ShortcutSettings = new ShortcutSettingsService(settingsFilePath);

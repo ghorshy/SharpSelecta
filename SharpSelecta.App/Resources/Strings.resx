@@ -232,4 +232,10 @@
   <data name="ShortcutConflictFormat" xml:space="preserve">
     <value>Also used by "{0}"</value>
   </data>
+  <data name="ShowInFileManagerFormat" xml:space="preserve">
+    <value>Show in {0}</value>
+  </data>
+  <data name="GenericFileManager" xml:space="preserve">
+    <value>File Manager</value>
+  </data>
 </root>

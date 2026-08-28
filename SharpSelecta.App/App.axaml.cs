@@ -36,6 +36,7 @@ public partial class App : Application
             services.AddLogging(builder => builder.AddSerilog(dispose: false));
             services.AddAudioEngine();
             services.AddSingleton<IFilePickerService>(new AvaloniaFilePickerService(mainWindow));
+            services.AddSingleton<IFileManagerService, FileManagerService>();
             var provider = services.BuildServiceProvider();
 
             var audioEngine = provider.GetRequiredService<IAudioEngine>();
@@ -48,6 +49,7 @@ public partial class App : Application
                 audioEngine,
                 provider.GetRequiredService<IOutputDeviceService>(),
                 provider.GetRequiredService<IFilePickerService>(),
+                provider.GetRequiredService<IFileManagerService>(),
                 settingsFilePath,
                 provider.GetRequiredService<ILogger<PlaybackControlsViewModel>>(),
                 provider.GetRequiredService<ILogger<LibraryViewModel>>(),

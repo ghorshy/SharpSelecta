@@ -24,6 +24,7 @@ public class MainWindowViewModelTests
             audioEngine,
             Substitute.For<IOutputDeviceService>(),
             filePickerService,
+            Substitute.For<IFileManagerService>(),
             settingsFilePath ?? CreateTempSettingsPath(),
             NullLogger<PlaybackControlsViewModel>.Instance,
             NullLogger<LibraryViewModel>.Instance,

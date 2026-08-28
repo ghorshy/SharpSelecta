@@ -85,6 +85,9 @@
                                                     <MenuItem Header="{x:Static res:Strings.AddToQueue}"
                                                               Command="{Binding Library.AddAlbumToQueueCommand}"
                                                               CommandParameter="{Binding}" />
+                                                    <MenuItem Header="{Binding Library.ShowInFileManagerLabel}"
+                                                              Command="{Binding Library.ShowAlbumInFileManagerCommand}"
+                                                              CommandParameter="{Binding}" />
                                                 </ContextMenu>
                                             </Border.ContextMenu>
                                             <StackPanel Spacing="{styles:SpacingValue XXS}">

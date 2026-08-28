@@ -20,6 +20,7 @@ public class SettingsWindowViewModelTests
         return new LibraryViewModel(
             Substitute.For<IFilePickerService>(),
             playbackControls,
+            Substitute.For<IFileManagerService>(),
             CreateTempSettingsPath(),
             NullLogger<LibraryViewModel>.Instance);
     }

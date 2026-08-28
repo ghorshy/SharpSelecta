@@ -19,8 +19,11 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 {
     private readonly IFilePickerService _filePickerService;
     private readonly PlaybackControlsViewModel _playbackControls;
+    private readonly IFileManagerService _fileManagerService;
     private readonly string _settingsFilePath;
     private readonly ILogger<LibraryViewModel> _logger;
+
+    public string ShowInFileManagerLabel => _fileManagerService.ActionLabel;
 
     [ObservableProperty]
     private string? statusMessage;
@@ -207,11 +210,13 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     public LibraryViewModel(
         IFilePickerService filePickerService,
         PlaybackControlsViewModel playbackControls,
+        IFileManagerService fileManagerService,
         string settingsFilePath,
         ILogger<LibraryViewModel> logger)
     {
         _filePickerService = filePickerService;
         _playbackControls = playbackControls;
+        _fileManagerService = fileManagerService;
         _settingsFilePath = settingsFilePath;
         _logger = logger;
 
@@ -377,4 +382,16 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     [RelayCommand]
     private Task AddAlbumToQueue(AlbumViewModel album) => _playbackControls.AddToQueue(album.UnderlyingTracks);
+
+    [RelayCommand]
+    private void ShowInFileManager(Track track) => _fileManagerService.RevealInFileManager(track.FilePath);
+
+    [RelayCommand]
+    private void ShowAlbumInFileManager(AlbumViewModel album)
+    {
+        if (album.UnderlyingTracks.Count > 0)
+        {
+            _fileManagerService.RevealInFileManager(album.UnderlyingTracks[0].FilePath);
+        }
+    }
 }

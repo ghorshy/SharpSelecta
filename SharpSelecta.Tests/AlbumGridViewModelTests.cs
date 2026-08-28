@@ -19,7 +19,8 @@ public class AlbumGridViewModelTests
         var filePickerService = Substitute.For<IFilePickerService>();
         var playbackControls = new PlaybackControlsViewModel(audioEngine, new PlaybackQueue(), NullLogger<PlaybackControlsViewModel>.Instance);
         return new LibraryViewModel(
-            filePickerService, playbackControls, settingsFilePath ?? CreateTempSettingsPath(), NullLogger<LibraryViewModel>.Instance);
+            filePickerService, playbackControls, Substitute.For<IFileManagerService>(),
+            settingsFilePath ?? CreateTempSettingsPath(), NullLogger<LibraryViewModel>.Instance);
     }
 
     private static void AddTrack(LibraryViewModel vm, string filePath, string album) =>

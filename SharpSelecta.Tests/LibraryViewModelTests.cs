@@ -22,15 +22,25 @@ public class LibraryViewModelTests
         out IAudioEngine audioEngine,
         out IFilePickerService filePickerService,
         out PlaybackControlsViewModel playbackControls,
+        string? settingsFilePath = null) =>
+        CreateViewModel(out audioEngine, out filePickerService, out playbackControls, out _, settingsFilePath);
+
+    private static LibraryViewModel CreateViewModel(
+        out IAudioEngine audioEngine,
+        out IFilePickerService filePickerService,
+        out PlaybackControlsViewModel playbackControls,
+        out IFileManagerService fileManagerService,
         string? settingsFilePath = null)
     {
         audioEngine = Substitute.For<IAudioEngine>();
         filePickerService = Substitute.For<IFilePickerService>();
+        fileManagerService = Substitute.For<IFileManagerService>();
         var queue = new PlaybackQueue();
         playbackControls = new PlaybackControlsViewModel(audioEngine, queue, NullLogger<PlaybackControlsViewModel>.Instance);
         return new LibraryViewModel(
             filePickerService,
             playbackControls,
+            fileManagerService,
             settingsFilePath ?? CreateTempSettingsPath(),
             NullLogger<LibraryViewModel>.Instance);
     }
@@ -806,5 +816,37 @@ public class LibraryViewModelTests
         vm.FocusSearchCommand.Execute(null);
 
         await Assert.That(raised).IsTrue();
+    }
+
+    [Test]
+    public async Task ShowInFileManagerLabel_ReflectsTheServicesActionLabel()
+    {
+        var vm = CreateViewModel(out _, out _, out _, out var fileManagerService);
+        fileManagerService.ActionLabel.Returns("Show in Testolinux");
+
+        await Assert.That(vm.ShowInFileManagerLabel).IsEqualTo("Show in Testolinux");
+    }
+
+    [Test]
+    public async Task ShowInFileManagerCommand_RevealsTheTracksFile()
+    {
+        var vm = CreateViewModel(out _, out _, out _, out var fileManagerService);
+        var track = new Track("/music/song.mp3", "song.mp3");
+
+        vm.ShowInFileManagerCommand.Execute(track);
+
+        fileManagerService.Received(1).RevealInFileManager("/music/song.mp3");
+    }
+
+    [Test]
+    public async Task ShowAlbumInFileManagerCommand_RevealsTheFirstTracksFile()
+    {
+        var vm = CreateViewModel(out _, out _, out _, out var fileManagerService);
+        AddTrack(vm, "/music/b.mp3", "Album", "Artist", trackNumber: 2);
+        AddTrack(vm, "/music/a.mp3", "Album", "Artist", trackNumber: 1);
+
+        vm.ShowAlbumInFileManagerCommand.Execute(vm.Grid.Albums[0]);
+
+        fileManagerService.Received(1).RevealInFileManager("/music/a.mp3");
     }
 }
