@@ -62,6 +62,7 @@ public static class Strings
     public static string SeekStepSeconds => Get(nameof(SeekStepSeconds));
     public static string Reset => Get(nameof(Reset));
     public static string PressAKeyCombination => Get(nameof(PressAKeyCombination));
+    public static string ShortcutNotSet => Get(nameof(ShortcutNotSet));
 
     public static string FailedToLoadFile(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToLoadFileFormat"), reason);

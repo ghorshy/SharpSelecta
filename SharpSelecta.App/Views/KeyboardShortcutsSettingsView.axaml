@@ -15,10 +15,11 @@
             <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:ShortcutRowViewModel">
                     <StackPanel Margin="{styles:Spacing Bottom=XS}">
-                        <Grid ColumnDefinitions="*,Auto,Auto">
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto">
                             <TextBlock Grid.Column="0" Text="{Binding Description}" VerticalAlignment="Center" TextWrapping="Wrap" />
                             <Button Grid.Column="1" Content="{Binding DisplayGesture}" Click="OnRecordClick" Margin="{styles:Spacing Left=XS}" MinWidth="110" />
                             <Button Grid.Column="2" Content="{x:Static res:Strings.Reset}" Click="OnResetClick" Margin="{styles:Spacing Left=XXS}" />
+                            <Button Grid.Column="3" Content="{x:Static res:Strings.Clear}" Click="OnClearClick" Margin="{styles:Spacing Left=XXS}" />
                         </Grid>
                         <TextBlock Text="{Binding ConflictWarning}" Foreground="OrangeRed" TextWrapping="Wrap"
                                    IsVisible="{Binding ConflictWarning, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />

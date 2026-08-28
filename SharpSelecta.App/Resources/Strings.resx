@@ -226,6 +226,9 @@
   <data name="PressAKeyCombination" xml:space="preserve">
     <value>Press a key combination…</value>
   </data>
+  <data name="ShortcutNotSet" xml:space="preserve">
+    <value>Not set</value>
+  </data>
   <data name="ShortcutConflictFormat" xml:space="preserve">
     <value>Also used by "{0}"</value>
   </data>

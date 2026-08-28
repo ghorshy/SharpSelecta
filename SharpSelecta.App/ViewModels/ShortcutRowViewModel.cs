@@ -31,7 +31,9 @@ public sealed partial class ShortcutRowViewModel : ViewModelBase
     [ObservableProperty]
     private string? conflictWarning;
 
-    public string DisplayGesture => IsRecording ? (RecordingPreview ?? Strings.PressAKeyCombination) : Gesture;
+    public string DisplayGesture => IsRecording
+        ? (RecordingPreview ?? Strings.PressAKeyCombination)
+        : (string.IsNullOrEmpty(Gesture) ? Strings.ShortcutNotSet : Gesture);
 
     public ShortcutRowViewModel(ShortcutDefinition definition, string initialGesture)
     {

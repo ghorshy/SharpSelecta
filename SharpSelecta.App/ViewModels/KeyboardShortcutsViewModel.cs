@@ -68,8 +68,21 @@ public sealed partial class KeyboardShortcutsViewModel : ViewModelBase, ISetting
 
     public void ResetToDefault(ShortcutRowViewModel row)
     {
+        if (RecordingRow == row)
+            CancelRecording();
+
         _shortcutSettings.ResetOverride(row.Id);
         row.Gesture = row.DefaultGesture;
+        row.ConflictWarning = null;
+    }
+
+    public void ClearShortcut(ShortcutRowViewModel row)
+    {
+        if (RecordingRow == row)
+            CancelRecording();
+
+        _shortcutSettings.SetOverride(row.Id, string.Empty);
+        row.Gesture = string.Empty;
         row.ConflictWarning = null;
     }
 }
