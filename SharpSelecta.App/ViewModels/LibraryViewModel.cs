@@ -384,14 +384,10 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     private Task AddAlbumToQueue(AlbumViewModel album) => _playbackControls.AddToQueue(album.UnderlyingTracks);
 
     [RelayCommand]
-    private void ShowInFileManager(Track track) => _fileManagerService.RevealInFileManager(track.FilePath);
+    private Task ShowInFileManagerAsync(Track track) => _fileManagerService.RevealInFileManagerAsync(track.FilePath);
 
     [RelayCommand]
-    private void ShowAlbumInFileManager(AlbumViewModel album)
-    {
-        if (album.UnderlyingTracks.Count > 0)
-        {
-            _fileManagerService.RevealInFileManager(album.UnderlyingTracks[0].FilePath);
-        }
-    }
+    private Task ShowAlbumInFileManagerAsync(AlbumViewModel album) => album.UnderlyingTracks.Count > 0
+        ? _fileManagerService.RevealInFileManagerAsync(album.UnderlyingTracks[0].FilePath)
+        : Task.CompletedTask;
 }

@@ -14,4 +14,14 @@ public class FileManagerServiceTests
 
         await Assert.That(service.ActionLabel).IsNotNullOrEmpty();
     }
+
+    // Exercises the real D-Bus attempt + per-executable + xdg-open fallback chain end to end -
+    // must never throw, regardless of what's actually available in the environment running this.
+    [Test]
+    public async Task RevealInFileManagerAsync_DoesNotThrow()
+    {
+        var service = new FileManagerService(NullLogger<FileManagerService>.Instance);
+
+        await service.RevealInFileManagerAsync("/tmp/sharpselecta-file-manager-service-test.mp3");
+    }
 }

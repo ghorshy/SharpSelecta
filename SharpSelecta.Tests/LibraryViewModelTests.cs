@@ -833,9 +833,9 @@ public class LibraryViewModelTests
         var vm = CreateViewModel(out _, out _, out _, out var fileManagerService);
         var track = new Track("/music/song.mp3", "song.mp3");
 
-        vm.ShowInFileManagerCommand.Execute(track);
+        await vm.ShowInFileManagerCommand.ExecuteAsync(track);
 
-        fileManagerService.Received(1).RevealInFileManager("/music/song.mp3");
+        await fileManagerService.Received(1).RevealInFileManagerAsync("/music/song.mp3");
     }
 
     [Test]
@@ -845,8 +845,8 @@ public class LibraryViewModelTests
         AddTrack(vm, "/music/b.mp3", "Album", "Artist", trackNumber: 2);
         AddTrack(vm, "/music/a.mp3", "Album", "Artist", trackNumber: 1);
 
-        vm.ShowAlbumInFileManagerCommand.Execute(vm.Grid.Albums[0]);
+        await vm.ShowAlbumInFileManagerCommand.ExecuteAsync(vm.Grid.Albums[0]);
 
-        fileManagerService.Received(1).RevealInFileManager("/music/a.mp3");
+        await fileManagerService.Received(1).RevealInFileManagerAsync("/music/a.mp3");
     }
 }
