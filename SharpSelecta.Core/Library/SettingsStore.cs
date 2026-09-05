@@ -90,6 +90,11 @@ public static partial class SettingsStore
     public static void SaveShortcutOverrides(string settingsFilePath, IReadOnlyDictionary<string, string> overrides) =>
         Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { ShortcutOverrides = overrides });
 
+    public static AppTheme LoadTheme(string settingsFilePath) => Load(settingsFilePath)?.Theme ?? AppTheme.Dark;
+
+    public static void SaveTheme(string settingsFilePath, AppTheme theme) =>
+        Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { Theme = theme });
+
     private static SettingsData CurrentOrEmpty(string settingsFilePath) =>
         Load(settingsFilePath) ?? new SettingsData();
 
@@ -141,6 +146,7 @@ public static partial class SettingsStore
         public VolumeCurve? VolumeCurve { get; init; }
         public int? SeekStepSeconds { get; init; }
         public IReadOnlyDictionary<string, string>? ShortcutOverrides { get; init; }
+        public AppTheme? Theme { get; init; }
     }
 
     [JsonSerializable(typeof(SettingsData))]

@@ -16,6 +16,7 @@ using SharpSelecta.App.ViewModels;
 using SharpSelecta.App.Views;
 using SharpSelecta.Audio;
 using SharpSelecta.Core.Audio;
+using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App;
 
@@ -30,6 +31,12 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            var settingsFilePath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "SharpSelecta", "library-settings.json");
+
+            ThemeService.Apply(SettingsStore.LoadTheme(settingsFilePath));
+
             var mainWindow = new MainWindow();
 
             var services = new ServiceCollection();
@@ -40,10 +47,6 @@ public partial class App : Application
             var provider = services.BuildServiceProvider();
 
             var audioEngine = provider.GetRequiredService<IAudioEngine>();
-
-            var settingsFilePath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "SharpSelecta", "library-settings.json");
 
             var mainWindowViewModel = new MainWindowViewModel(
                 audioEngine,

@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SharpSelecta.App.ViewModels"
+             xmlns:res="using:SharpSelecta.App.Resources"
+             xmlns:styles="using:SharpSelecta.App.Styles"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="200"
+             x:Class="SharpSelecta.App.Views.InterfaceSettingsView"
+             x:DataType="vm:InterfaceSettingsViewModel">
+
+    <StackPanel Spacing="{styles:SpacingValue XXS}">
+        <TextBlock Text="{x:Static res:Strings.Theme}" Opacity="0.7" />
+        <ComboBox ItemsSource="{Binding ThemeDisplayNames}"
+                  SelectedItem="{Binding SelectedThemeDisplayName}"
+                  HorizontalAlignment="Left" MinWidth="160" />
+    </StackPanel>
+
+</UserControl>

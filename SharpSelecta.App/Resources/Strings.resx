@@ -121,6 +121,21 @@
   <data name="SettingsCategoryPlayback" xml:space="preserve">
     <value>Playback</value>
   </data>
+  <data name="SettingsCategoryInterface" xml:space="preserve">
+    <value>Interface</value>
+  </data>
+  <data name="Theme" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="ThemeSystem" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
   <data name="RestoreQueueOnStartup" xml:space="preserve">
     <value>Restore previous queue on startup</value>
   </data>

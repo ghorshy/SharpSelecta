@@ -8,7 +8,7 @@ namespace SharpSelecta.App.ViewModels;
 public partial class SettingsWindowViewModel : ViewModelBase
 {
     public IReadOnlyList<string> Categories { get; } =
-        [Strings.SettingsCategoryLibrary, Strings.SettingsCategoryPlayback, Strings.SettingsCategoryKeyboardShortcuts];
+        [Strings.SettingsCategoryLibrary, Strings.SettingsCategoryPlayback, Strings.SettingsCategoryInterface, Strings.SettingsCategoryKeyboardShortcuts];
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedCategoryViewModel))]
@@ -18,19 +18,24 @@ public partial class SettingsWindowViewModel : ViewModelBase
 
     public PlaybackSettingsViewModel Playback { get; }
 
+    public InterfaceSettingsViewModel Interface { get; }
+
     public KeyboardShortcutsViewModel KeyboardShortcuts { get; }
 
     public ISettingsCategoryViewModel SelectedCategoryViewModel => SelectedCategory switch
     {
         _ when SelectedCategory == Strings.SettingsCategoryPlayback => Playback,
+        _ when SelectedCategory == Strings.SettingsCategoryInterface => Interface,
         _ when SelectedCategory == Strings.SettingsCategoryKeyboardShortcuts => KeyboardShortcuts,
         _ => Library,
     };
 
-    public SettingsWindowViewModel(LibraryViewModel library, PlaybackSettingsViewModel playback, ShortcutSettingsService shortcutSettings)
+    public SettingsWindowViewModel(
+        LibraryViewModel library, PlaybackSettingsViewModel playback, InterfaceSettingsViewModel interfaceSettings, ShortcutSettingsService shortcutSettings)
     {
         Library = library;
         Playback = playback;
+        Interface = interfaceSettings;
         KeyboardShortcuts = new KeyboardShortcutsViewModel(shortcutSettings);
         selectedCategory = Categories[0];
     }

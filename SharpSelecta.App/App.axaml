@@ -2,8 +2,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="SharpSelecta.App.App"
              xmlns:local="using:SharpSelecta.App"
-             RequestedThemeVariant="Default">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+             RequestedThemeVariant="Dark">
+             <!-- Dark is the app's default theme. "Default" follows the system theme variant instead; -->
+             <!-- the user's saved preference (Interface settings) is re-applied at startup in App.axaml.cs. -->
 
     <Application.DataTemplates>
         <local:ViewLocator/>

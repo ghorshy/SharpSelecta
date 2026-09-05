@@ -25,6 +25,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public PlaybackSettingsViewModel PlaybackSettings { get; }
 
+    public InterfaceSettingsViewModel InterfaceSettings { get; }
+
     public ShortcutSettingsService ShortcutSettings { get; }
 
     [ObservableProperty]
@@ -47,6 +49,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Library = new LibraryViewModel(filePickerService, PlaybackControls, fileManagerService, settingsFilePath, libraryLogger);
         Queue = new QueueViewModel(PlaybackControls, queueLogger);
         PlaybackSettings = new PlaybackSettingsViewModel(settingsFilePath, outputDeviceService, PlaybackControls);
+        InterfaceSettings = new InterfaceSettingsViewModel(settingsFilePath);
         ShortcutSettings = new ShortcutSettingsService(settingsFilePath);
 
         rightColumnWidth = new GridLength(SettingsStore.LoadRightColumnWidth(_settingsFilePath) ?? DefaultRightColumnWidth);

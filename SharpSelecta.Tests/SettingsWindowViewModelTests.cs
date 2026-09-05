@@ -35,18 +35,20 @@ public class SettingsWindowViewModelTests
             playbackControls);
     }
 
+    private static InterfaceSettingsViewModel CreateInterfaceSettingsViewModel() => new(CreateTempSettingsPath());
+
     private static ShortcutSettingsService CreateShortcutSettingsService() => new(CreateTempSettingsPath());
 
     private static SettingsWindowViewModel CreateViewModel() =>
-        new(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel(), CreateShortcutSettingsService());
+        new(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel(), CreateInterfaceSettingsViewModel(), CreateShortcutSettingsService());
 
     [Test]
-    public async Task Categories_ContainsLibraryPlaybackAndKeyboardShortcuts()
+    public async Task Categories_ContainsLibraryPlaybackInterfaceAndKeyboardShortcuts()
     {
         var vm = CreateViewModel();
 
         await Assert.That(vm.Categories).IsEquivalentTo(
-            [Strings.SettingsCategoryLibrary, Strings.SettingsCategoryPlayback, Strings.SettingsCategoryKeyboardShortcuts]);
+            [Strings.SettingsCategoryLibrary, Strings.SettingsCategoryPlayback, Strings.SettingsCategoryInterface, Strings.SettingsCategoryKeyboardShortcuts]);
     }
 
     [Test]
@@ -62,7 +64,7 @@ public class SettingsWindowViewModelTests
     {
         var library = CreateLibraryViewModel();
 
-        var vm = new SettingsWindowViewModel(library, CreatePlaybackSettingsViewModel(), CreateShortcutSettingsService());
+        var vm = new SettingsWindowViewModel(library, CreatePlaybackSettingsViewModel(), CreateInterfaceSettingsViewModel(), CreateShortcutSettingsService());
 
         await Assert.That(vm.Library).IsEqualTo(library);
     }
@@ -72,9 +74,19 @@ public class SettingsWindowViewModelTests
     {
         var playback = CreatePlaybackSettingsViewModel();
 
-        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), playback, CreateShortcutSettingsService());
+        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), playback, CreateInterfaceSettingsViewModel(), CreateShortcutSettingsService());
 
         await Assert.That(vm.Playback).IsEqualTo(playback);
+    }
+
+    [Test]
+    public async Task Interface_ExposesTheSameInstancePassedIn()
+    {
+        var interfaceSettings = CreateInterfaceSettingsViewModel();
+
+        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel(), interfaceSettings, CreateShortcutSettingsService());
+
+        await Assert.That(vm.Interface).IsEqualTo(interfaceSettings);
     }
 
     [Test]
@@ -82,7 +94,7 @@ public class SettingsWindowViewModelTests
     {
         var library = CreateLibraryViewModel();
 
-        var vm = new SettingsWindowViewModel(library, CreatePlaybackSettingsViewModel(), CreateShortcutSettingsService());
+        var vm = new SettingsWindowViewModel(library, CreatePlaybackSettingsViewModel(), CreateInterfaceSettingsViewModel(), CreateShortcutSettingsService());
 
         await Assert.That(vm.SelectedCategoryViewModel).IsEqualTo(library);
     }
@@ -91,11 +103,22 @@ public class SettingsWindowViewModelTests
     public async Task SelectedCategoryViewModel_AfterSwitchingToPlayback_ResolvesToPlayback()
     {
         var playback = CreatePlaybackSettingsViewModel();
-        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), playback, CreateShortcutSettingsService());
+        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), playback, CreateInterfaceSettingsViewModel(), CreateShortcutSettingsService());
 
         vm.SelectedCategory = Strings.SettingsCategoryPlayback;
 
         await Assert.That(vm.SelectedCategoryViewModel).IsEqualTo(playback);
+    }
+
+    [Test]
+    public async Task SelectedCategoryViewModel_AfterSwitchingToInterface_ResolvesToInterface()
+    {
+        var interfaceSettings = CreateInterfaceSettingsViewModel();
+        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel(), interfaceSettings, CreateShortcutSettingsService());
+
+        vm.SelectedCategory = Strings.SettingsCategoryInterface;
+
+        await Assert.That(vm.SelectedCategoryViewModel).IsEqualTo(interfaceSettings);
     }
 
     [Test]

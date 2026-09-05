@@ -26,6 +26,11 @@ public static class Strings
     public static string Settings => Get(nameof(Settings));
     public static string SettingsCategoryLibrary => Get(nameof(SettingsCategoryLibrary));
     public static string SettingsCategoryPlayback => Get(nameof(SettingsCategoryPlayback));
+    public static string SettingsCategoryInterface => Get(nameof(SettingsCategoryInterface));
+    public static string Theme => Get(nameof(Theme));
+    public static string ThemeSystem => Get(nameof(ThemeSystem));
+    public static string ThemeLight => Get(nameof(ThemeLight));
+    public static string ThemeDark => Get(nameof(ThemeDark));
     public static string RestoreQueueOnStartup => Get(nameof(RestoreQueueOnStartup));
     public static string OutputDevice => Get(nameof(OutputDevice));
     public static string SystemDefaultAudioDevice => Get(nameof(SystemDefaultAudioDevice));

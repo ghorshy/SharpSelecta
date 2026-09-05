@@ -703,4 +703,50 @@ public class SettingsStoreTests
             File.Delete(settingsPath);
         }
     }
+
+    [Test]
+    public async Task LoadTheme_WhenFileDoesNotExist_DefaultsToDark()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        var loaded = SettingsStore.LoadTheme(settingsPath);
+
+        await Assert.That(loaded).IsEqualTo(AppTheme.Dark);
+    }
+
+    [Test]
+    public async Task SaveAndLoad_RoundTripsTheme()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            SettingsStore.SaveTheme(settingsPath, AppTheme.Light);
+
+            var loaded = SettingsStore.LoadTheme(settingsPath);
+
+            await Assert.That(loaded).IsEqualTo(AppTheme.Light);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task SavingTheme_DoesNotClobberOtherSettings()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
+
+            SettingsStore.SaveTheme(settingsPath, AppTheme.Light);
+
+            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
 }
