@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -26,11 +27,17 @@ public partial class AlbumGridViewModel : ViewModelBase
 
     private static readonly int ArtworkLoadConcurrency = Math.Max(1, Environment.ProcessorCount / 2);
 
+    private static readonly TimeSpan SearchDebounceDelay = TimeSpan.FromMilliseconds(150);
+
     private readonly LibraryViewModel _library;
     private readonly string _settingsFilePath;
     private readonly ILogger _logger;
     private double _viewportWidth;
     private int _columnCount = -1;
+    private CancellationTokenSource? _searchDebounceCts;
+
+    /// <summary>Completes once a pending debounced search rebuild (see the SearchQuery subscription below) has run - for tests.</summary>
+    public Task SearchDebounceTask { get; private set; } = Task.CompletedTask;
 
     [ObservableProperty]
     private double tileSize;
@@ -60,9 +67,38 @@ public partial class AlbumGridViewModel : ViewModelBase
         _library.Tracks.CollectionChanged += (_, _) => RebuildAlbums();
         _library.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(LibraryViewModel.SearchQuery))
+            if (e.PropertyName != nameof(LibraryViewModel.SearchQuery))
+                return;
+
+            // Debounce so fast typing doesn't rescore every album on every keystroke.
+            // Clearing is exempt - "" needs no scoring and should feel instant.
+            _searchDebounceCts?.Cancel();
+
+            if (string.IsNullOrWhiteSpace(_library.SearchQuery))
+            {
                 RebuildRows(force: true);
+                SearchDebounceTask = Task.CompletedTask;
+                return;
+            }
+
+            var cts = new CancellationTokenSource();
+            _searchDebounceCts = cts;
+            SearchDebounceTask = DebounceRebuildRowsAsync(cts.Token);
         };
+    }
+
+    private async Task DebounceRebuildRowsAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(SearchDebounceDelay, cancellationToken);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        RebuildRows(force: true);
     }
 
     public void SetViewportWidth(double width)

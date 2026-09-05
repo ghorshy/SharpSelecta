@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -136,10 +137,47 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     public BulkObservableCollection<LibraryTrackViewModel> DisplayedTracks { get; } = [];
 
+    private static readonly TimeSpan SearchDebounceDelay = TimeSpan.FromMilliseconds(150);
+
+    private CancellationTokenSource? _searchDebounceCts;
+
+    /// <summary>Completes once a pending debounced search rescan (see OnSearchQueryChanged) has run - for tests.</summary>
+    public Task SearchDebounceTask { get; private set; } = Task.CompletedTask;
+
     [ObservableProperty]
     private string searchQuery = "";
 
-    partial void OnSearchQueryChanged(string value) => RefreshDisplayedTracks();
+    // Debounce so fast typing doesn't rescan/rescore every track on every keystroke.
+    // Clearing is exempt - "" needs no scoring and should feel instant.
+    partial void OnSearchQueryChanged(string value)
+    {
+        _searchDebounceCts?.Cancel();
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            RefreshDisplayedTracks();
+            SearchDebounceTask = Task.CompletedTask;
+            return;
+        }
+
+        var cts = new CancellationTokenSource();
+        _searchDebounceCts = cts;
+        SearchDebounceTask = DebounceRefreshDisplayedTracksAsync(cts.Token);
+    }
+
+    private async Task DebounceRefreshDisplayedTracksAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(SearchDebounceDelay, cancellationToken);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        RefreshDisplayedTracks();
+    }
 
     [RelayCommand]
     private void ClearSearch() => SearchQuery = "";

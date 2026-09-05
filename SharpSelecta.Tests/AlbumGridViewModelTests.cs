@@ -322,6 +322,7 @@ public class AlbumGridViewModelTests
         vm.Grid.SetViewportWidth(2000);
 
         vm.SearchQuery = "wonderwall";
+        await vm.Grid.SearchDebounceTask;
 
         await Assert.That(vm.Grid.Rows.Count).IsEqualTo(1);
         await Assert.That(vm.Grid.Rows[0].Tiles[0].Title).IsEqualTo("Morning Glory");
@@ -347,6 +348,7 @@ public class AlbumGridViewModelTests
         vm.Grid.SetSortModeCommand.Execute(AlbumSortMode.Artist);
 
         vm.SearchQuery = "milli";
+        await vm.Grid.SearchDebounceTask;
 
         await Assert.That(vm.Grid.Rows.Sum(r => r.Tiles.Count)).IsEqualTo(2);
         await Assert.That(vm.Grid.Rows[0].Tiles[0].Title).IsEqualTo("Millitary Dance");

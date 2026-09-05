@@ -774,6 +774,7 @@ public class LibraryViewModelTests
         AddTrack(vm, "/music/c.mp3", "Some Album", "Some Artist", title: "Unrelated Song");
 
         vm.SearchQuery = "oasis";
+        await vm.SearchDebounceTask;
 
         await Assert.That(vm.DisplayedTracks.Count).IsEqualTo(1);
         await Assert.That(vm.DisplayedTracks[0].Track.FilePath).IsEqualTo("/music/a.mp3");
@@ -785,6 +786,7 @@ public class LibraryViewModelTests
         var vm = CreateViewModel(out _, out _, out _);
         AddTrack(vm, "/music/a.mp3", "Morning Glory", "Oasis", title: "Wonderwall");
         vm.SearchQuery = "oasis";
+        await vm.SearchDebounceTask;
         await Assert.That(vm.DisplayedTracks.Count).IsEqualTo(1);
 
         AddTrack(vm, "/music/b.mp3", "Definitely Maybe", "Oasis", title: "Live Forever");
