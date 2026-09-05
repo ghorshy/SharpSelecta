@@ -49,7 +49,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Library = new LibraryViewModel(filePickerService, PlaybackControls, fileManagerService, settingsFilePath, libraryLogger);
         Queue = new QueueViewModel(PlaybackControls, queueLogger);
         PlaybackSettings = new PlaybackSettingsViewModel(settingsFilePath, outputDeviceService, PlaybackControls);
-        InterfaceSettings = new InterfaceSettingsViewModel(settingsFilePath);
+        InterfaceSettings = new InterfaceSettingsViewModel(settingsFilePath, filePickerService);
         ShortcutSettings = new ShortcutSettingsService(settingsFilePath);
 
         rightColumnWidth = new GridLength(SettingsStore.LoadRightColumnWidth(_settingsFilePath) ?? DefaultRightColumnWidth);

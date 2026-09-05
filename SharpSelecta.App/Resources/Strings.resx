@@ -136,6 +136,33 @@
   <data name="ThemeDark" xml:space="preserve">
     <value>Dark</value>
   </data>
+  <data name="ImportThemeFile" xml:space="preserve">
+    <value>Import theme file...</value>
+  </data>
+  <data name="RemoveTheme" xml:space="preserve">
+    <value>Remove theme</value>
+  </data>
+  <data name="RefreshThemes" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="ThemeFilePickerTitle" xml:space="preserve">
+    <value>Choose a theme file</value>
+  </data>
+  <data name="ThemeFileTypeName" xml:space="preserve">
+    <value>Avalonia theme (*.axaml)</value>
+  </data>
+  <data name="InvalidThemeFile" xml:space="preserve">
+    <value>That file isn't a valid theme (expected an Avalonia ResourceDictionary).</value>
+  </data>
+  <data name="FailedToImportThemeFormat" xml:space="preserve">
+    <value>Failed to import theme: {0}</value>
+  </data>
+  <data name="FailedToRemoveThemeFormat" xml:space="preserve">
+    <value>Failed to remove theme: {0}</value>
+  </data>
+  <data name="CustomThemesFolderFormat" xml:space="preserve">
+    <value>Custom theme files (.axaml): {0}</value>
+  </data>
   <data name="RestoreQueueOnStartup" xml:space="preserve">
     <value>Restore previous queue on startup</value>
   </data>

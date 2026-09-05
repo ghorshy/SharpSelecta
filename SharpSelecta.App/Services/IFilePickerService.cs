@@ -5,4 +5,6 @@ namespace SharpSelecta.App.Services;
 public interface IFilePickerService
 {
     Task<string?> PickLibraryFolderAsync();
+
+    Task<string?> PickThemeFileAsync();
 }

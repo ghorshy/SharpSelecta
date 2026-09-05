@@ -17,4 +17,16 @@ public sealed class AvaloniaFilePickerService(Window owner) : IFilePickerService
 
         return folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
     }
+
+    public async Task<string?> PickThemeFileAsync()
+    {
+        var files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = Strings.ThemeFilePickerTitle,
+            AllowMultiple = false,
+            FileTypeFilter = [new FilePickerFileType(Strings.ThemeFileTypeName) { Patterns = ["*.axaml"] }],
+        });
+
+        return files.Count > 0 ? files[0].TryGetLocalPath() : null;
+    }
 }

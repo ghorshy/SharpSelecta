@@ -35,7 +35,8 @@ public class SettingsWindowViewModelTests
             playbackControls);
     }
 
-    private static InterfaceSettingsViewModel CreateInterfaceSettingsViewModel() => new(CreateTempSettingsPath());
+    private static InterfaceSettingsViewModel CreateInterfaceSettingsViewModel() =>
+        new(CreateTempSettingsPath(), Substitute.For<IFilePickerService>());
 
     private static ShortcutSettingsService CreateShortcutSettingsService() => new(CreateTempSettingsPath());
 

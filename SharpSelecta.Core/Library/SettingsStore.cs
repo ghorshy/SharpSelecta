@@ -95,6 +95,12 @@ public static partial class SettingsStore
     public static void SaveTheme(string settingsFilePath, AppTheme theme) =>
         Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { Theme = theme });
 
+    /// <summary>File name (relative to the app's Themes directory) of the selected custom theme.</summary>
+    public static string? LoadCustomThemeFileName(string settingsFilePath) => Load(settingsFilePath)?.CustomThemeFileName;
+
+    public static void SaveCustomThemeFileName(string settingsFilePath, string? fileName) =>
+        Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { CustomThemeFileName = fileName });
+
     private static SettingsData CurrentOrEmpty(string settingsFilePath) =>
         Load(settingsFilePath) ?? new SettingsData();
 
@@ -147,6 +153,7 @@ public static partial class SettingsStore
         public int? SeekStepSeconds { get; init; }
         public IReadOnlyDictionary<string, string>? ShortcutOverrides { get; init; }
         public AppTheme? Theme { get; init; }
+        public string? CustomThemeFileName { get; init; }
     }
 
     [JsonSerializable(typeof(SettingsData))]

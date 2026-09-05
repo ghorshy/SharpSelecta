@@ -31,6 +31,12 @@ public static class Strings
     public static string ThemeSystem => Get(nameof(ThemeSystem));
     public static string ThemeLight => Get(nameof(ThemeLight));
     public static string ThemeDark => Get(nameof(ThemeDark));
+    public static string ImportThemeFile => Get(nameof(ImportThemeFile));
+    public static string RemoveTheme => Get(nameof(RemoveTheme));
+    public static string RefreshThemes => Get(nameof(RefreshThemes));
+    public static string ThemeFilePickerTitle => Get(nameof(ThemeFilePickerTitle));
+    public static string ThemeFileTypeName => Get(nameof(ThemeFileTypeName));
+    public static string InvalidThemeFile => Get(nameof(InvalidThemeFile));
     public static string RestoreQueueOnStartup => Get(nameof(RestoreQueueOnStartup));
     public static string OutputDevice => Get(nameof(OutputDevice));
     public static string SystemDefaultAudioDevice => Get(nameof(SystemDefaultAudioDevice));
@@ -81,6 +87,15 @@ public static class Strings
 
     public static string ShowInFileManager(string name) =>
         string.Format(CultureInfo.CurrentCulture, Get("ShowInFileManagerFormat"), name);
+
+    public static string FailedToImportTheme(string reason) =>
+        string.Format(CultureInfo.CurrentCulture, Get("FailedToImportThemeFormat"), reason);
+
+    public static string FailedToRemoveTheme(string reason) =>
+        string.Format(CultureInfo.CurrentCulture, Get("FailedToRemoveThemeFormat"), reason);
+
+    public static string CustomThemesFolder(string path) =>
+        string.Format(CultureInfo.CurrentCulture, Get("CustomThemesFolderFormat"), path);
 
     private static string Get(string name) => ResourceManager.GetString(name, CultureInfo.CurrentUICulture)!;
 }

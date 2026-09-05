@@ -2,10 +2,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SharpSelecta.App.ViewModels"
              xmlns:res="using:SharpSelecta.App.Resources"
+             xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:styles="using:SharpSelecta.App.Styles"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="200"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="260"
              x:Class="SharpSelecta.App.Views.InterfaceSettingsView"
              x:DataType="vm:InterfaceSettingsViewModel">
 
@@ -14,6 +15,21 @@
         <ComboBox ItemsSource="{Binding ThemeDisplayNames}"
                   SelectedItem="{Binding SelectedThemeDisplayName}"
                   HorizontalAlignment="Left" MinWidth="160" />
+
+        <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue S}" Margin="{styles:Spacing Top=S}">
+            <Button Content="{x:Static res:Strings.ImportThemeFile}" Command="{Binding ImportThemeCommand}" />
+            <Button Content="{x:Static res:Strings.RemoveTheme}" Command="{Binding RemoveCustomThemeCommand}" />
+            <Button Content="{x:Static res:Strings.RefreshThemes}" Command="{Binding RefreshThemesCommand}" />
+        </StackPanel>
+
+        <TextBlock Text="{Binding StatusMessage}" Foreground="OrangeRed" TextWrapping="Wrap"
+                    IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
+                    Margin="{styles:Spacing Top=S}" />
+
+        <!-- A custom theme is any Avalonia ResourceDictionary .axaml file (SolidColorBrush/Color overrides, etc.)
+             dropped into this folder - either via "Import theme file..." above, or by hand followed by "Refresh". -->
+        <TextBlock Text="{Binding CustomThemesFolderCaption}"
+                    Opacity="0.6" TextWrapping="Wrap" FontSize="11" Margin="{styles:Spacing Top=M}" />
     </StackPanel>
 
 </UserControl>

@@ -35,7 +35,10 @@ public partial class App : Application
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "SharpSelecta", "library-settings.json");
 
-            ThemeService.Apply(SettingsStore.LoadTheme(settingsFilePath));
+            ThemeService.Apply(
+                SettingsStore.LoadTheme(settingsFilePath),
+                SettingsStore.LoadCustomThemeFileName(settingsFilePath),
+                ThemeService.GetThemesDirectory(settingsFilePath));
 
             var mainWindow = new MainWindow();
 
