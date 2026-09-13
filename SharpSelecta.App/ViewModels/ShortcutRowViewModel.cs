@@ -16,20 +16,20 @@ public sealed partial class ShortcutRowViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DisplayGesture))]
-    private string gesture;
+    public partial string Gesture { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DisplayGesture))]
-    private bool isRecording;
+    public partial bool IsRecording { get; set; }
 
     // Updated live as modifiers are held during recording, so the button grows "Ctrl+Shift+..."
     // as you press keys, before the completing (non-modifier) key finalizes the gesture.
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DisplayGesture))]
-    private string? recordingPreview;
+    public partial string? RecordingPreview { get; set; }
 
     [ObservableProperty]
-    private string? conflictWarning;
+    public partial string? ConflictWarning { get; set; }
 
     public string DisplayGesture => IsRecording
         ? (RecordingPreview ?? Strings.PressAKeyCombination)
@@ -38,6 +38,6 @@ public sealed partial class ShortcutRowViewModel : ViewModelBase
     public ShortcutRowViewModel(ShortcutDefinition definition, string initialGesture)
     {
         _definition = definition;
-        gesture = initialGesture;
+        Gesture = initialGesture;
     }
 }

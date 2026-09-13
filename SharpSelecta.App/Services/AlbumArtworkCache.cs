@@ -48,7 +48,7 @@ public static class AlbumArtworkCache
             Math.Max(1, (int)Math.Round(bitmap.PixelSize.Width * scale)),
             Math.Max(1, (int)Math.Round(bitmap.PixelSize.Height * scale)));
 
-        using var scaled = bitmap.CreateScaledBitmap(scaledSize, BitmapInterpolationMode.HighQuality);
+        using var scaled = bitmap.CreateScaledBitmap(scaledSize);
         using var outputStream = new MemoryStream();
         scaled.Save(outputStream, new JpegBitmapEncoderOptions { Quality = 85 });
         return outputStream.ToArray();

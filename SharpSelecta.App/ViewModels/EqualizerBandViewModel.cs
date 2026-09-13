@@ -9,7 +9,7 @@ public partial class EqualizerBandViewModel : ObservableObject
     {
         Index = index;
         Label = label;
-        this.gainDb = gainDb;
+        GainDb = gainDb;
     }
 
     public int Index { get; }
@@ -18,7 +18,7 @@ public partial class EqualizerBandViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(GainDbLabel))]
-    private double gainDb;
+    public partial double GainDb { get; set; }
 
     public string GainDbLabel => $"{GainDb.ToString("+0.0;-0.0;0.0", CultureInfo.InvariantCulture)} dB";
 }

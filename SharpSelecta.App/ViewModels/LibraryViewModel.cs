@@ -27,8 +27,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     public string ShowInFileManagerLabel => _fileManagerService.ActionLabel;
 
     [ObservableProperty]
-    private string? statusMessage;
-
+    public partial string? StatusMessage { get; set; }
     public ObservableCollection<string> LibraryFolderPaths { get; } = [];
 
     public bool HasLibraryFolders => LibraryFolderPaths.Count > 0;
@@ -44,34 +43,34 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     ICommand ISettingsCategoryViewModel.CancelCommand => CancelPendingFolderChangesCommand;
 
     [ObservableProperty]
-    private bool isTrackNumberColumnVisible = true;
+    public partial bool IsTrackNumberColumnVisible { get; set; } = true;
 
     [ObservableProperty]
-    private bool isTitleColumnVisible = true;
+    public partial bool IsTitleColumnVisible { get; set; } = true;
 
     [ObservableProperty]
-    private bool isArtistColumnVisible = true;
+    public partial bool IsArtistColumnVisible { get; set; } = true;
 
     [ObservableProperty]
-    private bool isAlbumColumnVisible = true;
+    public partial bool IsAlbumColumnVisible { get; set; } = true;
 
     [ObservableProperty]
-    private bool isLengthColumnVisible = true;
+    public partial bool IsLengthColumnVisible { get; set; } = true;
 
     [ObservableProperty]
-    private bool isSampleRateColumnVisible = true;
+    public partial bool IsSampleRateColumnVisible { get; set; } = true;
 
     [ObservableProperty]
-    private bool isBitDepthColumnVisible = true;
+    public partial bool IsBitDepthColumnVisible { get; set; } = true;
 
     [ObservableProperty]
-    private bool isBitrateColumnVisible = true;
+    public partial bool IsBitrateColumnVisible { get; set; } = true;
 
     [ObservableProperty]
-    private bool isFileTypeColumnVisible = true;
+    public partial bool IsFileTypeColumnVisible { get; set; } = true;
 
     [ObservableProperty]
-    private bool isYearColumnVisible = true;
+    public partial bool IsYearColumnVisible { get; set; } = true;
 
     private IEnumerable<(string Key, Func<bool> Get, Action<bool> Set)> ColumnVisibilityBindings() =>
     [
@@ -145,7 +144,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     public Task SearchDebounceTask { get; private set; } = Task.CompletedTask;
 
     [ObservableProperty]
-    private string searchQuery = "";
+    public partial string SearchQuery { get; set; } = "";
 
     // Debounce so fast typing doesn't rescan/rescore every track on every keystroke.
     // Clearing is exempt - "" needs no scoring and should feel instant.
@@ -209,7 +208,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     public bool NoTracks => Tracks.Count == 0;
 
     [ObservableProperty]
-    private bool isLoadingLibrary;
+    public partial bool IsLoadingLibrary { get; set; }
 
     public bool ShowEmptyState => NoTracks && !IsLoadingLibrary;
 
@@ -219,8 +218,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         NotifyViewVisibilityChanged();
     }
 
-    [ObservableProperty]
-    private LibraryViewMode viewMode = LibraryViewMode.TrackList;
+    [ObservableProperty] private partial LibraryViewMode ViewMode { get; set; } = LibraryViewMode.TrackList;
 
     public bool IsTrackListViewVisible => HasTracks && !IsLoadingLibrary && ViewMode == LibraryViewMode.TrackList;
 

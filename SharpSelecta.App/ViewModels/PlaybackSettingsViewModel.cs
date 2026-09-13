@@ -22,7 +22,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     public ObservableCollection<string> OutputDeviceDisplayNames { get; } = [Strings.SystemDefaultAudioDevice];
 
     [ObservableProperty]
-    private bool restoreQueueOnStartup;
+    public partial bool RestoreQueueOnStartup { get; set; }
 
     [ObservableProperty]
     private string selectedOutputDeviceDisplayName = Strings.SystemDefaultAudioDevice;
@@ -44,7 +44,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         _settingsFilePath = settingsFilePath;
         _outputDeviceService = outputDeviceService;
         _playbackControls = playbackControls;
-        restoreQueueOnStartup = SettingsStore.LoadRestoreQueueOnStartup(settingsFilePath);
+        RestoreQueueOnStartup = SettingsStore.LoadRestoreQueueOnStartup(settingsFilePath);
 
         if (SettingsStore.LoadOutputDeviceName(settingsFilePath) is { } savedDeviceName)
         {

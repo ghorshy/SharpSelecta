@@ -6,7 +6,12 @@ using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.ViewModels;
 
-public sealed partial class AlbumViewModel(string title, string artist, int? year, IReadOnlyList<LibraryTrackViewModel> tracks, LibraryViewModel library) : ObservableObject
+public sealed partial class AlbumViewModel(
+    string title,
+    string artist,
+    int? year,
+    IReadOnlyList<LibraryTrackViewModel> tracks,
+    LibraryViewModel library) : ObservableObject
 {
     public string Title { get; } = title;
 
@@ -22,8 +27,7 @@ public sealed partial class AlbumViewModel(string title, string artist, int? yea
 
     public LibraryViewModel Library { get; } = library;
 
-    [ObservableProperty]
-    private byte[]? artworkBytes;
+    [ObservableProperty] public partial byte[]? ArtworkBytes { get; set; }
 
     private static IReadOnlyList<AlbumTrackRowViewModel> BuildTrackRows(IReadOnlyList<LibraryTrackViewModel> tracks)
     {
@@ -33,13 +37,15 @@ public sealed partial class AlbumViewModel(string title, string artist, int? yea
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Count();
 
-        return tracks
-            .Select(t =>
-            {
-                var trackArtist = (t.Track.Artist ?? string.Empty).Trim();
-                var artistSuffix = distinctArtistCount > 1 && trackArtist.Length > 0 ? $"({trackArtist})" : null;
-                return new AlbumTrackRowViewModel(t, artistSuffix);
-            })
-            .ToList();
+        return
+        [
+            .. tracks
+                .Select(t =>
+                {
+                    var trackArtist = (t.Track.Artist ?? string.Empty).Trim();
+                    var artistSuffix = distinctArtistCount > 1 && trackArtist.Length > 0 ? $"({trackArtist})" : null;
+                    return new AlbumTrackRowViewModel(t, artistSuffix);
+                })
+        ];
     }
 }

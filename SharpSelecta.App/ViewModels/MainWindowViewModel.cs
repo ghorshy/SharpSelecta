@@ -32,7 +32,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public EqualizerViewModel Equalizer { get; }
 
     [ObservableProperty]
-    private GridLength rightColumnWidth;
+    public partial GridLength RightColumnWidth { get; set; }
 
     public MainWindowViewModel(
         IAudioEngine audioEngine,
@@ -54,8 +54,7 @@ public partial class MainWindowViewModel : ViewModelBase
         InterfaceSettings = new InterfaceSettingsViewModel(settingsFilePath, filePickerService);
         ShortcutSettings = new ShortcutSettingsService(settingsFilePath);
         Equalizer = new EqualizerViewModel(settingsFilePath, audioEngine);
-
-        rightColumnWidth = new GridLength(SettingsStore.LoadRightColumnWidth(_settingsFilePath) ?? DefaultRightColumnWidth);
+        RightColumnWidth = new GridLength(SettingsStore.LoadRightColumnWidth(_settingsFilePath) ?? DefaultRightColumnWidth);
     }
 
     public void PersistRightColumnWidth() =>

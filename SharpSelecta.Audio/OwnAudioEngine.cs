@@ -103,15 +103,9 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
         get => _equalizer?.Enabled ?? false;
         set
         {
-            if (_equalizer is not null)
-            {
-                _equalizer.Enabled = value;
-            }
+            _equalizer?.Enabled = value;
 
-            if (_limiter is not null)
-            {
-                _limiter.Enabled = value;
-            }
+            _limiter?.Enabled = value;
         }
     }
 
@@ -202,11 +196,12 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
     ];
 
     public IReadOnlyList<AudioOutputDevice> GetOutputDevices() =>
-        OwnaudioNet.GetOutputDevices()
+    [
+        .. OwnaudioNet.GetOutputDevices()
             .Where(d => d.IsOutput && !IsVirtualDevice(d.Name))
             .DistinctBy(d => d.Name)
             .Select(d => new AudioOutputDevice(d.Name, d.IsDefault))
-            .ToList();
+    ];
 
     private static bool IsVirtualDevice(string name) =>
         VirtualDeviceNameFragments.Any(fragment => name.Contains(fragment, StringComparison.OrdinalIgnoreCase));

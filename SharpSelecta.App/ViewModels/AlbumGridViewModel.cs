@@ -40,17 +40,16 @@ public partial class AlbumGridViewModel : ViewModelBase
     public Task SearchDebounceTask { get; private set; } = Task.CompletedTask;
 
     [ObservableProperty]
-    private double tileSize;
+    public partial double TileSize { get; set; }
 
     [ObservableProperty]
-    private AlbumViewModel? expandedAlbum;
+    public partial AlbumViewModel? ExpandedAlbum { get; private set; }
 
     [ObservableProperty]
-    private AlbumSortMode sortMode;
+    public partial AlbumSortMode SortMode { get; private set; }
 
     [ObservableProperty]
-    private bool sortDescending;
-
+    public partial bool SortDescending { get; private set; }
     public BulkObservableCollection<AlbumViewModel> Albums { get; } = [];
 
     public BulkObservableCollection<AlbumRowViewModel> Rows { get; } = [];
@@ -60,9 +59,9 @@ public partial class AlbumGridViewModel : ViewModelBase
         _library = library;
         _settingsFilePath = settingsFilePath;
         _logger = logger;
-        tileSize = Math.Clamp(SettingsStore.LoadTileSize(settingsFilePath) ?? DefaultTileSize, MinTileSize, MaxTileSize);
-        sortMode = SettingsStore.LoadAlbumSortMode(settingsFilePath) ?? AlbumSortMode.Title;
-        sortDescending = SettingsStore.LoadAlbumSortDescending(settingsFilePath) ?? false;
+        TileSize = Math.Clamp(SettingsStore.LoadTileSize(settingsFilePath) ?? DefaultTileSize, MinTileSize, MaxTileSize);
+        SortMode = SettingsStore.LoadAlbumSortMode(settingsFilePath) ?? AlbumSortMode.Title;
+        SortDescending = SettingsStore.LoadAlbumSortDescending(settingsFilePath) ?? false;
 
         _library.Tracks.CollectionChanged += (_, _) => RebuildAlbums();
         _library.PropertyChanged += (_, e) =>
@@ -229,7 +228,7 @@ public partial class AlbumGridViewModel : ViewModelBase
         var options = new ParallelOptions { MaxDegreeOfParallelism = ArtworkLoadConcurrency };
         var stopwatch = Stopwatch.StartNew();
 
-        await Parallel.ForEachAsync(groups, options, async (group, cancellationToken) =>
+        await Parallel.ForEachAsync(groups, options, async (group, _) =>
         {
             var (rawKey, album) = group;
             var firstTrackPath = album.Tracks.Count > 0 ? album.Tracks[0].Track.FilePath : null;

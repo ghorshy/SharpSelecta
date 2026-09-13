@@ -27,11 +27,13 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
 
     public string CustomThemesFolderCaption => Strings.CustomThemesFolder(_themesDirectory);
 
+    // Field-based, not a partial property: the constructor sets this before RemoveCustomThemeCommand
+    // exists, and a partial property has no way to skip OnSelectedThemeDisplayNameChanged for that write.
     [ObservableProperty]
-    private string selectedThemeDisplayName;
+    private string _selectedThemeDisplayName;
 
     [ObservableProperty]
-    private string? statusMessage;
+    public partial string? StatusMessage { get; set; }
 
     public bool HasPendingChanges => false;
 
@@ -54,7 +56,7 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
         RefreshThemeDisplayNames();
 
         var theme = SettingsStore.LoadTheme(settingsFilePath);
-        selectedThemeDisplayName = theme == AppTheme.Custom
+        _selectedThemeDisplayName = theme == AppTheme.Custom
             ? DisplayNameForCustomFileOrFallback(SettingsStore.LoadCustomThemeFileName(settingsFilePath))
             : DisplayNameFor(theme);
 
@@ -169,15 +171,11 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
 
     private string DisplayNameForCustomFileOrFallback(string? fileName)
     {
-        if (fileName is { } name)
-        {
-            var displayName = Path.GetFileNameWithoutExtension(name);
-            if (_customThemeFileNamesByDisplayName.ContainsKey(displayName))
-                return displayName;
-        }
-
-        // The saved custom theme file is missing (e.g. deleted outside the app) - fall back to the app default.
-        return Strings.ThemeDark;
+        if (fileName is null) return Strings.ThemeDark;
+        var displayName = Path.GetFileNameWithoutExtension(fileName);
+        return _customThemeFileNamesByDisplayName.ContainsKey(displayName)
+            ? displayName
+            : Strings.ThemeDark;
     }
 
     private string UniqueDisplayName(string candidate)

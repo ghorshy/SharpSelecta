@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Threading;
 using Avalonia.Data.Converters;
 using Avalonia.Media.Imaging;
 
@@ -13,7 +14,7 @@ public sealed class ArtworkConverter : IValueConverter
 
     private const int MaxCachedBitmaps = 150;
 
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
     private readonly Dictionary<byte[], LinkedListNode<(byte[] Key, Bitmap Bitmap)>> _index = new();
     private readonly LinkedList<(byte[] Key, Bitmap Bitmap)> _lruOrder = new();
 
@@ -35,17 +36,15 @@ public sealed class ArtworkConverter : IValueConverter
             var newNode = _lruOrder.AddFirst((bytes, bitmap));
             _index[bytes] = newNode;
 
-            if (_index.Count > MaxCachedBitmaps)
-            {
-                var oldest = _lruOrder.Last!;
-                _lruOrder.RemoveLast();
-                _index.Remove(oldest.Value.Key);
-            }
+            if (_index.Count <= MaxCachedBitmaps) return bitmap;
+            var oldest = _lruOrder.Last!;
+            _lruOrder.RemoveLast();
+            _index.Remove(oldest.Value.Key);
 
             return bitmap;
         }
     }
 
-    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         throw new NotSupportedException();
 }

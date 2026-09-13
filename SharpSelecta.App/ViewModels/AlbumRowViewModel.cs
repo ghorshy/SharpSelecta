@@ -8,5 +8,5 @@ public sealed partial class AlbumRowViewModel(IReadOnlyList<AlbumViewModel> tile
     public IReadOnlyList<AlbumViewModel> Tiles { get; } = tiles;
 
     [ObservableProperty]
-    private AlbumViewModel? expandedAlbum;
+    public partial AlbumViewModel? ExpandedAlbum { get; set; }
 }

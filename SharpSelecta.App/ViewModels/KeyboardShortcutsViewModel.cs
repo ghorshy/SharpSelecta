@@ -15,8 +15,7 @@ public sealed partial class KeyboardShortcutsViewModel : ViewModelBase, ISetting
 
     public ObservableCollection<ShortcutRowViewModel> Rows { get; }
 
-    [ObservableProperty]
-    private ShortcutRowViewModel? recordingRow;
+    [ObservableProperty] public partial ShortcutRowViewModel? RecordingRow { get; set; }
 
     // Everything here is rebound and persisted immediately (like the other settings categories),
     // so Apply has nothing to stage - it's kept enabled rather than permanently greyed out.
@@ -29,8 +28,12 @@ public sealed partial class KeyboardShortcutsViewModel : ViewModelBase, ISetting
     public KeyboardShortcutsViewModel(ShortcutSettingsService shortcutSettings)
     {
         _shortcutSettings = shortcutSettings;
-        Rows = new ObservableCollection<ShortcutRowViewModel>(ShortcutRegistry.All
-            .Select(definition => new ShortcutRowViewModel(definition, shortcutSettings.GetEffectiveGesture(definition.Id))));
+        Rows =
+        [
+            .. ShortcutRegistry.All
+                .Select(definition =>
+                    new ShortcutRowViewModel(definition, shortcutSettings.GetEffectiveGesture(definition.Id)))
+        ];
     }
 
     public void StartRecording(ShortcutRowViewModel row)
@@ -61,7 +64,7 @@ public sealed partial class KeyboardShortcutsViewModel : ViewModelBase, ISetting
         RecordingRow = null;
 
         var conflict = Rows.FirstOrDefault(r => r != row && r.Gesture == formattedGesture);
-        row.ConflictWarning = conflict is { } c ? Strings.ShortcutConflict(c.Description) : null;
+        row.ConflictWarning = conflict != null ? Strings.ShortcutConflict(conflict.Description) : null;
 
         _shortcutSettings.SetOverride(row.Id, formattedGesture);
     }

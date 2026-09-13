@@ -26,51 +26,42 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(PlayPauseCommand))]
-    private TransportState transportState = TransportState.NoTrack;
+    public partial TransportState TransportState { get; set; } = TransportState.NoTrack;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PlayPauseLabel))]
-    private bool isPlaying;
-
+    public partial bool IsPlaying { get; set; }
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PositionDisplay))]
     [NotifyPropertyChangedFor(nameof(DurationDisplay))]
-    private double positionSeconds;
-
+    public partial double PositionSeconds { get; set; }
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DurationDisplay))]
-    private double durationSeconds;
-
+    public partial double DurationSeconds { get; set; }
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DurationDisplay))]
-    private bool showRemainingTime;
-
+    private partial bool ShowRemainingTime { get; set; }
     [ObservableProperty]
-    private double volume = 1.0;
-
+    public partial double Volume { get; set; } = 1.0;
     [ObservableProperty]
-    private VolumeCurve volumeCurve = VolumeCurve.Linear;
-
+    public partial VolumeCurve VolumeCurve { get; set; } = VolumeCurve.Linear;
     [ObservableProperty]
-    private int seekStepSeconds = 5;
+    public partial int SeekStepSeconds { get; set; } = 5;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SeekBackwardCommand))]
     [NotifyCanExecuteChangedFor(nameof(SeekForwardCommand))]
-    private bool isArrowKeyNavigationFocused;
-
+    public partial bool IsArrowKeyNavigationFocused { get; set; }
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DisplayFileName))]
     [NotifyPropertyChangedFor(nameof(DisplayTrackLabel))]
-    private string? loadedFileName;
-
+    public partial string? LoadedFileName { get; private set; }
     [ObservableProperty]
-    private string? statusMessage;
-
+    public partial string? StatusMessage { get; set; }
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CurrentTrackTechnicalSummary))]
     [NotifyPropertyChangedFor(nameof(DisplayTrackLabel))]
-    private Track? currentTrack;
+    public partial Track? CurrentTrack { get; set; }
 
     public string CurrentTrackTechnicalSummary => CurrentTrack is null ? string.Empty : TrackFormatting.TechnicalSummary(CurrentTrack);
 
@@ -78,13 +69,13 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ArtworkBytes))]
-    private byte[]? currentTrackArtworkBytes;
+    public partial byte[]? CurrentTrackArtworkBytes { get; set; }
 
     public byte[]? ArtworkBytes => CurrentTrackArtworkBytes;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(RepeatModeLabel))]
-    private RepeatMode repeatMode = RepeatMode.Off;
+    public partial RepeatMode RepeatMode { get; set; } = RepeatMode.Off;
 
     public PlaybackControlsViewModel(IAudioEngine audioEngine, PlaybackQueue queue, ILogger<PlaybackControlsViewModel> logger)
     {

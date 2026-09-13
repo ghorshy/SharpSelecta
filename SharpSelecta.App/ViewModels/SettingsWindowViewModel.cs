@@ -12,8 +12,7 @@ public partial class SettingsWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedCategoryViewModel))]
-    private string selectedCategory;
-
+    public partial string SelectedCategory { get; set; }
     public LibraryViewModel Library { get; }
 
     public PlaybackSettingsViewModel Playback { get; }
@@ -37,6 +36,6 @@ public partial class SettingsWindowViewModel : ViewModelBase
         Playback = playback;
         Interface = interfaceSettings;
         KeyboardShortcuts = new KeyboardShortcutsViewModel(shortcutSettings);
-        selectedCategory = Categories[0];
+        SelectedCategory = Categories[0];
     }
 }

@@ -1,5 +1,3 @@
-using System;
-
 namespace SharpSelecta.Core.Library;
 
 public static class FuzzySearch

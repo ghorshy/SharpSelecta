@@ -3,7 +3,9 @@ namespace SharpSelecta.App.Styles;
 public enum Spacing
 {
     None,
+    // ReSharper disable once InconsistentNaming
     XXS,
+    // ReSharper disable once InconsistentNaming
     XS,
     S,
     M,

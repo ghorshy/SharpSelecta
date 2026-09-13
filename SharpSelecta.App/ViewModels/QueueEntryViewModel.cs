@@ -8,7 +8,7 @@ namespace SharpSelecta.App.ViewModels;
 public partial class QueueEntryViewModel : ViewModelBase
 {
     [ObservableProperty]
-    private byte[]? artworkBytes;
+    public partial byte[]? ArtworkBytes { get; set; }
 
     public QueueEntryViewModel(QueueEntry entry, QueueViewModel queue)
     {

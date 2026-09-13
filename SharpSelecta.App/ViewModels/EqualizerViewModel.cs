@@ -25,10 +25,10 @@ public partial class EqualizerViewModel : ObservableObject
     public IReadOnlyList<string> PresetNames { get; } = [.. Enum.GetNames<EqualizerPreset>(), CustomPresetName];
 
     [ObservableProperty]
-    private bool enabled;
+    public partial bool Enabled { get; set; }
 
     [ObservableProperty]
-    private string selectedPresetName = nameof(EqualizerPreset.Default);
+    public partial string SelectedPresetName { get; set; } = nameof(EqualizerPreset.Default);
 
     public EqualizerViewModel(string settingsFilePath, IAudioEngine audioEngine)
     {
@@ -37,8 +37,10 @@ public partial class EqualizerViewModel : ObservableObject
 
         var frequencies = audioEngine.EqualizerBandFrequenciesHz;
         var gains = audioEngine.EqualizerBandGainsDb;
-        Bands = new ObservableCollection<EqualizerBandViewModel>(
-            frequencies.Select((hz, i) => new EqualizerBandViewModel(i, FormatFrequency(hz), gains[i])));
+        Bands =
+        [
+            .. frequencies.Select((hz, i) => new EqualizerBandViewModel(i, FormatFrequency(hz), gains[i]))
+        ];
 
         foreach (var band in Bands)
         {
