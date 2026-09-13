@@ -101,6 +101,21 @@ public static partial class SettingsStore
     public static void SaveCustomThemeFileName(string settingsFilePath, string? fileName) =>
         Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { CustomThemeFileName = fileName });
 
+    public static bool LoadEqualizerEnabled(string settingsFilePath) => Load(settingsFilePath)?.EqualizerEnabled ?? false;
+
+    public static void SaveEqualizerEnabled(string settingsFilePath, bool enabled) =>
+        Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { EqualizerEnabled = enabled });
+
+    public static string? LoadEqualizerPresetName(string settingsFilePath) => Load(settingsFilePath)?.EqualizerPresetName;
+
+    public static void SaveEqualizerPresetName(string settingsFilePath, string presetName) =>
+        Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { EqualizerPresetName = presetName });
+
+    public static IReadOnlyList<float>? LoadEqualizerBandGainsDb(string settingsFilePath) => Load(settingsFilePath)?.EqualizerBandGainsDb;
+
+    public static void SaveEqualizerBandGainsDb(string settingsFilePath, IReadOnlyList<float> gainsDb) =>
+        Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { EqualizerBandGainsDb = gainsDb });
+
     private static SettingsData CurrentOrEmpty(string settingsFilePath) =>
         Load(settingsFilePath) ?? new SettingsData();
 
@@ -154,6 +169,9 @@ public static partial class SettingsStore
         public IReadOnlyDictionary<string, string>? ShortcutOverrides { get; init; }
         public AppTheme? Theme { get; init; }
         public string? CustomThemeFileName { get; init; }
+        public bool? EqualizerEnabled { get; init; }
+        public string? EqualizerPresetName { get; init; }
+        public IReadOnlyList<float>? EqualizerBandGainsDb { get; init; }
     }
 
     [JsonSerializable(typeof(SettingsData))]

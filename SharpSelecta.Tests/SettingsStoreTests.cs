@@ -749,4 +749,33 @@ public class SettingsStoreTests
             File.Delete(settingsPath);
         }
     }
+
+    [Test]
+    public async Task SaveAndLoad_RoundTripsEqualizerState()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            SettingsStore.SaveEqualizerEnabled(settingsPath, true);
+            SettingsStore.SaveEqualizerPresetName(settingsPath, "Bass");
+            SettingsStore.SaveEqualizerBandGainsDb(settingsPath, [1.5f, -2f, 0f, 0f, 0f, 0f, 0f, 0f, 3f, 4.5f]);
+
+            await Assert.That(SettingsStore.LoadEqualizerEnabled(settingsPath)).IsTrue();
+            await Assert.That(SettingsStore.LoadEqualizerPresetName(settingsPath)).IsEqualTo("Bass");
+            await Assert.That(SettingsStore.LoadEqualizerBandGainsDb(settingsPath))
+                .IsEquivalentTo([1.5f, -2f, 0f, 0f, 0f, 0f, 0f, 0f, 3f, 4.5f]);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task LoadEqualizerEnabled_WhenFileDoesNotExist_ReturnsFalse()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        await Assert.That(SettingsStore.LoadEqualizerEnabled(settingsPath)).IsFalse();
+    }
 }
