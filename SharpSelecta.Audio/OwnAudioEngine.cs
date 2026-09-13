@@ -12,6 +12,7 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
     private FileSource? _currentTrack;
     private float _pendingVolume = 1.0f;
     private OwnaudioNET.Effects.EqualizerEffect? _equalizer;
+    private OwnaudioNET.Effects.LimiterEffect? _limiter;
 
     private static readonly IReadOnlyList<int> StandardEqualizerBandFrequenciesHz =
         [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
@@ -29,6 +30,16 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
             Enabled = false,
         };
         _mixer.AddMasterEffect(_equalizer);
+
+        // EqualizerEffect has no headroom compensation, so boosting a band on already-hot
+        // material hard-clips (verified empirically). This lookahead limiter sits right after
+        // it as a near-inaudible safety net (threshold/ceiling just under 0 dBFS) and is toggled
+        // together with the equalizer, so plain playback with the EQ off is untouched.
+        _limiter = new OwnaudioNET.Effects.LimiterEffect(OwnaudioNet.Engine.Config.SampleRate, threshold: -0.3f, ceiling: -0.1f, release: 60f, lookAheadMs: 5f)
+        {
+            Enabled = false,
+        };
+        _mixer.AddMasterEffect(_limiter);
 
         logger.LogInformation(
             "OwnAudioSharp engine initialized (SampleRate={SampleRate}, Channels={Channels})",
@@ -91,6 +102,11 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
             if (_equalizer is not null)
             {
                 _equalizer.Enabled = value;
+            }
+
+            if (_limiter is not null)
+            {
+                _limiter.Enabled = value;
             }
         }
     }
@@ -216,6 +232,8 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
     {
         _equalizer?.Dispose();
         _equalizer = null;
+        _limiter?.Dispose();
+        _limiter = null;
 
         if (_currentTrack is not null)
         {
