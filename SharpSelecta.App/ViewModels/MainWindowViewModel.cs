@@ -29,6 +29,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public ShortcutSettingsService ShortcutSettings { get; }
 
+    public EqualizerViewModel Equalizer { get; }
+
     [ObservableProperty]
     private GridLength rightColumnWidth;
 
@@ -51,6 +53,7 @@ public partial class MainWindowViewModel : ViewModelBase
         PlaybackSettings = new PlaybackSettingsViewModel(settingsFilePath, outputDeviceService, PlaybackControls);
         InterfaceSettings = new InterfaceSettingsViewModel(settingsFilePath, filePickerService);
         ShortcutSettings = new ShortcutSettingsService(settingsFilePath);
+        Equalizer = new EqualizerViewModel(settingsFilePath, audioEngine);
 
         rightColumnWidth = new GridLength(SettingsStore.LoadRightColumnWidth(_settingsFilePath) ?? DefaultRightColumnWidth);
     }

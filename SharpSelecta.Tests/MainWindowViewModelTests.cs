@@ -16,9 +16,13 @@ public class MainWindowViewModelTests
     private static string QueueStateFilePath(string settingsPath) =>
         Path.Combine(Path.GetDirectoryName(settingsPath)!, $"{Path.GetFileNameWithoutExtension(settingsPath)}.queue-state.json");
 
+    private static readonly int[] StandardEqualizerFrequencies = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+
     private static MainWindowViewModel CreateViewModel(out IAudioEngine audioEngine, string? settingsFilePath = null)
     {
         audioEngine = Substitute.For<IAudioEngine>();
+        audioEngine.EqualizerBandFrequenciesHz.Returns(StandardEqualizerFrequencies);
+        audioEngine.EqualizerBandGainsDb.Returns(new float[10]);
         var filePickerService = Substitute.For<IFilePickerService>();
         return new MainWindowViewModel(
             audioEngine,
@@ -231,5 +235,13 @@ public class MainWindowViewModelTests
             File.Delete(settingsPath);
             File.Delete(QueueStateFilePath(settingsPath));
         }
+    }
+
+    [Test]
+    public async Task Equalizer_IsConstructedWithTenBands()
+    {
+        var vm = CreateViewModel(out _);
+
+        await Assert.That(vm.Equalizer.Bands.Count).IsEqualTo(10);
     }
 }

@@ -95,6 +95,7 @@ public partial class App : Application
     {
         await Task.Run(() => audioEngine.InitializeAsync());
         await mainWindowViewModel.PlaybackSettings.ApplyPersistedOutputDeviceAsync();
+        mainWindowViewModel.Equalizer.ApplyPersistedState();
         await mainWindowViewModel.RestoreQueueIfEnabledAsync();
     }
 }
