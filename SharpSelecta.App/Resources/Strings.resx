@@ -115,6 +115,15 @@
   <data name="Settings" xml:space="preserve">
     <value>Settings</value>
   </data>
+  <data name="Equalizer" xml:space="preserve">
+    <value>Equalizer</value>
+  </data>
+  <data name="EqualizerEnabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="EqualizerPreset" xml:space="preserve">
+    <value>Preset</value>
+  </data>
   <data name="SettingsCategoryLibrary" xml:space="preserve">
     <value>Library</value>
   </data>

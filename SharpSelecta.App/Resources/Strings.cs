@@ -24,6 +24,9 @@ public static class Strings
     public static string Clear => Get(nameof(Clear));
     public static string Playing => Get(nameof(Playing));
     public static string Settings => Get(nameof(Settings));
+    public static string Equalizer => Get(nameof(Equalizer));
+    public static string EqualizerEnabled => Get(nameof(EqualizerEnabled));
+    public static string EqualizerPreset => Get(nameof(EqualizerPreset));
     public static string SettingsCategoryLibrary => Get(nameof(SettingsCategoryLibrary));
     public static string SettingsCategoryPlayback => Get(nameof(SettingsCategoryPlayback));
     public static string SettingsCategoryInterface => Get(nameof(SettingsCategoryInterface));

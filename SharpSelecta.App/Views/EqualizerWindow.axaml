@@ -1,0 +1,41 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SharpSelecta.App.ViewModels"
+        xmlns:res="using:SharpSelecta.App.Resources"
+        xmlns:styles="using:SharpSelecta.App.Styles"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="480" d:DesignHeight="320"
+        x:Class="SharpSelecta.App.Views.EqualizerWindow"
+        x:DataType="vm:EqualizerViewModel"
+        Title="{x:Static res:Strings.Equalizer}"
+        Width="480"
+        Height="320"
+        CanResize="False">
+
+    <StackPanel Spacing="{styles:SpacingValue M}" Margin="{styles:Spacing Uniform=M}">
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="{styles:SpacingValue S}">
+            <CheckBox Grid.Column="0" Content="{x:Static res:Strings.EqualizerEnabled}" IsChecked="{Binding Enabled}" />
+            <TextBlock Grid.Column="2" Text="{x:Static res:Strings.EqualizerPreset}" VerticalAlignment="Center" Opacity="0.7" />
+            <ComboBox Grid.Column="3" ItemsSource="{Binding PresetNames}" SelectedItem="{Binding SelectedPresetName}" Width="120" />
+        </Grid>
+
+        <ItemsControl x:Name="BandsPanel" ItemsSource="{Binding Bands}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Rows="1" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:EqualizerBandViewModel">
+                    <StackPanel Spacing="{styles:SpacingValue XXS}" HorizontalAlignment="Center">
+                        <Slider Orientation="Vertical" Height="160" Minimum="-12" Maximum="12"
+                                Value="{Binding GainDb}" />
+                        <TextBlock Text="{Binding Label}" HorizontalAlignment="Center" FontSize="11" Opacity="0.7" />
+                    </StackPanel>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </StackPanel>
+
+</Window>
