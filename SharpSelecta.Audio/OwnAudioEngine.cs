@@ -11,6 +11,10 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
     private AudioMixer? _mixer;
     private FileSource? _currentTrack;
     private float _pendingVolume = 1.0f;
+    private OwnaudioNET.Effects.EqualizerEffect? _equalizer;
+
+    private static readonly IReadOnlyList<int> StandardEqualizerBandFrequenciesHz =
+        [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 
     public async Task InitializeAsync()
     {
@@ -19,6 +23,12 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
         _mixer = new AudioMixer(OwnaudioNet.Engine!.UnderlyingEngine);
         _mixer.Start();
         _mixer.MasterVolume = _pendingVolume;
+
+        _equalizer = new OwnaudioNET.Effects.EqualizerEffect(OwnaudioNET.Effects.EqualizerPreset.Default, OwnaudioNet.Engine.Config.SampleRate)
+        {
+            Enabled = false,
+        };
+        _mixer.AddMasterEffect(_equalizer);
 
         logger.LogInformation(
             "OwnAudioSharp engine initialized (SampleRate={SampleRate}, Channels={Channels})",
@@ -72,6 +82,66 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
             _mixer?.MasterVolume = value;
         }
     }
+
+    public bool EqualizerEnabled
+    {
+        get => _equalizer?.Enabled ?? false;
+        set
+        {
+            if (_equalizer is not null)
+            {
+                _equalizer.Enabled = value;
+            }
+        }
+    }
+
+    public IReadOnlyList<int> EqualizerBandFrequenciesHz => StandardEqualizerBandFrequenciesHz;
+
+    public IReadOnlyList<float> EqualizerBandGainsDb =>
+        _equalizer is null
+            ? new float[10]
+            :
+            [
+                _equalizer.Band0Gain, _equalizer.Band1Gain, _equalizer.Band2Gain, _equalizer.Band3Gain, _equalizer.Band4Gain,
+                _equalizer.Band5Gain, _equalizer.Band6Gain, _equalizer.Band7Gain, _equalizer.Band8Gain, _equalizer.Band9Gain,
+            ];
+
+    public void SetEqualizerBandGain(int bandIndex, float gainDb)
+    {
+        if (_equalizer is null)
+            return;
+
+        switch (bandIndex)
+        {
+            case 0: _equalizer.Band0Gain = gainDb; break;
+            case 1: _equalizer.Band1Gain = gainDb; break;
+            case 2: _equalizer.Band2Gain = gainDb; break;
+            case 3: _equalizer.Band3Gain = gainDb; break;
+            case 4: _equalizer.Band4Gain = gainDb; break;
+            case 5: _equalizer.Band5Gain = gainDb; break;
+            case 6: _equalizer.Band6Gain = gainDb; break;
+            case 7: _equalizer.Band7Gain = gainDb; break;
+            case 8: _equalizer.Band8Gain = gainDb; break;
+            case 9: _equalizer.Band9Gain = gainDb; break;
+            default: throw new ArgumentOutOfRangeException(nameof(bandIndex), bandIndex, "Equalizer band index must be 0-9.");
+        }
+    }
+
+    public void ApplyEqualizerPreset(SharpSelecta.Core.Audio.EqualizerPreset preset) =>
+        _equalizer?.SetPreset(ToVendorPreset(preset));
+
+    private static OwnaudioNET.Effects.EqualizerPreset ToVendorPreset(SharpSelecta.Core.Audio.EqualizerPreset preset) => preset switch
+    {
+        SharpSelecta.Core.Audio.EqualizerPreset.Default => OwnaudioNET.Effects.EqualizerPreset.Default,
+        SharpSelecta.Core.Audio.EqualizerPreset.Bass => OwnaudioNET.Effects.EqualizerPreset.Bass,
+        SharpSelecta.Core.Audio.EqualizerPreset.Treble => OwnaudioNET.Effects.EqualizerPreset.Treble,
+        SharpSelecta.Core.Audio.EqualizerPreset.Rock => OwnaudioNET.Effects.EqualizerPreset.Rock,
+        SharpSelecta.Core.Audio.EqualizerPreset.Classical => OwnaudioNET.Effects.EqualizerPreset.Classical,
+        SharpSelecta.Core.Audio.EqualizerPreset.Pop => OwnaudioNET.Effects.EqualizerPreset.Pop,
+        SharpSelecta.Core.Audio.EqualizerPreset.Jazz => OwnaudioNET.Effects.EqualizerPreset.Jazz,
+        SharpSelecta.Core.Audio.EqualizerPreset.Voice => OwnaudioNET.Effects.EqualizerPreset.Voice,
+        _ => throw new ArgumentOutOfRangeException(nameof(preset), preset, null),
+    };
 
     private static readonly string[] VirtualDeviceNameFragments =
     [
@@ -144,6 +214,9 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
 
     public void Dispose()
     {
+        _equalizer?.Dispose();
+        _equalizer = null;
+
         if (_currentTrack is not null)
         {
             _currentTrack.Stop();

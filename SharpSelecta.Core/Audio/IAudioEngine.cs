@@ -15,4 +15,15 @@ public interface IAudioEngine : IDisposable
 
     // Null selects the system default device. Requires InitializeAsync to have completed.
     void SetOutputDevice(string? deviceName);
+
+    bool EqualizerEnabled { get; set; }
+
+    // Standard ISO 10-band graphic-EQ center frequencies, in Hz — labels only, see plan's Global Constraints.
+    IReadOnlyList<int> EqualizerBandFrequenciesHz { get; }
+
+    IReadOnlyList<float> EqualizerBandGainsDb { get; }
+
+    void SetEqualizerBandGain(int bandIndex, float gainDb);
+
+    void ApplyEqualizerPreset(EqualizerPreset preset);
 }
