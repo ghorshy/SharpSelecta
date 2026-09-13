@@ -6,6 +6,7 @@
     <x:String x:Key="Icon.PlayerPlay">avares://SharpSelecta.App/Assets/Icons/player-play.svg</x:String>
     <x:String x:Key="Icon.PlayerPause">avares://SharpSelecta.App/Assets/Icons/player-pause.svg</x:String>
     <x:String x:Key="Icon.Settings">avares://SharpSelecta.App/Assets/Icons/settings.svg</x:String>
+    <x:String x:Key="Icon.Equalizer">avares://SharpSelecta.App/Assets/Icons/adjustments-alt.svg</x:String>
     <x:String x:Key="Icon.Repeat">avares://SharpSelecta.App/Assets/Icons/repeat.svg</x:String>
     <x:String x:Key="Icon.RepeatOff">avares://SharpSelecta.App/Assets/Icons/repeat-off.svg</x:String>
     <x:String x:Key="Icon.RepeatOnce">avares://SharpSelecta.App/Assets/Icons/repeat-once.svg</x:String>

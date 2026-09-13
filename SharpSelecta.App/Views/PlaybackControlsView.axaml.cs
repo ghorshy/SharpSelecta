@@ -11,6 +11,7 @@ namespace SharpSelecta.App.Views;
 public partial class PlaybackControlsView : UserControl
 {
     private readonly DispatcherTimer _positionTimer;
+    private EqualizerWindow? _equalizerWindow;
 
     public PlaybackControlsView()
     {
@@ -44,5 +45,21 @@ public partial class PlaybackControlsView : UserControl
             DataContext = new SettingsWindowViewModel(
                 mainWindowViewModel.Library, mainWindowViewModel.PlaybackSettings, mainWindowViewModel.InterfaceSettings, mainWindowViewModel.ShortcutSettings),
         }.ShowDialog(window);
+    }
+
+    private void OnEqualizerClick(object? sender, RoutedEventArgs e)
+    {
+        if (_equalizerWindow is not null)
+        {
+            _equalizerWindow.Activate();
+            return;
+        }
+
+        if (this.FindAncestorOfType<Window>() is not { DataContext: MainWindowViewModel mainWindowViewModel } window)
+            return;
+
+        _equalizerWindow = new EqualizerWindow { DataContext = mainWindowViewModel.Equalizer };
+        _equalizerWindow.Closed += (_, _) => _equalizerWindow = null;
+        _equalizerWindow.Show(window);
     }
 }

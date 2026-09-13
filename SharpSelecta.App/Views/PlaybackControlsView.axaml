@@ -16,7 +16,7 @@
         <TextBlock Text="{Binding DisplayTrackLabel}" />
         <TextBlock Text="{Binding StatusMessage}" Foreground="OrangeRed" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
 
-        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,80,Auto,Auto" ColumnSpacing="{styles:SpacingValue M}">
+        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,80,Auto,Auto,Auto" ColumnSpacing="{styles:SpacingValue M}">
             <Button Grid.Column="0" Classes="toolbar-button toolbar-button-hover" Command="{Binding PreviousTrackCommand}" ToolTip.Tip="{x:Static res:Strings.Previous}">
                 <svg:Svg Classes="toolbar-icon" Width="18" Height="18" Path="{DynamicResource Icon.PlayerTrackPrev}" />
             </Button>
@@ -38,7 +38,10 @@
             <Button Grid.Column="8" Classes="toolbar-button toolbar-button-hover" Command="{Binding ToggleRepeatModeCommand}" ToolTip.Tip="{Binding RepeatModeLabel}">
                 <svg:Svg Classes="toolbar-icon" Width="18" Height="18" Path="{Binding RepeatMode, Converter={x:Static converters:RepeatModeIconConverter.Instance}}" />
             </Button>
-            <Button Grid.Column="9" Classes="toolbar-button toolbar-button-hover" Click="OnSettingsClick" ToolTip.Tip="{x:Static res:Strings.Settings}">
+            <Button Grid.Column="9" Classes="toolbar-button toolbar-button-hover" Click="OnEqualizerClick" ToolTip.Tip="{x:Static res:Strings.Equalizer}">
+                <svg:Svg Classes="toolbar-icon" Width="18" Height="18" Path="{DynamicResource Icon.Equalizer}" />
+            </Button>
+            <Button Grid.Column="10" Classes="toolbar-button toolbar-button-hover" Click="OnSettingsClick" ToolTip.Tip="{x:Static res:Strings.Settings}">
                 <svg:Svg Classes="toolbar-icon" Width="18" Height="18" Path="{DynamicResource Icon.Settings}" />
             </Button>
         </Grid>
