@@ -14,6 +14,10 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
     private OwnaudioNET.Effects.EqualizerEffect? _equalizer;
     private OwnaudioNET.Effects.LimiterEffect? _limiter;
 
+    // The gains the user actually asked for, as shown in the UI - kept separate from what
+    // we send to the vendor effect, since we auto-compensate that (see ApplyRequestedGainsToEngine).
+    private readonly float[] _requestedBandGainsDb = new float[10];
+
     private static readonly IReadOnlyList<int> StandardEqualizerBandFrequenciesHz =
         [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 
@@ -113,49 +117,78 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
 
     public IReadOnlyList<int> EqualizerBandFrequenciesHz => StandardEqualizerBandFrequenciesHz;
 
-    public IReadOnlyList<float> EqualizerBandGainsDb =>
-        _equalizer is null
-            ? new float[10]
-            :
-            [
-                _equalizer.Band0Gain, _equalizer.Band1Gain, _equalizer.Band2Gain, _equalizer.Band3Gain, _equalizer.Band4Gain,
-                _equalizer.Band5Gain, _equalizer.Band6Gain, _equalizer.Band7Gain, _equalizer.Band8Gain, _equalizer.Band9Gain,
-            ];
+    public IReadOnlyList<float> EqualizerBandGainsDb => (float[])_requestedBandGainsDb.Clone();
 
     public void SetEqualizerBandGain(int bandIndex, float gainDb)
+    {
+        if (bandIndex is < 0 or > 9)
+            throw new ArgumentOutOfRangeException(nameof(bandIndex), bandIndex, "Equalizer band index must be 0-9.");
+
+        _requestedBandGainsDb[bandIndex] = gainDb;
+
+        if (_equalizer is not null)
+        {
+            ApplyRequestedGainsToEngine();
+        }
+    }
+
+    // EqualizerEffect clips - and audibly distorts - internally whenever a boosted band's own
+    // linear gain would push the signal past unity, regardless of anything downstream (verified
+    // empirically: harmonic distortion tracks the boosted level exceeding 0 dBFS, not the final
+    // clamped sample). Subtracting the current highest positive requested gain from every band
+    // keeps the loudest band at or below unity while preserving the requested EQ shape.
+    private void ApplyRequestedGainsToEngine()
+    {
+        var preampDb = -Math.Max(0f, _requestedBandGainsDb.Max());
+        for (var i = 0; i < _requestedBandGainsDb.Length; i++)
+        {
+            SetVendorBandGain(i, _requestedBandGainsDb[i] + preampDb);
+        }
+    }
+
+    private void SetVendorBandGain(int bandIndex, float gainDb)
+    {
+        switch (bandIndex)
+        {
+            case 0: _equalizer!.Band0Gain = gainDb; break;
+            case 1: _equalizer!.Band1Gain = gainDb; break;
+            case 2: _equalizer!.Band2Gain = gainDb; break;
+            case 3: _equalizer!.Band3Gain = gainDb; break;
+            case 4: _equalizer!.Band4Gain = gainDb; break;
+            case 5: _equalizer!.Band5Gain = gainDb; break;
+            case 6: _equalizer!.Band6Gain = gainDb; break;
+            case 7: _equalizer!.Band7Gain = gainDb; break;
+            case 8: _equalizer!.Band8Gain = gainDb; break;
+            case 9: _equalizer!.Band9Gain = gainDb; break;
+        }
+    }
+
+    public void ApplyEqualizerPreset(EqualizerPreset preset)
     {
         if (_equalizer is null)
             return;
 
-        switch (bandIndex)
-        {
-            case 0: _equalizer.Band0Gain = gainDb; break;
-            case 1: _equalizer.Band1Gain = gainDb; break;
-            case 2: _equalizer.Band2Gain = gainDb; break;
-            case 3: _equalizer.Band3Gain = gainDb; break;
-            case 4: _equalizer.Band4Gain = gainDb; break;
-            case 5: _equalizer.Band5Gain = gainDb; break;
-            case 6: _equalizer.Band6Gain = gainDb; break;
-            case 7: _equalizer.Band7Gain = gainDb; break;
-            case 8: _equalizer.Band8Gain = gainDb; break;
-            case 9: _equalizer.Band9Gain = gainDb; break;
-            default: throw new ArgumentOutOfRangeException(nameof(bandIndex), bandIndex, "Equalizer band index must be 0-9.");
-        }
+        _equalizer.SetPreset(ToVendorPreset(preset));
+        ReadVendorBandGains().CopyTo(_requestedBandGainsDb, 0);
+        ApplyRequestedGainsToEngine();
     }
 
-    public void ApplyEqualizerPreset(SharpSelecta.Core.Audio.EqualizerPreset preset) =>
-        _equalizer?.SetPreset(ToVendorPreset(preset));
+    private float[] ReadVendorBandGains() =>
+        [
+            _equalizer!.Band0Gain, _equalizer.Band1Gain, _equalizer.Band2Gain, _equalizer.Band3Gain, _equalizer.Band4Gain,
+            _equalizer.Band5Gain, _equalizer.Band6Gain, _equalizer.Band7Gain, _equalizer.Band8Gain, _equalizer.Band9Gain,
+        ];
 
-    private static OwnaudioNET.Effects.EqualizerPreset ToVendorPreset(SharpSelecta.Core.Audio.EqualizerPreset preset) => preset switch
+    private static OwnaudioNET.Effects.EqualizerPreset ToVendorPreset(EqualizerPreset preset) => preset switch
     {
-        SharpSelecta.Core.Audio.EqualizerPreset.Default => OwnaudioNET.Effects.EqualizerPreset.Default,
-        SharpSelecta.Core.Audio.EqualizerPreset.Bass => OwnaudioNET.Effects.EqualizerPreset.Bass,
-        SharpSelecta.Core.Audio.EqualizerPreset.Treble => OwnaudioNET.Effects.EqualizerPreset.Treble,
-        SharpSelecta.Core.Audio.EqualizerPreset.Rock => OwnaudioNET.Effects.EqualizerPreset.Rock,
-        SharpSelecta.Core.Audio.EqualizerPreset.Classical => OwnaudioNET.Effects.EqualizerPreset.Classical,
-        SharpSelecta.Core.Audio.EqualizerPreset.Pop => OwnaudioNET.Effects.EqualizerPreset.Pop,
-        SharpSelecta.Core.Audio.EqualizerPreset.Jazz => OwnaudioNET.Effects.EqualizerPreset.Jazz,
-        SharpSelecta.Core.Audio.EqualizerPreset.Voice => OwnaudioNET.Effects.EqualizerPreset.Voice,
+        EqualizerPreset.Default => OwnaudioNET.Effects.EqualizerPreset.Default,
+        EqualizerPreset.Bass => OwnaudioNET.Effects.EqualizerPreset.Bass,
+        EqualizerPreset.Treble => OwnaudioNET.Effects.EqualizerPreset.Treble,
+        EqualizerPreset.Rock => OwnaudioNET.Effects.EqualizerPreset.Rock,
+        EqualizerPreset.Classical => OwnaudioNET.Effects.EqualizerPreset.Classical,
+        EqualizerPreset.Pop => OwnaudioNET.Effects.EqualizerPreset.Pop,
+        EqualizerPreset.Jazz => OwnaudioNET.Effects.EqualizerPreset.Jazz,
+        EqualizerPreset.Voice => OwnaudioNET.Effects.EqualizerPreset.Voice,
         _ => throw new ArgumentOutOfRangeException(nameof(preset), preset, null),
     };
 
