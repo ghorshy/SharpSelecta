@@ -259,6 +259,18 @@
   <data name="ShortcutSeekForward" xml:space="preserve">
     <value>Seek forward</value>
   </data>
+  <data name="ShortcutPlayPause" xml:space="preserve">
+    <value>Play or pause</value>
+  </data>
+  <data name="ShortcutPreviousTrack" xml:space="preserve">
+    <value>Previous track</value>
+  </data>
+  <data name="ShortcutNextTrack" xml:space="preserve">
+    <value>Next track</value>
+  </data>
+  <data name="ShortcutClearQueue" xml:space="preserve">
+    <value>Clear queue</value>
+  </data>
   <data name="SeekStepSeconds" xml:space="preserve">
     <value>Seek step (seconds)</value>
   </data>

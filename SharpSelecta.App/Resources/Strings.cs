@@ -70,6 +70,10 @@ public static class Strings
     public static string ShortcutDecreaseTileSize => Get(nameof(ShortcutDecreaseTileSize));
     public static string ShortcutSeekBackward => Get(nameof(ShortcutSeekBackward));
     public static string ShortcutSeekForward => Get(nameof(ShortcutSeekForward));
+    public static string ShortcutPlayPause => Get(nameof(ShortcutPlayPause));
+    public static string ShortcutPreviousTrack => Get(nameof(ShortcutPreviousTrack));
+    public static string ShortcutNextTrack => Get(nameof(ShortcutNextTrack));
+    public static string ShortcutClearQueue => Get(nameof(ShortcutClearQueue));
     public static string SeekStepSeconds => Get(nameof(SeekStepSeconds));
     public static string Reset => Get(nameof(Reset));
     public static string PressAKeyCombination => Get(nameof(PressAKeyCombination));
