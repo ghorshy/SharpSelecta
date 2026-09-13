@@ -13,6 +13,7 @@ Early stage, but already usable day to day:
 - Double-click any cover art for a full-resolution preview
 - Queue with drag-to-reorder, play-next, and repeat modes (off/all/one)
 - Play/pause, seek, volume (linear or logarithmic), and a toggle between elapsed and remaining time
+- 10-band graphic equalizer, with named presets or manual per-band gain
 - Playback device selection, and the queue/current track/volume all persist across restarts
 - On Linux, integrates with playerctl and desktop media-key bindings (MPRIS)
 
@@ -51,7 +52,6 @@ dotnet test
 - Playlists
 - Tag editing
 - Auto-DJ / crossfade
-- Equalizer
 - Discord Rich Presence
 - File extension converter (WAV->FLAC, etc...)
 
