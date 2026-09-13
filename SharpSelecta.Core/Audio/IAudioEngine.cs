@@ -18,7 +18,7 @@ public interface IAudioEngine : IDisposable
 
     bool EqualizerEnabled { get; set; }
 
-    // Standard ISO 10-band graphic-EQ center frequencies, in Hz — labels only, see plan's Global Constraints.
+    // Standard ISO 10-band graphic-EQ center frequencies, in Hz — display labels only; they do not affect gain routing.
     IReadOnlyList<int> EqualizerBandFrequenciesHz { get; }
 
     IReadOnlyList<float> EqualizerBandGainsDb { get; }

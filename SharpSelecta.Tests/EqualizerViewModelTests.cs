@@ -120,4 +120,32 @@ public class EqualizerViewModelTests
             File.Delete(settingsPath);
         }
     }
+
+    [Test]
+    public async Task ApplyPersistedState_RestoresNamedPresetWithDivergingGainsWithoutReapplyingPreset()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            SettingsStore.SaveEqualizerEnabled(settingsPath, false);
+            SettingsStore.SaveEqualizerPresetName(settingsPath, nameof(EqualizerPreset.Bass));
+            SettingsStore.SaveEqualizerBandGainsDb(settingsPath, [1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f]);
+
+            var vm = CreateViewModel(out var audioEngine, settingsPath);
+            // Stub the engine's Bass-preset gains to diverge from the saved gains, so a
+            // spurious re-apply of the preset would be detectable via the restored values.
+            audioEngine.EqualizerBandGainsDb.Returns([-1f, -1f, -1f, -1f, -1f, -1f, -1f, -1f, -1f, -1f]);
+
+            vm.ApplyPersistedState();
+
+            await Assert.That(vm.SelectedPresetName).IsEqualTo(nameof(EqualizerPreset.Bass));
+            await Assert.That(vm.Bands[0].GainDb).IsEqualTo(1.0);
+            await Assert.That(vm.Bands[9].GainDb).IsEqualTo(10.0);
+            audioEngine.DidNotReceive().ApplyEqualizerPreset(Arg.Any<EqualizerPreset>());
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
 }

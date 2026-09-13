@@ -117,10 +117,21 @@ public partial class EqualizerViewModel : ObservableObject
             }
         }
 
+        var savedPresetName = SettingsStore.LoadEqualizerPresetName(_settingsFilePath);
         _suppressPresetChangeSideEffects = true;
-        SelectedPresetName = SettingsStore.LoadEqualizerPresetName(_settingsFilePath) ?? nameof(EqualizerPreset.Default);
+        SelectedPresetName = savedPresetName is not null && PresetNames.Contains(savedPresetName)
+            ? savedPresetName
+            : nameof(EqualizerPreset.Default);
         _suppressPresetChangeSideEffects = false;
 
-        Enabled = SettingsStore.LoadEqualizerEnabled(_settingsFilePath);
+        var savedEnabled = SettingsStore.LoadEqualizerEnabled(_settingsFilePath);
+        var previouslyEnabled = Enabled;
+        Enabled = savedEnabled;
+        if (previouslyEnabled == savedEnabled)
+        {
+            // Enabled's setter dedups when the value already matched (e.g. toggled pre-init);
+            // push explicitly so a value the engine missed earlier still reaches it now.
+            _audioEngine.EqualizerEnabled = savedEnabled;
+        }
     }
 }
