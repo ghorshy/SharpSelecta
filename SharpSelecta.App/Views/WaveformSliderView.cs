@@ -131,10 +131,10 @@ public sealed class WaveformSliderView : Control
             var x = i * barWidth;
             var rect = new Rect(x, centerY - halfHeight, Math.Max(1, barWidth - 1), halfHeight * 2);
 
-            var brush = i < playedBarCount
-                ? playedBrush
-                : hoverBarIndex >= 0 && i >= lowPreview && i < highPreview
-                    ? previewBrush
+            var brush = hoverBarIndex >= 0 && i >= lowPreview && i < highPreview
+                ? previewBrush
+                : i < playedBarCount
+                    ? playedBrush
                     : unplayedBrush;
 
             context.FillRectangle(brush, rect);
