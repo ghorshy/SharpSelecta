@@ -116,6 +116,11 @@ public static partial class SettingsStore
     public static void SaveEqualizerBandGainsDb(string settingsFilePath, IReadOnlyList<float> gainsDb) =>
         Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { EqualizerBandGainsDb = gainsDb });
 
+    public static bool LoadUseWaveformSlider(string settingsFilePath) => Load(settingsFilePath)?.UseWaveformSlider ?? false;
+
+    public static void SaveUseWaveformSlider(string settingsFilePath, bool enabled) =>
+        Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { UseWaveformSlider = enabled });
+
     private static SettingsData CurrentOrEmpty(string settingsFilePath) =>
         Load(settingsFilePath) ?? new SettingsData();
 
@@ -172,6 +177,7 @@ public static partial class SettingsStore
         public bool? EqualizerEnabled { get; init; }
         public string? EqualizerPresetName { get; init; }
         public IReadOnlyList<float>? EqualizerBandGainsDb { get; init; }
+        public bool? UseWaveformSlider { get; init; }
     }
 
     [JsonSerializable(typeof(SettingsData))]

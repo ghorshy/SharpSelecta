@@ -778,4 +778,28 @@ public class SettingsStoreTests
 
         await Assert.That(SettingsStore.LoadEqualizerEnabled(settingsPath)).IsFalse();
     }
+
+    [Test]
+    public async Task SaveAndLoad_RoundTripsUseWaveformSlider()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            SettingsStore.SaveUseWaveformSlider(settingsPath, true);
+
+            await Assert.That(SettingsStore.LoadUseWaveformSlider(settingsPath)).IsTrue();
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task LoadUseWaveformSlider_WhenFileDoesNotExist_ReturnsFalse()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        await Assert.That(SettingsStore.LoadUseWaveformSlider(settingsPath)).IsFalse();
+    }
 }
