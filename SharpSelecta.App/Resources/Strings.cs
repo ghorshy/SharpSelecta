@@ -44,6 +44,7 @@ public static class Strings
     public static string OutputDevice => Get(nameof(OutputDevice));
     public static string SystemDefaultAudioDevice => Get(nameof(SystemDefaultAudioDevice));
     public static string UseLogarithmicVolumeScale => Get(nameof(UseLogarithmicVolumeScale));
+    public static string UseWaveformSlider => Get(nameof(UseWaveformSlider));
     public static string NoLibraryFoldersAdded => Get(nameof(NoLibraryFoldersAdded));
     public static string Ok => Get(nameof(Ok));
     public static string Apply => Get(nameof(Apply));

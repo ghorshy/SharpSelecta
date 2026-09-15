@@ -6,6 +6,7 @@
              xmlns:converters="using:SharpSelecta.App.Converters"
              xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Svg.Controls.Skia.Avalonia"
              xmlns:styles="using:SharpSelecta.App.Styles"
+             xmlns:controls="using:SharpSelecta.App.Views"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="70"
@@ -28,7 +29,11 @@
             </Button>
             <TextBlock Grid.Column="3" Text="{Binding PositionDisplay}" VerticalAlignment="Center"
                        Width="70" TextAlignment="Right" />
-            <Slider Grid.Column="4" VerticalAlignment="Center" Minimum="0" Maximum="{Binding DurationSeconds}" Value="{Binding PositionSeconds}" />
+            <Slider Grid.Column="4" VerticalAlignment="Center" Minimum="0" Maximum="{Binding DurationSeconds}"
+                    Value="{Binding PositionSeconds}" IsVisible="{Binding !UseWaveformSlider}" />
+            <controls:WaveformSliderView Grid.Column="4" VerticalAlignment="Stretch"
+                    Peaks="{Binding WaveformPeaks}" Maximum="{Binding DurationSeconds}"
+                    Value="{Binding PositionSeconds}" IsVisible="{Binding UseWaveformSlider}" />
             <Button Grid.Column="5" Classes="toolbar-button" Content="{Binding DurationDisplay}" Command="{Binding ToggleDurationDisplayCommand}"
                     Width="70" HorizontalContentAlignment="Left" />
             <svg:Svg Classes="toolbar-icon" Grid.Column="6" Width="18" Height="18" VerticalAlignment="Center"
