@@ -236,4 +236,43 @@ public class PlaybackSettingsViewModelTests
             File.Delete(settingsPath);
         }
     }
+
+    [Test]
+    public async Task SettingUseWaveformSlider_PersistsAndMirrorsToPlaybackControls()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            var playbackControls = CreatePlaybackControlsViewModel();
+            var vm = new PlaybackSettingsViewModel(settingsPath, Substitute.For<IOutputDeviceService>(), playbackControls);
+
+            vm.UseWaveformSlider = true;
+
+            await Assert.That(SettingsStore.LoadUseWaveformSlider(settingsPath)).IsTrue();
+            await Assert.That(playbackControls.UseWaveformSlider).IsTrue();
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task Constructor_AppliesASavedUseWaveformSliderToPlaybackControls()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            SettingsStore.SaveUseWaveformSlider(settingsPath, true);
+            var playbackControls = CreatePlaybackControlsViewModel();
+
+            _ = new PlaybackSettingsViewModel(settingsPath, Substitute.For<IOutputDeviceService>(), playbackControls);
+
+            await Assert.That(playbackControls.UseWaveformSlider).IsTrue();
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
 }

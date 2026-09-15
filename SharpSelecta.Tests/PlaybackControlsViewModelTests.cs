@@ -794,4 +794,15 @@ public class PlaybackControlsViewModelTests
         await Assert.That(vm.SeekForwardCommand.CanExecute(null)).IsFalse();
         await Assert.That(vm.SeekBackwardCommand.CanExecute(null)).IsFalse();
     }
+
+    [Test]
+    public async Task LoadTrackAsync_PopulatesWaveformPeaksFromTheEngine()
+    {
+        var vm = CreateViewModel(out var audioEngine, out _);
+        audioEngine.GetWaveformPeaks(200).Returns(new float[] { 0.1f, -0.5f, 0.9f });
+
+        await vm.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
+
+        await Assert.That(vm.WaveformPeaks).IsEquivalentTo([0.1f, -0.5f, 0.9f]);
+    }
 }

@@ -17,6 +17,7 @@ namespace SharpSelecta.App.ViewModels;
 public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 {
     private const double RestartThresholdSeconds = 3.0;
+    private const int WaveformPointCount = 200;
 
     private readonly IAudioEngine _audioEngine;
     private readonly PlaybackQueue _queue;
@@ -76,6 +77,12 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(RepeatModeLabel))]
     public partial RepeatMode RepeatMode { get; set; } = RepeatMode.Off;
+
+    [ObservableProperty]
+    public partial IReadOnlyList<float> WaveformPeaks { get; private set; } = [];
+
+    [ObservableProperty]
+    public partial bool UseWaveformSlider { get; set; }
 
     public PlaybackControlsViewModel(IAudioEngine audioEngine, PlaybackQueue queue, ILogger<PlaybackControlsViewModel> logger)
     {
@@ -325,6 +332,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
             TransportState = TransportState.Ready;
             CurrentTrack = track;
             CurrentTrackArtworkBytes = await Task.Run(() => MusicLibraryScanner.LoadArtwork(track.FilePath));
+            WaveformPeaks = await Task.Run(() => _audioEngine.GetWaveformPeaks(WaveformPointCount));
             if (startPositionSeconds is > 0)
             {
                 _audioEngine.Seek(startPositionSeconds.Value);
