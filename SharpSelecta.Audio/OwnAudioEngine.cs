@@ -167,6 +167,8 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
         ApplyRequestedGainsToEngine();
     }
 
+    public IReadOnlyList<float> GetWaveformPeaks(int points) => _currentTrack?.GetPeaks(points) ?? [];
+
     private float[] ReadVendorBandGains() =>
         [
             _equalizer!.Band0Gain, _equalizer.Band1Gain, _equalizer.Band2Gain, _equalizer.Band3Gain, _equalizer.Band4Gain,

@@ -26,4 +26,8 @@ public interface IAudioEngine : IDisposable
     void SetEqualizerBandGain(int bandIndex, float gainDb);
 
     void ApplyEqualizerPreset(EqualizerPreset preset);
+
+    // One extra decoder pass over the loaded track; empty when nothing is loaded.
+    // `points` is the number of buckets returned (may come back shorter for a duration-less container).
+    IReadOnlyList<float> GetWaveformPeaks(int points);
 }
