@@ -24,12 +24,15 @@ public sealed class WaveformSliderView : Control
     public static readonly StyledProperty<double> BarGapProperty =
         AvaloniaProperty.Register<WaveformSliderView, double>(nameof(BarGap), 1.0);
 
+    public static readonly StyledProperty<bool> IsLoadingProperty =
+        AvaloniaProperty.Register<WaveformSliderView, bool>(nameof(IsLoading));
+
     private double? _hoverRatio;
     private bool _isPressed;
 
     static WaveformSliderView()
     {
-        AffectsRender<WaveformSliderView>(PeaksProperty, ValueProperty, MaximumProperty, BarWidthProperty, BarGapProperty);
+        AffectsRender<WaveformSliderView>(PeaksProperty, ValueProperty, MaximumProperty, BarWidthProperty, BarGapProperty, IsLoadingProperty);
     }
 
     public IReadOnlyList<float> Peaks
@@ -61,6 +64,13 @@ public sealed class WaveformSliderView : Control
     {
         get => GetValue(BarGapProperty);
         set => SetValue(BarGapProperty, value);
+    }
+
+    // True while peaks are still being extracted - shows a flat placeholder line instead of a blank control.
+    public bool IsLoading
+    {
+        get => GetValue(IsLoadingProperty);
+        set => SetValue(IsLoadingProperty, value);
     }
 
     protected override void OnPointerEntered(PointerEventArgs e)
@@ -158,11 +168,27 @@ public sealed class WaveformSliderView : Control
 
         context.FillRectangle(Brushes.Transparent, new Rect(Bounds.Size));
 
+        if (Bounds.Width <= 0 || Bounds.Height <= 0)
+            return;
+
+        var centerY = Bounds.Height / 2;
+        var unplayedBrush = new SolidColorBrush(Color.FromArgb(0x40, 0xA0, 0xA0, 0xA0));
+
         var stride = Math.Max(1.0, BarWidth + BarGap);
         var visibleBarCount = Math.Max(1, (int)(Bounds.Width / stride));
         var peaks = Downsample(Peaks, visibleBarCount);
-        if (peaks.Length == 0 || Bounds.Width <= 0 || Bounds.Height <= 0)
+        if (peaks.Length == 0)
+        {
+            // Nothing to draw yet: while extraction is still in flight, a flat line reads as
+            // "loading" rather than "broken" - once IsLoading clears with still no peaks
+            // (an empty/duration-less file), the control goes back to fully blank.
+            if (IsLoading)
+            {
+                context.FillRectangle(unplayedBrush, new Rect(0, centerY - 0.5, Bounds.Width, 1));
+            }
+
             return;
+        }
 
         var playedRatio = Maximum > 0 ? Math.Clamp(Value / Maximum, 0, 1) : 0;
         var playedBarCount = (int)(playedRatio * peaks.Length);
@@ -182,9 +208,6 @@ public sealed class WaveformSliderView : Control
 
         var playedBrush = new SolidColorBrush(accentColor);
         var previewBrush = new SolidColorBrush(accentColor, 0.5);
-        var unplayedBrush = new SolidColorBrush(Color.FromArgb(0x40, 0xA0, 0xA0, 0xA0));
-
-        var centerY = Bounds.Height / 2;
 
         for (var i = 0; i < peaks.Length; i++)
         {

@@ -33,7 +33,8 @@
                     Value="{Binding PositionSeconds}" IsVisible="{Binding !UseWaveformSlider}" />
             <controls:WaveformSliderView Grid.Column="4" VerticalAlignment="Stretch"
                     Peaks="{Binding WaveformPeaks}" Maximum="{Binding DurationSeconds}"
-                    Value="{Binding PositionSeconds}" IsVisible="{Binding UseWaveformSlider}" />
+                    Value="{Binding PositionSeconds}" IsVisible="{Binding UseWaveformSlider}"
+                    IsLoading="{Binding IsWaveformLoading}" />
             <Button Grid.Column="5" Classes="toolbar-button" Content="{Binding DurationDisplay}" Command="{Binding ToggleDurationDisplayCommand}"
                     Width="70" HorizontalContentAlignment="Left" />
             <svg:Svg Classes="toolbar-icon" Grid.Column="6" Width="18" Height="18" VerticalAlignment="Center"

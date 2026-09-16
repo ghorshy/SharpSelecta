@@ -1,3 +1,4 @@
+using System.Threading;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using SharpSelecta.App.ViewModels;
@@ -811,34 +812,49 @@ public class PlaybackControlsViewModelTests
     public async Task PlayNowAsync_StartsPlaybackWithoutWaitingForWaveformPeaks()
     {
         var vm = CreateViewModel(out var audioEngine, out _);
-        var unblockPeaks = new TaskCompletionSource<float[]>();
-        audioEngine.GetWaveformPeaks(2000).Returns(_ => unblockPeaks.Task.GetAwaiter().GetResult());
+        // A bounded sleep, not a TaskCompletionSource + blocking wait: the latter ties up a
+        // thread-pool worker until *this test's own later code* runs to release it, which is
+        // exactly the kind of sync-over-async pattern that can starve the pool when the full
+        // suite runs hundreds of tests in parallel. A short Thread.Sleep resolves on its own via
+        // the OS timer regardless of what else the pool is doing, so it can't create that stall.
+        audioEngine.GetWaveformPeaks(2000).Returns(_ =>
+        {
+            Thread.Sleep(50);
+            return new float[] { 0.2f };
+        });
 
         await vm.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
 
         await Assert.That(vm.IsPlaying).IsTrue();
         await Assert.That(vm.WaveformPeaks).IsEmpty();
+        await Assert.That(vm.IsWaveformLoading).IsTrue();
 
-        unblockPeaks.SetResult([0.2f]);
         await vm.WaveformLoadTask;
+
+        await Assert.That(vm.IsWaveformLoading).IsFalse();
     }
 
     [Test]
     public async Task LoadTrackAsync_WhenTrackChangesBeforePeaksFinish_DropsTheStaleResult()
     {
         var vm = CreateViewModel(out var audioEngine, out _);
-        var firstTrackPeaks = new TaskCompletionSource<float[]>();
+        // NSubstitute's Returns(a, b, ...) sequence is keyed by actual invocation order inside
+        // the mock, not by which Task.Run was dispatched first - each load runs on its own
+        // thread-pool work item, so under contention the second load's call could physically
+        // reach the mock before the first load's call does. Signal once the first call has
+        // truly started so the second load is only kicked off after invocation order is settled.
+        using var firstCallStarted = new ManualResetEventSlim();
         audioEngine.GetWaveformPeaks(2000).Returns(
-            _ => firstTrackPeaks.Task.GetAwaiter().GetResult(),
+            _ => { firstCallStarted.Set(); Thread.Sleep(100); return new float[] { 0.1f }; },
             _ => new float[] { 0.7f });
 
         await vm.PlayNowAsync(new Track("/music/first.mp3", "first.mp3"));
         var firstLoadTask = vm.WaveformLoadTask;
+        firstCallStarted.Wait(TimeSpan.FromSeconds(5));
 
         await vm.PlayNowAsync(new Track("/music/second.mp3", "second.mp3"));
         await vm.WaveformLoadTask;
 
-        firstTrackPeaks.SetResult([0.1f]);
         await firstLoadTask;
 
         await Assert.That(vm.WaveformPeaks).IsEquivalentTo([0.7f]);

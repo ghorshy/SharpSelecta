@@ -85,6 +85,11 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     [ObservableProperty]
     public partial IReadOnlyList<float> WaveformPeaks { get; private set; } = [];
 
+    // True from the moment extraction starts until it (successfully or not) finishes -
+    // WaveformSliderView shows a flat placeholder line instead of a blank control while this is set.
+    [ObservableProperty]
+    public partial bool IsWaveformLoading { get; private set; }
+
     // Fire-and-forget from the UI's perspective (see LoadTrackCoreAsync) - exposed so tests
     // can await it instead of racing the background extraction.
     public Task WaveformLoadTask { get; private set; } = Task.CompletedTask;
@@ -357,6 +362,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
             // doesn't show the previous track's bars, and the generation check drops a stale
             // result if the user has already moved on to another track by the time this finishes.
             WaveformPeaks = [];
+            IsWaveformLoading = true;
             WaveformLoadTask = LoadWaveformPeaksAsync(track, ++_waveformLoadGeneration);
         }
         catch (Exception ex)
@@ -379,6 +385,13 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to extract waveform peaks for {FilePath}", track.FilePath);
+        }
+        finally
+        {
+            if (generation == _waveformLoadGeneration)
+            {
+                IsWaveformLoading = false;
+            }
         }
     }
 
