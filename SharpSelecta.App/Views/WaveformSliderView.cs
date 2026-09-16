@@ -18,12 +18,18 @@ public sealed class WaveformSliderView : Control
     public static readonly StyledProperty<double> MaximumProperty =
         AvaloniaProperty.Register<WaveformSliderView, double>(nameof(Maximum), 1.0);
 
+    public static readonly StyledProperty<double> BarWidthProperty =
+        AvaloniaProperty.Register<WaveformSliderView, double>(nameof(BarWidth), 2.0);
+
+    public static readonly StyledProperty<double> BarGapProperty =
+        AvaloniaProperty.Register<WaveformSliderView, double>(nameof(BarGap), 1.0);
+
     private double? _hoverRatio;
     private bool _isPressed;
 
     static WaveformSliderView()
     {
-        AffectsRender<WaveformSliderView>(PeaksProperty, ValueProperty, MaximumProperty);
+        AffectsRender<WaveformSliderView>(PeaksProperty, ValueProperty, MaximumProperty, BarWidthProperty, BarGapProperty);
     }
 
     public IReadOnlyList<float> Peaks
@@ -42,6 +48,19 @@ public sealed class WaveformSliderView : Control
     {
         get => GetValue(MaximumProperty);
         set => SetValue(MaximumProperty, value);
+    }
+
+    // Constant per-bar footprint in pixels, so bar count adapts to width instead of bar width adapting to bar count.
+    public double BarWidth
+    {
+        get => GetValue(BarWidthProperty);
+        set => SetValue(BarWidthProperty, value);
+    }
+
+    public double BarGap
+    {
+        get => GetValue(BarGapProperty);
+        set => SetValue(BarGapProperty, value);
     }
 
     protected override void OnPointerEntered(PointerEventArgs e)
@@ -106,19 +125,48 @@ public sealed class WaveformSliderView : Control
         Value = ratio * Maximum;
     }
 
+    // Buckets `source` into `targetCount` values, each the max magnitude within its slice -
+    // the same reduction FileSource.GetPeaks itself does, just applied client-side so bar
+    // count can track the control's live width without a fresh decoder pass per resize.
+    public static float[] Downsample(IReadOnlyList<float> source, int targetCount)
+    {
+        if (targetCount <= 0 || source.Count == 0)
+            return [];
+
+        var result = new float[targetCount];
+        for (var i = 0; i < targetCount; i++)
+        {
+            var start = i * source.Count / targetCount;
+            var end = Math.Max(start + 1, (i + 1) * source.Count / targetCount);
+            var max = 0f;
+            for (var j = start; j < end && j < source.Count; j++)
+            {
+                var v = Math.Abs(source[j]);
+                if (v > max)
+                    max = v;
+            }
+
+            result[i] = max;
+        }
+
+        return result;
+    }
+
     public override void Render(DrawingContext context)
     {
         base.Render(context);
 
         context.FillRectangle(Brushes.Transparent, new Rect(Bounds.Size));
 
-        var peaks = Peaks;
-        if (peaks.Count == 0 || Bounds.Width <= 0 || Bounds.Height <= 0)
+        var stride = Math.Max(1.0, BarWidth + BarGap);
+        var visibleBarCount = Math.Max(1, (int)(Bounds.Width / stride));
+        var peaks = Downsample(Peaks, visibleBarCount);
+        if (peaks.Length == 0 || Bounds.Width <= 0 || Bounds.Height <= 0)
             return;
 
         var playedRatio = Maximum > 0 ? Math.Clamp(Value / Maximum, 0, 1) : 0;
-        var playedBarCount = (int)(playedRatio * peaks.Count);
-        var hoverBarIndex = _hoverRatio is { } hoverRatio ? (int)(hoverRatio * peaks.Count) : -1;
+        var playedBarCount = (int)(playedRatio * peaks.Length);
+        var hoverBarIndex = _hoverRatio is { } hoverRatio ? (int)(hoverRatio * peaks.Length) : -1;
 
         var lowPreview = Math.Min(playedBarCount, hoverBarIndex < 0 ? playedBarCount : hoverBarIndex);
         var highPreview = Math.Max(playedBarCount, hoverBarIndex);
@@ -136,15 +184,14 @@ public sealed class WaveformSliderView : Control
         var previewBrush = new SolidColorBrush(accentColor, 0.5);
         var unplayedBrush = new SolidColorBrush(Color.FromArgb(0x40, 0x80, 0x80, 0x80));
 
-        var barWidth = Bounds.Width / peaks.Count;
         var centerY = Bounds.Height / 2;
 
-        for (var i = 0; i < peaks.Count; i++)
+        for (var i = 0; i < peaks.Length; i++)
         {
             var magnitude = Math.Abs(peaks[i]);
             var halfHeight = magnitude * centerY;
-            var x = i * barWidth;
-            var rect = new Rect(x, centerY - halfHeight, Math.Max(1, barWidth - 1), halfHeight * 2);
+            var x = i * stride;
+            var rect = new Rect(x, centerY - halfHeight, BarWidth, halfHeight * 2);
 
             var brush = hoverBarIndex >= 0 && i >= lowPreview && i < highPreview
                 ? previewBrush

@@ -799,7 +799,7 @@ public class PlaybackControlsViewModelTests
     public async Task LoadTrackAsync_PopulatesWaveformPeaksFromTheEngine()
     {
         var vm = CreateViewModel(out var audioEngine, out _);
-        audioEngine.GetWaveformPeaks(200).Returns(new float[] { 0.1f, -0.5f, 0.9f });
+        audioEngine.GetWaveformPeaks(2000).Returns(new float[] { 0.1f, -0.5f, 0.9f });
 
         await vm.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
 

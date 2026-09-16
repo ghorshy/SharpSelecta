@@ -17,7 +17,10 @@ namespace SharpSelecta.App.ViewModels;
 public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 {
     private const double RestartThresholdSeconds = 3.0;
-    private const int WaveformPointCount = 200;
+
+    // Reference resolution for the waveform display - WaveformSliderView downsamples this
+    // client-side to however many constant-width bars actually fit its current width.
+    private const int WaveformMasterPointCount = 2000;
 
     private readonly IAudioEngine _audioEngine;
     private readonly PlaybackQueue _queue;
@@ -334,7 +337,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
             CurrentTrackArtworkBytes = await Task.Run(() => MusicLibraryScanner.LoadArtwork(track.FilePath));
             try
             {
-                WaveformPeaks = await Task.Run(() => _audioEngine.GetWaveformPeaks(WaveformPointCount));
+                WaveformPeaks = await Task.Run(() => _audioEngine.GetWaveformPeaks(WaveformMasterPointCount));
             }
             catch (Exception ex)
             {
