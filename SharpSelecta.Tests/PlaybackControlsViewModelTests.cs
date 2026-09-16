@@ -10,11 +10,21 @@ namespace SharpSelecta.Tests;
 
 public class PlaybackControlsViewModelTests
 {
-    private static PlaybackControlsViewModel CreateViewModel(out IAudioEngine audioEngine, out PlaybackQueue queue)
+    private static readonly string TaggedTrackFixturePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3");
+
+    private static string CreateTempSettingsPath() =>
+        Path.Combine(Path.GetTempPath(), $"sharpselecta-playback-controls-tests-{Guid.NewGuid():N}.json");
+
+    private static string IndexFilePath(string settingsPath) =>
+        Path.Combine(Path.GetDirectoryName(settingsPath)!, $"{Path.GetFileNameWithoutExtension(settingsPath)}.library-index.db");
+
+    private static PlaybackControlsViewModel CreateViewModel(out IAudioEngine audioEngine, out PlaybackQueue queue, string? settingsFilePath = null)
     {
         audioEngine = Substitute.For<IAudioEngine>();
         queue = new PlaybackQueue();
-        return new PlaybackControlsViewModel(audioEngine, queue, NullLogger<PlaybackControlsViewModel>.Instance);
+        // No index db exists at this settings path unless the caller reconciled one first, so
+        // waveform-cache lookups miss by default - matches the pre-caching test behavior.
+        return new PlaybackControlsViewModel(audioEngine, queue, settingsFilePath ?? CreateTempSettingsPath(), NullLogger<PlaybackControlsViewModel>.Instance);
     }
 
     [Test]
@@ -806,6 +816,62 @@ public class PlaybackControlsViewModelTests
         await vm.WaveformLoadTask;
 
         await Assert.That(vm.WaveformPeaks).IsEquivalentTo([0.1f, -0.5f, 0.9f]);
+    }
+
+    [Test]
+    public async Task LoadTrackAsync_WhenPeaksAreCachedInTheLibraryIndex_UsesTheCacheWithoutCallingTheEngine()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-playback-controls-tests-");
+        try
+        {
+            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+            File.Copy(TaggedTrackFixturePath, trackPath);
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+            LibraryIndexStore.SaveWaveformPeaks(settingsPath, trackPath, [0.4f, 0.6f]);
+
+            var vm = CreateViewModel(out var audioEngine, out _, settingsPath);
+
+            await vm.PlayNowAsync(new Track(trackPath, "tagged-track.mp3"));
+            await vm.WaveformLoadTask;
+
+            await Assert.That(vm.WaveformPeaks).IsEquivalentTo([0.4f, 0.6f]);
+            audioEngine.DidNotReceive().GetWaveformPeaks(Arg.Any<int>());
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task LoadTrackAsync_WhenNoPeaksAreCached_ExtractsFromTheEngineAndSavesThemToTheIndex()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-playback-controls-tests-");
+        try
+        {
+            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+            File.Copy(TaggedTrackFixturePath, trackPath);
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+            var vm = CreateViewModel(out var audioEngine, out _, settingsPath);
+            audioEngine.GetWaveformPeaks(2000).Returns(new float[] { 0.2f, 0.8f });
+
+            await vm.PlayNowAsync(new Track(trackPath, "tagged-track.mp3"));
+            await vm.WaveformLoadTask;
+
+            await Assert.That(vm.WaveformPeaks).IsEquivalentTo([0.2f, 0.8f]);
+            await Assert.That(LibraryIndexStore.TryGetWaveformPeaks(settingsPath, trackPath)).IsEquivalentTo([0.2f, 0.8f]);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+            root.Delete(recursive: true);
+        }
     }
 
     [Test]

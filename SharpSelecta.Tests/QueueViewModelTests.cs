@@ -14,7 +14,8 @@ public class QueueViewModelTests
     {
         audioEngine = Substitute.For<IAudioEngine>();
         queue = new PlaybackQueue();
-        var playbackControls = new PlaybackControlsViewModel(audioEngine, queue, NullLogger<PlaybackControlsViewModel>.Instance);
+        var settingsFilePath = Path.Combine(Path.GetTempPath(), $"sharpselecta-queue-vm-tests-{Guid.NewGuid():N}.json");
+        var playbackControls = new PlaybackControlsViewModel(audioEngine, queue, settingsFilePath, NullLogger<PlaybackControlsViewModel>.Instance);
         return new QueueViewModel(playbackControls, NullLogger<QueueViewModel>.Instance);
     }
 

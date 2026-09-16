@@ -14,7 +14,7 @@ public class PlaybackSettingsViewModelTests
         Path.Combine(Path.GetTempPath(), $"sharpselecta-playback-settings-vm-tests-{Guid.NewGuid():N}.json");
 
     private static PlaybackControlsViewModel CreatePlaybackControlsViewModel(IAudioEngine? audioEngine = null) =>
-        new(audioEngine ?? Substitute.For<IAudioEngine>(), new PlaybackQueue(), NullLogger<PlaybackControlsViewModel>.Instance);
+        new(audioEngine ?? Substitute.For<IAudioEngine>(), new PlaybackQueue(), CreateTempSettingsPath(), NullLogger<PlaybackControlsViewModel>.Instance);
 
     [Test]
     public async Task SelectedOutputDeviceDisplayName_DefaultsToSystemDefault()

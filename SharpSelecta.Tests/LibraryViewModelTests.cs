@@ -36,12 +36,13 @@ public class LibraryViewModelTests
         filePickerService = Substitute.For<IFilePickerService>();
         fileManagerService = Substitute.For<IFileManagerService>();
         var queue = new PlaybackQueue();
-        playbackControls = new PlaybackControlsViewModel(audioEngine, queue, NullLogger<PlaybackControlsViewModel>.Instance);
+        var resolvedSettingsFilePath = settingsFilePath ?? CreateTempSettingsPath();
+        playbackControls = new PlaybackControlsViewModel(audioEngine, queue, resolvedSettingsFilePath, NullLogger<PlaybackControlsViewModel>.Instance);
         return new LibraryViewModel(
             filePickerService,
             playbackControls,
             fileManagerService,
-            settingsFilePath ?? CreateTempSettingsPath(),
+            resolvedSettingsFilePath,
             NullLogger<LibraryViewModel>.Instance);
     }
 

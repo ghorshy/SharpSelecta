@@ -109,6 +109,59 @@ public static class LibraryIndexStore
         return (current.Select(c => c.Track).ToList(), false);
     }
 
+    public static IReadOnlyList<float>? TryGetWaveformPeaks(string settingsFilePath, string filePath)
+    {
+        var indexFilePath = IndexFilePath(settingsFilePath);
+        if (!File.Exists(indexFilePath))
+        {
+            return null;
+        }
+
+        using var connection = OpenConnection(indexFilePath);
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT WaveformPeaks FROM Tracks WHERE FilePath = @FilePath";
+        command.Parameters.AddWithValue("@FilePath", filePath);
+
+        using var reader = command.ExecuteReader();
+        if (!reader.Read() || reader.IsDBNull(0))
+        {
+            return null;
+        }
+
+        return BytesToFloats((byte[])reader.GetValue(0));
+    }
+
+    public static void SaveWaveformPeaks(string settingsFilePath, string filePath, IReadOnlyList<float> peaks)
+    {
+        var indexFilePath = IndexFilePath(settingsFilePath);
+        if (!File.Exists(indexFilePath))
+        {
+            return;
+        }
+
+        using var connection = OpenConnection(indexFilePath);
+        using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE Tracks SET WaveformPeaks = @WaveformPeaks WHERE FilePath = @FilePath";
+        command.Parameters.AddWithValue("@WaveformPeaks", FloatsToBytes(peaks));
+        command.Parameters.AddWithValue("@FilePath", filePath);
+        command.ExecuteNonQuery();
+    }
+
+    private static byte[] FloatsToBytes(IReadOnlyList<float> peaks)
+    {
+        var array = peaks as float[] ?? peaks.ToArray();
+        var bytes = new byte[array.Length * sizeof(float)];
+        Buffer.BlockCopy(array, 0, bytes, 0, bytes.Length);
+        return bytes;
+    }
+
+    private static float[] BytesToFloats(byte[] bytes)
+    {
+        var floats = new float[bytes.Length / sizeof(float)];
+        Buffer.BlockCopy(bytes, 0, floats, 0, bytes.Length);
+        return floats;
+    }
+
     private static void UpsertAll(
         SqliteConnection connection,
         SqliteTransaction transaction,
@@ -122,6 +175,8 @@ public static class LibraryIndexStore
 
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
+        // UpsertAll only runs for new/changed files, so any cached WaveformPeaks on a matched
+        // row belongs to the old file content and must be dropped, not carried forward.
         command.CommandText = $"""
             INSERT INTO Tracks ({ColumnList})
             VALUES (@FilePath, @FolderPath, @DisplayName, @TrackNumber, @Title, @Artist, @Album, @AlbumArtist, @Year,
@@ -131,7 +186,8 @@ public static class LibraryIndexStore
                 Title = excluded.Title, Artist = excluded.Artist, Album = excluded.Album, AlbumArtist = excluded.AlbumArtist,
                 Year = excluded.Year, DurationSeconds = excluded.DurationSeconds, SampleRate = excluded.SampleRate,
                 BitDepth = excluded.BitDepth, Bitrate = excluded.Bitrate, FileType = excluded.FileType,
-                LastWriteTimeUtcTicks = excluded.LastWriteTimeUtcTicks, FileSizeBytes = excluded.FileSizeBytes
+                LastWriteTimeUtcTicks = excluded.LastWriteTimeUtcTicks, FileSizeBytes = excluded.FileSizeBytes,
+                WaveformPeaks = NULL
             """;
 
         var pFilePath = command.Parameters.Add("@FilePath", SqliteType.Text);
@@ -263,11 +319,37 @@ public static class LibraryIndexStore
                 Bitrate               INTEGER NOT NULL,
                 FileType              TEXT    NULL,
                 LastWriteTimeUtcTicks INTEGER NOT NULL,
-                FileSizeBytes         INTEGER NOT NULL
+                FileSizeBytes         INTEGER NOT NULL,
+                WaveformPeaks         BLOB    NULL
             );
             CREATE INDEX IF NOT EXISTS IX_Tracks_FolderPath ON Tracks(FolderPath);
             """;
         command.ExecuteNonQuery();
+
+        // CREATE TABLE IF NOT EXISTS above only takes effect for a brand-new index file - a
+        // pre-existing one from before this column existed needs an explicit migration.
+        if (!HasColumn(connection, "Tracks", "WaveformPeaks"))
+        {
+            using var alter = connection.CreateCommand();
+            alter.CommandText = "ALTER TABLE Tracks ADD COLUMN WaveformPeaks BLOB NULL";
+            alter.ExecuteNonQuery();
+        }
+    }
+
+    private static bool HasColumn(SqliteConnection connection, string table, string column)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = $"PRAGMA table_info({table})";
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            if (string.Equals(reader.GetString(1), column, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static SqliteConnection OpenConnection(string indexFilePath)

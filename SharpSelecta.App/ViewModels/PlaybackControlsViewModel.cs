@@ -25,6 +25,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     private readonly IAudioEngine _audioEngine;
     private readonly PlaybackQueue _queue;
     private readonly ILogger<PlaybackControlsViewModel> _logger;
+    private readonly string _settingsFilePath;
     private bool _isSyncingFromEngine;
     private bool _hasHandledEndOfStream;
     private int _waveformLoadGeneration;
@@ -97,10 +98,11 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     [ObservableProperty]
     public partial bool UseWaveformSlider { get; set; }
 
-    public PlaybackControlsViewModel(IAudioEngine audioEngine, PlaybackQueue queue, ILogger<PlaybackControlsViewModel> logger)
+    public PlaybackControlsViewModel(IAudioEngine audioEngine, PlaybackQueue queue, string settingsFilePath, ILogger<PlaybackControlsViewModel> logger)
     {
         _audioEngine = audioEngine;
         _queue = queue;
+        _settingsFilePath = settingsFilePath;
         _logger = logger;
 
         ((INotifyCollectionChanged)_queue.Entries).CollectionChanged += (_, _) => RefreshNavigationCommands();
@@ -376,7 +378,19 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     {
         try
         {
-            var peaks = await Task.Run(() => _audioEngine.GetWaveformPeaks(WaveformMasterPointCount));
+            var peaks = await Task.Run(() =>
+            {
+                var cached = LibraryIndexStore.TryGetWaveformPeaks(_settingsFilePath, track.FilePath);
+                if (cached is not null)
+                {
+                    return cached;
+                }
+
+                var extracted = _audioEngine.GetWaveformPeaks(WaveformMasterPointCount);
+                LibraryIndexStore.SaveWaveformPeaks(_settingsFilePath, track.FilePath, extracted);
+                return extracted;
+            });
+
             if (generation == _waveformLoadGeneration)
             {
                 WaveformPeaks = peaks;

@@ -16,7 +16,7 @@ public class SettingsWindowViewModelTests
     private static LibraryViewModel CreateLibraryViewModel()
     {
         var playbackControls = new PlaybackControlsViewModel(
-            Substitute.For<IAudioEngine>(), new PlaybackQueue(), NullLogger<PlaybackControlsViewModel>.Instance);
+            Substitute.For<IAudioEngine>(), new PlaybackQueue(), CreateTempSettingsPath(), NullLogger<PlaybackControlsViewModel>.Instance);
         return new LibraryViewModel(
             Substitute.For<IFilePickerService>(),
             playbackControls,
@@ -28,7 +28,7 @@ public class SettingsWindowViewModelTests
     private static PlaybackSettingsViewModel CreatePlaybackSettingsViewModel()
     {
         var playbackControls = new PlaybackControlsViewModel(
-            Substitute.For<IAudioEngine>(), new PlaybackQueue(), NullLogger<PlaybackControlsViewModel>.Instance);
+            Substitute.For<IAudioEngine>(), new PlaybackQueue(), CreateTempSettingsPath(), NullLogger<PlaybackControlsViewModel>.Instance);
         return new PlaybackSettingsViewModel(
             CreateTempSettingsPath(),
             Substitute.For<IOutputDeviceService>(),

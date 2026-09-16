@@ -157,6 +157,143 @@ public class LibraryIndexStoreTests
     }
 
     [Test]
+    public async Task TryGetWaveformPeaks_WhenIndexFileDoesNotExist_ReturnsNull()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        var peaks = LibraryIndexStore.TryGetWaveformPeaks(settingsPath, "/music/a.mp3");
+
+        await Assert.That(peaks).IsNull();
+    }
+
+    [Test]
+    public async Task TryGetWaveformPeaks_WhenNoPeaksHaveBeenSavedForTheTrack_ReturnsNull()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
+        try
+        {
+            CopyFixtureInto(root.FullName, "tagged-track.mp3");
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+            var peaks = LibraryIndexStore.TryGetWaveformPeaks(settingsPath, Path.Combine(root.FullName, "tagged-track.mp3"));
+
+            await Assert.That(peaks).IsNull();
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task SaveWaveformPeaks_ThenTryGetWaveformPeaks_RoundTripsTheValues()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
+        try
+        {
+            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+            CopyFixtureInto(root.FullName, "tagged-track.mp3");
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+            LibraryIndexStore.SaveWaveformPeaks(settingsPath, trackPath, [0.1f, 0.5f, 1f, 0f]);
+            var peaks = LibraryIndexStore.TryGetWaveformPeaks(settingsPath, trackPath);
+
+            await Assert.That(peaks).IsEquivalentTo([0.1f, 0.5f, 1f, 0f]);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task Reconcile_WhenAFileChanges_ClearsAnyPreviouslyCachedWaveformPeaks()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
+        try
+        {
+            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+            CopyFixtureInto(root.FullName, "tagged-track.mp3");
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+            LibraryIndexStore.SaveWaveformPeaks(settingsPath, trackPath, [0.1f, 0.5f]);
+
+            await File.WriteAllBytesAsync(trackPath, await File.ReadAllBytesAsync(TaggedTrackFixturePath));
+            File.SetLastWriteTimeUtc(trackPath, DateTime.UtcNow);
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+            var peaks = LibraryIndexStore.TryGetWaveformPeaks(settingsPath, trackPath);
+            await Assert.That(peaks).IsNull();
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task Reconcile_OnAnIndexFileFromBeforeWaveformCachingExisted_MigratesTheSchemaWithoutLosingData()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
+        try
+        {
+            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+            CopyFixtureInto(root.FullName, "tagged-track.mp3");
+
+            var indexFilePath = IndexFilePath(settingsPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(indexFilePath)!);
+            await using (var connection = new SqliteConnection($"Data Source={indexFilePath}"))
+            {
+                await connection.OpenAsync();
+                var command = connection.CreateCommand();
+                command.CommandText = """
+                    CREATE TABLE Tracks (
+                        FilePath              TEXT    NOT NULL PRIMARY KEY,
+                        FolderPath            TEXT    NOT NULL,
+                        DisplayName           TEXT    NOT NULL,
+                        TrackNumber           INTEGER NULL,
+                        Title                 TEXT    NULL,
+                        Artist                TEXT    NULL,
+                        Album                 TEXT    NULL,
+                        AlbumArtist           TEXT    NULL,
+                        Year                  INTEGER NULL,
+                        DurationSeconds       REAL    NOT NULL,
+                        SampleRate            INTEGER NOT NULL,
+                        BitDepth              INTEGER NOT NULL,
+                        Bitrate               INTEGER NOT NULL,
+                        FileType              TEXT    NULL,
+                        LastWriteTimeUtcTicks INTEGER NOT NULL,
+                        FileSizeBytes         INTEGER NOT NULL
+                    );
+                    """;
+                await command.ExecuteNonQueryAsync();
+            }
+
+            var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+            await Assert.That(result.Tracks.Count).IsEqualTo(1);
+            LibraryIndexStore.SaveWaveformPeaks(settingsPath, trackPath, [0.3f]);
+            var peaks = LibraryIndexStore.TryGetWaveformPeaks(settingsPath, trackPath);
+            await Assert.That(peaks).IsEquivalentTo([0.3f]);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
     public async Task Reconcile_WhenAFolderIsMissing_ReportsItFailedButKeepsServingItsLastIndexedTracks()
     {
         var settingsPath = CreateTempSettingsPath();

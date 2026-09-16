@@ -47,7 +47,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _settingsFilePath = settingsFilePath;
 
         var queue = new PlaybackQueue();
-        PlaybackControls = new PlaybackControlsViewModel(audioEngine, queue, playbackControlsLogger);
+        PlaybackControls = new PlaybackControlsViewModel(audioEngine, queue, settingsFilePath, playbackControlsLogger);
         Library = new LibraryViewModel(filePickerService, PlaybackControls, fileManagerService, settingsFilePath, libraryLogger);
         Queue = new QueueViewModel(PlaybackControls, queueLogger);
         PlaybackSettings = new PlaybackSettingsViewModel(settingsFilePath, outputDeviceService, PlaybackControls);

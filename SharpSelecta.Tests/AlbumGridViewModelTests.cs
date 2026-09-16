@@ -17,7 +17,7 @@ public class AlbumGridViewModelTests
     {
         var audioEngine = Substitute.For<IAudioEngine>();
         var filePickerService = Substitute.For<IFilePickerService>();
-        var playbackControls = new PlaybackControlsViewModel(audioEngine, new PlaybackQueue(), NullLogger<PlaybackControlsViewModel>.Instance);
+        var playbackControls = new PlaybackControlsViewModel(audioEngine, new PlaybackQueue(), CreateTempSettingsPath(), NullLogger<PlaybackControlsViewModel>.Instance);
         return new LibraryViewModel(
             filePickerService, playbackControls, Substitute.For<IFileManagerService>(),
             settingsFilePath ?? CreateTempSettingsPath(), NullLogger<LibraryViewModel>.Instance);
