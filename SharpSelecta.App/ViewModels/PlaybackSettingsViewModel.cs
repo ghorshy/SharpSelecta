@@ -25,9 +25,6 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     public partial bool RestoreQueueOnStartup { get; set; }
 
     [ObservableProperty]
-    public partial bool UseWaveformSlider { get; set; }
-
-    [ObservableProperty]
     private string selectedOutputDeviceDisplayName = Strings.SystemDefaultAudioDevice;
 
     [ObservableProperty]
@@ -35,6 +32,9 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
     [ObservableProperty]
     private int seekStepSeconds = 5;
+
+    [ObservableProperty]
+    private bool useWaveformSlider;
 
     public bool HasPendingChanges => false;
 
@@ -49,8 +49,8 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         _playbackControls = playbackControls;
         RestoreQueueOnStartup = SettingsStore.LoadRestoreQueueOnStartup(settingsFilePath);
 
-        UseWaveformSlider = SettingsStore.LoadUseWaveformSlider(settingsFilePath);
-        _playbackControls.UseWaveformSlider = UseWaveformSlider;
+        useWaveformSlider = SettingsStore.LoadUseWaveformSlider(settingsFilePath);
+        _playbackControls.UseWaveformSlider = useWaveformSlider;
 
         if (SettingsStore.LoadOutputDeviceName(settingsFilePath) is { } savedDeviceName)
         {
