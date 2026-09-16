@@ -27,6 +27,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     private readonly ILogger<PlaybackControlsViewModel> _logger;
     private bool _isSyncingFromEngine;
     private bool _hasHandledEndOfStream;
+    private int _waveformLoadGeneration;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(PlayPauseCommand))]
@@ -83,6 +84,10 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 
     [ObservableProperty]
     public partial IReadOnlyList<float> WaveformPeaks { get; private set; } = [];
+
+    // Fire-and-forget from the UI's perspective (see LoadTrackCoreAsync) - exposed so tests
+    // can await it instead of racing the background extraction.
+    public Task WaveformLoadTask { get; private set; } = Task.CompletedTask;
 
     [ObservableProperty]
     public partial bool UseWaveformSlider { get; set; }
@@ -335,15 +340,6 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
             TransportState = TransportState.Ready;
             CurrentTrack = track;
             CurrentTrackArtworkBytes = await Task.Run(() => MusicLibraryScanner.LoadArtwork(track.FilePath));
-            try
-            {
-                WaveformPeaks = await Task.Run(() => _audioEngine.GetWaveformPeaks(WaveformMasterPointCount));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to extract waveform peaks for {FilePath}", track.FilePath);
-                WaveformPeaks = [];
-            }
 
             if (startPositionSeconds is > 0)
             {
@@ -355,11 +351,34 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
             {
                 PlayPauseCommand.Execute(null);
             }
+
+            // Off the critical path deliberately - a big/HQ file's decoder pass here must never
+            // delay playback start. WaveformPeaks is cleared immediately so a fast track switch
+            // doesn't show the previous track's bars, and the generation check drops a stale
+            // result if the user has already moved on to another track by the time this finishes.
+            WaveformPeaks = [];
+            WaveformLoadTask = LoadWaveformPeaksAsync(track, ++_waveformLoadGeneration);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load {FilePath}", track.FilePath);
             StatusMessage = Strings.FailedToLoadFile(ex.Message);
+        }
+    }
+
+    private async Task LoadWaveformPeaksAsync(Track track, int generation)
+    {
+        try
+        {
+            var peaks = await Task.Run(() => _audioEngine.GetWaveformPeaks(WaveformMasterPointCount));
+            if (generation == _waveformLoadGeneration)
+            {
+                WaveformPeaks = peaks;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to extract waveform peaks for {FilePath}", track.FilePath);
         }
     }
 

@@ -802,7 +802,45 @@ public class PlaybackControlsViewModelTests
         audioEngine.GetWaveformPeaks(2000).Returns(new float[] { 0.1f, -0.5f, 0.9f });
 
         await vm.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
+        await vm.WaveformLoadTask;
 
         await Assert.That(vm.WaveformPeaks).IsEquivalentTo([0.1f, -0.5f, 0.9f]);
+    }
+
+    [Test]
+    public async Task PlayNowAsync_StartsPlaybackWithoutWaitingForWaveformPeaks()
+    {
+        var vm = CreateViewModel(out var audioEngine, out _);
+        var unblockPeaks = new TaskCompletionSource<float[]>();
+        audioEngine.GetWaveformPeaks(2000).Returns(_ => unblockPeaks.Task.GetAwaiter().GetResult());
+
+        await vm.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
+
+        await Assert.That(vm.IsPlaying).IsTrue();
+        await Assert.That(vm.WaveformPeaks).IsEmpty();
+
+        unblockPeaks.SetResult([0.2f]);
+        await vm.WaveformLoadTask;
+    }
+
+    [Test]
+    public async Task LoadTrackAsync_WhenTrackChangesBeforePeaksFinish_DropsTheStaleResult()
+    {
+        var vm = CreateViewModel(out var audioEngine, out _);
+        var firstTrackPeaks = new TaskCompletionSource<float[]>();
+        audioEngine.GetWaveformPeaks(2000).Returns(
+            _ => firstTrackPeaks.Task.GetAwaiter().GetResult(),
+            _ => new float[] { 0.7f });
+
+        await vm.PlayNowAsync(new Track("/music/first.mp3", "first.mp3"));
+        var firstLoadTask = vm.WaveformLoadTask;
+
+        await vm.PlayNowAsync(new Track("/music/second.mp3", "second.mp3"));
+        await vm.WaveformLoadTask;
+
+        firstTrackPeaks.SetResult([0.1f]);
+        await firstLoadTask;
+
+        await Assert.That(vm.WaveformPeaks).IsEquivalentTo([0.7f]);
     }
 }
