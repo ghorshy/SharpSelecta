@@ -29,12 +29,12 @@ public static class MusicLibraryScanner
 
             return new Track(path, displayName)
             {
-                TrackNumber = atlTrack.TrackNumber,
+                // ATL.NET reports these as 0, not null, when a file has no such tag.
+                TrackNumber = atlTrack.TrackNumber is > 0 ? atlTrack.TrackNumber : null,
                 Title = atlTrack.Title,
                 Artist = atlTrack.Artist,
                 Album = atlTrack.Album,
                 AlbumArtist = atlTrack.AlbumArtist,
-                // ATL.NET reports Year as 0, not null, when a file has no year tag.
                 Year = atlTrack.Year is > 0 ? atlTrack.Year : null,
                 Duration = TimeSpan.FromSeconds(atlTrack.Duration),
                 SampleRate = (int)atlTrack.SampleRate,

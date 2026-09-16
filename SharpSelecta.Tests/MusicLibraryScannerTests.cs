@@ -140,6 +140,28 @@ public class MusicLibraryScannerTests
     }
 
     [Test]
+    public async Task Scan_WithNoTrackNumberTag_LeavesTrackNumberNullInsteadOfZero()
+    {
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-tests-");
+        try
+        {
+            var fixturePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track-no-tracknumber.mp3");
+            var trackPath = Path.Combine(root.FullName, "tagged-track-no-tracknumber.mp3");
+            File.Copy(fixturePath, trackPath);
+
+            var tracks = MusicLibraryScanner.Scan(root.FullName);
+
+            await Assert.That(tracks.Count).IsEqualTo(1);
+            await Assert.That(tracks[0].Title).IsEqualTo("No Track Number Song");
+            await Assert.That(tracks[0].TrackNumber).IsNull();
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
     public async Task LoadArtwork_WhenFileHasAnEmbeddedPicture_ReturnsItsBytes()
     {
         var fixturePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track-with-artwork.mp3");
