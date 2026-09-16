@@ -509,6 +509,54 @@ public class LibraryViewModelTests
     }
 
     [Test]
+    public async Task PlayNextCommand_WhenClickedTrackIsPartOfTheOrderedSelection_ActsOnTheWholeSelectionInSelectionOrder()
+    {
+        var vm = CreateViewModel(out _, out _, out var playbackControls);
+        var first = new Track("/music/first.mp3", "first.mp3");
+        var third = new Track("/music/third.mp3", "third.mp3");
+
+        // Selected out of visual order: third, then first - the ordered list must preserve that.
+        // A track that was never selected (e.g. one sitting between them in the grid) stays out.
+        vm.SetSelectedTracksInOrder([third, first]);
+
+        vm.PlayNextCommand.Execute(first);
+
+        await Assert.That(playbackControls.QueueEntries.Count).IsEqualTo(2);
+        await Assert.That(playbackControls.QueueEntries[0].Track).IsEqualTo(third);
+        await Assert.That(playbackControls.QueueEntries[1].Track).IsEqualTo(first);
+    }
+
+    [Test]
+    public async Task AddToQueueCommand_WhenClickedTrackIsPartOfTheOrderedSelection_ActsOnTheWholeSelectionInSelectionOrder()
+    {
+        var vm = CreateViewModel(out _, out _, out var playbackControls);
+        var first = new Track("/music/first.mp3", "first.mp3");
+        var second = new Track("/music/second.mp3", "second.mp3");
+
+        vm.SetSelectedTracksInOrder([second, first]);
+
+        vm.AddToQueueCommand.Execute(second);
+
+        await Assert.That(playbackControls.QueueEntries[0].Track).IsEqualTo(second);
+        await Assert.That(playbackControls.QueueEntries[1].Track).IsEqualTo(first);
+    }
+
+    [Test]
+    public async Task PlayNextCommand_WhenClickedTrackIsOutsideTheOrderedSelection_ActsOnlyOnThatTrack()
+    {
+        var vm = CreateViewModel(out _, out _, out var playbackControls);
+        var selectedTrack = new Track("/music/selected.mp3", "selected.mp3");
+        var clickedTrack = new Track("/music/clicked.mp3", "clicked.mp3");
+
+        vm.SetSelectedTracksInOrder([selectedTrack]);
+
+        vm.PlayNextCommand.Execute(clickedTrack);
+
+        await Assert.That(playbackControls.QueueEntries.Count).IsEqualTo(1);
+        await Assert.That(playbackControls.QueueEntries[0].Track).IsEqualTo(clickedTrack);
+    }
+
+    [Test]
     public async Task HidingEveryColumn_LeavesTheLastOneVisible()
     {
         var vm = CreateViewModel(out _, out _, out _);

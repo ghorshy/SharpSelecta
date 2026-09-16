@@ -16,6 +16,7 @@ namespace SharpSelecta.App.Views;
 public partial class LibraryView : UserControl
 {
     private bool _columnWidthsDirty;
+    private readonly List<Track> _orderedSelection = [];
 
     public LibraryView()
     {
@@ -29,6 +30,33 @@ public partial class LibraryView : UserControl
 
         TracksGrid.AddHandler(InputElement.PointerReleasedEvent, OnPointerReleased, handledEventsToo: true);
         TracksGrid.Sorting += (_, _) => Dispatcher.UIThread.Post(SaveCurrentSort, DispatcherPriority.Background);
+        TracksGrid.SelectionChanged += OnTracksGridSelectionChanged;
+    }
+
+    // DataGrid.SelectedItems is ordered by the underlying list, not by click order - track
+    // click order ourselves so Play Next/Add to Queue can act on it in the order selected.
+    private void OnTracksGridSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        foreach (var removed in e.RemovedItems)
+        {
+            if (removed is LibraryTrackViewModel removedItem)
+            {
+                _orderedSelection.Remove(removedItem.Track);
+            }
+        }
+
+        foreach (var added in e.AddedItems)
+        {
+            if (added is LibraryTrackViewModel addedItem)
+            {
+                _orderedSelection.Add(addedItem.Track);
+            }
+        }
+
+        if (DataContext is LibraryViewModel vm)
+        {
+            vm.SetSelectedTracksInOrder([.._orderedSelection]);
+        }
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)

@@ -405,10 +405,21 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     private Task PlayNowAsync(Track track) => _playbackControls.PlayNowAsync(track);
 
     [RelayCommand]
-    private Task PlayNext(Track track) => _playbackControls.PlayNext(track);
+    private Task PlayNext(Track track) => _playbackControls.PlayNext(ResolveSelection(track));
 
     [RelayCommand]
-    private Task AddToQueue(Track track) => _playbackControls.AddToQueue(track);
+    private Task AddToQueue(Track track) => _playbackControls.AddToQueue(ResolveSelection(track));
+
+    private IReadOnlyList<Track> _selectedTracksInOrder = [];
+
+    // Pushed by the view on every DataGrid selection change - DataGrid.SelectedItems doesn't
+    // preserve click order, so the view tracks it there and hands the ordered list here.
+    public void SetSelectedTracksInOrder(IReadOnlyList<Track> tracks) => _selectedTracksInOrder = tracks;
+
+    // A right-click inside the current multi-selection acts on the whole (ordered) selection;
+    // a right-click outside it acts on just the clicked track, like most file browsers.
+    private IReadOnlyList<Track> ResolveSelection(Track clickedTrack) =>
+        _selectedTracksInOrder.Contains(clickedTrack) ? _selectedTracksInOrder : [clickedTrack];
 
     [RelayCommand]
     private Task PlayAlbumNowAsync(AlbumViewModel album) => _playbackControls.PlayNowAsync(album.UnderlyingTracks);
