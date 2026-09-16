@@ -332,7 +332,16 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
             TransportState = TransportState.Ready;
             CurrentTrack = track;
             CurrentTrackArtworkBytes = await Task.Run(() => MusicLibraryScanner.LoadArtwork(track.FilePath));
-            WaveformPeaks = await Task.Run(() => _audioEngine.GetWaveformPeaks(WaveformPointCount));
+            try
+            {
+                WaveformPeaks = await Task.Run(() => _audioEngine.GetWaveformPeaks(WaveformPointCount));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to extract waveform peaks for {FilePath}", track.FilePath);
+                WaveformPeaks = [];
+            }
+
             if (startPositionSeconds is > 0)
             {
                 _audioEngine.Seek(startPositionSeconds.Value);
