@@ -72,11 +72,19 @@ public sealed class WaveformSliderView : Control
         base.OnPointerPressed(e);
         _isPressed = true;
         SeekToPointer(e);
+        e.Pointer.Capture(this);
     }
 
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
         base.OnPointerReleased(e);
+        _isPressed = false;
+        e.Pointer.Capture(null);
+    }
+
+    protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)
+    {
+        base.OnPointerCaptureLost(e);
         _isPressed = false;
     }
 
@@ -102,6 +110,8 @@ public sealed class WaveformSliderView : Control
     {
         base.Render(context);
 
+        context.FillRectangle(Brushes.Transparent, new Rect(Bounds.Size));
+
         var peaks = Peaks;
         if (peaks.Count == 0 || Bounds.Width <= 0 || Bounds.Height <= 0)
             return;
@@ -113,8 +123,13 @@ public sealed class WaveformSliderView : Control
         var lowPreview = Math.Min(playedBarCount, hoverBarIndex < 0 ? playedBarCount : hoverBarIndex);
         var highPreview = Math.Max(playedBarCount, hoverBarIndex);
 
-        var accentColor = this.TryFindResource("SystemAccentColor", out var resource) && resource is Color color
-            ? color
+        var accentColor = this.TryFindResource("SystemAccentColor", out var resource)
+            ? resource switch
+            {
+                Color c => c,
+                ISolidColorBrush b => b.Color,
+                _ => Colors.DodgerBlue,
+            }
             : Colors.DodgerBlue;
 
         var playedBrush = new SolidColorBrush(accentColor);
