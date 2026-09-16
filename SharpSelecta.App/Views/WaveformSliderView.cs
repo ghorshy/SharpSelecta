@@ -182,7 +182,7 @@ public sealed class WaveformSliderView : Control
 
         var playedBrush = new SolidColorBrush(accentColor);
         var previewBrush = new SolidColorBrush(accentColor, 0.5);
-        var unplayedBrush = new SolidColorBrush(Color.FromArgb(0x40, 0x80, 0x80, 0x80));
+        var unplayedBrush = new SolidColorBrush(Color.FromArgb(0x40, 0xA0, 0xA0, 0xA0));
 
         var centerY = Bounds.Height / 2;
 
