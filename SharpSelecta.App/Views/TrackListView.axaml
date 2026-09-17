@@ -2,6 +2,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SharpSelecta.App.ViewModels"
              xmlns:res="using:SharpSelecta.App.Resources"
+             xmlns:core="using:SharpSelecta.Core.Library"
+             xmlns:conv="using:Avalonia.Data.Converters"
+             xmlns:converters="using:SharpSelecta.App.Converters"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="400"
@@ -78,22 +81,44 @@
 
             <!-- Right-click on a row: same Play Now/Play Next/Add to Queue actions as
                  before, now on DataGridRow instead of ListBoxItem. -->
-            <Style Selector="DataGridRow">
+            <Style Selector="DataGridRow" x:DataType="vm:LibraryTrackViewModel">
+                <!-- A missing-file placeholder row (see PlaylistsViewModel.MissingTrackPlaceholder)
+                     renders grayed out - only "Remove from playlist" stays fully actionable. -->
+                <Setter Property="Opacity" Value="{Binding IsMissing, Converter={x:Static converters:BoolToOpacityConverter.Instance}}" />
                 <Setter Property="ContextMenu">
                     <Setter.Value>
                         <ContextMenu x:DataType="vm:LibraryTrackViewModel">
                             <MenuItem Header="{x:Static res:Strings.PlayNow}"
                                       Command="{Binding Library.PlayNowCommand}"
-                                      CommandParameter="{Binding Track}" />
+                                      CommandParameter="{Binding Track}"
+                                      IsEnabled="{Binding !IsMissing}" />
                             <MenuItem Header="{x:Static res:Strings.PlayNext}"
                                       Command="{Binding Library.PlayNextCommand}"
-                                      CommandParameter="{Binding Track}" />
+                                      CommandParameter="{Binding Track}"
+                                      IsEnabled="{Binding !IsMissing}" />
                             <MenuItem Header="{x:Static res:Strings.AddToQueue}"
                                       Command="{Binding Library.AddToQueueCommand}"
-                                      CommandParameter="{Binding Track}" />
+                                      CommandParameter="{Binding Track}"
+                                      IsEnabled="{Binding !IsMissing}" />
+                            <MenuItem Header="{x:Static res:Strings.AddToPlaylist}"
+                                      IsEnabled="{Binding !IsMissing}"
+                                      SubmenuOpened="OnAddToPlaylistSubmenuOpened">
+                                <MenuItem.Items>
+                                    <MenuItem Header="{x:Static res:Strings.NewPlaylistEllipsis}" Click="OnAddToNewPlaylistClick" />
+                                    <Separator IsVisible="{Binding Library.Playlists.Playlists.Count, Converter={x:Static converters:IntToBoolConverter.Instance}}" />
+                                    <!-- One MenuItem per existing playlist is appended after these two in
+                                         OnAddToPlaylistSubmenuOpened - MenuItem.ItemsSource nests into a
+                                         submenu instead of flat siblings, same as the top bar's Playlists flyout. -->
+                                </MenuItem.Items>
+                            </MenuItem>
+                            <MenuItem Header="{x:Static res:Strings.RemoveFromPlaylist}"
+                                      Command="{Binding Library.RemoveFromPlaylistCommand}"
+                                      CommandParameter="{Binding Track}"
+                                      IsVisible="{Binding Library.LibrarySection, Converter={x:Static conv:ObjectConverters.Equal}, ConverterParameter={x:Static core:LibrarySection.Playlist}}" />
                             <MenuItem Header="{Binding Library.ShowInFileManagerLabel}"
                                       Command="{Binding Library.ShowInFileManagerCommand}"
-                                      CommandParameter="{Binding Track}" />
+                                      CommandParameter="{Binding Track}"
+                                      IsEnabled="{Binding !IsMissing}" />
                         </ContextMenu>
                     </Setter.Value>
                 </Setter>

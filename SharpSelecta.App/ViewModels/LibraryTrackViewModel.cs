@@ -3,9 +3,11 @@ using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.ViewModels;
 
-public sealed class LibraryTrackViewModel(Track track, LibraryViewModel library)
+public sealed class LibraryTrackViewModel(Track track, LibraryViewModel library, bool isMissing = false)
 {
     public Track Track { get; } = track;
+
+    public bool IsMissing { get; } = isMissing;
 
     public string DisplayName => Track.DisplayName;
 

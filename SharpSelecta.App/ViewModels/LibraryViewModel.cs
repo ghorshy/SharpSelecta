@@ -253,12 +253,16 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     public bool IsRecentlyAddedCoverArtVisible => HasTracks && !IsLoadingLibrary && LibrarySection == LibrarySection.RecentlyAdded && RecentlyAddedViewMode == LibraryViewMode.AlbumGrid;
 
+    // No ViewMode gate here, unlike the other visibility properties - a playlist has no Cover Art mode.
+    public bool IsPlaylistViewVisible => HasTracks && !IsLoadingLibrary && LibrarySection == LibrarySection.Playlist;
+
     private void NotifyViewVisibilityChanged()
     {
         OnPropertyChanged(nameof(IsTrackListViewVisible));
         OnPropertyChanged(nameof(IsAlbumGridViewVisible));
         OnPropertyChanged(nameof(IsRecentlyAddedListVisible));
         OnPropertyChanged(nameof(IsRecentlyAddedCoverArtVisible));
+        OnPropertyChanged(nameof(IsPlaylistViewVisible));
         OnPropertyChanged(nameof(ActiveViewMode));
     }
 
@@ -307,6 +311,8 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     public AlbumGridViewModel RecentlyAddedGrid { get; }
 
+    public PlaylistsViewModel Playlists { get; }
+
     public string SettingsFilePath => _settingsFilePath;
 
     public LibraryViewModel(
@@ -324,6 +330,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
         Grid = new AlbumGridViewModel(this, settingsFilePath, _logger);
         RecentlyAddedGrid = new AlbumGridViewModel(this, settingsFilePath, _logger, allowUserSort: false);
+        Playlists = new PlaylistsViewModel(this, settingsFilePath);
 
         Tracks.CollectionChanged += (_, _) =>
         {
@@ -365,6 +372,11 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         LibrarySection = SettingsStore.LoadLibrarySection(_settingsFilePath) ?? LibrarySection.Library;
         RecentlyAddedViewMode = SettingsStore.LoadRecentlyAddedViewMode(_settingsFilePath) ?? LibraryViewMode.TrackList;
 
+        if (LibrarySection == LibrarySection.Playlist)
+        {
+            RestoreSelectedPlaylist();
+        }
+
         var folderPaths = SettingsStore.LoadLibraryFolderPaths(_settingsFilePath);
         if (folderPaths is not null)
         {
@@ -382,6 +394,23 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             }
 
             await ReconcileFoldersAsync();
+        }
+    }
+
+    // Restores the playlist that was selected when the app last quit while viewing it. If it was
+    // since deleted, falls back to Library instead of leaving the user on an empty dead Playlist view.
+    private void RestoreSelectedPlaylist()
+    {
+        var savedPlaylistId = SettingsStore.LoadSelectedPlaylistId(_settingsFilePath);
+        Playlists.RefreshPlaylists();
+
+        if (savedPlaylistId is not null && Playlists.Playlists.Any(p => p.Id == savedPlaylistId))
+        {
+            Playlists.SelectPlaylist(savedPlaylistId);
+        }
+        else
+        {
+            LibrarySection = LibrarySection.Library;
         }
     }
 
@@ -479,6 +508,26 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     [RelayCommand]
     private Task AddToQueue(Track track) => _playbackControls.AddToQueue(ResolveSelection(track));
+
+    [RelayCommand]
+    private void AddToPlaylist((Track Track, string PlaylistId) parameter)
+    {
+        var tracksToAdd = ResolveSelection(parameter.Track);
+        var previouslySelected = Playlists.SelectedPlaylistId;
+        Playlists.SelectPlaylist(parameter.PlaylistId);
+        Playlists.AddTracksToSelectedPlaylist(tracksToAdd);
+        if (previouslySelected != parameter.PlaylistId)
+        {
+            Playlists.SelectPlaylist(previouslySelected);
+        }
+    }
+
+    [RelayCommand]
+    private void RemoveFromPlaylist(Track track) => Playlists.RemoveFromSelectedPlaylist(track);
+
+    public Task<string?> PickM3uImportFileAsync() => _filePickerService.PickM3uImportFileAsync();
+
+    public Task<string?> PickM3uExportPathAsync(string suggestedFileName) => _filePickerService.PickM3uExportPathAsync(suggestedFileName);
 
     private IReadOnlyList<Track> _selectedTracksInOrder = [];
 

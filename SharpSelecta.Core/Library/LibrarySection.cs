@@ -4,4 +4,5 @@ public enum LibrarySection
 {
     Library,
     RecentlyAdded,
+    Playlist,
 }

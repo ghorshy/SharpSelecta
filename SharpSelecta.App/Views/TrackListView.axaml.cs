@@ -6,8 +6,10 @@ using Avalonia;
 using Avalonia.Collections;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using SharpSelecta.App.Resources;
 using SharpSelecta.App.ViewModels;
 using SharpSelecta.Core.Library;
 
@@ -20,6 +22,9 @@ public sealed partial class TrackListView : UserControl
 
     public static readonly StyledProperty<bool> AllowReorderAndSortProperty =
         AvaloniaProperty.Register<TrackListView, bool>(nameof(AllowReorderAndSort), true);
+
+    public static readonly StyledProperty<bool> AllowRowReorderProperty =
+        AvaloniaProperty.Register<TrackListView, bool>(nameof(AllowRowReorder));
 
     public IEnumerable<LibraryTrackViewModel>? ItemsSource
     {
@@ -36,8 +41,17 @@ public sealed partial class TrackListView : UserControl
         set => SetValue(AllowReorderAndSortProperty, value);
     }
 
+    // Independent of AllowReorderAndSort: a playlist has a fixed manual order (no column sort)
+    // but still allows the user to drag rows to reorder it.
+    public bool AllowRowReorder
+    {
+        get => GetValue(AllowRowReorderProperty);
+        set => SetValue(AllowRowReorderProperty, value);
+    }
+
     private bool _columnWidthsDirty;
     private readonly List<Track> _orderedSelection = [];
+    private LibraryTrackViewModel? _rowBeingDragged;
 
     public TrackListView()
     {
@@ -50,6 +64,8 @@ public sealed partial class TrackListView : UserControl
         }
 
         TracksGrid.AddHandler(InputElement.PointerReleasedEvent, OnPointerReleased, handledEventsToo: true);
+        TracksGrid.AddHandler(InputElement.PointerPressedEvent, OnRowReorderPointerPressed, handledEventsToo: true);
+        TracksGrid.AddHandler(InputElement.PointerReleasedEvent, OnRowReorderPointerReleased, handledEventsToo: true);
         TracksGrid.Sorting += (_, _) => Dispatcher.UIThread.Post(SaveCurrentSort, DispatcherPriority.Background);
         TracksGrid.SelectionChanged += OnTracksGridSelectionChanged;
     }
@@ -188,9 +204,90 @@ public sealed partial class TrackListView : UserControl
             return;
         }
 
-        if (sender is DataGrid { SelectedItem: LibraryTrackViewModel item })
+        if (sender is DataGrid { SelectedItem: LibraryTrackViewModel item } && !item.IsMissing)
         {
             item.Library.PlayNowCommand.Execute(item.Track);
+        }
+    }
+
+    private void OnRowReorderPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!AllowRowReorder)
+            return;
+
+        if (e.Source is Visual source && source.FindAncestorOfType<DataGridRow>() is { DataContext: LibraryTrackViewModel item })
+        {
+            _rowBeingDragged = item;
+        }
+    }
+
+    private void OnRowReorderPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (!AllowRowReorder)
+            return;
+
+        var dragged = _rowBeingDragged;
+        _rowBeingDragged = null;
+        if (dragged is null)
+            return;
+
+        if (e.Source is not Visual source || source.FindAncestorOfType<DataGridRow>() is not { DataContext: LibraryTrackViewModel target } || ReferenceEquals(target, dragged))
+            return;
+
+        if (DataContext is not LibraryViewModel vm || ItemsSource?.ToList() is not { } items)
+            return;
+
+        var fromIndex = items.IndexOf(dragged);
+        var toIndex = items.IndexOf(target);
+        if (fromIndex < 0 || toIndex < 0)
+            return;
+
+        items.RemoveAt(fromIndex);
+        items.Insert(toIndex, dragged);
+
+        vm.Playlists.ReorderSelectedPlaylist(items.Select(t => t.Track.FilePath).ToList());
+    }
+
+    // The static "+ New playlist..." entry and its Separator are declared in XAML (so the submenu
+    // is never empty at layout time); the per-playlist entries after them are rebuilt here on every
+    // open, same reasoning as LibraryView.axaml.cs's OnPlaylistsFlyoutOpening.
+    private void OnAddToPlaylistSubmenuOpened(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem submenu || submenu.DataContext is not LibraryTrackViewModel trackItem)
+            return;
+
+        while (submenu.Items.Count > 2)
+        {
+            submenu.Items.RemoveAt(submenu.Items.Count - 1);
+        }
+
+        foreach (var playlist in trackItem.Library.Playlists.Playlists)
+        {
+            var playlistItem = new MenuItem { Header = playlist.Name, Tag = (trackItem.Track, playlist.Id) };
+            playlistItem.Click += OnAddToPlaylistClick;
+            submenu.Items.Add(playlistItem);
+        }
+    }
+
+    private void OnAddToPlaylistClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: (Track track, string playlistId) } && DataContext is LibraryViewModel vm)
+        {
+            vm.AddToPlaylistCommand.Execute((track, playlistId));
+        }
+    }
+
+    private async void OnAddToNewPlaylistClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { DataContext: LibraryTrackViewModel trackItem } ||
+            this.FindAncestorOfType<Window>() is not { } window || DataContext is not LibraryViewModel vm)
+            return;
+
+        var name = await TextPromptWindow.ShowAsync(window, Strings.NewPlaylistPromptTitle, initialValue: null);
+        if (name is not null)
+        {
+            var newPlaylistId = vm.Playlists.CreatePlaylist(name);
+            vm.AddToPlaylistCommand.Execute((trackItem.Track, newPlaylistId));
         }
     }
 }

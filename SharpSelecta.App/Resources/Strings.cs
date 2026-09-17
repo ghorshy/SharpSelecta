@@ -89,6 +89,22 @@ public static class Strings
     public static string ViewModeCoverArt => Get(nameof(ViewModeCoverArt));
     public static string NavLibrary => Get(nameof(NavLibrary));
     public static string NavRecentlyAdded => Get(nameof(NavRecentlyAdded));
+    public static string Playlists => Get(nameof(Playlists));
+    public static string NewPlaylistEllipsis => Get(nameof(NewPlaylistEllipsis));
+    public static string NewPlaylistPromptTitle => Get(nameof(NewPlaylistPromptTitle));
+    public static string RenamePlaylistPromptTitle => Get(nameof(RenamePlaylistPromptTitle));
+    public static string DeletePlaylistConfirmTitle => Get(nameof(DeletePlaylistConfirmTitle));
+    public static string DeletePlaylistConfirmMessage => Get(nameof(DeletePlaylistConfirmMessage));
+    public static string Rename => Get(nameof(Rename));
+    public static string Delete => Get(nameof(Delete));
+    public static string AddToPlaylist => Get(nameof(AddToPlaylist));
+    public static string RemoveFromPlaylist => Get(nameof(RemoveFromPlaylist));
+    public static string ImportFromM3u => Get(nameof(ImportFromM3u));
+    public static string ExportToM3u => Get(nameof(ExportToM3u));
+    public static string ImportPlaylistFilePickerTitle => Get(nameof(ImportPlaylistFilePickerTitle));
+    public static string ExportPlaylistFilePickerTitle => Get(nameof(ExportPlaylistFilePickerTitle));
+    public static string PlaylistFileTypeName => Get(nameof(PlaylistFileTypeName));
+    public static string PlaylistImported => Get(nameof(PlaylistImported));
 
     public static string FailedToLoadFile(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToLoadFileFormat"), reason);
@@ -110,6 +126,9 @@ public static class Strings
 
     public static string CustomThemesFolder(string path) =>
         string.Format(CultureInfo.CurrentCulture, Get("CustomThemesFolderFormat"), path);
+
+    public static string SkippedTracksNotInLibrary(int count) =>
+        string.Format(CultureInfo.CurrentCulture, Get("SkippedTracksNotInLibraryFormat"), count);
 
     private static string Get(string name) => ResourceManager.GetString(name, CultureInfo.CurrentUICulture)!;
 }
