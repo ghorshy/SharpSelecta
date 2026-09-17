@@ -8,7 +8,7 @@ public static class LibraryIndexStore
 
     private const string ColumnList =
         "FilePath, FolderPath, DisplayName, TrackNumber, Title, Artist, Album, AlbumArtist, Year, " +
-        "DurationSeconds, SampleRate, BitDepth, Bitrate, FileType, LastWriteTimeUtcTicks, FileSizeBytes";
+        "DurationSeconds, SampleRate, BitDepth, Bitrate, FileType, LastWriteTimeUtcTicks, FileSizeBytes, DateAddedUtc";
 
     public static IReadOnlyList<Track> LoadIndexed(string settingsFilePath, IReadOnlyList<string> folderPaths)
     {
@@ -106,7 +106,10 @@ public static class LibraryIndexStore
             transaction.Commit();
         }
 
-        return (current.Select(c => c.Track).ToList(), false);
+        // Reload from database to get the populated DateAddedUtc values.
+        var reloaded = LoadFolderIndex(connection, folderPath);
+        var orderedTracks = current.Select(c => reloaded[c.FilePath].Track).ToList();
+        return (orderedTracks, false);
     }
 
     public static IReadOnlyList<float>? TryGetWaveformPeaks(string settingsFilePath, string filePath)
@@ -180,7 +183,7 @@ public static class LibraryIndexStore
         command.CommandText = $"""
             INSERT INTO Tracks ({ColumnList})
             VALUES (@FilePath, @FolderPath, @DisplayName, @TrackNumber, @Title, @Artist, @Album, @AlbumArtist, @Year,
-                    @DurationSeconds, @SampleRate, @BitDepth, @Bitrate, @FileType, @LastWriteTimeUtcTicks, @FileSizeBytes)
+                    @DurationSeconds, @SampleRate, @BitDepth, @Bitrate, @FileType, @LastWriteTimeUtcTicks, @FileSizeBytes, @DateAddedUtc)
             ON CONFLICT(FilePath) DO UPDATE SET
                 FolderPath = excluded.FolderPath, DisplayName = excluded.DisplayName, TrackNumber = excluded.TrackNumber,
                 Title = excluded.Title, Artist = excluded.Artist, Album = excluded.Album, AlbumArtist = excluded.AlbumArtist,
@@ -188,6 +191,9 @@ public static class LibraryIndexStore
                 BitDepth = excluded.BitDepth, Bitrate = excluded.Bitrate, FileType = excluded.FileType,
                 LastWriteTimeUtcTicks = excluded.LastWriteTimeUtcTicks, FileSizeBytes = excluded.FileSizeBytes,
                 WaveformPeaks = NULL
+                -- DateAddedUtc is deliberately absent here: SQLite's ON CONFLICT DO UPDATE only touches
+                -- listed columns, so an existing row keeps its original value. A metadata refresh must
+                -- never bump a track back to the top of "Recently Added".
             """;
 
         var pFilePath = command.Parameters.Add("@FilePath", SqliteType.Text);
@@ -206,7 +212,9 @@ public static class LibraryIndexStore
         var pFileType = command.Parameters.Add("@FileType", SqliteType.Text);
         var pLastWriteTimeUtcTicks = command.Parameters.Add("@LastWriteTimeUtcTicks", SqliteType.Integer);
         var pFileSizeBytes = command.Parameters.Add("@FileSizeBytes", SqliteType.Integer);
+        var pDateAddedUtc = command.Parameters.Add("@DateAddedUtc", SqliteType.Integer);
 
+        var now = DateTime.UtcNow.Ticks;
         foreach (var (filePath, track, lastWriteTimeUtc, fileSizeBytes) in entries)
         {
             pFilePath.Value = filePath;
@@ -225,6 +233,7 @@ public static class LibraryIndexStore
             pFileType.Value = (object?)track.FileType ?? DBNull.Value;
             pLastWriteTimeUtcTicks.Value = lastWriteTimeUtc.Ticks;
             pFileSizeBytes.Value = fileSizeBytes;
+            pDateAddedUtc.Value = now;
             command.ExecuteNonQuery();
         }
     }
@@ -290,6 +299,7 @@ public static class LibraryIndexStore
                 BitDepth = reader.GetInt32(11),
                 Bitrate = reader.GetInt32(12),
                 FileType = reader.IsDBNull(13) ? null : reader.GetString(13),
+                DateAddedUtc = new DateTime(reader.GetInt64(16), DateTimeKind.Utc),
             };
             var lastWriteTimeUtc = new DateTime(reader.GetInt64(14), DateTimeKind.Utc);
             var fileSizeBytes = reader.GetInt64(15);
@@ -320,7 +330,8 @@ public static class LibraryIndexStore
                 FileType              TEXT    NULL,
                 LastWriteTimeUtcTicks INTEGER NOT NULL,
                 FileSizeBytes         INTEGER NOT NULL,
-                WaveformPeaks         BLOB    NULL
+                WaveformPeaks         BLOB    NULL,
+                DateAddedUtc          INTEGER NOT NULL DEFAULT 0
             );
             CREATE INDEX IF NOT EXISTS IX_Tracks_FolderPath ON Tracks(FolderPath);
             """;
@@ -333,6 +344,19 @@ public static class LibraryIndexStore
             using var alter = connection.CreateCommand();
             alter.CommandText = "ALTER TABLE Tracks ADD COLUMN WaveformPeaks BLOB NULL";
             alter.ExecuteNonQuery();
+        }
+
+        if (!HasColumn(connection, "Tracks", "DateAddedUtc"))
+        {
+            using var alter = connection.CreateCommand();
+            alter.CommandText = "ALTER TABLE Tracks ADD COLUMN DateAddedUtc INTEGER NOT NULL DEFAULT 0";
+            alter.ExecuteNonQuery();
+
+            // Pre-existing rows have no real "date added" - approximate it from LastWriteTimeUtcTicks
+            // so "Recently Added" has a sane (if imprecise) order instead of every old track tying at 0.
+            using var backfill = connection.CreateCommand();
+            backfill.CommandText = "UPDATE Tracks SET DateAddedUtc = LastWriteTimeUtcTicks WHERE DateAddedUtc = 0";
+            backfill.ExecuteNonQuery();
         }
     }
 
