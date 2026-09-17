@@ -307,6 +307,8 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     public AlbumGridViewModel RecentlyAddedGrid { get; }
 
+    public PlaylistsViewModel Playlists { get; }
+
     public string SettingsFilePath => _settingsFilePath;
 
     public LibraryViewModel(
@@ -324,6 +326,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
         Grid = new AlbumGridViewModel(this, settingsFilePath, _logger);
         RecentlyAddedGrid = new AlbumGridViewModel(this, settingsFilePath, _logger, allowUserSort: false);
+        Playlists = new PlaylistsViewModel(this, settingsFilePath);
 
         Tracks.CollectionChanged += (_, _) =>
         {
