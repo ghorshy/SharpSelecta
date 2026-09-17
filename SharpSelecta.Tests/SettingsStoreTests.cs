@@ -360,6 +360,62 @@ public class SettingsStoreTests
     }
 
     [Test]
+    public async Task SaveAndLoad_RoundTripsLibrarySection()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            SettingsStore.SaveLibrarySection(settingsPath, LibrarySection.RecentlyAdded);
+
+            var loaded = SettingsStore.LoadLibrarySection(settingsPath);
+
+            await Assert.That(loaded).IsEqualTo(LibrarySection.RecentlyAdded);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task LoadLibrarySection_WhenFileDoesNotExist_ReturnsNull()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        var loaded = SettingsStore.LoadLibrarySection(settingsPath);
+
+        await Assert.That(loaded).IsNull();
+    }
+
+    [Test]
+    public async Task SaveAndLoad_RoundTripsRecentlyAddedViewMode()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            SettingsStore.SaveRecentlyAddedViewMode(settingsPath, LibraryViewMode.AlbumGrid);
+
+            var loaded = SettingsStore.LoadRecentlyAddedViewMode(settingsPath);
+
+            await Assert.That(loaded).IsEqualTo(LibraryViewMode.AlbumGrid);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task LoadRecentlyAddedViewMode_WhenFileDoesNotExist_ReturnsNull()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        var loaded = SettingsStore.LoadRecentlyAddedViewMode(settingsPath);
+
+        await Assert.That(loaded).IsNull();
+    }
+
+    [Test]
     public async Task SaveAndLoad_RoundTripsAlbumSortMode()
     {
         var settingsPath = CreateTempSettingsPath();

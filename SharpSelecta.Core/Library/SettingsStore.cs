@@ -50,6 +50,16 @@ public static partial class SettingsStore
     public static void SaveViewMode(string settingsFilePath, LibraryViewMode viewMode) =>
         Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { ViewMode = viewMode });
 
+    public static LibrarySection? LoadLibrarySection(string settingsFilePath) => Load(settingsFilePath)?.LibrarySection;
+
+    public static void SaveLibrarySection(string settingsFilePath, LibrarySection section) =>
+        Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { LibrarySection = section });
+
+    public static LibraryViewMode? LoadRecentlyAddedViewMode(string settingsFilePath) => Load(settingsFilePath)?.RecentlyAddedViewMode;
+
+    public static void SaveRecentlyAddedViewMode(string settingsFilePath, LibraryViewMode viewMode) =>
+        Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { RecentlyAddedViewMode = viewMode });
+
     public static AlbumSortMode? LoadAlbumSortMode(string settingsFilePath) => Load(settingsFilePath)?.AlbumSortMode;
 
     public static void SaveAlbumSortMode(string settingsFilePath, AlbumSortMode sortMode) =>
@@ -164,6 +174,7 @@ public static partial class SettingsStore
         public bool? SortDescending { get; init; }
         public double? TileSize { get; init; }
         public LibraryViewMode? ViewMode { get; init; }
+        public LibrarySection? LibrarySection { get; init; }
         public AlbumSortMode? AlbumSortMode { get; init; }
         public bool? AlbumSortDescending { get; init; }
         public bool? RestoreQueueOnStartup { get; init; }
@@ -178,6 +189,7 @@ public static partial class SettingsStore
         public string? EqualizerPresetName { get; init; }
         public IReadOnlyList<float>? EqualizerBandGainsDb { get; init; }
         public bool? UseWaveformSlider { get; init; }
+        public LibraryViewMode? RecentlyAddedViewMode { get; init; }
     }
 
     [JsonSerializable(typeof(SettingsData))]
