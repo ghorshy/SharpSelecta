@@ -104,6 +104,7 @@ public static class Strings
     public static string ImportPlaylistFilePickerTitle => Get(nameof(ImportPlaylistFilePickerTitle));
     public static string ExportPlaylistFilePickerTitle => Get(nameof(ExportPlaylistFilePickerTitle));
     public static string PlaylistFileTypeName => Get(nameof(PlaylistFileTypeName));
+    public static string PlaylistImported => Get(nameof(PlaylistImported));
 
     public static string FailedToLoadFile(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToLoadFileFormat"), reason);

@@ -38,6 +38,10 @@ public partial class PlaylistsViewModel : ObservableObject
         RefreshTracks();
     }
 
+    // Keeps the current selection restorable across restarts - see LibraryViewModel.InitializeAsync.
+    partial void OnSelectedPlaylistIdChanged(string? value) =>
+        SettingsStore.SaveSelectedPlaylistId(_settingsFilePath, value);
+
     private void RefreshTracks()
     {
         if (SelectedPlaylistId is not { } playlistId)
@@ -54,7 +58,7 @@ public partial class PlaylistsViewModel : ObservableObject
 
     // A synthetic Track for a PlaylistTracks row whose file no longer has a matching Tracks row -
     // lets it render through the exact same LibraryTrackViewModel/TrackListView machinery as a
-    // real track, just visibly labeled and with playback actions disabled (see the row's ContextMenu).
+    // real track, grayed out with only "Remove from playlist" enabled (see TrackListView.axaml).
     private static Track MissingTrackPlaceholder(string filePath) =>
         new(filePath, $"(missing file) {Path.GetFileName(filePath)}");
 
@@ -115,5 +119,34 @@ public partial class PlaylistsViewModel : ObservableObject
 
         LibraryIndexStore.ReplacePlaylistTracks(_settingsFilePath, playlistId, filePathsInOrder);
         RefreshTracks();
+    }
+
+    // Creates a new playlist from an M3U's paths, keeping only those already in the library
+    // (in file order) and reporting how many were skipped for the caller's status message.
+    public int ImportPlaylistFromM3u(string filePath, string content)
+    {
+        var paths = M3uPlaylistFile.ParsePaths(content, Path.GetDirectoryName(filePath) ?? "");
+        var indexedPaths = new HashSet<string>(_library.Tracks.Select(t => t.Track.FilePath));
+        var matched = paths.Where(indexedPaths.Contains).ToList();
+        var skippedCount = paths.Count - matched.Count;
+
+        var playlistName = Path.GetFileNameWithoutExtension(filePath);
+        CreatePlaylist(playlistName);
+        ReorderSelectedPlaylist(matched);
+
+        return skippedCount;
+    }
+
+    // Entries whose file is missing (Track is null) are excluded - an M3U pointing at a
+    // nonexistent file is useless, and the entry carries no duration/artist/title to write.
+    public string ExportPlaylistToM3u(string playlistId)
+    {
+        var entries = LibraryIndexStore.GetPlaylistTracks(_settingsFilePath, playlistId);
+        var tracks = entries
+            .Where(entry => entry.Track is not null)
+            .Select(entry => (entry.FilePath, entry.Track!.Duration, entry.Track.Artist ?? "", entry.Track.Title ?? ""))
+            .ToList();
+
+        return M3uPlaylistFile.Write(tracks);
     }
 }

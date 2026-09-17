@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
@@ -128,17 +127,10 @@ public partial class LibraryView : UserControl
             return;
 
         var content = await File.ReadAllTextAsync(path);
-        var paths = M3uPlaylistFile.ParsePaths(content, Path.GetDirectoryName(path) ?? "");
+        var skippedCount = vm.Playlists.ImportPlaylistFromM3u(path, content);
 
-        var indexedPaths = new HashSet<string>(vm.Tracks.Select(t => t.Track.FilePath));
-        var matched = paths.Where(indexedPaths.Contains).ToList();
-        var skippedCount = paths.Count - matched.Count;
-
-        var playlistName = Path.GetFileNameWithoutExtension(path);
-        vm.Playlists.CreatePlaylist(playlistName);
-        vm.Playlists.ReorderSelectedPlaylist(matched);
-
-        vm.StatusMessage = skippedCount > 0 ? Strings.SkippedTracksNotInLibrary(skippedCount) : null;
+        vm.LibrarySection = LibrarySection.Playlist;
+        vm.StatusMessage = skippedCount > 0 ? Strings.SkippedTracksNotInLibrary(skippedCount) : Strings.PlaylistImported;
     }
 
     private async void OnExportPlaylistClick(object? sender, RoutedEventArgs e)
@@ -150,12 +142,7 @@ public partial class LibraryView : UserControl
         if (exportPath is null)
             return;
 
-        var entries = LibraryIndexStore.GetPlaylistTracks(vm.SettingsFilePath, playlist.Id);
-        var tracks = entries
-            .Where(entry => entry.Track is not null)
-            .Select(entry => (entry.FilePath, entry.Track!.Duration, entry.Track.Artist ?? "", entry.Track.Title ?? ""))
-            .ToList();
-
-        await File.WriteAllTextAsync(exportPath, M3uPlaylistFile.Write(tracks));
+        var content = vm.Playlists.ExportPlaylistToM3u(playlist.Id);
+        await File.WriteAllTextAsync(exportPath, content);
     }
 }

@@ -152,6 +152,87 @@ public class PlaylistsViewModelTests
     }
 
     [Test]
+    public async Task ImportPlaylistFromM3u_SkipsPathsNotInLibrary_AndKeepsMatchedPathsInFileOrder()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-playlists-vm-tests-");
+        try
+        {
+            var aPath = Path.Combine(root.FullName, "a.mp3");
+            var bPath = Path.Combine(root.FullName, "b.mp3");
+            var missingPath = Path.Combine(root.FullName, "missing.mp3");
+            File.Copy(TaggedTrackFixturePath, aPath);
+            File.Copy(TaggedTrackFixturePath, bPath);
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+            var vm = CreateViewModel(settingsPath, out var library);
+            library.Tracks.ReplaceAll([
+                new LibraryTrackViewModel(new Track(aPath, "a.mp3"), library),
+                new LibraryTrackViewModel(new Track(bPath, "b.mp3"), library),
+            ]);
+            var content = $"{aPath}\n{missingPath}\n{bPath}\n";
+
+            var skippedCount = vm.ImportPlaylistFromM3u(Path.Combine(root.FullName, "playlist.m3u"), content);
+
+            await Assert.That(skippedCount).IsEqualTo(1);
+            await Assert.That(vm.Tracks.Select(t => t.Track.FilePath)).IsEquivalentTo([aPath, bPath]);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task ImportPlaylistFromM3u_SelectsTheNewlyCreatedPlaylist()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-playlists-vm-tests-");
+        try
+        {
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+            var vm = CreateViewModel(settingsPath, out _);
+
+            vm.ImportPlaylistFromM3u(Path.Combine(root.FullName, "My Mix.m3u"), "");
+
+            await Assert.That(vm.Playlists.Select(p => p.Name)).IsEquivalentTo(["My Mix"]);
+            await Assert.That(vm.SelectedPlaylistId).IsEqualTo(vm.Playlists[0].Id);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task ExportPlaylistToM3u_ExcludesMissingFileEntries_AndIncludesRealOnes()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-playlists-vm-tests-");
+        try
+        {
+            var aPath = Path.Combine(root.FullName, "a.mp3");
+            File.Copy(TaggedTrackFixturePath, aPath);
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+            var missingPath = Path.Combine(root.FullName, "missing.mp3");
+            var vm = CreateViewModel(settingsPath, out _);
+            var id = vm.CreatePlaylist("Mixed");
+            vm.ReorderSelectedPlaylist([aPath, missingPath]);
+
+            var content = vm.ExportPlaylistToM3u(id);
+
+            var writtenPaths = M3uPlaylistFile.ParsePaths(content, root.FullName);
+            await Assert.That(writtenPaths).IsEquivalentTo([aPath]);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
     public async Task SelectPlaylist_WhenAnEntrysFileIsMissing_MarksThatRowAsMissing()
     {
         var settingsPath = CreateTempSettingsPath();

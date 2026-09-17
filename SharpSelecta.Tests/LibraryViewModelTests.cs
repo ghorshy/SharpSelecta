@@ -423,6 +423,64 @@ public class LibraryViewModelTests
     }
 
     [Test]
+    public async Task InitializeAsync_WhenPlaylistSectionAndSelectionWereSaved_RestoresTheSelectedPlaylistAndItsTracks()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+        try
+        {
+            var trackPath = Path.Combine(root.FullName, "song.mp3");
+            File.WriteAllBytes(trackPath, []);
+            SettingsStore.SaveLibraryFolderPaths(settingsPath, [root.FullName]);
+
+            var vm = CreateViewModel(out _, out _, out _, settingsPath);
+            await vm.InitializeAsync();
+            var playlistId = vm.Playlists.CreatePlaylist("Saved");
+            vm.Playlists.ReorderSelectedPlaylist([trackPath]);
+            vm.LibrarySection = LibrarySection.Playlist;
+
+            var restarted = CreateViewModel(out _, out _, out _, settingsPath);
+            await restarted.InitializeAsync();
+
+            await Assert.That(restarted.LibrarySection).IsEqualTo(LibrarySection.Playlist);
+            await Assert.That(restarted.Playlists.SelectedPlaylistId).IsEqualTo(playlistId);
+            await Assert.That(restarted.Playlists.Tracks.Select(t => t.Track.FilePath)).IsEquivalentTo([trackPath]);
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+        }
+    }
+
+    [Test]
+    public async Task InitializeAsync_WhenSavedSelectedPlaylistNoLongerExists_FallsBackToLibrarySection()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+        try
+        {
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]); // ensures the index db/schema exists
+            SettingsStore.SaveLibrarySection(settingsPath, LibrarySection.Playlist);
+            SettingsStore.SaveSelectedPlaylistId(settingsPath, "does-not-exist");
+
+            var vm = CreateViewModel(out _, out _, out _, settingsPath);
+            await vm.InitializeAsync();
+
+            await Assert.That(vm.LibrarySection).IsEqualTo(LibrarySection.Library);
+            await Assert.That(vm.Playlists.SelectedPlaylistId).IsNull();
+            await Assert.That(vm.Playlists.Tracks).IsEmpty();
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+        }
+    }
+
+    [Test]
     public async Task ISettingsCategoryViewModel_ApplyCommand_AppliesPendingFolderChanges()
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);

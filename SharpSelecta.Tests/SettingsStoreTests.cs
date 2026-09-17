@@ -858,4 +858,50 @@ public class SettingsStoreTests
 
         await Assert.That(SettingsStore.LoadUseWaveformSlider(settingsPath)).IsFalse();
     }
+
+    [Test]
+    public async Task SaveAndLoad_RoundTripsSelectedPlaylistId()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            SettingsStore.SaveSelectedPlaylistId(settingsPath, "playlist-123");
+
+            var loaded = SettingsStore.LoadSelectedPlaylistId(settingsPath);
+
+            await Assert.That(loaded).IsEqualTo("playlist-123");
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
+    public async Task LoadSelectedPlaylistId_WhenFileDoesNotExist_ReturnsNull()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        var loaded = SettingsStore.LoadSelectedPlaylistId(settingsPath);
+
+        await Assert.That(loaded).IsNull();
+    }
+
+    [Test]
+    public async Task SaveSelectedPlaylistId_WithNull_RoundTripsBackToNull()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            SettingsStore.SaveSelectedPlaylistId(settingsPath, "playlist-123");
+
+            SettingsStore.SaveSelectedPlaylistId(settingsPath, null);
+
+            await Assert.That(SettingsStore.LoadSelectedPlaylistId(settingsPath)).IsNull();
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
 }

@@ -370,4 +370,7 @@
   <data name="SkippedTracksNotInLibraryFormat" xml:space="preserve">
     <value>Skipped {0} track(s) not found in the library</value>
   </data>
+  <data name="PlaylistImported" xml:space="preserve">
+    <value>Playlist imported</value>
+  </data>
 </root>

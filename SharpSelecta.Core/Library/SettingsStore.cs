@@ -60,6 +60,11 @@ public static partial class SettingsStore
     public static void SaveRecentlyAddedViewMode(string settingsFilePath, LibraryViewMode viewMode) =>
         Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { RecentlyAddedViewMode = viewMode });
 
+    public static string? LoadSelectedPlaylistId(string settingsFilePath) => Load(settingsFilePath)?.SelectedPlaylistId;
+
+    public static void SaveSelectedPlaylistId(string settingsFilePath, string? playlistId) =>
+        Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { SelectedPlaylistId = playlistId });
+
     public static AlbumSortMode? LoadAlbumSortMode(string settingsFilePath) => Load(settingsFilePath)?.AlbumSortMode;
 
     public static void SaveAlbumSortMode(string settingsFilePath, AlbumSortMode sortMode) =>
@@ -190,6 +195,7 @@ public static partial class SettingsStore
         public IReadOnlyList<float>? EqualizerBandGainsDb { get; init; }
         public bool? UseWaveformSlider { get; init; }
         public LibraryViewMode? RecentlyAddedViewMode { get; init; }
+        public string? SelectedPlaylistId { get; init; }
     }
 
     [JsonSerializable(typeof(SettingsData))]

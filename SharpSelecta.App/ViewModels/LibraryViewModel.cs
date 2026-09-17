@@ -372,6 +372,11 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         LibrarySection = SettingsStore.LoadLibrarySection(_settingsFilePath) ?? LibrarySection.Library;
         RecentlyAddedViewMode = SettingsStore.LoadRecentlyAddedViewMode(_settingsFilePath) ?? LibraryViewMode.TrackList;
 
+        if (LibrarySection == LibrarySection.Playlist)
+        {
+            RestoreSelectedPlaylist();
+        }
+
         var folderPaths = SettingsStore.LoadLibraryFolderPaths(_settingsFilePath);
         if (folderPaths is not null)
         {
@@ -389,6 +394,23 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             }
 
             await ReconcileFoldersAsync();
+        }
+    }
+
+    // Restores the playlist that was selected when the app last quit while viewing it. If it was
+    // since deleted, falls back to Library instead of leaving the user on an empty dead Playlist view.
+    private void RestoreSelectedPlaylist()
+    {
+        var savedPlaylistId = SettingsStore.LoadSelectedPlaylistId(_settingsFilePath);
+        Playlists.RefreshPlaylists();
+
+        if (savedPlaylistId is not null && Playlists.Playlists.Any(p => p.Id == savedPlaylistId))
+        {
+            Playlists.SelectPlaylist(savedPlaylistId);
+        }
+        else
+        {
+            LibrarySection = LibrarySection.Library;
         }
     }
 

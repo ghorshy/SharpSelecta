@@ -204,7 +204,7 @@ public sealed partial class TrackListView : UserControl
             return;
         }
 
-        if (sender is DataGrid { SelectedItem: LibraryTrackViewModel item })
+        if (sender is DataGrid { SelectedItem: LibraryTrackViewModel item } && !item.IsMissing)
         {
             item.Library.PlayNowCommand.Execute(item.Track);
         }
