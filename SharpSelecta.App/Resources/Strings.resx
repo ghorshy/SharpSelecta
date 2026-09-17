@@ -346,4 +346,10 @@
   <data name="Delete" xml:space="preserve">
     <value>Delete</value>
   </data>
+  <data name="AddToPlaylist" xml:space="preserve">
+    <value>Add to playlist</value>
+  </data>
+  <data name="RemoveFromPlaylist" xml:space="preserve">
+    <value>Remove from playlist</value>
+  </data>
 </root>

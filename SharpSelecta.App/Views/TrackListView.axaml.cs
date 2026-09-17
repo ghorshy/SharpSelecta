@@ -6,8 +6,10 @@ using Avalonia;
 using Avalonia.Collections;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using SharpSelecta.App.Resources;
 using SharpSelecta.App.ViewModels;
 using SharpSelecta.Core.Library;
 
@@ -244,5 +246,48 @@ public sealed partial class TrackListView : UserControl
         items.Insert(toIndex, dragged);
 
         vm.Playlists.ReorderSelectedPlaylist(items.Select(t => t.Track.FilePath).ToList());
+    }
+
+    // The static "+ New playlist..." entry and its Separator are declared in XAML (so the submenu
+    // is never empty at layout time); the per-playlist entries after them are rebuilt here on every
+    // open, same reasoning as LibraryView.axaml.cs's OnPlaylistsFlyoutOpening.
+    private void OnAddToPlaylistSubmenuOpened(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem submenu || submenu.DataContext is not LibraryTrackViewModel trackItem)
+            return;
+
+        while (submenu.Items.Count > 2)
+        {
+            submenu.Items.RemoveAt(submenu.Items.Count - 1);
+        }
+
+        foreach (var playlist in trackItem.Library.Playlists.Playlists)
+        {
+            var playlistItem = new MenuItem { Header = playlist.Name, Tag = (trackItem.Track, playlist.Id) };
+            playlistItem.Click += OnAddToPlaylistClick;
+            submenu.Items.Add(playlistItem);
+        }
+    }
+
+    private void OnAddToPlaylistClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: (Track track, string playlistId) } && DataContext is LibraryViewModel vm)
+        {
+            vm.AddToPlaylistCommand.Execute((track, playlistId));
+        }
+    }
+
+    private async void OnAddToNewPlaylistClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { DataContext: LibraryTrackViewModel trackItem } ||
+            this.FindAncestorOfType<Window>() is not { } window || DataContext is not LibraryViewModel vm)
+            return;
+
+        var name = await TextPromptWindow.ShowAsync(window, Strings.NewPlaylistPromptTitle, initialValue: null);
+        if (name is not null)
+        {
+            var newPlaylistId = vm.Playlists.CreatePlaylist(name);
+            vm.AddToPlaylistCommand.Execute((trackItem.Track, newPlaylistId));
+        }
     }
 }

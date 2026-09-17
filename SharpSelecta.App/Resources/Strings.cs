@@ -97,6 +97,8 @@ public static class Strings
     public static string DeletePlaylistConfirmMessage => Get(nameof(DeletePlaylistConfirmMessage));
     public static string Rename => Get(nameof(Rename));
     public static string Delete => Get(nameof(Delete));
+    public static string AddToPlaylist => Get(nameof(AddToPlaylist));
+    public static string RemoveFromPlaylist => Get(nameof(RemoveFromPlaylist));
 
     public static string FailedToLoadFile(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToLoadFileFormat"), reason);

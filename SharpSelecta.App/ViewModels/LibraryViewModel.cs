@@ -487,6 +487,22 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     [RelayCommand]
     private Task AddToQueue(Track track) => _playbackControls.AddToQueue(ResolveSelection(track));
 
+    [RelayCommand]
+    private void AddToPlaylist((Track Track, string PlaylistId) parameter)
+    {
+        var tracksToAdd = ResolveSelection(parameter.Track);
+        var previouslySelected = Playlists.SelectedPlaylistId;
+        Playlists.SelectPlaylist(parameter.PlaylistId);
+        Playlists.AddTracksToSelectedPlaylist(tracksToAdd);
+        if (previouslySelected != parameter.PlaylistId)
+        {
+            Playlists.SelectPlaylist(previouslySelected);
+        }
+    }
+
+    [RelayCommand]
+    private void RemoveFromPlaylist(Track track) => Playlists.RemoveFromSelectedPlaylist(track);
+
     private IReadOnlyList<Track> _selectedTracksInOrder = [];
 
     // Pushed by the view on every DataGrid selection change - DataGrid.SelectedItems doesn't

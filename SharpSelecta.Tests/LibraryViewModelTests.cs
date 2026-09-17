@@ -558,6 +558,58 @@ public class LibraryViewModelTests
     }
 
     [Test]
+    public async Task AddToPlaylistCommand_WhenClickedTrackIsPartOfTheOrderedSelection_AddsAllOfThemInClickOrder()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+        try
+        {
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]); // ensures the index db/schema exists
+            var vm = CreateViewModel(out _, out _, out _, settingsPath);
+            var trackA = new Track("/music/a.mp3", "a.mp3");
+            var trackB = new Track("/music/b.mp3", "b.mp3");
+            vm.Tracks.Add(new LibraryTrackViewModel(trackA, vm));
+            vm.Tracks.Add(new LibraryTrackViewModel(trackB, vm));
+            vm.SetSelectedTracksInOrder([trackB, trackA]);
+            var playlistId = vm.Playlists.CreatePlaylist("Target");
+
+            vm.AddToPlaylistCommand.Execute((trackA, playlistId));
+
+            var persistedOrder = vm.Playlists.Tracks.Select(t => t.Track.FilePath).ToList();
+            await Assert.That(persistedOrder).IsEquivalentTo(["/music/b.mp3", "/music/a.mp3"]);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task RemoveFromPlaylistCommand_RemovesOnlyTheClickedTrackFromTheCurrentlySelectedPlaylist()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+        try
+        {
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+            var vm = CreateViewModel(out _, out _, out _, settingsPath);
+            var trackA = new Track("/music/a.mp3", "a.mp3");
+            vm.Playlists.CreatePlaylist("Target");
+            vm.Playlists.AddTracksToSelectedPlaylist([trackA]);
+
+            vm.RemoveFromPlaylistCommand.Execute(trackA);
+
+            await Assert.That(vm.Playlists.Tracks).IsEmpty();
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
     public async Task HidingEveryColumn_LeavesTheLastOneVisible()
     {
         var vm = CreateViewModel(out _, out _, out _);
