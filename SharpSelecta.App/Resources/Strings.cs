@@ -84,6 +84,10 @@ public static class Strings
     public static string PressAKeyCombination => Get(nameof(PressAKeyCombination));
     public static string ShortcutNotSet => Get(nameof(ShortcutNotSet));
     public static string GenericFileManager => Get(nameof(GenericFileManager));
+    public static string ViewModeList => Get(nameof(ViewModeList));
+    public static string ViewModeCoverArt => Get(nameof(ViewModeCoverArt));
+    public static string NavLibrary => Get(nameof(NavLibrary));
+    public static string NavRecentlyAdded => Get(nameof(NavRecentlyAdded));
 
     public static string FailedToLoadFile(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToLoadFileFormat"), reason);

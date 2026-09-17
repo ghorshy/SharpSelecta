@@ -16,5 +16,8 @@
     <x:String x:Key="Icon.VolumeOff">avares://SharpSelecta.App/Assets/Icons/volume-off.svg</x:String>
     <x:String x:Key="Icon.Search">avares://SharpSelecta.App/Assets/Icons/search.svg</x:String>
     <x:String x:Key="Icon.X">avares://SharpSelecta.App/Assets/Icons/x.svg</x:String>
+    <x:String x:Key="Icon.View">avares://SharpSelecta.App/Assets/Icons/binoculars.svg</x:String>
+    <x:String x:Key="Icon.Library">avares://SharpSelecta.App/Assets/Icons/books.svg</x:String>
+    <x:String x:Key="Icon.RecentlyAdded">avares://SharpSelecta.App/Assets/Icons/sparkle-2.svg</x:String>
 
 </ResourceDictionary>
