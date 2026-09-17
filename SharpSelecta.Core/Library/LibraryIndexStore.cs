@@ -60,6 +60,7 @@ public static class LibraryIndexStore
     private static (IReadOnlyList<Track> Tracks, bool Failed) ReconcileFolder(SqliteConnection connection, string folderPath)
     {
         var existing = LoadFolderIndex(connection, folderPath);
+        var dateAddedUtcTicks = DateTime.UtcNow.Ticks;
 
         List<(string FilePath, Track Track, DateTime LastWriteTimeUtc, long FileSizeBytes, bool Changed)> current;
         try
@@ -82,7 +83,11 @@ public static class LibraryIndexStore
                         return (path, indexed.Track, lastWriteTimeUtc, fileSizeBytes, Changed: false);
                     }
 
-                    return (path, MusicLibraryScanner.ReadTrack(path), lastWriteTimeUtc, fileSizeBytes, Changed: true);
+                    var track = MusicLibraryScanner.ReadTrack(path);
+                    // For new/changed files, set DateAddedUtc to either the original date (if previously indexed)
+                    // or the shared "now" timestamp (if new). This matches what UpsertAll will write to the DB.
+                    track = track with { DateAddedUtc = new DateTime(existing.TryGetValue(path, out var prior) ? prior.Track.DateAddedUtc.Ticks : dateAddedUtcTicks, DateTimeKind.Utc) };
+                    return (path, track, lastWriteTimeUtc, fileSizeBytes, Changed: true);
                 })
                 .ToList();
         }
@@ -97,7 +102,7 @@ public static class LibraryIndexStore
                 .Where(c => c.Changed)
                 .Select(c => (c.FilePath, c.Track, c.LastWriteTimeUtc, c.FileSizeBytes))
                 .ToList();
-            UpsertAll(connection, transaction, folderPath, changedEntries);
+            UpsertAll(connection, transaction, folderPath, changedEntries, dateAddedUtcTicks);
 
             var currentPaths = current.Select(c => c.FilePath).ToHashSet();
             var removedPaths = existing.Keys.Where(path => !currentPaths.Contains(path)).ToList();
@@ -106,10 +111,7 @@ public static class LibraryIndexStore
             transaction.Commit();
         }
 
-        // Reload from database to get the populated DateAddedUtc values.
-        var reloaded = LoadFolderIndex(connection, folderPath);
-        var orderedTracks = current.Select(c => reloaded[c.FilePath].Track).ToList();
-        return (orderedTracks, false);
+        return (current.Select(c => c.Track).ToList(), false);
     }
 
     public static IReadOnlyList<float>? TryGetWaveformPeaks(string settingsFilePath, string filePath)
@@ -169,7 +171,8 @@ public static class LibraryIndexStore
         SqliteConnection connection,
         SqliteTransaction transaction,
         string folderPath,
-        List<(string FilePath, Track Track, DateTime LastWriteTimeUtc, long FileSizeBytes)> entries)
+        List<(string FilePath, Track Track, DateTime LastWriteTimeUtc, long FileSizeBytes)> entries,
+        long dateAddedUtcTicks)
     {
         if (entries.Count == 0)
         {
@@ -214,7 +217,6 @@ public static class LibraryIndexStore
         var pFileSizeBytes = command.Parameters.Add("@FileSizeBytes", SqliteType.Integer);
         var pDateAddedUtc = command.Parameters.Add("@DateAddedUtc", SqliteType.Integer);
 
-        var now = DateTime.UtcNow.Ticks;
         foreach (var (filePath, track, lastWriteTimeUtc, fileSizeBytes) in entries)
         {
             pFilePath.Value = filePath;
@@ -233,7 +235,7 @@ public static class LibraryIndexStore
             pFileType.Value = (object?)track.FileType ?? DBNull.Value;
             pLastWriteTimeUtcTicks.Value = lastWriteTimeUtc.Ticks;
             pFileSizeBytes.Value = fileSizeBytes;
-            pDateAddedUtc.Value = now;
+            pDateAddedUtc.Value = dateAddedUtcTicks;
             command.ExecuteNonQuery();
         }
     }
