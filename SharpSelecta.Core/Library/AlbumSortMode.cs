@@ -5,4 +5,5 @@ public enum AlbumSortMode
     Title,
     Artist,
     Year,
+    DateAdded,
 }

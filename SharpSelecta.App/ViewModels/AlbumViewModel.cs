@@ -19,6 +19,8 @@ public sealed partial class AlbumViewModel(
 
     public int? Year { get; } = year;
 
+    public DateTime DateAdded { get; } = tracks.Max(t => t.Track.DateAddedUtc);
+
     public IReadOnlyList<LibraryTrackViewModel> Tracks { get; } = tracks;
 
     public IReadOnlyList<Track> UnderlyingTracks { get; } = tracks.Select(t => t.Track).ToList();

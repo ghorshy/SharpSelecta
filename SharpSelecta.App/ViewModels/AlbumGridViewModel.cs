@@ -54,14 +54,26 @@ public partial class AlbumGridViewModel : ViewModelBase
 
     public BulkObservableCollection<AlbumRowViewModel> Rows { get; } = [];
 
-    public AlbumGridViewModel(LibraryViewModel library, string settingsFilePath, ILogger logger)
+    public bool AllowUserSort { get; }
+
+    public AlbumGridViewModel(LibraryViewModel library, string settingsFilePath, ILogger logger, bool allowUserSort = true)
     {
         _library = library;
         _settingsFilePath = settingsFilePath;
         _logger = logger;
+        AllowUserSort = allowUserSort;
         TileSize = Math.Clamp(SettingsStore.LoadTileSize(settingsFilePath) ?? DefaultTileSize, MinTileSize, MaxTileSize);
-        SortMode = SettingsStore.LoadAlbumSortMode(settingsFilePath) ?? AlbumSortMode.Title;
-        SortDescending = SettingsStore.LoadAlbumSortDescending(settingsFilePath) ?? false;
+
+        if (allowUserSort)
+        {
+            SortMode = SettingsStore.LoadAlbumSortMode(settingsFilePath) ?? AlbumSortMode.Title;
+            SortDescending = SettingsStore.LoadAlbumSortDescending(settingsFilePath) ?? false;
+        }
+        else
+        {
+            SortMode = AlbumSortMode.DateAdded;
+            SortDescending = true;
+        }
 
         _library.Tracks.CollectionChanged += (_, _) => RebuildAlbums();
         _library.PropertyChanged += (_, e) =>
@@ -84,6 +96,8 @@ public partial class AlbumGridViewModel : ViewModelBase
             _searchDebounceCts = cts;
             SearchDebounceTask = DebounceRebuildRowsAsync(cts.Token);
         };
+
+        RebuildAlbums();
     }
 
     private async Task DebounceRebuildRowsAsync(CancellationToken cancellationToken)
@@ -125,18 +139,33 @@ public partial class AlbumGridViewModel : ViewModelBase
 
     partial void OnSortModeChanged(AlbumSortMode value)
     {
+        if (!AllowUserSort)
+            return;
+
         SettingsStore.SaveAlbumSortMode(_settingsFilePath, value);
+        OnPropertyChanged(nameof(SortModeLabel));
         RebuildRows(force: true);
     }
 
     partial void OnSortDescendingChanged(bool value)
     {
+        if (!AllowUserSort)
+            return;
+
         SettingsStore.SaveAlbumSortDescending(_settingsFilePath, value);
         OnPropertyChanged(nameof(SortDirectionSymbol));
         RebuildRows(force: true);
     }
 
     public string SortDirectionSymbol => SortDescending ? "↓" : "↑";
+
+    public string SortModeLabel => SortMode switch
+    {
+        AlbumSortMode.Artist => Strings.ColumnArtist,
+        AlbumSortMode.Year => Strings.ColumnYear,
+        AlbumSortMode.DateAdded => Strings.SortByDateAdded,
+        _ => Strings.ColumnTitle,
+    };
 
     [RelayCommand]
     private void SetSortMode(AlbumSortMode mode)
@@ -341,6 +370,10 @@ public partial class AlbumGridViewModel : ViewModelBase
         AlbumSortMode.Year => SortDescending
             ? albums.OrderBy(a => a.Year is null).ThenByDescending(a => a.Year)
             : albums.OrderBy(a => a.Year is null).ThenBy(a => a.Year),
+
+        AlbumSortMode.DateAdded => SortDescending
+            ? albums.OrderByDescending(a => a.DateAdded)
+            : albums.OrderBy(a => a.DateAdded),
 
         _ => SortDescending
             ? albums.OrderByDescending(a => a.Title, StringComparer.OrdinalIgnoreCase)

@@ -62,6 +62,7 @@ public static class Strings
     public static string ColumnBitrate => Get(nameof(ColumnBitrate));
     public static string ColumnFileType => Get(nameof(ColumnFileType));
     public static string ColumnYear => Get(nameof(ColumnYear));
+    public static string SortByDateAdded => Get(nameof(SortByDateAdded));
     public static string UnknownAlbum => Get(nameof(UnknownAlbum));
     public static string VariousArtists => Get(nameof(VariousArtists));
     public static string LoadingLibrary => Get(nameof(LoadingLibrary));

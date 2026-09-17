@@ -353,4 +353,42 @@ public class AlbumGridViewModelTests
         await Assert.That(vm.Grid.Rows.Sum(r => r.Tiles.Count)).IsEqualTo(2);
         await Assert.That(vm.Grid.Rows[0].Tiles[0].Title).IsEqualTo("Millitary Dance");
     }
+
+    [Test]
+    public async Task SortMode_DateAdded_OrdersAlbumsByTheMostRecentlyAddedTrackInEachAlbum()
+    {
+        var library = CreateLibraryViewModel();
+        var now = DateTime.UtcNow;
+        library.Tracks.Add(new LibraryTrackViewModel(new Track("/music/old-album/a.mp3", "a.mp3") { Album = "Old Album", DateAddedUtc = now.AddDays(-10) }, library));
+        library.Tracks.Add(new LibraryTrackViewModel(new Track("/music/new-album/b.mp3", "b.mp3") { Album = "New Album", DateAddedUtc = now.AddDays(-1) }, library));
+        library.Tracks.Add(new LibraryTrackViewModel(new Track("/music/old-album/c.mp3", "c.mp3") { Album = "Old Album", DateAddedUtc = now }, library));
+
+        var grid = new AlbumGridViewModel(library, CreateTempSettingsPath(), NullLogger.Instance, allowUserSort: false);
+        grid.SetViewportWidth(2000);
+
+        // "Old Album" has a track added just now (`now`), newer than "New Album"'s only track
+        // (`now.AddDays(-1)`) - it must sort first, exactly like MusicBee's behavior the user wanted
+        // to avoid the opposite of: a fresh addition bumps its whole album back to the top.
+        await Assert.That(grid.Rows[0].Tiles[0].Title).IsEqualTo("Old Album");
+        await Assert.That(grid.Rows[0].Tiles[1].Title).IsEqualTo("New Album");
+    }
+
+    [Test]
+    public async Task Constructor_WithAllowUserSortFalse_NeverPersistsToSettings()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var library = CreateLibraryViewModel();
+
+        _ = new AlbumGridViewModel(library, settingsPath, NullLogger.Instance, allowUserSort: false);
+
+        await Assert.That(SettingsStore.LoadAlbumSortMode(settingsPath)).IsNull();
+    }
+
+    [Test]
+    public async Task AllowUserSort_DefaultsToTrue_PreservingExistingBehavior()
+    {
+        var grid = new AlbumGridViewModel(CreateLibraryViewModel(), CreateTempSettingsPath(), NullLogger.Instance);
+
+        await Assert.That(grid.AllowUserSort).IsTrue();
+    }
 }
