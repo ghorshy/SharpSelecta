@@ -8,10 +8,13 @@
     <Style Selector="Button.toolbar-button">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="4" />
         <Setter Property="Template">
             <ControlTemplate TargetType="Button">
                 <Border Background="{TemplateBinding Background}"
-                        CornerRadius="4"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
                         Padding="{TemplateBinding Padding}">
                     <ContentPresenter Content="{TemplateBinding Content}"
                                       HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"

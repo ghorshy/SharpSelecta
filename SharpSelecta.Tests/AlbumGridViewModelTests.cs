@@ -382,6 +382,7 @@ public class AlbumGridViewModelTests
         _ = new AlbumGridViewModel(library, settingsPath, NullLogger.Instance, allowUserSort: false);
 
         await Assert.That(SettingsStore.LoadAlbumSortMode(settingsPath)).IsNull();
+        await Assert.That(SettingsStore.LoadAlbumSortDescending(settingsPath)).IsNull();
     }
 
     [Test]

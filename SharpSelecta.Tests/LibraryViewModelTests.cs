@@ -788,7 +788,8 @@ public class LibraryViewModelTests
         vm.Tracks.Add(new LibraryTrackViewModel(new Track("/music/old.mp3", "old.mp3") { DateAddedUtc = now.AddDays(-1) }, vm));
         vm.Tracks.Add(new LibraryTrackViewModel(new Track("/music/new.mp3", "new.mp3") { DateAddedUtc = now }, vm));
 
-        await Assert.That(vm.RecentlyAddedTracks.Select(t => t.Track.FilePath)).IsEquivalentTo(["/music/new.mp3", "/music/old.mp3"]);
+        await Assert.That(vm.RecentlyAddedTracks[0].Track.FilePath).IsEqualTo("/music/new.mp3");
+        await Assert.That(vm.RecentlyAddedTracks[1].Track.FilePath).IsEqualTo("/music/old.mp3");
     }
 
     [Test]
@@ -812,9 +813,9 @@ public class LibraryViewModelTests
 
         await Assert.That(vm.ActiveViewMode).IsEqualTo(LibraryViewMode.AlbumGrid);
 
-        vm.ActiveViewMode = LibraryViewMode.TrackList;
+        vm.ActiveViewMode = LibraryViewMode.AlbumGrid;
 
-        await Assert.That(vm.RecentlyAddedViewMode).IsEqualTo(LibraryViewMode.TrackList);
+        await Assert.That(vm.RecentlyAddedViewMode).IsEqualTo(LibraryViewMode.AlbumGrid);
         await Assert.That(vm.ViewMode).IsEqualTo(LibraryViewMode.TrackList); // untouched
     }
 

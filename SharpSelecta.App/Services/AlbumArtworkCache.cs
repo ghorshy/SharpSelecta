@@ -27,7 +27,22 @@ public static class AlbumArtworkCache
 
         var thumbnail = CreateThumbnail(original);
         Directory.CreateDirectory(cacheDirectory);
-        File.WriteAllBytes(cachePath, thumbnail);
+
+        // Two AlbumGridViewModel instances (Library's and Recently Added's) can race to cache the
+        // same album concurrently. Writing to a per-call temp file and renaming into place keeps
+        // a concurrent reader/writer from ever seeing a torn file at cachePath.
+        var tempPath = $"{cachePath}.tmp-{Guid.NewGuid():N}";
+        try
+        {
+            File.WriteAllBytes(tempPath, thumbnail);
+            File.Move(tempPath, cachePath, overwrite: true);
+        }
+        catch
+        {
+            File.Delete(tempPath);
+            throw;
+        }
+
         return thumbnail;
     }
 
