@@ -352,4 +352,22 @@
   <data name="RemoveFromPlaylist" xml:space="preserve">
     <value>Remove from playlist</value>
   </data>
+  <data name="ImportFromM3u" xml:space="preserve">
+    <value>Import from M3U</value>
+  </data>
+  <data name="ExportToM3u" xml:space="preserve">
+    <value>Export to M3U</value>
+  </data>
+  <data name="ImportPlaylistFilePickerTitle" xml:space="preserve">
+    <value>Choose a playlist file to import</value>
+  </data>
+  <data name="ExportPlaylistFilePickerTitle" xml:space="preserve">
+    <value>Choose where to export the playlist</value>
+  </data>
+  <data name="PlaylistFileTypeName" xml:space="preserve">
+    <value>M3U playlist (*.m3u, *.m3u8)</value>
+  </data>
+  <data name="SkippedTracksNotInLibraryFormat" xml:space="preserve">
+    <value>Skipped {0} track(s) not found in the library</value>
+  </data>
 </root>

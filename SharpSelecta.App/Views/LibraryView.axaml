@@ -46,6 +46,7 @@
                     <Button.Flyout>
                         <MenuFlyout Placement="BottomEdgeAlignedLeft" Opening="OnPlaylistsFlyoutOpening">
                             <MenuItem Header="{x:Static res:Strings.NewPlaylistEllipsis}" Click="OnNewPlaylistClick" />
+                            <MenuItem Header="{x:Static res:Strings.ImportFromM3u}" Click="OnImportPlaylistClick" />
                             <Separator IsVisible="{Binding Playlists.Playlists.Count, Converter={x:Static converters:IntToBoolConverter.Instance}}" />
                             <!-- Playlist entries are built imperatively in OnPlaylistsFlyoutOpening: MenuItem.ItemsSource
                                  turns a MenuItem into a nested submenu rather than flat siblings in this flyout. -->

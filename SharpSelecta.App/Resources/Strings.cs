@@ -99,6 +99,11 @@ public static class Strings
     public static string Delete => Get(nameof(Delete));
     public static string AddToPlaylist => Get(nameof(AddToPlaylist));
     public static string RemoveFromPlaylist => Get(nameof(RemoveFromPlaylist));
+    public static string ImportFromM3u => Get(nameof(ImportFromM3u));
+    public static string ExportToM3u => Get(nameof(ExportToM3u));
+    public static string ImportPlaylistFilePickerTitle => Get(nameof(ImportPlaylistFilePickerTitle));
+    public static string ExportPlaylistFilePickerTitle => Get(nameof(ExportPlaylistFilePickerTitle));
+    public static string PlaylistFileTypeName => Get(nameof(PlaylistFileTypeName));
 
     public static string FailedToLoadFile(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToLoadFileFormat"), reason);
@@ -120,6 +125,9 @@ public static class Strings
 
     public static string CustomThemesFolder(string path) =>
         string.Format(CultureInfo.CurrentCulture, Get("CustomThemesFolderFormat"), path);
+
+    public static string SkippedTracksNotInLibrary(int count) =>
+        string.Format(CultureInfo.CurrentCulture, Get("SkippedTracksNotInLibraryFormat"), count);
 
     private static string Get(string name) => ResourceManager.GetString(name, CultureInfo.CurrentUICulture)!;
 }

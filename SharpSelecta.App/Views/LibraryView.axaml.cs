@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
@@ -55,9 +57,13 @@ public partial class LibraryView : UserControl
             var deleteItem = new MenuItem { Header = Strings.Delete, Tag = playlist };
             deleteItem.Click += OnDeletePlaylistClick;
 
+            var exportItem = new MenuItem { Header = Strings.ExportToM3u, Tag = playlist };
+            exportItem.Click += OnExportPlaylistClick;
+
             var contextMenu = new ContextMenu();
             contextMenu.Items.Add(renameItem);
             contextMenu.Items.Add(deleteItem);
+            contextMenu.Items.Add(exportItem);
 
             var playlistItem = new MenuItem { Header = playlist.Name, Tag = playlist, ContextMenu = contextMenu };
             playlistItem.Click += OnSelectPlaylistClick;
@@ -110,5 +116,46 @@ public partial class LibraryView : UserControl
         {
             vm.Playlists.DeletePlaylist(playlist.Id);
         }
+    }
+
+    private async void OnImportPlaylistClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not LibraryViewModel vm)
+            return;
+
+        var path = await vm.PickM3uImportFileAsync();
+        if (path is null)
+            return;
+
+        var content = await File.ReadAllTextAsync(path);
+        var paths = M3uPlaylistFile.ParsePaths(content, Path.GetDirectoryName(path) ?? "");
+
+        var indexedPaths = new HashSet<string>(vm.Tracks.Select(t => t.Track.FilePath));
+        var matched = paths.Where(indexedPaths.Contains).ToList();
+        var skippedCount = paths.Count - matched.Count;
+
+        var playlistName = Path.GetFileNameWithoutExtension(path);
+        vm.Playlists.CreatePlaylist(playlistName);
+        vm.Playlists.ReorderSelectedPlaylist(matched);
+
+        vm.StatusMessage = skippedCount > 0 ? Strings.SkippedTracksNotInLibrary(skippedCount) : null;
+    }
+
+    private async void OnExportPlaylistClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: PlaylistSummaryViewModel playlist } || DataContext is not LibraryViewModel vm)
+            return;
+
+        var exportPath = await vm.PickM3uExportPathAsync(playlist.Name);
+        if (exportPath is null)
+            return;
+
+        var entries = LibraryIndexStore.GetPlaylistTracks(vm.SettingsFilePath, playlist.Id);
+        var tracks = entries
+            .Where(entry => entry.Track is not null)
+            .Select(entry => (entry.FilePath, entry.Track!.Duration, entry.Track.Artist ?? "", entry.Track.Title ?? ""))
+            .ToList();
+
+        await File.WriteAllTextAsync(exportPath, M3uPlaylistFile.Write(tracks));
     }
 }

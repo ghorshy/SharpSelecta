@@ -29,4 +29,29 @@ public sealed class AvaloniaFilePickerService(Window owner) : IFilePickerService
 
         return files.Count > 0 ? files[0].TryGetLocalPath() : null;
     }
+
+    public async Task<string?> PickM3uImportFileAsync()
+    {
+        var files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = Strings.ImportPlaylistFilePickerTitle,
+            AllowMultiple = false,
+            FileTypeFilter = [new FilePickerFileType(Strings.PlaylistFileTypeName) { Patterns = ["*.m3u", "*.m3u8"] }],
+        });
+
+        return files.Count > 0 ? files[0].TryGetLocalPath() : null;
+    }
+
+    public async Task<string?> PickM3uExportPathAsync(string suggestedFileName)
+    {
+        var file = await owner.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = Strings.ExportPlaylistFilePickerTitle,
+            SuggestedFileName = suggestedFileName,
+            DefaultExtension = "m3u8",
+            FileTypeChoices = [new FilePickerFileType(Strings.PlaylistFileTypeName) { Patterns = ["*.m3u8"] }],
+        });
+
+        return file?.TryGetLocalPath();
+    }
 }

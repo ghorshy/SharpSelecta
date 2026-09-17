@@ -503,6 +503,10 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     [RelayCommand]
     private void RemoveFromPlaylist(Track track) => Playlists.RemoveFromSelectedPlaylist(track);
 
+    public Task<string?> PickM3uImportFileAsync() => _filePickerService.PickM3uImportFileAsync();
+
+    public Task<string?> PickM3uExportPathAsync(string suggestedFileName) => _filePickerService.PickM3uExportPathAsync(suggestedFileName);
+
     private IReadOnlyList<Track> _selectedTracksInOrder = [];
 
     // Pushed by the view on every DataGrid selection change - DataGrid.SelectedItems doesn't
