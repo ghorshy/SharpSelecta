@@ -24,7 +24,8 @@
     <DockPanel LastChildFill="True">
         <DockPanel DockPanel.Dock="Top" LastChildFill="False" Margin="{styles:Spacing Bottom=XS}" IsVisible="{Binding HasTracks}">
             <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="{styles:SpacingValue M}">
-                <views:ViewModeSwitcher SelectedMode="{Binding ActiveViewMode, Mode=TwoWay}" />
+                <views:ViewModeSwitcher SelectedMode="{Binding ActiveViewMode, Mode=TwoWay}"
+                                        IsEnabled="{Binding LibrarySection, Converter={x:Static conv:ObjectConverters.NotEqual}, ConverterParameter={x:Static core:LibrarySection.Playlist}}" />
 
                 <Button Classes="toolbar-button toolbar-button-hover"
                         Content="{x:Static res:Strings.NavLibrary}"
