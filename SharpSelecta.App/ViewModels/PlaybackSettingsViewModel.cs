@@ -16,8 +16,13 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     private readonly IOutputDeviceService _outputDeviceService;
     private readonly PlaybackControlsViewModel _playbackControls;
 
-    // MVVMTK0034: backing-field writes are only allowed inside the constructor.
-    private bool _suppressOutputDeviceChangeSideEffects;
+    // Last-applied snapshot of each setting - HasPendingChanges compares the live (edited)
+    // property values against these, and Cancel reverts to them.
+    private bool _appliedRestoreQueueOnStartup;
+    private string _appliedSelectedOutputDeviceDisplayName;
+    private bool _appliedUseLogarithmicVolumeScale;
+    private int _appliedSeekStepSeconds;
+    private bool _appliedUseWaveformSlider;
 
     public ObservableCollection<string> OutputDeviceDisplayNames { get; } = [Strings.SystemDefaultAudioDevice];
 
@@ -36,68 +41,96 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     [ObservableProperty]
     private bool useWaveformSlider;
 
-    public bool HasPendingChanges => false;
+    public bool HasPendingChanges =>
+        RestoreQueueOnStartup != _appliedRestoreQueueOnStartup ||
+        SelectedOutputDeviceDisplayName != _appliedSelectedOutputDeviceDisplayName ||
+        UseLogarithmicVolumeScale != _appliedUseLogarithmicVolumeScale ||
+        SeekStepSeconds != _appliedSeekStepSeconds ||
+        UseWaveformSlider != _appliedUseWaveformSlider;
 
-    public ICommand ApplyCommand { get; } = new RelayCommand(() => { });
+    ICommand ISettingsCategoryViewModel.ApplyCommand => ApplyPlaybackSettingsCommand;
 
-    public ICommand CancelCommand { get; } = new RelayCommand(() => { });
+    ICommand ISettingsCategoryViewModel.CancelCommand => CancelPlaybackSettingsCommand;
 
     public PlaybackSettingsViewModel(string settingsFilePath, IOutputDeviceService outputDeviceService, PlaybackControlsViewModel playbackControls)
     {
         _settingsFilePath = settingsFilePath;
         _outputDeviceService = outputDeviceService;
         _playbackControls = playbackControls;
+
         RestoreQueueOnStartup = SettingsStore.LoadRestoreQueueOnStartup(settingsFilePath);
+        _appliedRestoreQueueOnStartup = RestoreQueueOnStartup;
 
         useWaveformSlider = SettingsStore.LoadUseWaveformSlider(settingsFilePath);
         _playbackControls.UseWaveformSlider = useWaveformSlider;
+        _appliedUseWaveformSlider = useWaveformSlider;
 
         if (SettingsStore.LoadOutputDeviceName(settingsFilePath) is { } savedDeviceName)
         {
             selectedOutputDeviceDisplayName = savedDeviceName;
         }
 
+        _appliedSelectedOutputDeviceDisplayName = selectedOutputDeviceDisplayName;
+
         var savedVolumeCurve = SettingsStore.LoadVolumeCurve(settingsFilePath);
         useLogarithmicVolumeScale = savedVolumeCurve == VolumeCurve.Logarithmic;
         _playbackControls.VolumeCurve = savedVolumeCurve;
+        _appliedUseLogarithmicVolumeScale = useLogarithmicVolumeScale;
+
         _playbackControls.Volume = SettingsStore.LoadVolume(settingsFilePath) ?? _playbackControls.Volume;
 
         seekStepSeconds = SettingsStore.LoadSeekStepSeconds(settingsFilePath);
         _playbackControls.SeekStepSeconds = seekStepSeconds;
+        _appliedSeekStepSeconds = seekStepSeconds;
     }
 
-    partial void OnSeekStepSecondsChanged(int value)
-    {
-        SettingsStore.SaveSeekStepSeconds(_settingsFilePath, value);
-        _playbackControls.SeekStepSeconds = value;
-    }
+    partial void OnRestoreQueueOnStartupChanged(bool value) => OnPropertyChanged(nameof(HasPendingChanges));
 
-    partial void OnRestoreQueueOnStartupChanged(bool value) =>
-        SettingsStore.SaveRestoreQueueOnStartup(_settingsFilePath, value);
+    partial void OnSelectedOutputDeviceDisplayNameChanged(string value) => OnPropertyChanged(nameof(HasPendingChanges));
 
-    partial void OnUseWaveformSliderChanged(bool value)
-    {
-        SettingsStore.SaveUseWaveformSlider(_settingsFilePath, value);
-        _playbackControls.UseWaveformSlider = value;
-    }
+    partial void OnUseLogarithmicVolumeScaleChanged(bool value) => OnPropertyChanged(nameof(HasPendingChanges));
 
-    partial void OnUseLogarithmicVolumeScaleChanged(bool value)
-    {
-        var curve = value ? VolumeCurve.Logarithmic : VolumeCurve.Linear;
-        SettingsStore.SaveVolumeCurve(_settingsFilePath, curve);
-        _playbackControls.VolumeCurve = curve;
-    }
+    partial void OnSeekStepSecondsChanged(int value) => OnPropertyChanged(nameof(HasPendingChanges));
+
+    partial void OnUseWaveformSliderChanged(bool value) => OnPropertyChanged(nameof(HasPendingChanges));
 
     public Task OutputDeviceSwitchTask { get; private set; } = Task.CompletedTask;
 
-    partial void OnSelectedOutputDeviceDisplayNameChanged(string value)
+    [RelayCommand]
+    private void ApplyPlaybackSettings()
     {
-        if (_suppressOutputDeviceChangeSideEffects)
-            return;
+        SettingsStore.SaveRestoreQueueOnStartup(_settingsFilePath, RestoreQueueOnStartup);
+        _appliedRestoreQueueOnStartup = RestoreQueueOnStartup;
 
-        var deviceName = value == Strings.SystemDefaultAudioDevice ? null : value;
+        SettingsStore.SaveUseWaveformSlider(_settingsFilePath, UseWaveformSlider);
+        _playbackControls.UseWaveformSlider = UseWaveformSlider;
+        _appliedUseWaveformSlider = UseWaveformSlider;
+
+        var curve = UseLogarithmicVolumeScale ? VolumeCurve.Logarithmic : VolumeCurve.Linear;
+        SettingsStore.SaveVolumeCurve(_settingsFilePath, curve);
+        _playbackControls.VolumeCurve = curve;
+        _appliedUseLogarithmicVolumeScale = UseLogarithmicVolumeScale;
+
+        SettingsStore.SaveSeekStepSeconds(_settingsFilePath, SeekStepSeconds);
+        _playbackControls.SeekStepSeconds = SeekStepSeconds;
+        _appliedSeekStepSeconds = SeekStepSeconds;
+
+        var deviceName = SelectedOutputDeviceDisplayName == Strings.SystemDefaultAudioDevice ? null : SelectedOutputDeviceDisplayName;
         SettingsStore.SaveOutputDeviceName(_settingsFilePath, deviceName);
         OutputDeviceSwitchTask = _outputDeviceService.SetOutputDeviceAsync(deviceName);
+        _appliedSelectedOutputDeviceDisplayName = SelectedOutputDeviceDisplayName;
+
+        OnPropertyChanged(nameof(HasPendingChanges));
+    }
+
+    [RelayCommand]
+    private void CancelPlaybackSettings()
+    {
+        RestoreQueueOnStartup = _appliedRestoreQueueOnStartup;
+        SelectedOutputDeviceDisplayName = _appliedSelectedOutputDeviceDisplayName;
+        UseLogarithmicVolumeScale = _appliedUseLogarithmicVolumeScale;
+        SeekStepSeconds = _appliedSeekStepSeconds;
+        UseWaveformSlider = _appliedUseWaveformSlider;
     }
 
     public async Task ApplyPersistedOutputDeviceAsync()
@@ -113,9 +146,8 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
         if (!OutputDeviceDisplayNames.Contains(SelectedOutputDeviceDisplayName))
         {
-            _suppressOutputDeviceChangeSideEffects = true;
             SelectedOutputDeviceDisplayName = Strings.SystemDefaultAudioDevice;
-            _suppressOutputDeviceChangeSideEffects = false;
+            _appliedSelectedOutputDeviceDisplayName = Strings.SystemDefaultAudioDevice;
         }
 
         if (SelectedOutputDeviceDisplayName != Strings.SystemDefaultAudioDevice)

@@ -26,19 +26,29 @@ public class PlaybackSettingsViewModelTests
     }
 
     [Test]
-    public async Task SettingSelectedOutputDeviceDisplayName_PersistsAndAppliesToTheService()
+    public async Task EditingSettings_DoesNotPersistOrApplyAnythingUntilApplyIsClicked()
     {
         var settingsPath = CreateTempSettingsPath();
         try
         {
             var outputDeviceService = Substitute.For<IOutputDeviceService>();
-            var vm = new PlaybackSettingsViewModel(settingsPath, outputDeviceService, CreatePlaybackControlsViewModel());
+            var playbackControls = CreatePlaybackControlsViewModel();
+            var vm = new PlaybackSettingsViewModel(settingsPath, outputDeviceService, playbackControls);
+            var settingsVm = (ISettingsCategoryViewModel)vm;
 
             vm.SelectedOutputDeviceDisplayName = "Focusrite Scarlett 2i2";
-            await vm.OutputDeviceSwitchTask;
+            vm.UseLogarithmicVolumeScale = true;
+            vm.SeekStepSeconds = 8;
+            vm.UseWaveformSlider = true;
+            vm.RestoreQueueOnStartup = false; // defaults to true, so this is a genuine pending change
 
-            await outputDeviceService.Received(1).SetOutputDeviceAsync("Focusrite Scarlett 2i2");
-            await Assert.That(SettingsStore.LoadOutputDeviceName(settingsPath)).IsEqualTo("Focusrite Scarlett 2i2");
+            await Assert.That(settingsVm.HasPendingChanges).IsTrue();
+            await outputDeviceService.DidNotReceive().SetOutputDeviceAsync(Arg.Any<string?>());
+            await Assert.That(SettingsStore.LoadOutputDeviceName(settingsPath)).IsNull();
+            await Assert.That(SettingsStore.LoadVolumeCurve(settingsPath)).IsEqualTo(VolumeCurve.Linear);
+            await Assert.That(SettingsStore.LoadSeekStepSeconds(settingsPath)).IsEqualTo(5);
+            await Assert.That(playbackControls.SeekStepSeconds).IsEqualTo(5);
+            await Assert.That(playbackControls.VolumeCurve).IsEqualTo(VolumeCurve.Linear);
         }
         finally
         {
@@ -47,20 +57,68 @@ public class PlaybackSettingsViewModelTests
     }
 
     [Test]
-    public async Task SettingSelectedOutputDeviceDisplayName_BackToSystemDefault_PersistsNull()
+    public async Task ApplyCommand_PersistsAndAppliesEveryPendingSetting()
     {
         var settingsPath = CreateTempSettingsPath();
         try
         {
             var outputDeviceService = Substitute.For<IOutputDeviceService>();
-            var vm = new PlaybackSettingsViewModel(settingsPath, outputDeviceService, CreatePlaybackControlsViewModel());
+            var playbackControls = CreatePlaybackControlsViewModel();
+            var vm = new PlaybackSettingsViewModel(settingsPath, outputDeviceService, playbackControls);
+            var settingsVm = (ISettingsCategoryViewModel)vm;
+
             vm.SelectedOutputDeviceDisplayName = "Focusrite Scarlett 2i2";
+            vm.UseLogarithmicVolumeScale = true;
+            vm.SeekStepSeconds = 8;
+            vm.UseWaveformSlider = true;
+            vm.RestoreQueueOnStartup = false; // defaults to true, so this is a genuine change to persist
+
+            settingsVm.ApplyCommand.Execute(null);
             await vm.OutputDeviceSwitchTask;
 
-            vm.SelectedOutputDeviceDisplayName = Strings.SystemDefaultAudioDevice;
-            await vm.OutputDeviceSwitchTask;
+            await outputDeviceService.Received(1).SetOutputDeviceAsync("Focusrite Scarlett 2i2");
+            await Assert.That(SettingsStore.LoadOutputDeviceName(settingsPath)).IsEqualTo("Focusrite Scarlett 2i2");
+            await Assert.That(SettingsStore.LoadVolumeCurve(settingsPath)).IsEqualTo(VolumeCurve.Logarithmic);
+            await Assert.That(playbackControls.VolumeCurve).IsEqualTo(VolumeCurve.Logarithmic);
+            await Assert.That(SettingsStore.LoadSeekStepSeconds(settingsPath)).IsEqualTo(8);
+            await Assert.That(playbackControls.SeekStepSeconds).IsEqualTo(8);
+            await Assert.That(SettingsStore.LoadUseWaveformSlider(settingsPath)).IsTrue();
+            await Assert.That(playbackControls.UseWaveformSlider).IsTrue();
+            await Assert.That(SettingsStore.LoadRestoreQueueOnStartup(settingsPath)).IsFalse();
+            await Assert.That(settingsVm.HasPendingChanges).IsFalse();
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
 
-            await outputDeviceService.Received(1).SetOutputDeviceAsync(null);
+    [Test]
+    public async Task CancelCommand_RevertsEveryEditedSettingWithoutPersistingOrApplyingAnything()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            var outputDeviceService = Substitute.For<IOutputDeviceService>();
+            var playbackControls = CreatePlaybackControlsViewModel();
+            var vm = new PlaybackSettingsViewModel(settingsPath, outputDeviceService, playbackControls);
+            var settingsVm = (ISettingsCategoryViewModel)vm;
+
+            vm.SelectedOutputDeviceDisplayName = "Focusrite Scarlett 2i2";
+            vm.UseLogarithmicVolumeScale = true;
+            vm.SeekStepSeconds = 8;
+            vm.UseWaveformSlider = true;
+            vm.RestoreQueueOnStartup = false; // defaults to true, so this is a genuine change to revert
+
+            settingsVm.CancelCommand.Execute(null);
+
+            await Assert.That(vm.SelectedOutputDeviceDisplayName).IsEqualTo(Strings.SystemDefaultAudioDevice);
+            await Assert.That(vm.UseLogarithmicVolumeScale).IsFalse();
+            await Assert.That(vm.SeekStepSeconds).IsEqualTo(5);
+            await Assert.That(vm.UseWaveformSlider).IsFalse();
+            await Assert.That(vm.RestoreQueueOnStartup).IsTrue();
+            await Assert.That(settingsVm.HasPendingChanges).IsFalse();
+            await outputDeviceService.DidNotReceive().SetOutputDeviceAsync(Arg.Any<string?>());
             await Assert.That(SettingsStore.LoadOutputDeviceName(settingsPath)).IsNull();
         }
         finally
@@ -82,6 +140,7 @@ public class PlaybackSettingsViewModelTests
 
             await Assert.That(vm.SelectedOutputDeviceDisplayName).IsEqualTo("Focusrite Scarlett 2i2");
             await outputDeviceService.DidNotReceive().SetOutputDeviceAsync(Arg.Any<string?>());
+            await Assert.That(((ISettingsCategoryViewModel)vm).HasPendingChanges).IsFalse();
         }
         finally
         {
@@ -134,6 +193,7 @@ public class PlaybackSettingsViewModelTests
             await Assert.That(vm.SelectedOutputDeviceDisplayName).IsEqualTo(Strings.SystemDefaultAudioDevice);
             await outputDeviceService.DidNotReceive().SetOutputDeviceAsync(Arg.Any<string?>());
             await Assert.That(SettingsStore.LoadOutputDeviceName(settingsPath)).IsEqualTo("Unplugged USB DAC");
+            await Assert.That(((ISettingsCategoryViewModel)vm).HasPendingChanges).IsFalse();
         }
         finally
         {
@@ -147,26 +207,6 @@ public class PlaybackSettingsViewModelTests
         var vm = new PlaybackSettingsViewModel(CreateTempSettingsPath(), Substitute.For<IOutputDeviceService>(), CreatePlaybackControlsViewModel());
 
         await Assert.That(vm.UseLogarithmicVolumeScale).IsFalse();
-    }
-
-    [Test]
-    public async Task SettingUseLogarithmicVolumeScale_PersistsAndAppliesToPlaybackControls()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            var playbackControls = CreatePlaybackControlsViewModel();
-            var vm = new PlaybackSettingsViewModel(settingsPath, Substitute.For<IOutputDeviceService>(), playbackControls);
-
-            vm.UseLogarithmicVolumeScale = true;
-
-            await Assert.That(playbackControls.VolumeCurve).IsEqualTo(VolumeCurve.Logarithmic);
-            await Assert.That(SettingsStore.LoadVolumeCurve(settingsPath)).IsEqualTo(VolumeCurve.Logarithmic);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
     }
 
     [Test]
@@ -198,26 +238,6 @@ public class PlaybackSettingsViewModelTests
     }
 
     [Test]
-    public async Task SettingSeekStepSeconds_PersistsAndAppliesToPlaybackControls()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            var playbackControls = CreatePlaybackControlsViewModel();
-            var vm = new PlaybackSettingsViewModel(settingsPath, Substitute.For<IOutputDeviceService>(), playbackControls);
-
-            vm.SeekStepSeconds = 8;
-
-            await Assert.That(playbackControls.SeekStepSeconds).IsEqualTo(8);
-            await Assert.That(SettingsStore.LoadSeekStepSeconds(settingsPath)).IsEqualTo(8);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
     public async Task Constructor_AppliesAPreviouslySavedSeekStepSecondsToPlaybackControls()
     {
         var settingsPath = CreateTempSettingsPath();
@@ -230,26 +250,6 @@ public class PlaybackSettingsViewModelTests
 
             await Assert.That(vm.SeekStepSeconds).IsEqualTo(3);
             await Assert.That(playbackControls.SeekStepSeconds).IsEqualTo(3);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task SettingUseWaveformSlider_PersistsAndMirrorsToPlaybackControls()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            var playbackControls = CreatePlaybackControlsViewModel();
-            var vm = new PlaybackSettingsViewModel(settingsPath, Substitute.For<IOutputDeviceService>(), playbackControls);
-
-            vm.UseWaveformSlider = true;
-
-            await Assert.That(SettingsStore.LoadUseWaveformSlider(settingsPath)).IsTrue();
-            await Assert.That(playbackControls.UseWaveformSlider).IsTrue();
         }
         finally
         {
