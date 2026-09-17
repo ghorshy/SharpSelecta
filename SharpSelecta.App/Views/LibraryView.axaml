@@ -13,12 +13,38 @@
              x:Class="SharpSelecta.App.Views.LibraryView"
              x:DataType="vm:LibraryViewModel">
 
+    <UserControl.Styles>
+        <Style Selector="Button.toolbar-button.active">
+            <Setter Property="BorderThickness" Value="0,0,0,2" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
+            <Setter Property="CornerRadius" Value="0" />
+        </Style>
+    </UserControl.Styles>
+
     <DockPanel LastChildFill="True">
-        <!-- Temporary: minimal view-mode switcher, not yet styled to show which one is active. -->
         <DockPanel DockPanel.Dock="Top" LastChildFill="False" Margin="{styles:Spacing Bottom=XS}" IsVisible="{Binding HasTracks}">
-            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="{styles:SpacingValue XS}">
-                <Button Content="List" Command="{Binding SetViewModeCommand}" CommandParameter="{x:Static core:LibraryViewMode.TrackList}" />
-                <Button Content="Albums" Command="{Binding SetViewModeCommand}" CommandParameter="{x:Static core:LibraryViewMode.AlbumGrid}" />
+            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="{styles:SpacingValue M}">
+                <views:ViewModeSwitcher SelectedMode="{Binding ActiveViewMode, Mode=TwoWay}" />
+
+                <Button Classes="toolbar-button toolbar-button-hover"
+                        Command="{Binding SetLibrarySectionCommand}"
+                        CommandParameter="{x:Static core:LibrarySection.Library}"
+                        Classes.active="{Binding LibrarySection, Converter={x:Static conv:ObjectConverters.Equal}, ConverterParameter={x:Static core:LibrarySection.Library}}">
+                    <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue XXS}">
+                        <svg:Svg Classes="toolbar-icon" Width="14" Height="14" Path="{DynamicResource Icon.Library}" />
+                        <TextBlock Text="{x:Static res:Strings.NavLibrary}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
+                <Button Classes="toolbar-button toolbar-button-hover"
+                        Command="{Binding SetLibrarySectionCommand}"
+                        CommandParameter="{x:Static core:LibrarySection.RecentlyAdded}"
+                        Classes.active="{Binding LibrarySection, Converter={x:Static conv:ObjectConverters.Equal}, ConverterParameter={x:Static core:LibrarySection.RecentlyAdded}}">
+                    <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue XXS}">
+                        <svg:Svg Classes="toolbar-icon" Width="14" Height="14" Path="{DynamicResource Icon.RecentlyAdded}" />
+                        <TextBlock Text="{x:Static res:Strings.NavRecentlyAdded}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
             </StackPanel>
 
             <Border DockPanel.Dock="Right" BorderBrush="Gray" BorderThickness="1" CornerRadius="4"
