@@ -511,4 +511,221 @@ public class LibraryIndexStoreTests
             root.Delete(recursive: true);
         }
     }
+
+    [Test]
+    public async Task CreatePlaylist_ThenListPlaylists_ReturnsItWithAGeneratedId()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
+        try
+        {
+            CopyFixtureInto(root.FullName, "tagged-track.mp3");
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+            var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "Chill");
+
+            await Assert.That(playlistId).IsNotNull();
+            var playlists = LibraryIndexStore.ListPlaylists(settingsPath);
+            await Assert.That(playlists.Count).IsEqualTo(1);
+            await Assert.That(playlists[0].Id).IsEqualTo(playlistId);
+            await Assert.That(playlists[0].Name).IsEqualTo("Chill");
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task ListPlaylists_OrdersByCreationTime()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
+        try
+        {
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+            LibraryIndexStore.CreatePlaylist(settingsPath, "First");
+            LibraryIndexStore.CreatePlaylist(settingsPath, "Second");
+
+            var playlists = LibraryIndexStore.ListPlaylists(settingsPath);
+
+            await Assert.That(playlists.Select(p => p.Name)).IsEquivalentTo(["First", "Second"]);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task RenamePlaylist_ChangesTheNameWithoutChangingTheId()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
+        try
+        {
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+            var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "Old Name");
+
+            LibraryIndexStore.RenamePlaylist(settingsPath, playlistId, "New Name");
+
+            var playlists = LibraryIndexStore.ListPlaylists(settingsPath);
+            await Assert.That(playlists[0].Id).IsEqualTo(playlistId);
+            await Assert.That(playlists[0].Name).IsEqualTo("New Name");
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task DeletePlaylist_RemovesItAndItsTracks()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
+        try
+        {
+            CopyFixtureInto(root.FullName, "tagged-track.mp3");
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+            var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "Temp");
+            LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [trackPath]);
+
+            LibraryIndexStore.DeletePlaylist(settingsPath, playlistId);
+
+            await Assert.That(LibraryIndexStore.ListPlaylists(settingsPath)).IsEmpty();
+            await Assert.That(LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId)).IsEmpty();
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task ReplacePlaylistTracks_ThenGetPlaylistTracks_RoundTripsOrderAndResolvesRealTracks()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
+        try
+        {
+            CopyFixtureInto(root.FullName, "a.mp3");
+            CopyFixtureInto(root.FullName, "b.mp3");
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+            var aPath = Path.Combine(root.FullName, "a.mp3");
+            var bPath = Path.Combine(root.FullName, "b.mp3");
+            var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "Order Test");
+
+            LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [bPath, aPath]);
+
+            var entries = LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId);
+            await Assert.That(entries.Count).IsEqualTo(2);
+            await Assert.That(entries[0].Position).IsEqualTo(0);
+            await Assert.That(entries[0].FilePath).IsEqualTo(bPath);
+            await Assert.That(entries[0].Track).IsNotNull();
+            await Assert.That(entries[1].Position).IsEqualTo(1);
+            await Assert.That(entries[1].FilePath).IsEqualTo(aPath);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task ReplacePlaylistTracks_CalledAgain_FullyReplacesThePreviousOrder()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
+        try
+        {
+            CopyFixtureInto(root.FullName, "a.mp3");
+            CopyFixtureInto(root.FullName, "b.mp3");
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+            var aPath = Path.Combine(root.FullName, "a.mp3");
+            var bPath = Path.Combine(root.FullName, "b.mp3");
+            var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "Order Test");
+            LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [aPath, bPath]);
+
+            LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [bPath]);
+
+            var entries = LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId);
+            await Assert.That(entries.Count).IsEqualTo(1);
+            await Assert.That(entries[0].FilePath).IsEqualTo(bPath);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task ReplacePlaylistTracks_AllowsTheSameTrackTwice()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
+        try
+        {
+            CopyFixtureInto(root.FullName, "tagged-track.mp3");
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+            var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "Repeats");
+
+            LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [trackPath, trackPath]);
+
+            var entries = LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId);
+            await Assert.That(entries.Count).IsEqualTo(2);
+            await Assert.That(entries[0].FilePath).IsEqualTo(trackPath);
+            await Assert.That(entries[1].FilePath).IsEqualTo(trackPath);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task GetPlaylistTracks_WhenAFileNoLongerHasAMatchingTracksRow_ReturnsNullTrackForThatEntry()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
+        try
+        {
+            CopyFixtureInto(root.FullName, "tagged-track.mp3");
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+            var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "Will Go Missing");
+            LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [trackPath]);
+
+            File.Delete(trackPath);
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+            var entries = LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId);
+            await Assert.That(entries.Count).IsEqualTo(1);
+            await Assert.That(entries[0].FilePath).IsEqualTo(trackPath);
+            await Assert.That(entries[0].Track).IsNull();
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+            root.Delete(recursive: true);
+        }
+    }
 }

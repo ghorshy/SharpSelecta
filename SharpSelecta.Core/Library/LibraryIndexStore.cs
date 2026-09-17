@@ -6,6 +6,10 @@ public static class LibraryIndexStore
 {
     public sealed record ReconcileResult(IReadOnlyList<Track> Tracks, IReadOnlyList<string> FailedFolders);
 
+    public sealed record PlaylistSummary(string Id, string Name, DateTime CreatedUtc);
+
+    public sealed record PlaylistTrackEntry(int Position, string FilePath, Track? Track);
+
     private const string ColumnList =
         "FilePath, FolderPath, DisplayName, TrackNumber, Title, Artist, Album, AlbumArtist, Year, " +
         "DurationSeconds, SampleRate, BitDepth, Bitrate, FileType, LastWriteTimeUtcTicks, FileSizeBytes, DateAddedUtc";
@@ -153,6 +157,184 @@ public static class LibraryIndexStore
         command.Parameters.AddWithValue("@WaveformPeaks", FloatsToBytes(peaks));
         command.Parameters.AddWithValue("@FilePath", filePath);
         command.ExecuteNonQuery();
+    }
+
+    public static string CreatePlaylist(string settingsFilePath, string name)
+    {
+        var indexFilePath = IndexFilePath(settingsFilePath);
+        if (!File.Exists(indexFilePath))
+        {
+            return string.Empty;
+        }
+
+        var id = Guid.NewGuid().ToString("N");
+        using var connection = OpenConnection(indexFilePath);
+        using var command = connection.CreateCommand();
+        command.CommandText = "INSERT INTO Playlists (Id, Name, CreatedUtc) VALUES (@Id, @Name, @CreatedUtc)";
+        command.Parameters.AddWithValue("@Id", id);
+        command.Parameters.AddWithValue("@Name", name);
+        command.Parameters.AddWithValue("@CreatedUtc", DateTime.UtcNow.Ticks);
+        command.ExecuteNonQuery();
+        return id;
+    }
+
+    public static void RenamePlaylist(string settingsFilePath, string playlistId, string newName)
+    {
+        var indexFilePath = IndexFilePath(settingsFilePath);
+        if (!File.Exists(indexFilePath))
+        {
+            return;
+        }
+
+        using var connection = OpenConnection(indexFilePath);
+        using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE Playlists SET Name = @Name WHERE Id = @Id";
+        command.Parameters.AddWithValue("@Name", newName);
+        command.Parameters.AddWithValue("@Id", playlistId);
+        command.ExecuteNonQuery();
+    }
+
+    public static void DeletePlaylist(string settingsFilePath, string playlistId)
+    {
+        var indexFilePath = IndexFilePath(settingsFilePath);
+        if (!File.Exists(indexFilePath))
+        {
+            return;
+        }
+
+        using var connection = OpenConnection(indexFilePath);
+        using var transaction = connection.BeginTransaction();
+
+        using (var deleteTracks = connection.CreateCommand())
+        {
+            deleteTracks.Transaction = transaction;
+            deleteTracks.CommandText = "DELETE FROM PlaylistTracks WHERE PlaylistId = @Id";
+            deleteTracks.Parameters.AddWithValue("@Id", playlistId);
+            deleteTracks.ExecuteNonQuery();
+        }
+
+        using (var deletePlaylist = connection.CreateCommand())
+        {
+            deletePlaylist.Transaction = transaction;
+            deletePlaylist.CommandText = "DELETE FROM Playlists WHERE Id = @Id";
+            deletePlaylist.Parameters.AddWithValue("@Id", playlistId);
+            deletePlaylist.ExecuteNonQuery();
+        }
+
+        transaction.Commit();
+    }
+
+    public static IReadOnlyList<PlaylistSummary> ListPlaylists(string settingsFilePath)
+    {
+        var indexFilePath = IndexFilePath(settingsFilePath);
+        if (!File.Exists(indexFilePath))
+        {
+            return [];
+        }
+
+        using var connection = OpenConnection(indexFilePath);
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT Id, Name, CreatedUtc FROM Playlists ORDER BY CreatedUtc ASC";
+
+        var result = new List<PlaylistSummary>();
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            result.Add(new PlaylistSummary(reader.GetString(0), reader.GetString(1), new DateTime(reader.GetInt64(2), DateTimeKind.Utc)));
+        }
+
+        return result;
+    }
+
+    public static IReadOnlyList<PlaylistTrackEntry> GetPlaylistTracks(string settingsFilePath, string playlistId)
+    {
+        var indexFilePath = IndexFilePath(settingsFilePath);
+        if (!File.Exists(indexFilePath))
+        {
+            return [];
+        }
+
+        using var connection = OpenConnection(indexFilePath);
+        using var command = connection.CreateCommand();
+        command.CommandText = $"""
+            SELECT p.Position, p.FilePath, t.FilePath, t.FolderPath, t.DisplayName, t.TrackNumber, t.Title, t.Artist, t.Album, t.AlbumArtist, t.Year, t.DurationSeconds, t.SampleRate, t.BitDepth, t.Bitrate, t.FileType, t.LastWriteTimeUtcTicks, t.FileSizeBytes, t.DateAddedUtc
+            FROM PlaylistTracks p
+            LEFT JOIN Tracks t ON t.FilePath = p.FilePath
+            WHERE p.PlaylistId = @PlaylistId
+            ORDER BY p.Position ASC
+            """;
+        command.Parameters.AddWithValue("@PlaylistId", playlistId);
+
+        var result = new List<PlaylistTrackEntry>();
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            var position = reader.GetInt32(0);
+            var filePath = reader.GetString(1);
+            // Column 2 onward is ColumnList's own FilePath - null there means the LEFT JOIN found
+            // no matching Tracks row (file removed from the library since it was added here).
+            var track = reader.IsDBNull(2) ? null : ReadTrackFromPlaylistJoin(reader);
+            result.Add(new PlaylistTrackEntry(position, filePath, track));
+        }
+
+        return result;
+    }
+
+    // Mirrors LoadFolderIndex's column mapping, offset by the 2 extra leading columns
+    // (Position, FilePath) this query selects before ColumnList.
+    private static Track ReadTrackFromPlaylistJoin(SqliteDataReader reader) => new(reader.GetString(2), reader.GetString(4))
+    {
+        TrackNumber = reader.IsDBNull(5) ? null : reader.GetInt32(5),
+        Title = reader.IsDBNull(6) ? null : reader.GetString(6),
+        Artist = reader.IsDBNull(7) ? null : reader.GetString(7),
+        Album = reader.IsDBNull(8) ? null : reader.GetString(8),
+        AlbumArtist = reader.IsDBNull(9) ? null : reader.GetString(9),
+        Year = reader.IsDBNull(10) ? null : reader.GetInt32(10),
+        Duration = TimeSpan.FromSeconds(reader.GetDouble(11)),
+        SampleRate = reader.GetInt32(12),
+        BitDepth = reader.GetInt32(13),
+        Bitrate = reader.GetInt32(14),
+        FileType = reader.IsDBNull(15) ? null : reader.GetString(15),
+        DateAddedUtc = new DateTime(reader.GetInt64(18), DateTimeKind.Utc),
+    };
+
+    public static void ReplacePlaylistTracks(string settingsFilePath, string playlistId, IReadOnlyList<string> filePathsInOrder)
+    {
+        var indexFilePath = IndexFilePath(settingsFilePath);
+        if (!File.Exists(indexFilePath))
+        {
+            return;
+        }
+
+        using var connection = OpenConnection(indexFilePath);
+        using var transaction = connection.BeginTransaction();
+
+        using (var delete = connection.CreateCommand())
+        {
+            delete.Transaction = transaction;
+            delete.CommandText = "DELETE FROM PlaylistTracks WHERE PlaylistId = @PlaylistId";
+            delete.Parameters.AddWithValue("@PlaylistId", playlistId);
+            delete.ExecuteNonQuery();
+        }
+
+        using (var insert = connection.CreateCommand())
+        {
+            insert.Transaction = transaction;
+            insert.CommandText = "INSERT INTO PlaylistTracks (PlaylistId, Position, FilePath) VALUES (@PlaylistId, @Position, @FilePath)";
+            var pPlaylistId = insert.Parameters.Add("@PlaylistId", SqliteType.Text);
+            var pPosition = insert.Parameters.Add("@Position", SqliteType.Integer);
+            var pFilePath = insert.Parameters.Add("@FilePath", SqliteType.Text);
+
+            pPlaylistId.Value = playlistId;
+            for (var i = 0; i < filePathsInOrder.Count; i++)
+            {
+                pPosition.Value = i;
+                pFilePath.Value = filePathsInOrder[i];
+                insert.ExecuteNonQuery();
+            }
+        }
+
+        transaction.Commit();
     }
 
     private static byte[] FloatsToBytes(IReadOnlyList<float> peaks)
@@ -362,6 +544,27 @@ public static class LibraryIndexStore
             using var backfill = connection.CreateCommand();
             backfill.CommandText = "UPDATE Tracks SET DateAddedUtc = LastWriteTimeUtcTicks WHERE DateAddedUtc = 0";
             backfill.ExecuteNonQuery();
+        }
+
+        using (var playlistCommand = connection.CreateCommand())
+        {
+            playlistCommand.CommandText = """
+                CREATE TABLE IF NOT EXISTS Playlists (
+                    Id          TEXT NOT NULL PRIMARY KEY,
+                    Name        TEXT NOT NULL,
+                    CreatedUtc  INTEGER NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS PlaylistTracks (
+                    PlaylistId  TEXT    NOT NULL,
+                    Position    INTEGER NOT NULL,
+                    FilePath    TEXT    NOT NULL,
+                    PRIMARY KEY (PlaylistId, Position)
+                );
+
+                CREATE INDEX IF NOT EXISTS IX_PlaylistTracks_PlaylistId ON PlaylistTracks(PlaylistId);
+                """;
+            playlistCommand.ExecuteNonQuery();
         }
     }
 
