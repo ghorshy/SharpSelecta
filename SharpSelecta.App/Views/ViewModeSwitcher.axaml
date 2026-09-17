@@ -2,12 +2,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:res="using:SharpSelecta.App.Resources"
              xmlns:styles="using:SharpSelecta.App.Styles"
-             xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Svg.Controls.Skia.Avalonia"
              x:Class="SharpSelecta.App.Views.ViewModeSwitcher">
     <Button Classes="toolbar-button toolbar-button-hover">
-        <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue XXS}">
-            <svg:Svg Classes="toolbar-icon" Width="14" Height="14" Path="{DynamicResource Icon.View}" />
-            <TextBlock x:Name="LabelText" VerticalAlignment="Center" />
+        <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue S}">
+            <TextBlock Text="{x:Static res:Strings.View}" VerticalAlignment="Center" />
             <TextBlock Text="▾" VerticalAlignment="Center" />
         </StackPanel>
         <Button.Flyout>

@@ -307,6 +307,9 @@
   <data name="GenericFileManager" xml:space="preserve">
     <value>File Manager</value>
   </data>
+  <data name="View" xml:space="preserve">
+    <value>View</value>
+  </data>
   <data name="ViewModeList" xml:space="preserve">
     <value>List</value>
   </data>

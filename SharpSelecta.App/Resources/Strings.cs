@@ -84,6 +84,7 @@ public static class Strings
     public static string PressAKeyCombination => Get(nameof(PressAKeyCombination));
     public static string ShortcutNotSet => Get(nameof(ShortcutNotSet));
     public static string GenericFileManager => Get(nameof(GenericFileManager));
+    public static string View => Get(nameof(View));
     public static string ViewModeList => Get(nameof(ViewModeList));
     public static string ViewModeCoverArt => Get(nameof(ViewModeCoverArt));
     public static string NavLibrary => Get(nameof(NavLibrary));
