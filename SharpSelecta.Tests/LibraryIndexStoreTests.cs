@@ -451,4 +451,64 @@ public class LibraryIndexStoreTests
             root.Delete(recursive: true);
         }
     }
+
+    [Test]
+    public async Task LoadIndexed_OnAnIndexFileFromBeforeDateAddedUtcExisted_MigratesSchemaAndBackfillsFromLastWriteTime()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
+        try
+        {
+            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+            CopyFixtureInto(root.FullName, "tagged-track.mp3");
+            var lastWriteTimeUtc = File.GetLastWriteTimeUtc(trackPath);
+
+            var indexFilePath = IndexFilePath(settingsPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(indexFilePath)!);
+            await using (var connection = new SqliteConnection($"Data Source={indexFilePath}"))
+            {
+                await connection.OpenAsync();
+                var command = connection.CreateCommand();
+                command.CommandText = """
+                    CREATE TABLE Tracks (
+                        FilePath              TEXT    NOT NULL PRIMARY KEY,
+                        FolderPath            TEXT    NOT NULL,
+                        DisplayName           TEXT    NOT NULL,
+                        TrackNumber           INTEGER NULL,
+                        Title                 TEXT    NULL,
+                        Artist                TEXT    NULL,
+                        Album                 TEXT    NULL,
+                        AlbumArtist           TEXT    NULL,
+                        Year                  INTEGER NULL,
+                        DurationSeconds       REAL    NOT NULL,
+                        SampleRate            INTEGER NOT NULL,
+                        BitDepth              INTEGER NOT NULL,
+                        Bitrate               INTEGER NOT NULL,
+                        FileType              TEXT    NULL,
+                        LastWriteTimeUtcTicks INTEGER NOT NULL,
+                        FileSizeBytes         INTEGER NOT NULL,
+                        WaveformPeaks         BLOB    NULL
+                    );
+                    INSERT INTO Tracks (FilePath, FolderPath, DisplayName, DurationSeconds, SampleRate, BitDepth, Bitrate, LastWriteTimeUtcTicks, FileSizeBytes)
+                    VALUES (@FilePath, @FolderPath, @DisplayName, 0, 0, 0, 0, @Ticks, 0);
+                    """;
+                command.Parameters.AddWithValue("@FilePath", trackPath);
+                command.Parameters.AddWithValue("@FolderPath", root.FullName);
+                command.Parameters.AddWithValue("@DisplayName", "tagged-track.mp3");
+                command.Parameters.AddWithValue("@Ticks", lastWriteTimeUtc.Ticks);
+                await command.ExecuteNonQueryAsync();
+            }
+
+            var result = LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName]);
+
+            await Assert.That(result.Count).IsEqualTo(1);
+            await Assert.That(result[0].DateAddedUtc).IsEqualTo(lastWriteTimeUtc);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+            root.Delete(recursive: true);
+        }
+    }
 }

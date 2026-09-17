@@ -19,6 +19,8 @@ public static class LibraryIndexStore
         }
 
         using var connection = OpenConnection(indexFilePath);
+        EnsureSchema(connection);
+
         var tracks = new List<Track>();
         foreach (var folderPath in folderPaths)
         {
@@ -76,7 +78,8 @@ public static class LibraryIndexStore
                     var lastWriteTimeUtc = fileInfo.LastWriteTimeUtc;
                     var fileSizeBytes = fileInfo.Length;
 
-                    if (existing.TryGetValue(path, out var indexed)
+                    var wasIndexed = existing.TryGetValue(path, out var indexed);
+                    if (wasIndexed
                         && indexed.LastWriteTimeUtc == lastWriteTimeUtc
                         && indexed.FileSizeBytes == fileSizeBytes)
                     {
@@ -86,7 +89,7 @@ public static class LibraryIndexStore
                     var track = MusicLibraryScanner.ReadTrack(path);
                     // For new/changed files, set DateAddedUtc to either the original date (if previously indexed)
                     // or the shared "now" timestamp (if new). This matches what UpsertAll will write to the DB.
-                    track = track with { DateAddedUtc = new DateTime(existing.TryGetValue(path, out var prior) ? prior.Track.DateAddedUtc.Ticks : dateAddedUtcTicks, DateTimeKind.Utc) };
+                    track = track with { DateAddedUtc = wasIndexed ? indexed.Track.DateAddedUtc : new DateTime(dateAddedUtcTicks, DateTimeKind.Utc) };
                     return (path, track, lastWriteTimeUtc, fileSizeBytes, Changed: true);
                 })
                 .ToList();
