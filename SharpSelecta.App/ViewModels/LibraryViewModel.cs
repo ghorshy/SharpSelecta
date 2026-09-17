@@ -218,16 +218,39 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         NotifyViewVisibilityChanged();
     }
 
-    [ObservableProperty] private partial LibraryViewMode ViewMode { get; set; } = LibraryViewMode.TrackList;
+    [ObservableProperty] public partial LibraryViewMode ViewMode { get; set; } = LibraryViewMode.TrackList;
 
-    public bool IsTrackListViewVisible => HasTracks && !IsLoadingLibrary && ViewMode == LibraryViewMode.TrackList;
+    public LibraryViewMode ActiveViewMode
+    {
+        get => LibrarySection == LibrarySection.RecentlyAdded ? RecentlyAddedViewMode : ViewMode;
+        set
+        {
+            if (LibrarySection == LibrarySection.RecentlyAdded)
+                RecentlyAddedViewMode = value;
+            else
+                ViewMode = value;
+        }
+    }
 
-    public bool IsAlbumGridViewVisible => HasTracks && !IsLoadingLibrary && ViewMode == LibraryViewMode.AlbumGrid;
+    [ObservableProperty] public partial LibrarySection LibrarySection { get; set; } = LibrarySection.Library;
+
+    [ObservableProperty] public partial LibraryViewMode RecentlyAddedViewMode { get; set; } = LibraryViewMode.TrackList;
+
+    public bool IsTrackListViewVisible => HasTracks && !IsLoadingLibrary && LibrarySection == LibrarySection.Library && ViewMode == LibraryViewMode.TrackList;
+
+    public bool IsAlbumGridViewVisible => HasTracks && !IsLoadingLibrary && LibrarySection == LibrarySection.Library && ViewMode == LibraryViewMode.AlbumGrid;
+
+    public bool IsRecentlyAddedListVisible => HasTracks && !IsLoadingLibrary && LibrarySection == LibrarySection.RecentlyAdded && RecentlyAddedViewMode == LibraryViewMode.TrackList;
+
+    public bool IsRecentlyAddedCoverArtVisible => HasTracks && !IsLoadingLibrary && LibrarySection == LibrarySection.RecentlyAdded && RecentlyAddedViewMode == LibraryViewMode.AlbumGrid;
 
     private void NotifyViewVisibilityChanged()
     {
         OnPropertyChanged(nameof(IsTrackListViewVisible));
         OnPropertyChanged(nameof(IsAlbumGridViewVisible));
+        OnPropertyChanged(nameof(IsRecentlyAddedListVisible));
+        OnPropertyChanged(nameof(IsRecentlyAddedCoverArtVisible));
+        OnPropertyChanged(nameof(ActiveViewMode));
     }
 
     partial void OnViewModeChanged(LibraryViewMode value)
@@ -236,10 +259,32 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         NotifyViewVisibilityChanged();
     }
 
+    partial void OnLibrarySectionChanged(LibrarySection value)
+    {
+        SettingsStore.SaveLibrarySection(_settingsFilePath, value);
+        NotifyViewVisibilityChanged();
+    }
+
+    partial void OnRecentlyAddedViewModeChanged(LibraryViewMode value)
+    {
+        SettingsStore.SaveRecentlyAddedViewMode(_settingsFilePath, value);
+        NotifyViewVisibilityChanged();
+    }
+
     [RelayCommand]
     private void SetViewMode(LibraryViewMode mode) => ViewMode = mode;
 
+    [RelayCommand]
+    private void SetLibrarySection(LibrarySection section) => LibrarySection = section;
+
+    public BulkObservableCollection<LibraryTrackViewModel> RecentlyAddedTracks { get; } = [];
+
+    private void RefreshRecentlyAddedTracks() =>
+        RecentlyAddedTracks.ReplaceAll(Tracks.OrderByDescending(t => t.Track.DateAddedUtc));
+
     public AlbumGridViewModel Grid { get; }
+
+    public AlbumGridViewModel RecentlyAddedGrid { get; }
 
     public string SettingsFilePath => _settingsFilePath;
 
@@ -257,6 +302,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         _logger = logger;
 
         Grid = new AlbumGridViewModel(this, settingsFilePath, _logger);
+        RecentlyAddedGrid = new AlbumGridViewModel(this, settingsFilePath, _logger, allowUserSort: false);
 
         Tracks.CollectionChanged += (_, _) =>
         {
@@ -265,6 +311,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             OnPropertyChanged(nameof(ShowEmptyState));
             NotifyViewVisibilityChanged();
             RefreshDisplayedTracks();
+            RefreshRecentlyAddedTracks();
         };
 
         LibraryFolderPaths.CollectionChanged += (_, _) =>
@@ -294,6 +341,8 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     {
         ApplySavedColumnVisibility();
         ViewMode = SettingsStore.LoadViewMode(_settingsFilePath) ?? LibraryViewMode.TrackList;
+        LibrarySection = SettingsStore.LoadLibrarySection(_settingsFilePath) ?? LibrarySection.Library;
+        RecentlyAddedViewMode = SettingsStore.LoadRecentlyAddedViewMode(_settingsFilePath) ?? LibraryViewMode.TrackList;
 
         var folderPaths = SettingsStore.LoadLibraryFolderPaths(_settingsFilePath);
         if (folderPaths is not null)

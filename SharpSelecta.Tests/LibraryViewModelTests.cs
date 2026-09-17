@@ -759,6 +759,66 @@ public class LibraryViewModelTests
     }
 
     [Test]
+    public async Task LibrarySection_DefaultsToLibrary()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+
+        await Assert.That(vm.LibrarySection).IsEqualTo(LibrarySection.Library);
+    }
+
+    [Test]
+    public async Task SwitchingToRecentlyAdded_HidesLibraryViewsAndShowsRecentlyAddedViews()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+        AddTrack(vm, "/music/a.mp3", "Album", "Artist");
+
+        vm.LibrarySection = LibrarySection.RecentlyAdded;
+
+        await Assert.That(vm.IsTrackListViewVisible).IsFalse();
+        await Assert.That(vm.IsAlbumGridViewVisible).IsFalse();
+        await Assert.That(vm.IsRecentlyAddedListVisible).IsTrue();
+        await Assert.That(vm.IsRecentlyAddedCoverArtVisible).IsFalse();
+    }
+
+    [Test]
+    public async Task RecentlyAddedTracks_OrdersByDateAddedUtcDescending()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+        var now = DateTime.UtcNow;
+        vm.Tracks.Add(new LibraryTrackViewModel(new Track("/music/old.mp3", "old.mp3") { DateAddedUtc = now.AddDays(-1) }, vm));
+        vm.Tracks.Add(new LibraryTrackViewModel(new Track("/music/new.mp3", "new.mp3") { DateAddedUtc = now }, vm));
+
+        await Assert.That(vm.RecentlyAddedTracks.Select(t => t.Track.FilePath)).IsEquivalentTo(["/music/new.mp3", "/music/old.mp3"]);
+    }
+
+    [Test]
+    public async Task RecentlyAddedGrid_SortsAlbumsByTheirMostRecentTrack_AndCannotBeUserSorted()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+
+        await Assert.That(vm.RecentlyAddedGrid.AllowUserSort).IsFalse();
+    }
+
+    [Test]
+    public async Task ActiveViewMode_ReflectsRecentlyAddedViewModeOnlyWhenThatSectionIsActive()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+        vm.ViewMode = LibraryViewMode.TrackList;
+        vm.RecentlyAddedViewMode = LibraryViewMode.AlbumGrid;
+
+        await Assert.That(vm.ActiveViewMode).IsEqualTo(LibraryViewMode.TrackList);
+
+        vm.LibrarySection = LibrarySection.RecentlyAdded;
+
+        await Assert.That(vm.ActiveViewMode).IsEqualTo(LibraryViewMode.AlbumGrid);
+
+        vm.ActiveViewMode = LibraryViewMode.TrackList;
+
+        await Assert.That(vm.RecentlyAddedViewMode).IsEqualTo(LibraryViewMode.TrackList);
+        await Assert.That(vm.ViewMode).IsEqualTo(LibraryViewMode.TrackList); // untouched
+    }
+
+    [Test]
     public async Task IsLoadingLibrary_IsFalseAfterFoldersFinishLoading()
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);
