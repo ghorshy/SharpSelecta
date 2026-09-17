@@ -89,6 +89,14 @@ public static class Strings
     public static string ViewModeCoverArt => Get(nameof(ViewModeCoverArt));
     public static string NavLibrary => Get(nameof(NavLibrary));
     public static string NavRecentlyAdded => Get(nameof(NavRecentlyAdded));
+    public static string Playlists => Get(nameof(Playlists));
+    public static string NewPlaylistEllipsis => Get(nameof(NewPlaylistEllipsis));
+    public static string NewPlaylistPromptTitle => Get(nameof(NewPlaylistPromptTitle));
+    public static string RenamePlaylistPromptTitle => Get(nameof(RenamePlaylistPromptTitle));
+    public static string DeletePlaylistConfirmTitle => Get(nameof(DeletePlaylistConfirmTitle));
+    public static string DeletePlaylistConfirmMessage => Get(nameof(DeletePlaylistConfirmMessage));
+    public static string Rename => Get(nameof(Rename));
+    public static string Delete => Get(nameof(Delete));
 
     public static string FailedToLoadFile(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToLoadFileFormat"), reason);

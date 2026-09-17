@@ -1,0 +1,16 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:res="using:SharpSelecta.App.Resources"
+        xmlns:styles="using:SharpSelecta.App.Styles"
+        x:Class="SharpSelecta.App.Views.ConfirmationWindow"
+        Width="360" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False">
+    <StackPanel Margin="{styles:Spacing Uniform=M}" Spacing="{styles:SpacingValue S}">
+        <TextBlock x:Name="MessageText" TextWrapping="Wrap" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{styles:SpacingValue S}">
+            <Button Content="{x:Static res:Strings.Cancel}" Click="OnCancelClick" />
+            <Button Content="{x:Static res:Strings.Delete}" Click="OnConfirmClick" />
+        </StackPanel>
+    </StackPanel>
+</Window>

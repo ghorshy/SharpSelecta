@@ -322,4 +322,28 @@
   <data name="NavRecentlyAdded" xml:space="preserve">
     <value>Recently Added</value>
   </data>
+  <data name="Playlists" xml:space="preserve">
+    <value>Playlists</value>
+  </data>
+  <data name="NewPlaylistEllipsis" xml:space="preserve">
+    <value>+ New playlist...</value>
+  </data>
+  <data name="NewPlaylistPromptTitle" xml:space="preserve">
+    <value>New playlist</value>
+  </data>
+  <data name="RenamePlaylistPromptTitle" xml:space="preserve">
+    <value>Rename playlist</value>
+  </data>
+  <data name="DeletePlaylistConfirmTitle" xml:space="preserve">
+    <value>Delete playlist</value>
+  </data>
+  <data name="DeletePlaylistConfirmMessage" xml:space="preserve">
+    <value>Delete this playlist? This can't be undone.</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>Rename</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
 </root>

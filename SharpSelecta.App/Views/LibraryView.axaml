@@ -5,6 +5,7 @@
              xmlns:core="using:SharpSelecta.Core.Library"
              xmlns:views="using:SharpSelecta.App.Views"
              xmlns:conv="using:Avalonia.Data.Converters"
+             xmlns:converters="using:SharpSelecta.App.Converters"
              xmlns:styles="using:SharpSelecta.App.Styles"
              xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Svg.Controls.Skia.Avalonia"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -38,6 +39,19 @@
                         Command="{Binding SetLibrarySectionCommand}"
                         CommandParameter="{x:Static core:LibrarySection.RecentlyAdded}"
                         Classes.active="{Binding LibrarySection, Converter={x:Static conv:ObjectConverters.Equal}, ConverterParameter={x:Static core:LibrarySection.RecentlyAdded}}" />
+
+                <Button Classes="toolbar-button toolbar-button-hover"
+                        Content="{x:Static res:Strings.Playlists}"
+                        Classes.active="{Binding LibrarySection, Converter={x:Static conv:ObjectConverters.Equal}, ConverterParameter={x:Static core:LibrarySection.Playlist}}">
+                    <Button.Flyout>
+                        <MenuFlyout Placement="BottomEdgeAlignedLeft" Opening="OnPlaylistsFlyoutOpening">
+                            <MenuItem Header="{x:Static res:Strings.NewPlaylistEllipsis}" Click="OnNewPlaylistClick" />
+                            <Separator IsVisible="{Binding Playlists.Playlists.Count, Converter={x:Static converters:IntToBoolConverter.Instance}}" />
+                            <!-- Playlist entries are built imperatively in OnPlaylistsFlyoutOpening: MenuItem.ItemsSource
+                                 turns a MenuItem into a nested submenu rather than flat siblings in this flyout. -->
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
             </StackPanel>
 
             <Border DockPanel.Dock="Right" BorderBrush="Gray" BorderThickness="1" CornerRadius="4"
