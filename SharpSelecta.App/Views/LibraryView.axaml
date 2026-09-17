@@ -101,6 +101,11 @@
                               ItemsSource="{Binding RecentlyAddedTracks}"
                               AllowReorderAndSort="False" />
 
+        <views:TrackListView IsVisible="{Binding IsPlaylistViewVisible}"
+                              ItemsSource="{Binding Playlists.Tracks}"
+                              AllowReorderAndSort="False"
+                              AllowRowReorder="True" />
+
     </Grid>
     </DockPanel>
 

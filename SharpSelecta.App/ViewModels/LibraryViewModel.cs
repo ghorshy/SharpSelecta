@@ -253,12 +253,16 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     public bool IsRecentlyAddedCoverArtVisible => HasTracks && !IsLoadingLibrary && LibrarySection == LibrarySection.RecentlyAdded && RecentlyAddedViewMode == LibraryViewMode.AlbumGrid;
 
+    // No ViewMode gate here, unlike the other visibility properties - a playlist has no Cover Art mode.
+    public bool IsPlaylistViewVisible => HasTracks && !IsLoadingLibrary && LibrarySection == LibrarySection.Playlist;
+
     private void NotifyViewVisibilityChanged()
     {
         OnPropertyChanged(nameof(IsTrackListViewVisible));
         OnPropertyChanged(nameof(IsAlbumGridViewVisible));
         OnPropertyChanged(nameof(IsRecentlyAddedListVisible));
         OnPropertyChanged(nameof(IsRecentlyAddedCoverArtVisible));
+        OnPropertyChanged(nameof(IsPlaylistViewVisible));
         OnPropertyChanged(nameof(ActiveViewMode));
     }
 

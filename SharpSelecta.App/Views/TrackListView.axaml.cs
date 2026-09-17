@@ -21,6 +21,9 @@ public sealed partial class TrackListView : UserControl
     public static readonly StyledProperty<bool> AllowReorderAndSortProperty =
         AvaloniaProperty.Register<TrackListView, bool>(nameof(AllowReorderAndSort), true);
 
+    public static readonly StyledProperty<bool> AllowRowReorderProperty =
+        AvaloniaProperty.Register<TrackListView, bool>(nameof(AllowRowReorder));
+
     public IEnumerable<LibraryTrackViewModel>? ItemsSource
     {
         get => GetValue(ItemsSourceProperty);
@@ -36,8 +39,17 @@ public sealed partial class TrackListView : UserControl
         set => SetValue(AllowReorderAndSortProperty, value);
     }
 
+    // Independent of AllowReorderAndSort: a playlist has a fixed manual order (no column sort)
+    // but still allows the user to drag rows to reorder it.
+    public bool AllowRowReorder
+    {
+        get => GetValue(AllowRowReorderProperty);
+        set => SetValue(AllowRowReorderProperty, value);
+    }
+
     private bool _columnWidthsDirty;
     private readonly List<Track> _orderedSelection = [];
+    private LibraryTrackViewModel? _rowBeingDragged;
 
     public TrackListView()
     {
@@ -50,6 +62,8 @@ public sealed partial class TrackListView : UserControl
         }
 
         TracksGrid.AddHandler(InputElement.PointerReleasedEvent, OnPointerReleased, handledEventsToo: true);
+        TracksGrid.AddHandler(InputElement.PointerPressedEvent, OnRowReorderPointerPressed, handledEventsToo: true);
+        TracksGrid.AddHandler(InputElement.PointerReleasedEvent, OnRowReorderPointerReleased, handledEventsToo: true);
         TracksGrid.Sorting += (_, _) => Dispatcher.UIThread.Post(SaveCurrentSort, DispatcherPriority.Background);
         TracksGrid.SelectionChanged += OnTracksGridSelectionChanged;
     }
@@ -192,5 +206,43 @@ public sealed partial class TrackListView : UserControl
         {
             item.Library.PlayNowCommand.Execute(item.Track);
         }
+    }
+
+    private void OnRowReorderPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!AllowRowReorder)
+            return;
+
+        if (e.Source is Visual source && source.FindAncestorOfType<DataGridRow>() is { DataContext: LibraryTrackViewModel item })
+        {
+            _rowBeingDragged = item;
+        }
+    }
+
+    private void OnRowReorderPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (!AllowRowReorder)
+            return;
+
+        var dragged = _rowBeingDragged;
+        _rowBeingDragged = null;
+        if (dragged is null)
+            return;
+
+        if (e.Source is not Visual source || source.FindAncestorOfType<DataGridRow>() is not { DataContext: LibraryTrackViewModel target } || ReferenceEquals(target, dragged))
+            return;
+
+        if (DataContext is not LibraryViewModel vm || ItemsSource?.ToList() is not { } items)
+            return;
+
+        var fromIndex = items.IndexOf(dragged);
+        var toIndex = items.IndexOf(target);
+        if (fromIndex < 0 || toIndex < 0)
+            return;
+
+        items.RemoveAt(fromIndex);
+        items.Insert(toIndex, dragged);
+
+        vm.Playlists.ReorderSelectedPlaylist(items.Select(t => t.Track.FilePath).ToList());
     }
 }

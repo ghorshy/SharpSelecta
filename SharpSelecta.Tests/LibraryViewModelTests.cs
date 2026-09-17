@@ -781,6 +781,19 @@ public class LibraryViewModelTests
     }
 
     [Test]
+    public async Task IsPlaylistViewVisible_TrueOnlyWhenPlaylistSectionIsActiveWithTracksLoaded()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+        AddTrack(vm, "/music/a.mp3", "Album", "Artist");
+
+        await Assert.That(vm.IsPlaylistViewVisible).IsFalse();
+
+        vm.LibrarySection = LibrarySection.Playlist;
+
+        await Assert.That(vm.IsPlaylistViewVisible).IsTrue();
+    }
+
+    [Test]
     public async Task RecentlyAddedTracks_OrdersByDateAddedUtcDescending()
     {
         var vm = CreateViewModel(out _, out _, out _);
