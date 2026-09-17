@@ -82,6 +82,18 @@
             <views:AlbumGridView DataContext="{Binding Grid}" />
         </Border>
 
+        <Border IsVisible="{Binding IsRecentlyAddedCoverArtVisible}">
+            <views:AlbumGridView DataContext="{Binding RecentlyAddedGrid}" />
+        </Border>
+
+        <views:TrackListView IsVisible="{Binding IsTrackListViewVisible}"
+                              ItemsSource="{Binding DisplayedTracks}"
+                              AllowReorderAndSort="True" />
+
+        <views:TrackListView IsVisible="{Binding IsRecentlyAddedListVisible}"
+                              ItemsSource="{Binding RecentlyAddedTracks}"
+                              AllowReorderAndSort="False" />
+
     </Grid>
     </DockPanel>
 
