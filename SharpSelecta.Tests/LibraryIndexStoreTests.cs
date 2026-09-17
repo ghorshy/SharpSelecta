@@ -552,7 +552,9 @@ public class LibraryIndexStoreTests
 
             var playlists = LibraryIndexStore.ListPlaylists(settingsPath);
 
-            await Assert.That(playlists.Select(p => p.Name)).IsEquivalentTo(["First", "Second"]);
+            await Assert.That(playlists.Count).IsEqualTo(2);
+            await Assert.That(playlists[0].Name).IsEqualTo("First");
+            await Assert.That(playlists[1].Name).IsEqualTo("Second");
         }
         finally
         {
