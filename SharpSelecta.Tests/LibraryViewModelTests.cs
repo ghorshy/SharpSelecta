@@ -793,6 +793,23 @@ public class LibraryViewModelTests
     }
 
     [Test]
+    public async Task RecentlyAddedTracks_WithASearchQuery_FiltersToMatchingTracksOnly()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+        var now = DateTime.UtcNow;
+        vm.Tracks.Add(new LibraryTrackViewModel(new Track("/music/a.mp3", "a.mp3") { Title = "Wonderwall", Artist = "Oasis", DateAddedUtc = now.AddDays(-2) }, vm));
+        vm.Tracks.Add(new LibraryTrackViewModel(new Track("/music/b.mp3", "b.mp3") { Title = "No Woman No Cry", Artist = "Bob Marley", DateAddedUtc = now.AddDays(-1) }, vm));
+        vm.Tracks.Add(new LibraryTrackViewModel(new Track("/music/c.mp3", "c.mp3") { Title = "Live Forever", Artist = "Oasis", DateAddedUtc = now }, vm));
+
+        vm.SearchQuery = "oasis";
+        await vm.SearchDebounceTask;
+
+        await Assert.That(vm.RecentlyAddedTracks.Count).IsEqualTo(2);
+        await Assert.That(vm.RecentlyAddedTracks[0].Track.FilePath).IsEqualTo("/music/c.mp3");
+        await Assert.That(vm.RecentlyAddedTracks[1].Track.FilePath).IsEqualTo("/music/a.mp3");
+    }
+
+    [Test]
     public async Task RecentlyAddedGrid_SortsAlbumsByTheirMostRecentTrack_AndCannotBeUserSorted()
     {
         var vm = CreateViewModel(out _, out _, out _);

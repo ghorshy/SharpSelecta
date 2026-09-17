@@ -155,6 +155,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         if (string.IsNullOrWhiteSpace(value))
         {
             RefreshDisplayedTracks();
+            RefreshRecentlyAddedTracks();
             SearchDebounceTask = Task.CompletedTask;
             return;
         }
@@ -176,6 +177,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         }
 
         RefreshDisplayedTracks();
+        RefreshRecentlyAddedTracks();
     }
 
     [RelayCommand]
@@ -279,8 +281,20 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     public BulkObservableCollection<LibraryTrackViewModel> RecentlyAddedTracks { get; } = [];
 
-    private void RefreshRecentlyAddedTracks() =>
-        RecentlyAddedTracks.ReplaceAll(Tracks.OrderByDescending(t => t.Track.DateAddedUtc));
+    private void RefreshRecentlyAddedTracks()
+    {
+        if (string.IsNullOrWhiteSpace(SearchQuery))
+        {
+            RecentlyAddedTracks.ReplaceAll(Tracks.OrderByDescending(t => t.Track.DateAddedUtc));
+            return;
+        }
+
+        var matching = Tracks
+            .Where(t => FuzzySearch.Score(t.Track, SearchQuery) is not null)
+            .OrderByDescending(t => t.Track.DateAddedUtc);
+
+        RecentlyAddedTracks.ReplaceAll(matching);
+    }
 
     public AlbumGridViewModel Grid { get; }
 
