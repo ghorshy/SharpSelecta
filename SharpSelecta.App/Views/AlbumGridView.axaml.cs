@@ -42,7 +42,7 @@ public partial class AlbumGridView : UserControl
     {
         if (sender is Control { DataContext: AlbumViewModel album } tile)
         {
-            album.Library.Grid.ExpandAlbum(album);
+            (DataContext as AlbumGridViewModel)?.ExpandAlbum(album);
             ScrollExpandedPanelIntoView(tile);
         }
     }
@@ -51,7 +51,7 @@ public partial class AlbumGridView : UserControl
     {
         if (sender is Control { DataContext: AlbumViewModel album } tile)
         {
-            album.Library.Grid.ExpandAlbum(album);
+            (DataContext as AlbumGridViewModel)?.ExpandAlbum(album);
             album.Library.PlayAlbumNowCommand.Execute(album);
             ScrollExpandedPanelIntoView(tile);
         }

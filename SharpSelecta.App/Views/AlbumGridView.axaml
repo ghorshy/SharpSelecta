@@ -11,6 +11,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="400"
              x:Class="SharpSelecta.App.Views.AlbumGridView"
+             x:Name="Root"
              x:DataType="vm:AlbumGridViewModel">
 
     <UserControl.Styles>
@@ -79,7 +80,7 @@
                                              machinery, so the handler gets every press. Background="Transparent" makes
                                              the whole tile (not just its Image/text children) hit-test-visible. -->
                                         <Border Background="Transparent"
-                                                Width="{Binding Library.Grid.TileSize}"
+                                                Width="{Binding #Root.DataContext.TileSize}"
                                                 Tapped="OnTileTapped"
                                                 DoubleTapped="OnTileDoubleTapped">
                                             <Border.ContextMenu>
@@ -99,8 +100,8 @@
                                                 </ContextMenu>
                                             </Border.ContextMenu>
                                             <StackPanel Spacing="{styles:SpacingValue XXS}">
-                                                <Border Width="{Binding Library.Grid.TileSize}"
-                                                        Height="{Binding Library.Grid.TileSize}"
+                                                <Border Width="{Binding #Root.DataContext.TileSize}"
+                                                        Height="{Binding #Root.DataContext.TileSize}"
                                                         ClipToBounds="True"
                                                         CornerRadius="4"
                                                         Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
@@ -112,9 +113,9 @@
                                                     </Panel>
                                                 </Border>
                                                 <TextBlock Text="{Binding Title}" FontWeight="Bold" TextTrimming="CharacterEllipsis"
-                                                           Width="{Binding Library.Grid.TileSize}" />
+                                                           Width="{Binding #Root.DataContext.TileSize}" />
                                                 <TextBlock Text="{Binding Artist}" Opacity="0.7" TextTrimming="CharacterEllipsis"
-                                                           Width="{Binding Library.Grid.TileSize}" />
+                                                           Width="{Binding #Root.DataContext.TileSize}" />
                                             </StackPanel>
                                         </Border>
                                     </DataTemplate>
@@ -138,7 +139,7 @@
                                                 <DockPanel Grid.Column="0">
                                                     <Button DockPanel.Dock="Top" Classes="plain" HorizontalAlignment="Right"
                                                             Content="&#x2715;"
-                                                            Command="{Binding Library.Grid.ToggleExpandCommand}"
+                                                            Command="{Binding #Root.DataContext.ToggleExpandCommand}"
                                                             CommandParameter="{Binding}" />
 
                                                     <ItemsControl ItemsSource="{Binding TrackRows}">
