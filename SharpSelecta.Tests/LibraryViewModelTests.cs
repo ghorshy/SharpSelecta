@@ -948,6 +948,18 @@ public class LibraryViewModelTests
     }
 
     [Test]
+    public async Task NotifyColumnLayoutChanged_RaisesColumnLayoutChanged()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+        var raised = false;
+        vm.ColumnLayoutChanged += (_, _) => raised = true;
+
+        vm.NotifyColumnLayoutChanged();
+
+        await Assert.That(raised).IsTrue();
+    }
+
+    [Test]
     public async Task ShowInFileManagerLabel_ReflectsTheServicesActionLabel()
     {
         var vm = CreateViewModel(out _, out _, out _, out var fileManagerService);

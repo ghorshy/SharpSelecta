@@ -85,6 +85,13 @@ public sealed partial class TrackListView : UserControl
         if (DataContext is not LibraryViewModel vm)
             return;
 
+        ApplyColumnLayout(vm);
+        vm.Tracks.CollectionChanged += (_, _) => ApplySavedSort(vm);
+        vm.ColumnLayoutChanged += (_, _) => ApplyColumnLayout(vm);
+    }
+
+    private void ApplyColumnLayout(LibraryViewModel vm)
+    {
         var order = SettingsStore.LoadColumnOrder(vm.SettingsFilePath);
         if (order is not null)
         {
@@ -97,8 +104,6 @@ public sealed partial class TrackListView : UserControl
         {
             ApplyToTaggedColumns(widths, (column, width) => column.Width = new DataGridLength(width));
         }
-
-        vm.Tracks.CollectionChanged += (_, _) => ApplySavedSort(vm);
     }
 
     private void ApplyToTaggedColumns<T>(IReadOnlyDictionary<string, T> valuesByKey, Action<DataGridColumn, T> apply)
@@ -138,6 +143,7 @@ public sealed partial class TrackListView : UserControl
             .ToList();
 
         SettingsStore.SaveColumnOrder(vm.SettingsFilePath, orderedKeys);
+        vm.NotifyColumnLayoutChanged();
     }
 
     private void OnColumnPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
@@ -162,6 +168,7 @@ public sealed partial class TrackListView : UserControl
                 .ToDictionary(c => (string)c.Tag!, c => c.Width.Value);
 
             SettingsStore.SaveColumnWidths(vm.SettingsFilePath, widths);
+            vm.NotifyColumnLayoutChanged();
         }
     }
 

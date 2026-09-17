@@ -188,6 +188,13 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     [RelayCommand]
     private void FocusSearch() => SearchFocusRequested?.Invoke(this, EventArgs.Empty);
 
+    // Column widths/order live in one shared settings file, not per TrackListView instance - this
+    // lets the Library and Recently Added grids (two separate control instances, same DataContext)
+    // push a layout change to each other immediately instead of only agreeing after a restart.
+    public event EventHandler? ColumnLayoutChanged;
+
+    public void NotifyColumnLayoutChanged() => ColumnLayoutChanged?.Invoke(this, EventArgs.Empty);
+
     private void RefreshDisplayedTracks()
     {
         if (string.IsNullOrWhiteSpace(SearchQuery))
