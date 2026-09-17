@@ -28,15 +28,23 @@
     </UserControl.Styles>
 
     <DockPanel LastChildFill="True">
-        <!-- Temporary: minimal sort-mode switcher, not yet styled to show which one is active
-             (same as LibraryView's List/Albums view-mode switcher). -->
         <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="{styles:Spacing Uniform=XS}">
-            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="{styles:SpacingValue XS}">
-                <TextBlock Text="{x:Static res:Strings.SortBy}" VerticalAlignment="Center" Opacity="0.7" />
-                <Button Content="{x:Static res:Strings.ColumnTitle}" Command="{Binding SetSortModeCommand}" CommandParameter="{x:Static core:AlbumSortMode.Title}" />
-                <Button Content="{x:Static res:Strings.ColumnArtist}" Command="{Binding SetSortModeCommand}" CommandParameter="{x:Static core:AlbumSortMode.Artist}" />
-                <Button Content="{x:Static res:Strings.ColumnYear}" Command="{Binding SetSortModeCommand}" CommandParameter="{x:Static core:AlbumSortMode.Year}" />
-                <Button Content="{Binding SortDirectionSymbol}" Command="{Binding ToggleSortDirectionCommand}" />
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="{styles:SpacingValue XS}" IsVisible="{Binding AllowUserSort}">
+                <Button Classes="toolbar-button toolbar-button-hover">
+                    <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue XXS}">
+                        <TextBlock Text="{x:Static res:Strings.SortBy}" Opacity="0.7" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding SortModeLabel}" VerticalAlignment="Center" />
+                        <TextBlock Text="▾" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuItem Header="{x:Static res:Strings.ColumnTitle}" Command="{Binding SetSortModeCommand}" CommandParameter="{x:Static core:AlbumSortMode.Title}" />
+                            <MenuItem Header="{x:Static res:Strings.ColumnArtist}" Command="{Binding SetSortModeCommand}" CommandParameter="{x:Static core:AlbumSortMode.Artist}" />
+                            <MenuItem Header="{x:Static res:Strings.ColumnYear}" Command="{Binding SetSortModeCommand}" CommandParameter="{x:Static core:AlbumSortMode.Year}" />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+                <Button Classes="toolbar-button toolbar-button-hover" Content="{Binding SortDirectionSymbol}" Command="{Binding ToggleSortDirectionCommand}" />
             </StackPanel>
 
             <Slider Grid.Column="1"
