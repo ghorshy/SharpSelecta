@@ -93,6 +93,7 @@ public static class Strings
     public static string NewPlaylistEllipsis => Get(nameof(NewPlaylistEllipsis));
     public static string NewPlaylistPromptTitle => Get(nameof(NewPlaylistPromptTitle));
     public static string RenamePlaylistPromptTitle => Get(nameof(RenamePlaylistPromptTitle));
+    public static string PlaylistNamePrompt => Get(nameof(PlaylistNamePrompt));
     public static string DeletePlaylistConfirmTitle => Get(nameof(DeletePlaylistConfirmTitle));
     public static string DeletePlaylistConfirmMessage => Get(nameof(DeletePlaylistConfirmMessage));
     public static string Rename => Get(nameof(Rename));

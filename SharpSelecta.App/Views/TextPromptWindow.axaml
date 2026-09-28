@@ -7,6 +7,7 @@
         WindowStartupLocation="CenterOwner"
         CanResize="False">
     <StackPanel Margin="{styles:Spacing Uniform=M}" Spacing="{styles:SpacingValue S}">
+        <TextBlock x:Name="PromptText" />
         <TextBox x:Name="ValueBox" KeyDown="OnValueBoxKeyDown" />
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{styles:SpacingValue S}">
             <Button Content="{x:Static res:Strings.Cancel}" Click="OnCancelClick" />

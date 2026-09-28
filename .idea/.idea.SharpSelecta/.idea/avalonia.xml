@@ -4,6 +4,8 @@
     <option name="projectPerEditor">
       <map>
         <entry key="SharpSelecta.App/App.axaml" value="SharpSelecta.App/SharpSelecta.App.csproj" />
+        <entry key="SharpSelecta.App/Styles/DefaultTheme.axaml" value="SharpSelecta.App/SharpSelecta.App.csproj" />
+        <entry key="SharpSelecta.App/Styles/Icons.axaml" value="SharpSelecta.App/SharpSelecta.App.csproj" />
         <entry key="SharpSelecta.App/Styles/Spacing.axaml" value="SharpSelecta.App/SharpSelecta.App.csproj" />
         <entry key="SharpSelecta.App/Views/AlbumGridView.axaml" value="SharpSelecta.App/SharpSelecta.App.csproj" />
         <entry key="SharpSelecta.App/Views/LibrarySettingsView.axaml" value="SharpSelecta.App/SharpSelecta.App.csproj" />

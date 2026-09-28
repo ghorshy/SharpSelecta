@@ -12,9 +12,10 @@ public partial class TextPromptWindow : Window
         InitializeComponent();
     }
 
-    public static async Task<string?> ShowAsync(Window owner, string title, string? initialValue)
+    public static async Task<string?> ShowAsync(Window owner, string title, string prompt, string? initialValue)
     {
         var window = new TextPromptWindow { Title = title };
+        window.PromptText.Text = prompt;
         window.ValueBox.Text = initialValue;
         var result = await window.ShowDialog<string?>(owner);
         return string.IsNullOrWhiteSpace(result) ? null : result.Trim();

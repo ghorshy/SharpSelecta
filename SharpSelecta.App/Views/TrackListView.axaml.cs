@@ -283,7 +283,7 @@ public sealed partial class TrackListView : UserControl
             this.FindAncestorOfType<Window>() is not { } window || DataContext is not LibraryViewModel vm)
             return;
 
-        var name = await TextPromptWindow.ShowAsync(window, Strings.NewPlaylistPromptTitle, initialValue: null);
+        var name = await TextPromptWindow.ShowAsync(window, Strings.NewPlaylistPromptTitle, Strings.PlaylistNamePrompt, initialValue: null);
         if (name is not null)
         {
             var newPlaylistId = vm.Playlists.CreatePlaylist(name);

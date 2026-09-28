@@ -77,7 +77,7 @@ public partial class LibraryView : UserControl
         if (this.FindAncestorOfType<Window>() is not { } window || DataContext is not LibraryViewModel vm)
             return;
 
-        var name = await TextPromptWindow.ShowAsync(window, Strings.NewPlaylistPromptTitle, initialValue: null);
+        var name = await TextPromptWindow.ShowAsync(window, Strings.NewPlaylistPromptTitle, Strings.PlaylistNamePrompt, initialValue: null);
         if (name is not null)
         {
             vm.Playlists.CreatePlaylist(name);
@@ -98,7 +98,7 @@ public partial class LibraryView : UserControl
         if (sender is not MenuItem { Tag: PlaylistSummaryViewModel playlist } || this.FindAncestorOfType<Window>() is not { } window || DataContext is not LibraryViewModel vm)
             return;
 
-        var newName = await TextPromptWindow.ShowAsync(window, Strings.RenamePlaylistPromptTitle, playlist.Name);
+        var newName = await TextPromptWindow.ShowAsync(window, Strings.RenamePlaylistPromptTitle, Strings.PlaylistNamePrompt, playlist.Name);
         if (newName is not null)
         {
             vm.Playlists.RenamePlaylist(playlist.Id, newName);

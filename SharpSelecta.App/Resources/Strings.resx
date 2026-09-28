@@ -334,6 +334,9 @@
   <data name="RenamePlaylistPromptTitle" xml:space="preserve">
     <value>Rename playlist</value>
   </data>
+  <data name="PlaylistNamePrompt" xml:space="preserve">
+    <value>Playlist name:</value>
+  </data>
   <data name="DeletePlaylistConfirmTitle" xml:space="preserve">
     <value>Delete playlist</value>
   </data>
