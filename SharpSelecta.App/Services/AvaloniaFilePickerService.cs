@@ -54,4 +54,16 @@ public sealed class AvaloniaFilePickerService(Window owner) : IFilePickerService
 
         return file?.TryGetLocalPath();
     }
+
+    public async Task<string?> PickCoverImageAsync()
+    {
+        var files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = Strings.CoverImagePickerTitle,
+            AllowMultiple = false,
+            FileTypeFilter = [new FilePickerFileType(Strings.CoverImageFileTypeName) { Patterns = ["*.jpg", "*.jpeg", "*.png"] }],
+        });
+
+        return files.Count > 0 ? files[0].TryGetLocalPath() : null;
+    }
 }

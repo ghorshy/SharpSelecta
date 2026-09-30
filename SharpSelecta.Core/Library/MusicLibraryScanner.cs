@@ -63,22 +63,30 @@ public static class MusicLibraryScanner
 
     public static Track? ReadTrackIfExists(string filePath) => File.Exists(filePath) ? ReadTrack(filePath) : null;
 
+    public sealed record ArtworkResult(byte[] Bytes, bool IsSeparateFile);
+
+    public static byte[]? LoadArtwork(string filePath) => LoadArtworkWithSource(filePath)?.Bytes;
+
     // Embedded art wins; a cover file in the track's folder is the fallback.
-    public static byte[]? LoadArtwork(string filePath)
+    public static ArtworkResult? LoadArtworkWithSource(string filePath)
     {
         try
         {
             var embedded = new AtlTrack(filePath).EmbeddedPictures.FirstOrDefault()?.PictureData;
             if (embedded is { Length: > 0 })
             {
-                return embedded;
+                return new ArtworkResult(embedded, IsSeparateFile: false);
             }
 
-            return CoverFile.Find(filePath) is { } coverPath ? File.ReadAllBytes(coverPath) : null;
+            return CoverFile.Find(filePath) is { } coverPath
+                ? new ArtworkResult(File.ReadAllBytes(coverPath), IsSeparateFile: true)
+                : null;
         }
         catch (Exception)
         {
             return null;
         }
     }
+
+    public static bool HasCoverFile(string trackFilePath) => CoverFile.Find(trackFilePath) is not null;
 }

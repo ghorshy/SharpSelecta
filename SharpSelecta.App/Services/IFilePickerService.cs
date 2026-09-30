@@ -11,4 +11,6 @@ public interface IFilePickerService
     Task<string?> PickM3uImportFileAsync();
 
     Task<string?> PickM3uExportPathAsync(string suggestedFileName);
+
+    Task<string?> PickCoverImageAsync();
 }

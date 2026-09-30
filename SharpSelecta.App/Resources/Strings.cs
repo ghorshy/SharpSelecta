@@ -110,6 +110,13 @@ public static class Strings
     public static string FailedToLoadFile(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToLoadFileFormat"), reason);
 
+    public static string CoverImagePickerTitle => Get(nameof(CoverImagePickerTitle));
+    public static string CoverImageFileTypeName => Get(nameof(CoverImageFileTypeName));
+    public static string UnsupportedCoverImage => Get(nameof(UnsupportedCoverImage));
+
+    public static string FailedToSaveTags(string reason) =>
+        string.Format(CultureInfo.CurrentCulture, Get("FailedToSaveTagsFormat"), reason);
+
     public static string FailedToScanFolder(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToScanFolderFormat"), reason);
 

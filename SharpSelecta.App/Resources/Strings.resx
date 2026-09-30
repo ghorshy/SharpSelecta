@@ -205,6 +205,18 @@
   <data name="FailedToScanFolderFormat" xml:space="preserve">
     <value>Failed to scan folder: {0}</value>
   </data>
+  <data name="FailedToSaveTagsFormat" xml:space="preserve">
+    <value>Failed to save changes: {0}</value>
+  </data>
+  <data name="UnsupportedCoverImage" xml:space="preserve">
+    <value>Cover art must be a JPEG or PNG image.</value>
+  </data>
+  <data name="CoverImagePickerTitle" xml:space="preserve">
+    <value>Choose a cover image</value>
+  </data>
+  <data name="CoverImageFileTypeName" xml:space="preserve">
+    <value>Images (*.jpg, *.jpeg, *.png)</value>
+  </data>
   <data name="ColumnTrack" xml:space="preserve">
     <value>Track</value>
   </data>

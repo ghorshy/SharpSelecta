@@ -27,6 +27,8 @@ public abstract record CoverArtEdit
 
 public static class TrackTagEditor
 {
+    public static bool IsSupportedCoverImage(byte[] imageBytes) => CoverFile.TryGetExtension(imageBytes, out _);
+
     // Writes through a temp copy in the same directory and renames it over the original, so a
     // failed save can never leave the user's file half-written.
     public static void Write(string filePath, TrackTagEdits edits, CoverArtEdit? cover = null)

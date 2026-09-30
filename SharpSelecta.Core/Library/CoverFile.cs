@@ -25,10 +25,18 @@ internal static class CoverFile
     }
 
     // The extension is chosen from the image's magic bytes, not from wherever it came from.
-    public static string ExtensionFor(byte[] imageBytes) => imageBytes switch
+    public static bool TryGetExtension(byte[] imageBytes, out string extension)
     {
-        [0xFF, 0xD8, ..] => ".jpg",
-        [0x89, 0x50, 0x4E, 0x47, ..] => ".png",
-        _ => throw new ArgumentException("Cover art must be a JPEG or PNG image.", nameof(imageBytes)),
-    };
+        extension = imageBytes switch
+        {
+            [0xFF, 0xD8, ..] => ".jpg",
+            [0x89, 0x50, 0x4E, 0x47, ..] => ".png",
+            _ => "",
+        };
+        return extension.Length > 0;
+    }
+
+    public static string ExtensionFor(byte[] imageBytes) => TryGetExtension(imageBytes, out var extension)
+        ? extension
+        : throw new ArgumentException("Cover art must be a JPEG or PNG image.", nameof(imageBytes));
 }
