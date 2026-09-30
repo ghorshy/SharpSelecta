@@ -104,8 +104,7 @@
                                                               CommandParameter="{Binding}" />
                                                     <MenuItem Header="{x:Static res:Strings.AddToPlaylist}"
                                                               SubmenuOpened="OnAlbumAddToPlaylistSubmenuOpened">
-                                                        <MenuItem Header="{x:Static res:Strings.NewPlaylistEllipsis}" Click="OnAlbumAddToNewPlaylistClick" />
-                                                        <Separator IsVisible="{Binding Library.Playlists.Playlists.Count, Converter={x:Static converters:IntToBoolConverter.Instance}}" />
+                                                        <MenuItem Header="{x:Static res:Strings.NewPlaylistEllipsis}" />
                                                     </MenuItem>
                                                     <MenuItem Header="{Binding Library.ShowInFileManagerLabel}"
                                                               Command="{Binding Library.ShowAlbumInFileManagerCommand}"
@@ -176,8 +175,7 @@
                                                                                       CommandParameter="{Binding Track.Track}" />
                                                                             <MenuItem Header="{x:Static res:Strings.AddToPlaylist}"
                                                                                       SubmenuOpened="OnTrackAddToPlaylistSubmenuOpened">
-                                                                                <MenuItem Header="{x:Static res:Strings.NewPlaylistEllipsis}" Click="OnTrackAddToNewPlaylistClick" />
-                                                                                <Separator IsVisible="{Binding Track.Library.Playlists.Playlists.Count, Converter={x:Static converters:IntToBoolConverter.Instance}}" />
+                                                                                <MenuItem Header="{x:Static res:Strings.NewPlaylistEllipsis}" />
                                                                             </MenuItem>
                                                                             <MenuItem Header="{Binding Track.Library.ShowInFileManagerLabel}"
                                                                                       Command="{Binding Track.Library.ShowInFileManagerCommand}"

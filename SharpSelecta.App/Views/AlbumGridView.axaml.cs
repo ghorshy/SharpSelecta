@@ -79,17 +79,8 @@ public partial class AlbumGridView : UserControl
     {
         if (sender is MenuItem { DataContext: AlbumViewModel album } submenu)
         {
-            AddToPlaylistMenu.RebuildPlaylistEntries(submenu, album.Library.Playlists,
+            AddToPlaylistMenu.Rebuild(submenu, album.Library.Playlists,
                 playlistId => album.Library.AddAlbumToPlaylistCommand.Execute((album, playlistId)));
-        }
-    }
-
-    private async void OnAlbumAddToNewPlaylistClick(object? sender, RoutedEventArgs e)
-    {
-        if (sender is MenuItem { DataContext: AlbumViewModel album } &&
-            await AddToPlaylistMenu.PromptForNewPlaylistAsync(this, album.Library.Playlists) is { } newPlaylistId)
-        {
-            album.Library.AddAlbumToPlaylistCommand.Execute((album, newPlaylistId));
         }
     }
 
@@ -97,17 +88,8 @@ public partial class AlbumGridView : UserControl
     {
         if (sender is MenuItem { DataContext: AlbumTrackRowViewModel { Track: var trackItem } } submenu)
         {
-            AddToPlaylistMenu.RebuildPlaylistEntries(submenu, trackItem.Library.Playlists,
+            AddToPlaylistMenu.Rebuild(submenu, trackItem.Library.Playlists,
                 playlistId => trackItem.Library.AddToPlaylistCommand.Execute((trackItem.Track, playlistId)));
-        }
-    }
-
-    private async void OnTrackAddToNewPlaylistClick(object? sender, RoutedEventArgs e)
-    {
-        if (sender is MenuItem { DataContext: AlbumTrackRowViewModel { Track: var trackItem } } &&
-            await AddToPlaylistMenu.PromptForNewPlaylistAsync(this, trackItem.Library.Playlists) is { } newPlaylistId)
-        {
-            trackItem.Library.AddToPlaylistCommand.Execute((trackItem.Track, newPlaylistId));
         }
     }
 

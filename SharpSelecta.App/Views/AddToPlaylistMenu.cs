@@ -1,22 +1,19 @@
 using System;
-using System.Threading.Tasks;
 using Avalonia.Controls;
 using SharpSelecta.App.Resources;
 using SharpSelecta.App.ViewModels;
 
 namespace SharpSelecta.App.Views;
 
-// Shared by every "Add to playlist" submenu. The static "+ New playlist..." entry and its Separator
-// are declared in XAML (so the submenu is never empty at layout time); the per-playlist entries
-// after them are rebuilt on every open, same reasoning as LibraryView.axaml.cs's OnPlaylistsFlyoutOpening.
+// Shared by every "Add to playlist" submenu. XAML only declares a placeholder item (so the submenu
+// is never empty at layout time); the real entries - existing playlists first, then
+// "+ New playlist..." - are rebuilt on every open, same reasoning as
+// LibraryView.axaml.cs's OnPlaylistsFlyoutOpening.
 internal static class AddToPlaylistMenu
 {
-    public static void RebuildPlaylistEntries(MenuItem submenu, PlaylistsViewModel playlists, Action<string> addToPlaylist)
+    public static void Rebuild(MenuItem submenu, PlaylistsViewModel playlists, Action<string> addToPlaylist)
     {
-        while (submenu.Items.Count > 2)
-        {
-            submenu.Items.RemoveAt(submenu.Items.Count - 1);
-        }
+        submenu.Items.Clear();
 
         foreach (var playlist in playlists.Playlists)
         {
@@ -25,14 +22,24 @@ internal static class AddToPlaylistMenu
             playlistItem.Click += (_, _) => addToPlaylist(playlistId);
             submenu.Items.Add(playlistItem);
         }
-    }
 
-    public static async Task<string?> PromptForNewPlaylistAsync(Control owner, PlaylistsViewModel playlists)
-    {
-        if (TopLevel.GetTopLevel(owner) is not Window window)
-            return null;
+        if (playlists.Playlists.Count > 0)
+        {
+            submenu.Items.Add(new Separator());
+        }
 
-        var name = await TextPromptWindow.ShowAsync(window, Strings.NewPlaylistPromptTitle, Strings.PlaylistNamePrompt, initialValue: null);
-        return name is null ? null : playlists.CreatePlaylist(name);
+        var newPlaylistItem = new MenuItem { Header = Strings.NewPlaylistEllipsis };
+        newPlaylistItem.Click += async (_, _) =>
+        {
+            if (TopLevel.GetTopLevel(submenu) is not Window window)
+                return;
+
+            var name = await TextPromptWindow.ShowAsync(window, Strings.NewPlaylistPromptTitle, Strings.PlaylistNamePrompt, initialValue: null);
+            if (name is not null)
+            {
+                addToPlaylist(playlists.CreatePlaylist(name));
+            }
+        };
+        submenu.Items.Add(newPlaylistItem);
     }
 }

@@ -104,11 +104,7 @@
                                       IsEnabled="{Binding !IsMissing}"
                                       SubmenuOpened="OnAddToPlaylistSubmenuOpened">
                                 <MenuItem.Items>
-                                    <MenuItem Header="{x:Static res:Strings.NewPlaylistEllipsis}" Click="OnAddToNewPlaylistClick" />
-                                    <Separator IsVisible="{Binding Library.Playlists.Playlists.Count, Converter={x:Static converters:IntToBoolConverter.Instance}}" />
-                                    <!-- One MenuItem per existing playlist is appended after these two in
-                                         OnAddToPlaylistSubmenuOpened - MenuItem.ItemsSource nests into a
-                                         submenu instead of flat siblings, same as the top bar's Playlists flyout. -->
+                                    <MenuItem Header="{x:Static res:Strings.NewPlaylistEllipsis}" />
                                 </MenuItem.Items>
                             </MenuItem>
                             <MenuItem Header="{x:Static res:Strings.RemoveFromPlaylist}"

@@ -251,19 +251,8 @@ public sealed partial class TrackListView : UserControl
     {
         if (sender is MenuItem { DataContext: LibraryTrackViewModel trackItem } submenu && DataContext is LibraryViewModel vm)
         {
-            AddToPlaylistMenu.RebuildPlaylistEntries(submenu, vm.Playlists,
+            AddToPlaylistMenu.Rebuild(submenu, vm.Playlists,
                 playlistId => vm.AddToPlaylistCommand.Execute((trackItem.Track, playlistId)));
-        }
-    }
-
-    private async void OnAddToNewPlaylistClick(object? sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem { DataContext: LibraryTrackViewModel trackItem } || DataContext is not LibraryViewModel vm)
-            return;
-
-        if (await AddToPlaylistMenu.PromptForNewPlaylistAsync(this, vm.Playlists) is { } newPlaylistId)
-        {
-            vm.AddToPlaylistCommand.Execute((trackItem.Track, newPlaylistId));
         }
     }
 }
