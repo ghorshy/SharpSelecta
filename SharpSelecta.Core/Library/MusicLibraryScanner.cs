@@ -63,11 +63,18 @@ public static class MusicLibraryScanner
 
     public static Track? ReadTrackIfExists(string filePath) => File.Exists(filePath) ? ReadTrack(filePath) : null;
 
+    // Embedded art wins; a cover file in the track's folder is the fallback.
     public static byte[]? LoadArtwork(string filePath)
     {
         try
         {
-            return new AtlTrack(filePath).EmbeddedPictures.FirstOrDefault()?.PictureData;
+            var embedded = new AtlTrack(filePath).EmbeddedPictures.FirstOrDefault()?.PictureData;
+            if (embedded is { Length: > 0 })
+            {
+                return embedded;
+            }
+
+            return CoverFile.Find(filePath) is { } coverPath ? File.ReadAllBytes(coverPath) : null;
         }
         catch (Exception)
         {
