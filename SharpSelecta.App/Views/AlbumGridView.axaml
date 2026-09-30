@@ -26,6 +26,14 @@
         <Style Selector="Button.plain:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="Transparent" />
         </Style>
+        <Style Selector="ListBox.album-tracks">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ListBox.album-tracks ListBoxItem">
+            <Setter Property="Padding" Value="{styles:Spacing Left=XS, Right=XS, Top=XXS, Bottom=XXS}" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="CornerRadius" Value="4" />
+        </Style>
     </UserControl.Styles>
 
     <DockPanel LastChildFill="True">
@@ -147,12 +155,14 @@
                                                             Command="{Binding #Root.DataContext.ToggleExpandCommand}"
                                                             CommandParameter="{Binding}" />
 
-                                                    <ItemsControl ItemsSource="{Binding TrackRows}">
-                                                        <ItemsControl.ItemTemplate>
+                                                    <!-- ListBox rather than ItemsControl for the theme's hover/selected row
+                                                         highlight, same as the Queue - otherwise rows don't look clickable. -->
+                                                    <ListBox ItemsSource="{Binding TrackRows}" Classes="album-tracks"
+                                                             ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                                                        <ListBox.ItemTemplate>
                                                             <DataTemplate x:DataType="vm:AlbumTrackRowViewModel">
                                                                 <Grid ColumnDefinitions="Auto,*,Auto" DoubleTapped="OnExpandedTrackDoubleTapped"
-                                                                      Background="Transparent"
-                                                                      Margin="{styles:Spacing Bottom=XXS}">
+                                                                      Background="Transparent">
                                                                     <Grid.ContextMenu>
                                                                         <ContextMenu>
                                                                             <MenuItem Header="{x:Static res:Strings.PlayNow}"
@@ -183,8 +193,8 @@
                                                                     <TextBlock Grid.Column="2" Text="{Binding LengthDisplay}" Opacity="0.7" />
                                                                 </Grid>
                                                             </DataTemplate>
-                                                        </ItemsControl.ItemTemplate>
-                                                    </ItemsControl>
+                                                        </ListBox.ItemTemplate>
+                                                    </ListBox>
                                                 </DockPanel>
 
                                                 <Panel Grid.Column="1" Width="160" Height="160" Margin="{styles:Spacing Left=S}"
