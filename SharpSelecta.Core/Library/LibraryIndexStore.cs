@@ -12,7 +12,7 @@ public static class LibraryIndexStore
 
     private const string ColumnList =
         "FilePath, FolderPath, DisplayName, TrackNumber, Title, Artist, Album, AlbumArtist, Year, " +
-        "DurationSeconds, SampleRate, BitDepth, Bitrate, FileType, LastWriteTimeUtcTicks, FileSizeBytes, DateAddedUtc";
+        "DurationSeconds, SampleRate, BitDepth, Bitrate, FileType, LastWriteTimeUtcTicks, FileSizeBytes, DateAddedUtc, Genre, Comment";
 
     public static IReadOnlyList<Track> LoadIndexed(string settingsFilePath, IReadOnlyList<string> folderPaths)
     {
@@ -257,7 +257,7 @@ public static class LibraryIndexStore
         using var connection = OpenConnection(indexFilePath);
         using var command = connection.CreateCommand();
         command.CommandText = $"""
-            SELECT p.Position, p.FilePath, t.FilePath, t.FolderPath, t.DisplayName, t.TrackNumber, t.Title, t.Artist, t.Album, t.AlbumArtist, t.Year, t.DurationSeconds, t.SampleRate, t.BitDepth, t.Bitrate, t.FileType, t.LastWriteTimeUtcTicks, t.FileSizeBytes, t.DateAddedUtc
+            SELECT p.Position, p.FilePath, t.FilePath, t.FolderPath, t.DisplayName, t.TrackNumber, t.Title, t.Artist, t.Album, t.AlbumArtist, t.Year, t.DurationSeconds, t.SampleRate, t.BitDepth, t.Bitrate, t.FileType, t.LastWriteTimeUtcTicks, t.FileSizeBytes, t.DateAddedUtc, t.Genre, t.Comment
             FROM PlaylistTracks p
             LEFT JOIN Tracks t ON t.FilePath = p.FilePath
             WHERE p.PlaylistId = @PlaylistId
@@ -296,6 +296,8 @@ public static class LibraryIndexStore
         Bitrate = reader.GetInt32(14),
         FileType = reader.IsDBNull(15) ? null : reader.GetString(15),
         DateAddedUtc = new DateTime(reader.GetInt64(18), DateTimeKind.Utc),
+        Genre = reader.IsDBNull(19) ? null : reader.GetString(19),
+        Comment = reader.IsDBNull(20) ? null : reader.GetString(20),
     };
 
     public static void ReplacePlaylistTracks(string settingsFilePath, string playlistId, IReadOnlyList<string> filePathsInOrder)
@@ -371,10 +373,12 @@ public static class LibraryIndexStore
         command.CommandText = $"""
             INSERT INTO Tracks ({ColumnList})
             VALUES (@FilePath, @FolderPath, @DisplayName, @TrackNumber, @Title, @Artist, @Album, @AlbumArtist, @Year,
-                    @DurationSeconds, @SampleRate, @BitDepth, @Bitrate, @FileType, @LastWriteTimeUtcTicks, @FileSizeBytes, @DateAddedUtc)
+                    @DurationSeconds, @SampleRate, @BitDepth, @Bitrate, @FileType, @LastWriteTimeUtcTicks, @FileSizeBytes, @DateAddedUtc,
+                    @Genre, @Comment)
             ON CONFLICT(FilePath) DO UPDATE SET
                 FolderPath = excluded.FolderPath, DisplayName = excluded.DisplayName, TrackNumber = excluded.TrackNumber,
                 Title = excluded.Title, Artist = excluded.Artist, Album = excluded.Album, AlbumArtist = excluded.AlbumArtist,
+                Genre = excluded.Genre, Comment = excluded.Comment,
                 Year = excluded.Year, DurationSeconds = excluded.DurationSeconds, SampleRate = excluded.SampleRate,
                 BitDepth = excluded.BitDepth, Bitrate = excluded.Bitrate, FileType = excluded.FileType,
                 LastWriteTimeUtcTicks = excluded.LastWriteTimeUtcTicks, FileSizeBytes = excluded.FileSizeBytes,
@@ -392,6 +396,8 @@ public static class LibraryIndexStore
         var pArtist = command.Parameters.Add("@Artist", SqliteType.Text);
         var pAlbum = command.Parameters.Add("@Album", SqliteType.Text);
         var pAlbumArtist = command.Parameters.Add("@AlbumArtist", SqliteType.Text);
+        var pGenre = command.Parameters.Add("@Genre", SqliteType.Text);
+        var pComment = command.Parameters.Add("@Comment", SqliteType.Text);
         var pYear = command.Parameters.Add("@Year", SqliteType.Integer);
         var pDurationSeconds = command.Parameters.Add("@DurationSeconds", SqliteType.Real);
         var pSampleRate = command.Parameters.Add("@SampleRate", SqliteType.Integer);
@@ -412,6 +418,8 @@ public static class LibraryIndexStore
             pArtist.Value = (object?)track.Artist ?? DBNull.Value;
             pAlbum.Value = (object?)track.Album ?? DBNull.Value;
             pAlbumArtist.Value = (object?)track.AlbumArtist ?? DBNull.Value;
+            pGenre.Value = (object?)track.Genre ?? DBNull.Value;
+            pComment.Value = (object?)track.Comment ?? DBNull.Value;
             pYear.Value = (object?)track.Year ?? DBNull.Value;
             pDurationSeconds.Value = track.Duration.TotalSeconds;
             pSampleRate.Value = track.SampleRate;
@@ -487,6 +495,8 @@ public static class LibraryIndexStore
                 Bitrate = reader.GetInt32(12),
                 FileType = reader.IsDBNull(13) ? null : reader.GetString(13),
                 DateAddedUtc = new DateTime(reader.GetInt64(16), DateTimeKind.Utc),
+                Genre = reader.IsDBNull(17) ? null : reader.GetString(17),
+                Comment = reader.IsDBNull(18) ? null : reader.GetString(18),
             };
             var lastWriteTimeUtc = new DateTime(reader.GetInt64(14), DateTimeKind.Utc);
             var fileSizeBytes = reader.GetInt64(15);
@@ -518,7 +528,9 @@ public static class LibraryIndexStore
                 LastWriteTimeUtcTicks INTEGER NOT NULL,
                 FileSizeBytes         INTEGER NOT NULL,
                 WaveformPeaks         BLOB    NULL,
-                DateAddedUtc          INTEGER NOT NULL DEFAULT 0
+                DateAddedUtc          INTEGER NOT NULL DEFAULT 0,
+                Genre                 TEXT    NULL,
+                Comment               TEXT    NULL
             );
             CREATE INDEX IF NOT EXISTS IX_Tracks_FolderPath ON Tracks(FolderPath);
             """;
@@ -544,6 +556,19 @@ public static class LibraryIndexStore
             using var backfill = connection.CreateCommand();
             backfill.CommandText = "UPDATE Tracks SET DateAddedUtc = LastWriteTimeUtcTicks WHERE DateAddedUtc = 0";
             backfill.ExecuteNonQuery();
+        }
+
+        if (!HasColumn(connection, "Tracks", "Genre"))
+        {
+            using var alter = connection.CreateCommand();
+            // Zeroing LastWriteTimeUtcTicks makes the next Reconcile treat every pre-existing row as
+            // changed, so Genre/Comment get read from the files instead of staying NULL forever.
+            alter.CommandText = """
+                ALTER TABLE Tracks ADD COLUMN Genre TEXT NULL;
+                ALTER TABLE Tracks ADD COLUMN Comment TEXT NULL;
+                UPDATE Tracks SET LastWriteTimeUtcTicks = 0;
+                """;
+            alter.ExecuteNonQuery();
         }
 
         using (var playlistCommand = connection.CreateCommand())

@@ -513,6 +513,97 @@ public class LibraryIndexStoreTests
     }
 
     [Test]
+    public async Task Reconcile_PersistsGenreAndComment()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
+        try
+        {
+            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+            CopyFixtureInto(root.FullName, "tagged-track.mp3");
+            TrackTagEditor.Write(trackPath, new TrackTagEdits("T", "A", null, "Al", "Jazz", "A comment", 2001, 3));
+
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+            File.Delete(trackPath);
+
+            var hydrated = LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName]);
+            await Assert.That(hydrated[0].Genre).IsEqualTo("Jazz");
+            await Assert.That(hydrated[0].Comment).IsEqualTo("A comment");
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task Reconcile_OnAnIndexFileFromBeforeGenreAndCommentExisted_ReReadsEveryRowSoTheNewColumnsGetFilled()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
+        try
+        {
+            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+            CopyFixtureInto(root.FullName, "tagged-track.mp3");
+            TrackTagEditor.Write(trackPath, new TrackTagEdits("T", "A", null, "Al", "Jazz", "A comment", 2001, 3));
+            var fileInfo = new FileInfo(trackPath);
+
+            var indexFilePath = IndexFilePath(settingsPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(indexFilePath)!);
+            await using (var connection = new SqliteConnection($"Data Source={indexFilePath}"))
+            {
+                await connection.OpenAsync();
+                var command = connection.CreateCommand();
+                // Mtime and size match the file on disk, so without the migration forcing a re-read
+                // Reconcile would happily reuse this row (and its missing Genre) forever.
+                command.CommandText = """
+                    CREATE TABLE Tracks (
+                        FilePath              TEXT    NOT NULL PRIMARY KEY,
+                        FolderPath            TEXT    NOT NULL,
+                        DisplayName           TEXT    NOT NULL,
+                        TrackNumber           INTEGER NULL,
+                        Title                 TEXT    NULL,
+                        Artist                TEXT    NULL,
+                        Album                 TEXT    NULL,
+                        AlbumArtist           TEXT    NULL,
+                        Year                  INTEGER NULL,
+                        DurationSeconds       REAL    NOT NULL,
+                        SampleRate            INTEGER NOT NULL,
+                        BitDepth              INTEGER NOT NULL,
+                        Bitrate               INTEGER NOT NULL,
+                        FileType              TEXT    NULL,
+                        LastWriteTimeUtcTicks INTEGER NOT NULL,
+                        FileSizeBytes         INTEGER NOT NULL,
+                        WaveformPeaks         BLOB    NULL,
+                        DateAddedUtc          INTEGER NOT NULL DEFAULT 0
+                    );
+                    INSERT INTO Tracks (FilePath, FolderPath, DisplayName, DurationSeconds, SampleRate, BitDepth, Bitrate, LastWriteTimeUtcTicks, FileSizeBytes, DateAddedUtc)
+                    VALUES (@FilePath, @FolderPath, 'T', 0, 0, 0, 0, @Ticks, @Size, 1);
+                    """;
+                command.Parameters.AddWithValue("@FilePath", trackPath);
+                command.Parameters.AddWithValue("@FolderPath", root.FullName);
+                command.Parameters.AddWithValue("@Ticks", fileInfo.LastWriteTimeUtc.Ticks);
+                command.Parameters.AddWithValue("@Size", fileInfo.Length);
+                await command.ExecuteNonQueryAsync();
+            }
+
+            var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+            await Assert.That(result.Tracks[0].Genre).IsEqualTo("Jazz");
+            await Assert.That(result.Tracks[0].Comment).IsEqualTo("A comment");
+            await Assert.That(result.Tracks[0].DateAddedUtc).IsEqualTo(new DateTime(1, DateTimeKind.Utc));
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
     public async Task CreatePlaylist_ThenListPlaylists_ReturnsItWithAGeneratedId()
     {
         var settingsPath = CreateTempSettingsPath();
