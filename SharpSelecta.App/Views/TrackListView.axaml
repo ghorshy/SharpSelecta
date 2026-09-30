@@ -115,6 +115,10 @@
                                       Command="{Binding Library.ShowInFileManagerCommand}"
                                       CommandParameter="{Binding Track}"
                                       IsEnabled="{Binding !IsMissing}" />
+                            <Separator />
+                            <MenuItem Header="{x:Static res:Strings.Properties}"
+                                      Click="OnPropertiesClick"
+                                      IsEnabled="{Binding !IsMissing}" />
                         </ContextMenu>
                     </Setter.Value>
                 </Setter>

@@ -180,6 +180,9 @@
                                                                             <MenuItem Header="{Binding Track.Library.ShowInFileManagerLabel}"
                                                                                       Command="{Binding Track.Library.ShowInFileManagerCommand}"
                                                                                       CommandParameter="{Binding Track.Track}" />
+                                                                            <Separator />
+                                                                            <MenuItem Header="{x:Static res:Strings.Properties}"
+                                                                                      Click="OnTrackPropertiesClick" />
                                                                         </ContextMenu>
                                                                     </Grid.ContextMenu>
                                                                     <TextBlock Grid.Column="0" Text="{Binding TrackNumber}" Width="30" Opacity="0.7" />

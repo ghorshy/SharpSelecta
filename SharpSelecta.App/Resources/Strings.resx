@@ -217,6 +217,54 @@
   <data name="CoverImageFileTypeName" xml:space="preserve">
     <value>Images (*.jpg, *.jpeg, *.png)</value>
   </data>
+  <data name="Properties" xml:space="preserve">
+    <value>Properties</value>
+  </data>
+  <data name="TabTagEditor" xml:space="preserve">
+    <value>Tag editor</value>
+  </data>
+  <data name="LabelAlbumArtist" xml:space="preserve">
+    <value>Album artist</value>
+  </data>
+  <data name="LabelGenre" xml:space="preserve">
+    <value>Genre</value>
+  </data>
+  <data name="LabelComments" xml:space="preserve">
+    <value>Comments</value>
+  </data>
+  <data name="LabelTrackNumber" xml:space="preserve">
+    <value>Track #</value>
+  </data>
+  <data name="LabelDuration" xml:space="preserve">
+    <value>Duration</value>
+  </data>
+  <data name="LabelDateAdded" xml:space="preserve">
+    <value>Date added</value>
+  </data>
+  <data name="LabelLocation" xml:space="preserve">
+    <value>Location</value>
+  </data>
+  <data name="LabelCover" xml:space="preserve">
+    <value>Cover</value>
+  </data>
+  <data name="CoverChooseImage" xml:space="preserve">
+    <value>Choose image...</value>
+  </data>
+  <data name="CoverRemove" xml:space="preserve">
+    <value>Remove cover</value>
+  </data>
+  <data name="CoverSaveAsSeparateFile" xml:space="preserve">
+    <value>Save as a separate cover file</value>
+  </data>
+  <data name="CoverHint" xml:space="preserve">
+    <value>Right-click or drop an image here</value>
+  </data>
+  <data name="RemoveCoverConfirmTitle" xml:space="preserve">
+    <value>Remove cover</value>
+  </data>
+  <data name="RemoveCoverConfirmMessage" xml:space="preserve">
+    <value>This also deletes the cover file in this folder, which is shared by every track in it. Remove it?</value>
+  </data>
   <data name="ColumnTrack" xml:space="preserve">
     <value>Track</value>
   </data>

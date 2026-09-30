@@ -93,6 +93,14 @@ public partial class AlbumGridView : UserControl
         }
     }
 
+    private async void OnTrackPropertiesClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { DataContext: AlbumTrackRowViewModel { Track: var trackItem } })
+        {
+            await TrackPropertiesWindow.ShowAsync(this, trackItem.Library, trackItem.Track);
+        }
+    }
+
     private async void OnExpandedArtworkDoubleTapped(object? sender, TappedEventArgs e)
     {
         if (sender is not Control { DataContext: AlbumViewModel { ArtworkBytes: not null } album })

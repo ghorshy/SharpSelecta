@@ -110,6 +110,22 @@ public static class Strings
     public static string FailedToLoadFile(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToLoadFileFormat"), reason);
 
+    public static string Properties => Get(nameof(Properties));
+    public static string TabTagEditor => Get(nameof(TabTagEditor));
+    public static string LabelAlbumArtist => Get(nameof(LabelAlbumArtist));
+    public static string LabelGenre => Get(nameof(LabelGenre));
+    public static string LabelComments => Get(nameof(LabelComments));
+    public static string LabelTrackNumber => Get(nameof(LabelTrackNumber));
+    public static string LabelDuration => Get(nameof(LabelDuration));
+    public static string LabelDateAdded => Get(nameof(LabelDateAdded));
+    public static string LabelLocation => Get(nameof(LabelLocation));
+    public static string LabelCover => Get(nameof(LabelCover));
+    public static string CoverChooseImage => Get(nameof(CoverChooseImage));
+    public static string CoverRemove => Get(nameof(CoverRemove));
+    public static string CoverSaveAsSeparateFile => Get(nameof(CoverSaveAsSeparateFile));
+    public static string CoverHint => Get(nameof(CoverHint));
+    public static string RemoveCoverConfirmTitle => Get(nameof(RemoveCoverConfirmTitle));
+    public static string RemoveCoverConfirmMessage => Get(nameof(RemoveCoverConfirmMessage));
     public static string CoverImagePickerTitle => Get(nameof(CoverImagePickerTitle));
     public static string CoverImageFileTypeName => Get(nameof(CoverImageFileTypeName));
     public static string UnsupportedCoverImage => Get(nameof(UnsupportedCoverImage));

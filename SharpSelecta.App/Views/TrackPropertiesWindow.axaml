@@ -1,0 +1,138 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SharpSelecta.App.ViewModels"
+        xmlns:views="using:SharpSelecta.App.Views"
+        xmlns:res="using:SharpSelecta.App.Resources"
+        xmlns:converters="using:SharpSelecta.App.Converters"
+        xmlns:styles="using:SharpSelecta.App.Styles"
+        xmlns:conv="using:Avalonia.Data.Converters"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="760" d:DesignHeight="600"
+        x:Class="SharpSelecta.App.Views.TrackPropertiesWindow"
+        x:DataType="vm:TrackPropertiesViewModel"
+        Title="{x:Static res:Strings.Properties}"
+        Width="760" Height="620" MinWidth="640" MinHeight="560"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Styles>
+        <Style Selector="TextBox.invalid /template/ Border#PART_BorderElement">
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+        </Style>
+        <Style Selector="TextBlock.field-label">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Opacity" Value="0.7" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="*,Auto,Auto">
+        <TabControl Grid.Row="0">
+            <TabItem Header="{x:Static res:Strings.TabTagEditor}" FontSize="{DynamicResource ControlContentThemeFontSize}">
+                <Grid RowDefinitions="*,Auto" Margin="{styles:Spacing Uniform=M}">
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="{styles:SpacingValue L}">
+                        <Grid Grid.Column="0" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*"
+                              ColumnSpacing="{styles:SpacingValue S}" RowSpacing="{styles:SpacingValue S}">
+                            <TextBlock Grid.Row="0" Classes="field-label" Text="{x:Static res:Strings.ColumnTitle}" />
+                            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Title}" />
+
+                            <TextBlock Grid.Row="1" Classes="field-label" Text="{x:Static res:Strings.ColumnArtist}" />
+                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Artist}" />
+
+                            <TextBlock Grid.Row="2" Classes="field-label" Text="{x:Static res:Strings.LabelAlbumArtist}" />
+                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding AlbumArtist}" />
+
+                            <TextBlock Grid.Row="3" Classes="field-label" Text="{x:Static res:Strings.ColumnAlbum}" />
+                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Album}" />
+
+                            <TextBlock Grid.Row="4" Classes="field-label" Text="{x:Static res:Strings.LabelGenre}" />
+                            <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Genre}" />
+
+                            <TextBlock Grid.Row="5" Classes="field-label" Text="{x:Static res:Strings.ColumnYear}" />
+                            <TextBox Grid.Row="5" Grid.Column="1" Width="100" HorizontalAlignment="Left"
+                                     Text="{Binding YearText}" Classes.invalid="{Binding HasYearError}" />
+
+                            <TextBlock Grid.Row="6" Classes="field-label" Text="{x:Static res:Strings.LabelTrackNumber}" />
+                            <TextBox Grid.Row="6" Grid.Column="1" Width="100" HorizontalAlignment="Left"
+                                     Text="{Binding TrackNumberText}" Classes.invalid="{Binding HasTrackNumberError}" />
+
+                            <TextBlock Grid.Row="7" VerticalAlignment="Top" Margin="{styles:Spacing Top=XS}"
+                                       Classes="field-label" Text="{x:Static res:Strings.LabelComments}" />
+                            <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding Comment}"
+                                     AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" />
+                        </Grid>
+
+                        <StackPanel Grid.Column="1" Width="220" Spacing="{styles:SpacingValue S}">
+                            <TextBlock Classes="field-label" Text="{x:Static res:Strings.LabelCover}" />
+                            <!-- Right-click: choose/remove. Dropping an image file onto it also sets the cover. -->
+                            <Border x:Name="CoverBox" Width="220" Height="220" ClipToBounds="True" CornerRadius="4"
+                                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+                                    DragDrop.AllowDrop="True">
+                                <Border.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="{x:Static res:Strings.CoverChooseImage}"
+                                                  Command="{Binding ChangeCoverCommand}" />
+                                        <MenuItem Header="{x:Static res:Strings.CoverRemove}"
+                                                  Click="OnRemoveCoverClick"
+                                                  IsEnabled="{Binding HasCover}" />
+                                    </ContextMenu>
+                                </Border.ContextMenu>
+                                <Panel>
+                                    <Image Source="{Binding CoverBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
+                                           IsVisible="{Binding HasCover}"
+                                           Stretch="Uniform" />
+                                    <views:AlbumCoverPlaceholderIcon IsVisible="{Binding !HasCover}" />
+                                </Panel>
+                            </Border>
+                            <TextBlock Text="{x:Static res:Strings.CoverHint}" Opacity="0.5" TextWrapping="Wrap" />
+                            <CheckBox Content="{x:Static res:Strings.CoverSaveAsSeparateFile}"
+                                      IsChecked="{Binding SaveCoverAsSeparateFile}"
+                                      IsEnabled="{Binding HasCover}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Read-only file info. -->
+                    <Border Grid.Row="1" Margin="{styles:Spacing Top=M}" Padding="{styles:Spacing Top=M}"
+                            BorderThickness="0,1,0,0"
+                            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+                        <StackPanel Spacing="{styles:SpacingValue S}">
+                            <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto,Auto"
+                                  ColumnSpacing="{styles:SpacingValue S}" RowSpacing="{styles:SpacingValue XS}">
+                                <TextBlock Grid.Row="0" Grid.Column="0" Classes="field-label" Text="{x:Static res:Strings.LabelDuration}" />
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding DurationDisplay}" />
+                                <TextBlock Grid.Row="0" Grid.Column="2" Classes="field-label" Text="{x:Static res:Strings.ColumnFileType}" />
+                                <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding FileTypeDisplay}" />
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Classes="field-label" Text="{x:Static res:Strings.ColumnBitrate}" />
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding BitrateDisplay}" />
+                                <TextBlock Grid.Row="1" Grid.Column="2" Classes="field-label" Text="{x:Static res:Strings.ColumnSampleRate}" />
+                                <TextBlock Grid.Row="1" Grid.Column="3" Text="{Binding SampleRateDisplay}" />
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Classes="field-label" Text="{x:Static res:Strings.LabelDateAdded}" />
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DateAddedDisplay}" />
+                            </Grid>
+
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{styles:SpacingValue S}">
+                                <TextBlock Grid.Column="0" Classes="field-label" Text="{x:Static res:Strings.LabelLocation}" />
+                                <SelectableTextBlock Grid.Column="1" Text="{Binding Location}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                <Button Grid.Column="2" Content="{Binding ShowInFileManagerLabel}"
+                                        Command="{Binding ShowInFileManagerCommand}" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <TextBlock Grid.Row="1" Text="{Binding ErrorMessage}" TextWrapping="Wrap"
+                   Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                   Margin="{styles:Spacing Left=M, Right=M}"
+                   IsVisible="{Binding ErrorMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right"
+                    Spacing="{styles:SpacingValue S}" Margin="{styles:Spacing Uniform=M}">
+            <Button Content="{x:Static res:Strings.Ok}" Command="{Binding OkCommand}" IsDefault="True" />
+            <Button Content="{x:Static res:Strings.Cancel}" Command="{Binding CancelCommand}" IsCancel="True" />
+            <Button Content="{x:Static res:Strings.Apply}" Command="{Binding ApplyCommand}" />
+        </StackPanel>
+    </Grid>
+</Window>

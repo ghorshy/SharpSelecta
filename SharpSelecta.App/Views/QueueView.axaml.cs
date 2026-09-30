@@ -2,6 +2,7 @@ using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using SharpSelecta.App.ViewModels;
 
@@ -152,5 +153,15 @@ public partial class QueueView : UserControl
         }
 
         vm.MoveEntry(draggedItem, targetItem);
+    }
+
+    // The queue has no library of its own; the window's MainWindowViewModel owns it.
+    private async void OnPropertiesClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { DataContext: QueueEntryViewModel item } &&
+            TopLevel.GetTopLevel(this)?.DataContext is MainWindowViewModel { Library: var library })
+        {
+            await TrackPropertiesWindow.ShowAsync(this, library, item.Entry.Track);
+        }
     }
 }

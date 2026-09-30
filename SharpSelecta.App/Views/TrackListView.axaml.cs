@@ -255,4 +255,12 @@ public sealed partial class TrackListView : UserControl
                 playlistId => vm.AddToPlaylistCommand.Execute((trackItem.Track, playlistId)));
         }
     }
+
+    private async void OnPropertiesClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { DataContext: LibraryTrackViewModel item })
+        {
+            await TrackPropertiesWindow.ShowAsync(this, item.Library, item.Track);
+        }
+    }
 }

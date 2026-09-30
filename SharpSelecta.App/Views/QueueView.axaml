@@ -40,6 +40,9 @@
                                 <MenuItem Header="{x:Static res:Strings.RemoveFromQueue}"
                                           Command="{Binding Queue.RemoveFromQueueCommand}"
                                           CommandParameter="{Binding}" />
+                                <Separator />
+                                <MenuItem Header="{x:Static res:Strings.Properties}"
+                                          Click="OnPropertiesClick" />
                             </ContextMenu>
                         </Setter.Value>
                     </Setter>
