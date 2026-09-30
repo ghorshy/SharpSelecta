@@ -510,13 +510,19 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     private Task AddToQueue(Track track) => _playbackControls.AddToQueue(ResolveSelection(track));
 
     [RelayCommand]
-    private void AddToPlaylist((Track Track, string PlaylistId) parameter)
+    private void AddToPlaylist((Track Track, string PlaylistId) parameter) =>
+        AddTracksToPlaylist(ResolveSelection(parameter.Track), parameter.PlaylistId);
+
+    [RelayCommand]
+    private void AddAlbumToPlaylist((AlbumViewModel Album, string PlaylistId) parameter) =>
+        AddTracksToPlaylist(parameter.Album.UnderlyingTracks, parameter.PlaylistId);
+
+    private void AddTracksToPlaylist(IReadOnlyList<Track> tracks, string playlistId)
     {
-        var tracksToAdd = ResolveSelection(parameter.Track);
         var previouslySelected = Playlists.SelectedPlaylistId;
-        Playlists.SelectPlaylist(parameter.PlaylistId);
-        Playlists.AddTracksToSelectedPlaylist(tracksToAdd);
-        if (previouslySelected != parameter.PlaylistId)
+        Playlists.SelectPlaylist(playlistId);
+        Playlists.AddTracksToSelectedPlaylist(tracks);
+        if (previouslySelected != playlistId)
         {
             Playlists.SelectPlaylist(previouslySelected);
         }
@@ -537,8 +543,11 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     // A right-click inside the current multi-selection acts on the whole (ordered) selection;
     // a right-click outside it acts on just the clicked track, like most file browsers.
+    // The cover art views have no multi-selection, so a stale list-view selection must not leak in.
     private IReadOnlyList<Track> ResolveSelection(Track clickedTrack) =>
-        _selectedTracksInOrder.Contains(clickedTrack) ? _selectedTracksInOrder : [clickedTrack];
+        !IsAlbumGridViewVisible && !IsRecentlyAddedCoverArtVisible && _selectedTracksInOrder.Contains(clickedTrack)
+            ? _selectedTracksInOrder
+            : [clickedTrack];
 
     [RelayCommand]
     private Task PlayAlbumNowAsync(AlbumViewModel album) => _playbackControls.PlayNowAsync(album.UnderlyingTracks);

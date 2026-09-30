@@ -644,6 +644,51 @@ public class LibraryViewModelTests
     }
 
     [Test]
+    public async Task AddAlbumToPlaylistCommand_AppendsEveryAlbumTrackInAlbumOrder()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+        try
+        {
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+            var vm = CreateViewModel(out _, out _, out _, settingsPath);
+            var existing = new Track("/music/existing.mp3", "existing.mp3");
+            var albumTracks = new[] { new Track("/music/01.mp3", "01.mp3"), new Track("/music/02.mp3", "02.mp3") }
+                .Select(t => new LibraryTrackViewModel(t, vm)).ToList();
+            var album = new AlbumViewModel("Album", "Artist", null, albumTracks, vm);
+            var playlistId = vm.Playlists.CreatePlaylist("Target");
+            vm.Playlists.AddTracksToSelectedPlaylist([existing]);
+
+            vm.AddAlbumToPlaylistCommand.Execute((album, playlistId));
+
+            var persistedOrder = vm.Playlists.Tracks.Select(t => t.Track.FilePath).ToList();
+            await Assert.That(persistedOrder).IsEquivalentTo(["/music/existing.mp3", "/music/01.mp3", "/music/02.mp3"]);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task PlayNextCommand_InCoverArtView_IgnoresAStaleListSelection()
+    {
+        var vm = CreateViewModel(out _, out _, out var playbackControls);
+        var selectedTrack = new Track("/music/selected.mp3", "selected.mp3");
+        var clickedTrack = new Track("/music/clicked.mp3", "clicked.mp3");
+        vm.Tracks.Add(new LibraryTrackViewModel(selectedTrack, vm));
+        vm.Tracks.Add(new LibraryTrackViewModel(clickedTrack, vm));
+        vm.SetSelectedTracksInOrder([selectedTrack, clickedTrack]);
+        vm.ViewMode = LibraryViewMode.AlbumGrid;
+
+        vm.PlayNextCommand.Execute(clickedTrack);
+
+        await Assert.That(playbackControls.QueueEntries.Count).IsEqualTo(1);
+        await Assert.That(playbackControls.QueueEntries[0].Track).IsEqualTo(clickedTrack);
+    }
+
+    [Test]
     public async Task RemoveFromPlaylistCommand_RemovesOnlyTheClickedTrackFromTheCurrentlySelectedPlaylist()
     {
         var settingsPath = CreateTempSettingsPath();

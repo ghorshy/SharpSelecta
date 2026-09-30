@@ -94,6 +94,11 @@
                                                     <MenuItem Header="{x:Static res:Strings.AddToQueue}"
                                                               Command="{Binding Library.AddAlbumToQueueCommand}"
                                                               CommandParameter="{Binding}" />
+                                                    <MenuItem Header="{x:Static res:Strings.AddToPlaylist}"
+                                                              SubmenuOpened="OnAlbumAddToPlaylistSubmenuOpened">
+                                                        <MenuItem Header="{x:Static res:Strings.NewPlaylistEllipsis}" Click="OnAlbumAddToNewPlaylistClick" />
+                                                        <Separator IsVisible="{Binding Library.Playlists.Playlists.Count, Converter={x:Static converters:IntToBoolConverter.Instance}}" />
+                                                    </MenuItem>
                                                     <MenuItem Header="{Binding Library.ShowInFileManagerLabel}"
                                                               Command="{Binding Library.ShowAlbumInFileManagerCommand}"
                                                               CommandParameter="{Binding}" />
@@ -146,7 +151,29 @@
                                                         <ItemsControl.ItemTemplate>
                                                             <DataTemplate x:DataType="vm:AlbumTrackRowViewModel">
                                                                 <Grid ColumnDefinitions="Auto,*,Auto" DoubleTapped="OnExpandedTrackDoubleTapped"
+                                                                      Background="Transparent"
                                                                       Margin="{styles:Spacing Bottom=XXS}">
+                                                                    <Grid.ContextMenu>
+                                                                        <ContextMenu>
+                                                                            <MenuItem Header="{x:Static res:Strings.PlayNow}"
+                                                                                      Command="{Binding Track.Library.PlayNowCommand}"
+                                                                                      CommandParameter="{Binding Track.Track}" />
+                                                                            <MenuItem Header="{x:Static res:Strings.PlayNext}"
+                                                                                      Command="{Binding Track.Library.PlayNextCommand}"
+                                                                                      CommandParameter="{Binding Track.Track}" />
+                                                                            <MenuItem Header="{x:Static res:Strings.AddToQueue}"
+                                                                                      Command="{Binding Track.Library.AddToQueueCommand}"
+                                                                                      CommandParameter="{Binding Track.Track}" />
+                                                                            <MenuItem Header="{x:Static res:Strings.AddToPlaylist}"
+                                                                                      SubmenuOpened="OnTrackAddToPlaylistSubmenuOpened">
+                                                                                <MenuItem Header="{x:Static res:Strings.NewPlaylistEllipsis}" Click="OnTrackAddToNewPlaylistClick" />
+                                                                                <Separator IsVisible="{Binding Track.Library.Playlists.Playlists.Count, Converter={x:Static converters:IntToBoolConverter.Instance}}" />
+                                                                            </MenuItem>
+                                                                            <MenuItem Header="{Binding Track.Library.ShowInFileManagerLabel}"
+                                                                                      Command="{Binding Track.Library.ShowInFileManagerCommand}"
+                                                                                      CommandParameter="{Binding Track.Track}" />
+                                                                        </ContextMenu>
+                                                                    </Grid.ContextMenu>
                                                                     <TextBlock Grid.Column="0" Text="{Binding TrackNumber}" Width="30" Opacity="0.7" />
                                                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{styles:SpacingValue XXS}">
                                                                         <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
