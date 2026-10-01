@@ -229,7 +229,14 @@ public partial class AlbumGridViewModel : ViewModelBase
         _ = LoadAlbumArtworkAsync(groups);
     }
 
-    private string ArtworkCacheDirectory => Path.Combine(Path.GetDirectoryName(_settingsFilePath)!, "artwork-cache");
+    private string ArtworkCacheDirectory => ArtworkCacheDirectoryFor(_settingsFilePath);
+
+    public static string ArtworkCacheDirectoryFor(string settingsFilePath) =>
+        Path.Combine(Path.GetDirectoryName(settingsFilePath)!, "artwork-cache");
+
+    // Same key the albums are grouped (and their thumbnails cached) by.
+    public static string ArtworkKey(Track track) =>
+        $"{(track.Album ?? string.Empty).Trim()}{(track.AlbumArtist ?? string.Empty).Trim()}";
 
     [RelayCommand]
     private void ClearArtworkCache()

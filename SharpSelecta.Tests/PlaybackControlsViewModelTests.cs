@@ -925,4 +925,36 @@ public class PlaybackControlsViewModelTests
 
         await Assert.That(vm.WaveformPeaks).IsEquivalentTo([0.7f]);
     }
+
+    [Test]
+    public async Task RefreshTrackMetadataAsync_UpdatesTheCurrentTrackAndDisplayLabel()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        var track = new Track("/music/a.mp3", "a.mp3");
+        await vm.PlayNowAsync(track);
+
+        var updated = track with { DisplayName = "Renamed", Title = "Renamed", Artist = "Someone" };
+        await vm.RefreshTrackMetadataAsync(updated);
+
+        await Assert.That(vm.CurrentTrack).IsEqualTo(updated);
+        await Assert.That(vm.DisplayFileName).IsEqualTo("Renamed");
+        await Assert.That(vm.DisplayTrackLabel).IsEqualTo("Someone - Renamed");
+        await Assert.That(queue.Entries[0].Track).IsEqualTo(updated);
+    }
+
+    [Test]
+    public async Task RefreshTrackMetadataAsync_ForAQueuedButNotCurrentTrack_OnlyUpdatesTheQueue()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        var current = new Track("/music/a.mp3", "a.mp3");
+        var other = new Track("/music/b.mp3", "b.mp3");
+        await vm.PlayNowAsync(current);
+        await vm.AddToQueue(other);
+
+        var updated = other with { Title = "Renamed" };
+        await vm.RefreshTrackMetadataAsync(updated);
+
+        await Assert.That(vm.CurrentTrack).IsEqualTo(current);
+        await Assert.That(queue.Entries[1].Track).IsEqualTo(updated);
+    }
 }

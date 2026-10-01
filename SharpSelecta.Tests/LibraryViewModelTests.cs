@@ -689,6 +689,40 @@ public class LibraryViewModelTests
     }
 
     [Test]
+    public async Task SavingTagsInTheProperties_RefreshesIndexLibraryQueueAndNowPlaying()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+        try
+        {
+            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+            File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), trackPath);
+            var indexed = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]).Tracks[0];
+            var vm = CreateViewModel(out _, out _, out var playbackControls, settingsPath);
+            vm.Tracks.Add(new LibraryTrackViewModel(indexed, vm));
+            await playbackControls.PlayNowAsync(indexed);
+
+            var properties = vm.CreateTrackProperties(indexed);
+            properties.Title = "Edited Title";
+            properties.Genre = "Jazz";
+            await properties.ApplyCommand.ExecuteAsync(null);
+
+            await Assert.That(vm.Tracks[0].Track.Title).IsEqualTo("Edited Title");
+            await Assert.That(vm.DisplayedTracks[0].Track.Title).IsEqualTo("Edited Title");
+            await Assert.That(vm.Tracks.Count).IsEqualTo(1);
+            await Assert.That(LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName])[0].Genre).IsEqualTo("Jazz");
+            await Assert.That(playbackControls.QueueEntries[0].Track.Title).IsEqualTo("Edited Title");
+            await Assert.That(playbackControls.CurrentTrack!.Title).IsEqualTo("Edited Title");
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(Path.Combine(Path.GetDirectoryName(settingsPath)!, $"{Path.GetFileNameWithoutExtension(settingsPath)}.library-index.db"));
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
     public async Task RemoveFromPlaylistCommand_RemovesOnlyTheClickedTrackFromTheCurrentlySelectedPlaylist()
     {
         var settingsPath = CreateTempSettingsPath();

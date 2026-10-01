@@ -42,7 +42,7 @@ public partial class PlaylistsViewModel : ObservableObject
     partial void OnSelectedPlaylistIdChanged(string? value) =>
         SettingsStore.SaveSelectedPlaylistId(_settingsFilePath, value);
 
-    private void RefreshTracks()
+    public void RefreshTracks()
     {
         if (SelectedPlaylistId is not { } playlistId)
         {

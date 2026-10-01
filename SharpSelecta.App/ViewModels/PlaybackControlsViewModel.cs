@@ -187,6 +187,20 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 
     public void ClearQueueExceptCurrent() => _queue.ClearExceptCurrent();
 
+    // Called after a track's tags/cover were edited: the queue and the now-playing display keep
+    // the Track they were handed, so they need the re-read one.
+    public async Task RefreshTrackMetadataAsync(Track updated)
+    {
+        _queue.ReplaceTrack(updated);
+
+        if (CurrentTrack?.FilePath != updated.FilePath)
+            return;
+
+        CurrentTrack = updated;
+        LoadedFileName = updated.DisplayName;
+        CurrentTrackArtworkBytes = await Task.Run(() => MusicLibraryScanner.LoadArtwork(updated.FilePath));
+    }
+
     public async Task PlayQueueEntryAsync(QueueEntry entry)
     {
         var index = _queue.IndexOf(entry);

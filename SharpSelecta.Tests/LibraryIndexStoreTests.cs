@@ -604,6 +604,79 @@ public class LibraryIndexStoreTests
     }
 
     [Test]
+    public async Task UpdateTrack_RewritesMetadata_ButKeepsDateAddedAndWaveformPeaks()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
+        try
+        {
+            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+            CopyFixtureInto(root.FullName, "tagged-track.mp3");
+            var indexed = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]).Tracks[0];
+            LibraryIndexStore.SaveWaveformPeaks(settingsPath, trackPath, [0.1f, 0.2f]);
+
+            TrackTagEditor.Write(trackPath, new TrackTagEdits("Edited", null, null, "New Album", "Jazz", null, 2005, 9));
+            var edited = MusicLibraryScanner.ReadTrackIfExists(trackPath)!;
+            LibraryIndexStore.UpdateTrack(settingsPath, edited);
+
+            var reloaded = LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName])[0];
+            await Assert.That(reloaded.Title).IsEqualTo("Edited");
+            await Assert.That(reloaded.Album).IsEqualTo("New Album");
+            await Assert.That(reloaded.Genre).IsEqualTo("Jazz");
+            await Assert.That(reloaded.Artist).IsNull();
+            await Assert.That(reloaded.Year).IsEqualTo(2005);
+            await Assert.That(reloaded.TrackNumber).IsEqualTo(9);
+            await Assert.That(reloaded.DateAddedUtc).IsEqualTo(indexed.DateAddedUtc);
+            await Assert.That(LibraryIndexStore.TryGetWaveformPeaks(settingsPath, trackPath)).IsEquivalentTo([0.1f, 0.2f]);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task UpdateTrack_MakesTheNextReconcileReuseTheRowInsteadOfReReadingTheFile()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
+        try
+        {
+            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+            CopyFixtureInto(root.FullName, "tagged-track.mp3");
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+            TrackTagEditor.Write(trackPath, new TrackTagEdits("Edited", null, null, null, null, null, null, null));
+            // A Track whose Title differs from what's on disk: if Reconcile re-read the file it would
+            // report "Edited", so seeing the sentinel proves the indexed row was reused as-is.
+            var sentinel = MusicLibraryScanner.ReadTrackIfExists(trackPath)! with { Title = "Sentinel" };
+            LibraryIndexStore.UpdateTrack(settingsPath, sentinel);
+
+            var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+            await Assert.That(result.Tracks[0].Title).IsEqualTo("Sentinel");
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task UpdateTrack_WhenNoIndexExists_DoesNothing()
+    {
+        var settingsPath = CreateTempSettingsPath();
+
+        LibraryIndexStore.UpdateTrack(settingsPath, new Track("/music/a.mp3", "a.mp3"));
+
+        await Assert.That(File.Exists(IndexFilePath(settingsPath))).IsFalse();
+    }
+
+    [Test]
     public async Task CreatePlaylist_ThenListPlaylists_ReturnsItWithAGeneratedId()
     {
         var settingsPath = CreateTempSettingsPath();

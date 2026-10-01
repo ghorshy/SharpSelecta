@@ -46,6 +46,18 @@ public static class AlbumArtworkCache
         return thumbnail;
     }
 
+    public static void Invalidate(string cacheDirectory, string albumKey)
+    {
+        try
+        {
+            File.Delete(GetCachePath(cacheDirectory, albumKey));
+        }
+        catch (IOException)
+        {
+            // A thumbnail we couldn't delete stays stale until the user clears the artwork cache.
+        }
+    }
+
     private static string GetCachePath(string cacheDirectory, string albumKey)
     {
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(albumKey.Trim().ToUpperInvariant())));

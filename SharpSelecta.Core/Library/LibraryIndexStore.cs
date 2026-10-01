@@ -159,6 +159,48 @@ public static class LibraryIndexStore
         command.ExecuteNonQuery();
     }
 
+    // Refreshes an already-indexed row after its tags were edited in-app. Mtime/size are updated
+    // too so the next Reconcile treats the file as unchanged instead of re-reading it; DateAddedUtc
+    // and cached waveform peaks (the audio itself didn't change) are deliberately left alone.
+    public static void UpdateTrack(string settingsFilePath, Track track)
+    {
+        var indexFilePath = IndexFilePath(settingsFilePath);
+        if (!File.Exists(indexFilePath) || !File.Exists(track.FilePath))
+        {
+            return;
+        }
+
+        var fileInfo = new FileInfo(track.FilePath);
+        using var connection = OpenConnection(indexFilePath);
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE Tracks SET
+                DisplayName = @DisplayName, TrackNumber = @TrackNumber, Title = @Title, Artist = @Artist, Album = @Album,
+                AlbumArtist = @AlbumArtist, Genre = @Genre, Comment = @Comment, Year = @Year,
+                DurationSeconds = @DurationSeconds, SampleRate = @SampleRate, BitDepth = @BitDepth, Bitrate = @Bitrate,
+                FileType = @FileType, LastWriteTimeUtcTicks = @LastWriteTimeUtcTicks, FileSizeBytes = @FileSizeBytes
+            WHERE FilePath = @FilePath
+            """;
+        command.Parameters.AddWithValue("@FilePath", track.FilePath);
+        command.Parameters.AddWithValue("@DisplayName", track.DisplayName);
+        command.Parameters.AddWithValue("@TrackNumber", (object?)track.TrackNumber ?? DBNull.Value);
+        command.Parameters.AddWithValue("@Title", (object?)track.Title ?? DBNull.Value);
+        command.Parameters.AddWithValue("@Artist", (object?)track.Artist ?? DBNull.Value);
+        command.Parameters.AddWithValue("@Album", (object?)track.Album ?? DBNull.Value);
+        command.Parameters.AddWithValue("@AlbumArtist", (object?)track.AlbumArtist ?? DBNull.Value);
+        command.Parameters.AddWithValue("@Genre", (object?)track.Genre ?? DBNull.Value);
+        command.Parameters.AddWithValue("@Comment", (object?)track.Comment ?? DBNull.Value);
+        command.Parameters.AddWithValue("@Year", (object?)track.Year ?? DBNull.Value);
+        command.Parameters.AddWithValue("@DurationSeconds", track.Duration.TotalSeconds);
+        command.Parameters.AddWithValue("@SampleRate", track.SampleRate);
+        command.Parameters.AddWithValue("@BitDepth", track.BitDepth);
+        command.Parameters.AddWithValue("@Bitrate", track.Bitrate);
+        command.Parameters.AddWithValue("@FileType", (object?)track.FileType ?? DBNull.Value);
+        command.Parameters.AddWithValue("@LastWriteTimeUtcTicks", fileInfo.LastWriteTimeUtc.Ticks);
+        command.Parameters.AddWithValue("@FileSizeBytes", fileInfo.Length);
+        command.ExecuteNonQuery();
+    }
+
     public static string CreatePlaylist(string settingsFilePath, string name)
     {
         var indexFilePath = IndexFilePath(settingsFilePath);

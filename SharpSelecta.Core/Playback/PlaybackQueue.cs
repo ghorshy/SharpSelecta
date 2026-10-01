@@ -106,6 +106,19 @@ public sealed class PlaybackQueue
         }
     }
 
+    // Swaps in a re-read Track (e.g. after a tag edit) for every entry of that file, keeping each
+    // entry's source and the current position.
+    public void ReplaceTrack(Track updated)
+    {
+        for (var i = 0; i < _entries.Count; i++)
+        {
+            if (_entries[i].Track.FilePath == updated.FilePath)
+            {
+                _entries[i] = _entries[i] with { Track = updated };
+            }
+        }
+    }
+
     public void RemoveAt(int index)
     {
         if (index < 0 || index >= _entries.Count || index == CurrentIndex)
