@@ -32,7 +32,7 @@
         <Style Selector="ListBox.album-tracks ListBoxItem">
             <Setter Property="Padding" Value="{styles:Spacing Left=XS, Right=XS, Top=XXS, Bottom=XXS}" />
             <Setter Property="MinHeight" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="CornerRadius" Value="{DynamicResource Radius.Control}" />
         </Style>
     </UserControl.Styles>
 
@@ -41,7 +41,7 @@
             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="{styles:SpacingValue XS}" IsVisible="{Binding AllowUserSort}">
                 <Button Classes="toolbar-button toolbar-button-hover">
                     <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue XXS}">
-                        <TextBlock Text="{x:Static res:Strings.SortBy}" Opacity="0.7" VerticalAlignment="Center" />
+                        <TextBlock Text="{x:Static res:Strings.SortBy}" Classes="secondary" VerticalAlignment="Center" />
                         <TextBlock Text="{Binding SortModeLabel}" VerticalAlignment="Center" />
                         <TextBlock Text="▾" VerticalAlignment="Center" />
                     </StackPanel>
@@ -57,9 +57,9 @@
             </StackPanel>
 
             <Slider Grid.Column="1"
-                    Minimum="144" Maximum="320"
+                    Minimum="{DynamicResource Size.Album.TileMin}" Maximum="{DynamicResource Size.Album.TileMax}"
                     Value="{Binding TileSize, Mode=TwoWay}"
-                    Width="160" VerticalAlignment="Center" />
+                    Width="{DynamicResource Size.Album.TileSliderWidth}" VerticalAlignment="Center" />
         </Grid>
 
         <ScrollViewer x:Name="Scroller" SizeChanged="OnScrollerSizeChanged">
@@ -118,8 +118,8 @@
                                                 <Border Width="{Binding #Root.DataContext.TileSize}"
                                                         Height="{Binding #Root.DataContext.TileSize}"
                                                         ClipToBounds="True"
-                                                        CornerRadius="4"
-                                                        Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+                                                        CornerRadius="{DynamicResource Radius.Control}"
+                                                        Background="{DynamicResource Brush.Surface}">
                                                     <Panel>
                                                         <Image Source="{Binding ArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
                                                                IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
@@ -127,9 +127,9 @@
                                                         <views:AlbumCoverPlaceholderIcon IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNull}}" />
                                                     </Panel>
                                                 </Border>
-                                                <TextBlock Text="{Binding Title}" FontWeight="Bold" TextTrimming="CharacterEllipsis"
+                                                <TextBlock Text="{Binding Title}" Classes="strong" TextTrimming="CharacterEllipsis"
                                                            Width="{Binding #Root.DataContext.TileSize}" />
-                                                <TextBlock Text="{Binding Artist}" Opacity="0.7" TextTrimming="CharacterEllipsis"
+                                                <TextBlock Text="{Binding Artist}" Classes="secondary" TextTrimming="CharacterEllipsis"
                                                            Width="{Binding #Root.DataContext.TileSize}" />
                                             </StackPanel>
                                         </Border>
@@ -138,8 +138,8 @@
                             </ItemsControl>
 
                             <Border IsVisible="{Binding ExpandedAlbum, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
-                                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
-                                    CornerRadius="4"
+                                    Background="{DynamicResource Brush.Surface}"
+                                    CornerRadius="{DynamicResource Radius.Control}"
                                     Padding="{styles:Spacing Uniform=S}"
                                     Margin="{styles:Spacing Top=XS}">
                                 <!-- ContentControl rather than DataContext="{Binding ExpandedAlbum}" directly on a
@@ -188,20 +188,20 @@
                                                                                       Click="OnTrackPropertiesClick" />
                                                                         </ContextMenu>
                                                                     </Grid.ContextMenu>
-                                                                    <TextBlock Grid.Column="0" Text="{Binding TrackNumber}" Width="30" Opacity="0.7" />
+                                                                    <TextBlock Grid.Column="0" Text="{Binding TrackNumber}" Width="{DynamicResource Size.Album.TrackNumberWidth}" Classes="secondary" />
                                                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{styles:SpacingValue XXS}">
                                                                         <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-                                                                        <TextBlock Text="{Binding ArtistSuffix}" Opacity="0.5" TextTrimming="CharacterEllipsis"
+                                                                        <TextBlock Text="{Binding ArtistSuffix}" Classes="tertiary" TextTrimming="CharacterEllipsis"
                                                                                    IsVisible="{Binding ArtistSuffix, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
                                                                     </StackPanel>
-                                                                    <TextBlock Grid.Column="2" Text="{Binding LengthDisplay}" Opacity="0.7" />
+                                                                    <TextBlock Grid.Column="2" Text="{Binding LengthDisplay}" Classes="secondary" />
                                                                 </Grid>
                                                             </DataTemplate>
                                                         </ListBox.ItemTemplate>
                                                     </ListBox>
                                                 </DockPanel>
 
-                                                <Panel Grid.Column="1" Width="160" Height="160" Margin="{styles:Spacing Left=S}"
+                                                <Panel Grid.Column="1" Width="{DynamicResource Size.Album.ExpandedCover}" Height="{DynamicResource Size.Album.ExpandedCover}" Margin="{styles:Spacing Left=S}"
                                                        DoubleTapped="OnExpandedArtworkDoubleTapped">
                                                     <Image Source="{Binding ArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
                                                            IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNotNull}}"

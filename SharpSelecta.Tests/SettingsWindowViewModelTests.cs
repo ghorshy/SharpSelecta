@@ -22,6 +22,7 @@ public class SettingsWindowViewModelTests
             playbackControls,
             Substitute.For<IFileManagerService>(),
             CreateTempSettingsPath(),
+            TestThemeLayout.Default,
             NullLogger<LibraryViewModel>.Instance);
     }
 

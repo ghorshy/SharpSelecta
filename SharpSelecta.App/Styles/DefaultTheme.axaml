@@ -8,7 +8,7 @@
     <Style Selector="Button.toolbar-button">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="CornerRadius" Value="{DynamicResource Radius.Control}" />
         <Setter Property="Template">
             <ControlTemplate TargetType="Button">
                 <Border Background="{TemplateBinding Background}"
@@ -24,25 +24,58 @@
         </Setter>
     </Style>
     <Style Selector="Button.toolbar-button-hover:not(:disabled):pointerover">
-        <Setter Property="Background" Value="#28808080" />
+        <Setter Property="Background" Value="{DynamicResource Brush.ToolbarHover}" />
     </Style>
     <Style Selector="Button.toolbar-button-hover:not(:disabled):pressed">
-        <Setter Property="Background" Value="#40808080" />
+        <Setter Property="Background" Value="{DynamicResource Brush.ToolbarPressed}" />
     </Style>
 
     <!-- The template above has no disabled state of its own, so text content (e.g. "View ▾") needs
          dimming here; icon buttons are handled by the Svg rule below. -->
     <Style Selector="Button.toolbar-button:disabled TextBlock">
-        <Setter Property="Foreground" Value="{DynamicResource TextFillColorDisabledBrush}" />
+        <Setter Property="Opacity" Value="{DynamicResource Opacity.Disabled}" />
     </Style>
 
     <!-- CurrentColor must be set here, not as an inline attribute on each Svg - a locally set
          value always beats a Style, so the :disabled override below would never apply. -->
     <Style Selector="svg|Svg.toolbar-icon">
-        <Setter Property="svg:Svg.CurrentColor" Value="{DynamicResource IconForegroundColor}" />
+        <Setter Property="svg:Svg.CurrentColor" Value="{DynamicResource Color.IconForeground}" />
     </Style>
     <Style Selector="Button.toolbar-button:disabled svg|Svg.toolbar-icon">
-        <Setter Property="svg:Svg.CurrentColor" Value="{DynamicResource IconDisabledColor}" />
+        <Setter Property="svg:Svg.CurrentColor" Value="{DynamicResource Color.IconDisabled}" />
+    </Style>
+
+    <!-- Text roles. Views pick a role with Classes="..." instead of setting Opacity/FontSize/
+         FontWeight/Foreground themselves, so every value comes from the tokens in ThemeMetrics/
+         ThemeColors and a custom theme can change a role by overriding the token. -->
+    <Style Selector="TextBlock.secondary">
+        <Setter Property="Opacity" Value="{DynamicResource Opacity.TextSecondary}" />
+    </Style>
+    <Style Selector="TextBlock.tertiary">
+        <Setter Property="Opacity" Value="{DynamicResource Opacity.TextTertiary}" />
+    </Style>
+    <Style Selector="TextBlock.small">
+        <Setter Property="FontSize" Value="{DynamicResource FontSize.Small}" />
+    </Style>
+    <Style Selector="TextBlock.strong">
+        <Setter Property="FontWeight" Value="{DynamicResource FontWeight.Strong}" />
+    </Style>
+    <Style Selector="TextBlock.error">
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
+    </Style>
+    <Style Selector="TextBlock.field-label">
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Opacity" Value="{DynamicResource Opacity.TextSecondary}" />
+    </Style>
+
+    <!-- A text box whose content failed validation. -->
+    <Style Selector="TextBox.invalid /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Error}" />
+    </Style>
+
+    <!-- A row for something that isn't there (e.g. a playlist entry whose file is gone). -->
+    <Style Selector="DataGridRow.missing">
+        <Setter Property="Opacity" Value="{DynamicResource Opacity.Missing}" />
     </Style>
 
     <!-- FluentTheme's TextBox paints its pointerover/focus border and background straight onto an

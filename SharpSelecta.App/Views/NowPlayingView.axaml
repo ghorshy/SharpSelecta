@@ -12,11 +12,11 @@
              x:DataType="vm:PlaybackControlsViewModel">
 
     <StackPanel Spacing="{styles:SpacingValue XS}" IsVisible="{Binding CurrentTrack, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
-        <TextBlock Text="{Binding CurrentTrack.Title}" FontWeight="Bold" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding CurrentTrack.Title}" Classes="strong" TextWrapping="Wrap" />
         <TextBlock Text="{Binding CurrentTrack.Artist}" TextWrapping="Wrap" />
         <TextBlock Text="{Binding CurrentTrack.Album}" TextWrapping="Wrap" />
         <TextBlock Text="{Binding CurrentTrack.Year}" />
-        <TextBlock Text="{Binding CurrentTrackTechnicalSummary}" Opacity="0.7" FontSize="11" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding CurrentTrackTechnicalSummary}" Classes="secondary small" TextWrapping="Wrap" />
         <!-- Double-tap opens the cover at its real resolution in a separate borderless window
              (AlbumCoverWindow) - only meaningful when there's actual artwork, hence the guard in
              the handler rather than gating this Panel's own visibility. -->

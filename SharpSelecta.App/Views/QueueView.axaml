@@ -14,7 +14,7 @@
 
     <DockPanel LastChildFill="True">
         <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="{styles:Spacing Bottom=M}">
-            <TextBlock Grid.Column="0" Text="{x:Static res:Strings.Queue}" FontWeight="Bold" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="0" Text="{x:Static res:Strings.Queue}" Classes="strong" VerticalAlignment="Center" />
             <Button Grid.Column="1" Classes="toolbar-button toolbar-button-hover" Content="{x:Static res:Strings.Clear}"
                     Command="{Binding ClearQueueCommand}" />
         </Grid>
@@ -50,26 +50,26 @@
 
                 <!-- The row currently being dragged fades out a bit... -->
                 <Style Selector="ListBoxItem.dragging">
-                    <Setter Property="Opacity" Value="0.4" />
+                    <Setter Property="Opacity" Value="{DynamicResource Opacity.Dragging}" />
                 </Style>
 
                 <!-- ...and a line above whatever row is under the cursor shows where it will land. -->
                 <Style Selector="ListBoxItem.drag-over">
-                    <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
-                    <Setter Property="BorderThickness" Value="0,2,0,0" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+                    <Setter Property="BorderThickness" Value="{DynamicResource Border.Top.Thick}" />
                 </Style>
 
                 <!-- Dragging past the last row (or into the empty space below the list) still
                      drops at the end of the queue — show the line below the last row instead. -->
                 <Style Selector="ListBoxItem.drag-over-end">
-                    <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
-                    <Setter Property="BorderThickness" Value="0,0,0,2" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+                    <Setter Property="BorderThickness" Value="{DynamicResource Border.Bottom.Thick}" />
                 </Style>
             </ListBox.Styles>
             <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:QueueEntryViewModel">
-                    <Grid ColumnDefinitions="36,*,Auto" Margin="{styles:Spacing Uniform=S}">
-                        <Border Grid.Column="0" Width="36" Height="36" VerticalAlignment="Center" Background="{DynamicResource SystemBaseLowColor}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" Margin="{styles:Spacing Uniform=S}">
+                        <Border Grid.Column="0" Width="{DynamicResource Size.Queue.Thumbnail}" Height="{DynamicResource Size.Queue.Thumbnail}" VerticalAlignment="Center" Background="{DynamicResource Brush.ThumbnailPlaceholder}">
                             <Panel>
                                 <Image Source="{Binding ArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
                                        IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
@@ -78,8 +78,8 @@
                             </Panel>
                         </Border>
                         <StackPanel Grid.Column="1" Margin="{styles:Spacing Left=S, Right=XXS}" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding Title}" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
-                            <TextBlock Text="{Binding Artist}" Opacity="0.7" FontSize="11" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding Title}" Classes="strong" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding Artist}" Classes="secondary small" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                         <TextBlock Grid.Column="2" Text="{x:Static res:Strings.Playing}"
                                    VerticalAlignment="Center" Margin="{styles:Spacing Left=XXS}"

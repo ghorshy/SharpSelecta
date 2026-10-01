@@ -9,15 +9,15 @@
         x:Class="SharpSelecta.App.Views.EqualizerWindow"
         x:DataType="vm:EqualizerViewModel"
         Title="{x:Static res:Strings.Equalizer}"
-        Width="480"
-        Height="320"
+        Width="{DynamicResource Size.Equalizer.Width}"
+        Height="{DynamicResource Size.Equalizer.Height}"
         CanResize="False">
 
     <StackPanel Spacing="{styles:SpacingValue M}" Margin="{styles:Spacing Uniform=M}">
         <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="{styles:SpacingValue S}">
             <CheckBox Grid.Column="0" Content="{x:Static res:Strings.EqualizerEnabled}" IsChecked="{Binding Enabled}" />
-            <TextBlock Grid.Column="2" Text="{x:Static res:Strings.EqualizerPreset}" VerticalAlignment="Center" Opacity="0.7" />
-            <ComboBox Grid.Column="3" ItemsSource="{Binding PresetNames}" SelectedItem="{Binding SelectedPresetName}" Width="120" />
+            <TextBlock Grid.Column="2" Text="{x:Static res:Strings.EqualizerPreset}" VerticalAlignment="Center" Classes="secondary" />
+            <ComboBox Grid.Column="3" ItemsSource="{Binding PresetNames}" SelectedItem="{Binding SelectedPresetName}" Width="{DynamicResource Size.Equalizer.PresetWidth}" />
         </Grid>
 
         <ItemsControl x:Name="BandsPanel" ItemsSource="{Binding Bands}">
@@ -29,10 +29,10 @@
             <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:EqualizerBandViewModel">
                     <StackPanel Spacing="{styles:SpacingValue XXS}" HorizontalAlignment="Center">
-                        <TextBlock Text="{Binding GainDbLabel}" HorizontalAlignment="Center" FontSize="11" />
-                        <Slider Orientation="Vertical" Height="160" Minimum="-12" Maximum="12"
+                        <TextBlock Text="{Binding GainDbLabel}" HorizontalAlignment="Center" Classes="small" />
+                        <Slider Orientation="Vertical" Height="{DynamicResource Size.Equalizer.SliderHeight}" Minimum="-12" Maximum="12"
                                 Value="{Binding GainDb}" />
-                        <TextBlock Text="{Binding Label}" HorizontalAlignment="Center" FontSize="11" Opacity="0.7" />
+                        <TextBlock Text="{Binding Label}" HorizontalAlignment="Center" Classes="secondary small" />
                     </StackPanel>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>

@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using SharpSelecta.App.Services;
+using SharpSelecta.App.Styles;
 using SharpSelecta.App.Services.Mpris;
 using SharpSelecta.App.ViewModels;
 using SharpSelecta.App.Views;
@@ -57,6 +58,7 @@ public partial class App : Application
                 provider.GetRequiredService<IFilePickerService>(),
                 provider.GetRequiredService<IFileManagerService>(),
                 settingsFilePath,
+                ThemeLayout.From(this),
                 provider.GetRequiredService<ILogger<PlaybackControlsViewModel>>(),
                 provider.GetRequiredService<ILogger<LibraryViewModel>>(),
                 provider.GetRequiredService<ILogger<QueueViewModel>>());

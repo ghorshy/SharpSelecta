@@ -43,6 +43,7 @@ public class LibraryViewModelTests
             playbackControls,
             fileManagerService,
             resolvedSettingsFilePath,
+            TestThemeLayout.Default,
             NullLogger<LibraryViewModel>.Instance);
     }
 

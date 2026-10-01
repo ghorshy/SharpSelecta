@@ -12,18 +12,14 @@ using Microsoft.Extensions.Logging;
 using SharpSelecta.App.Collections;
 using SharpSelecta.App.Resources;
 using SharpSelecta.App.Services;
+using SharpSelecta.App.Styles;
 using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.ViewModels;
 
 public partial class AlbumGridViewModel : ViewModelBase
 {
-    private const double DefaultTileSize = 160;
-    private const double MinTileSize = 144;
-    private const double MaxTileSize = 320;
-    private const double RowSpacing = 16;
-
-    public const double TileSizeStep = 10;
+    private readonly ThemeLayout _layout;
 
     private static readonly int ArtworkLoadConcurrency = Math.Max(1, Environment.ProcessorCount / 2);
 
@@ -56,13 +52,14 @@ public partial class AlbumGridViewModel : ViewModelBase
 
     public bool AllowUserSort { get; }
 
-    public AlbumGridViewModel(LibraryViewModel library, string settingsFilePath, ILogger logger, bool allowUserSort = true)
+    public AlbumGridViewModel(LibraryViewModel library, string settingsFilePath, ThemeLayout layout, ILogger logger, bool allowUserSort = true)
     {
         _library = library;
+        _layout = layout;
         _settingsFilePath = settingsFilePath;
         _logger = logger;
         AllowUserSort = allowUserSort;
-        TileSize = Math.Clamp(SettingsStore.LoadTileSize(settingsFilePath) ?? DefaultTileSize, MinTileSize, MaxTileSize);
+        TileSize = Math.Clamp(SettingsStore.LoadTileSize(settingsFilePath) ?? layout.TileSizeDefault, layout.TileSizeMin, layout.TileSizeMax);
 
         if (allowUserSort)
         {
@@ -123,13 +120,15 @@ public partial class AlbumGridViewModel : ViewModelBase
         RebuildRows(force: false);
     }
 
-    public void AdjustTileSize(double delta) => TileSize = Math.Clamp(TileSize + delta, MinTileSize, MaxTileSize);
+    public double TileSizeStep => _layout.TileSizeStep;
+
+    public void AdjustTileSize(double delta) => TileSize = Math.Clamp(TileSize + delta, _layout.TileSizeMin, _layout.TileSizeMax);
 
     [RelayCommand]
-    private void IncreaseTileSize() => AdjustTileSize(TileSizeStep);
+    private void IncreaseTileSize() => AdjustTileSize(_layout.TileSizeStep);
 
     [RelayCommand]
-    private void DecreaseTileSize() => AdjustTileSize(-TileSizeStep);
+    private void DecreaseTileSize() => AdjustTileSize(-_layout.TileSizeStep);
 
     partial void OnTileSizeChanged(double value)
     {
@@ -387,11 +386,11 @@ public partial class AlbumGridViewModel : ViewModelBase
             : albums.OrderBy(a => a.Title, StringComparer.OrdinalIgnoreCase),
     };
 
-    private static int ComputeColumnCount(double viewportWidth, double tileSize)
+    private int ComputeColumnCount(double viewportWidth, double tileSize)
     {
         if (viewportWidth <= 0)
             return 1;
 
-        return Math.Max(1, (int)Math.Floor((viewportWidth + RowSpacing) / (tileSize + RowSpacing)));
+        return Math.Max(1, (int)Math.Floor((viewportWidth + _layout.TileSpacing) / (tileSize + _layout.TileSpacing)));
     }
 }

@@ -13,7 +13,7 @@
         <CheckBox Content="{x:Static res:Strings.RestoreQueueOnStartup}" IsChecked="{Binding RestoreQueueOnStartup}" />
 
         <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}">
-            <TextBlock Text="{x:Static res:Strings.OutputDevice}" Opacity="0.7" />
+            <TextBlock Text="{x:Static res:Strings.OutputDevice}" Classes="secondary" />
             <ComboBox ItemsSource="{Binding OutputDeviceDisplayNames}"
                       SelectedItem="{Binding SelectedOutputDeviceDisplayName}"
                       HorizontalAlignment="Stretch" />
@@ -27,9 +27,9 @@
                   Margin="{styles:Spacing Top=S}" />
 
         <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}">
-            <TextBlock Text="{x:Static res:Strings.SeekStepSeconds}" Opacity="0.7" />
+            <TextBlock Text="{x:Static res:Strings.SeekStepSeconds}" Classes="secondary" />
             <NumericUpDown Value="{Binding SeekStepSeconds}" Minimum="1" Maximum="10" Increment="1"
-                            FormatString="0" HorizontalAlignment="Left" Width="100" />
+                            FormatString="0" HorizontalAlignment="Left" Width="{DynamicResource Size.Settings.NumberFieldWidth}" />
         </StackPanel>
     </StackPanel>
 

@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using SharpSelecta.App.Services;
+using SharpSelecta.App.Styles;
 using SharpSelecta.Core.Audio;
 using SharpSelecta.Core.Library;
 using SharpSelecta.Core.Playback;
@@ -15,8 +16,6 @@ namespace SharpSelecta.App.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    private const double DefaultRightColumnWidth = 220;
-
     private readonly string _settingsFilePath;
 
     public PlaybackControlsViewModel PlaybackControls { get; }
@@ -42,6 +41,7 @@ public partial class MainWindowViewModel : ViewModelBase
         IFilePickerService filePickerService,
         IFileManagerService fileManagerService,
         string settingsFilePath,
+        ThemeLayout layout,
         ILogger<PlaybackControlsViewModel> playbackControlsLogger,
         ILogger<LibraryViewModel> libraryLogger,
         ILogger<QueueViewModel> queueLogger)
@@ -50,13 +50,13 @@ public partial class MainWindowViewModel : ViewModelBase
 
         var queue = new PlaybackQueue();
         PlaybackControls = new PlaybackControlsViewModel(audioEngine, queue, settingsFilePath, playbackControlsLogger);
-        Library = new LibraryViewModel(filePickerService, PlaybackControls, fileManagerService, settingsFilePath, libraryLogger);
+        Library = new LibraryViewModel(filePickerService, PlaybackControls, fileManagerService, settingsFilePath, layout, libraryLogger);
         Queue = new QueueViewModel(PlaybackControls, queueLogger);
         PlaybackSettings = new PlaybackSettingsViewModel(settingsFilePath, outputDeviceService, PlaybackControls);
         InterfaceSettings = new InterfaceSettingsViewModel(settingsFilePath, filePickerService);
         ShortcutSettings = new ShortcutSettingsService(settingsFilePath);
         Equalizer = new EqualizerViewModel(settingsFilePath, audioEngine);
-        RightColumnWidth = new GridLength(SettingsStore.LoadRightColumnWidth(_settingsFilePath) ?? DefaultRightColumnWidth);
+        RightColumnWidth = new GridLength(SettingsStore.LoadRightColumnWidth(_settingsFilePath) ?? layout.RightColumnWidth);
     }
 
     // Which track "the selected one" is depends on what has focus (a grid, an expanded album, the

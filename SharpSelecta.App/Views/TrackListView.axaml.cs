@@ -60,6 +60,7 @@ public sealed partial class TrackListView : UserControl
         foreach (var column in TracksGrid.Columns)
         {
             column.PropertyChanged += OnColumnPropertyChanged;
+            ApplyThemeWidth(column);
         }
 
         TracksGrid.AddHandler(InputElement.PointerReleasedEvent, OnPointerReleased, handledEventsToo: true);
@@ -68,6 +69,19 @@ public sealed partial class TrackListView : UserControl
         TracksGrid.Sorting += (_, _) => Dispatcher.UIThread.Post(SaveCurrentSort, DispatcherPriority.Background);
         TracksGrid.SelectionChanged += OnTracksGridSelectionChanged;
     }
+
+    // Default column widths come from the theme (Size.Column.<Tag>); a width the user dragged to is
+    // restored over this afterwards by ApplyColumnLayout.
+    private void ApplyThemeWidth(DataGridColumn column)
+    {
+        if (column.Tag is string key && this.TryFindResource($"Size.Column.{key}", out var width) && width is double pixels)
+        {
+            column.Width = new DataGridLength(pixels);
+        }
+    }
+
+    private void OnLoadingRow(object? sender, DataGridRowEventArgs e) =>
+        e.Row.Classes.Set("missing", e.Row.DataContext is LibraryTrackViewModel { IsMissing: true });
 
     // DataGrid.SelectedItems is ordered by the underlying list, not by click order - track
     // click order ourselves so Play Next/Add to Queue can act on it in the order selected.

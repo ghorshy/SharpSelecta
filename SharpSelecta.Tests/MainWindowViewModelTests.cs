@@ -30,6 +30,7 @@ public class MainWindowViewModelTests
             filePickerService,
             Substitute.For<IFileManagerService>(),
             settingsFilePath ?? CreateTempSettingsPath(),
+            TestThemeLayout.Default,
             NullLogger<PlaybackControlsViewModel>.Instance,
             NullLogger<LibraryViewModel>.Instance,
             NullLogger<QueueViewModel>.Instance);

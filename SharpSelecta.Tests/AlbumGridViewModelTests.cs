@@ -20,7 +20,7 @@ public class AlbumGridViewModelTests
         var playbackControls = new PlaybackControlsViewModel(audioEngine, new PlaybackQueue(), CreateTempSettingsPath(), NullLogger<PlaybackControlsViewModel>.Instance);
         return new LibraryViewModel(
             filePickerService, playbackControls, Substitute.For<IFileManagerService>(),
-            settingsFilePath ?? CreateTempSettingsPath(), NullLogger<LibraryViewModel>.Instance);
+            settingsFilePath ?? CreateTempSettingsPath(), TestThemeLayout.Default, NullLogger<LibraryViewModel>.Instance);
     }
 
     private static void AddTrack(LibraryViewModel vm, string filePath, string album) =>
@@ -297,7 +297,7 @@ public class AlbumGridViewModelTests
 
         vm.Grid.IncreaseTileSizeCommand.Execute(null);
 
-        await Assert.That(vm.Grid.TileSize).IsEqualTo(initialSize + AlbumGridViewModel.TileSizeStep);
+        await Assert.That(vm.Grid.TileSize).IsEqualTo(initialSize + vm.Grid.TileSizeStep);
     }
 
     [Test]
@@ -308,7 +308,7 @@ public class AlbumGridViewModelTests
 
         vm.Grid.DecreaseTileSizeCommand.Execute(null);
 
-        await Assert.That(vm.Grid.TileSize).IsEqualTo(initialSize - AlbumGridViewModel.TileSizeStep);
+        await Assert.That(vm.Grid.TileSize).IsEqualTo(initialSize - vm.Grid.TileSizeStep);
     }
 
     [Test]
@@ -363,7 +363,7 @@ public class AlbumGridViewModelTests
         library.Tracks.Add(new LibraryTrackViewModel(new Track("/music/new-album/b.mp3", "b.mp3") { Album = "New Album", DateAddedUtc = now.AddDays(-1) }, library));
         library.Tracks.Add(new LibraryTrackViewModel(new Track("/music/old-album/c.mp3", "c.mp3") { Album = "Old Album", DateAddedUtc = now }, library));
 
-        var grid = new AlbumGridViewModel(library, CreateTempSettingsPath(), NullLogger.Instance, allowUserSort: false);
+        var grid = new AlbumGridViewModel(library, CreateTempSettingsPath(), TestThemeLayout.Default, NullLogger.Instance, allowUserSort: false);
         grid.SetViewportWidth(2000);
 
         // "Old Album" has a track added just now (`now`), newer than "New Album"'s only track
@@ -379,7 +379,7 @@ public class AlbumGridViewModelTests
         var settingsPath = CreateTempSettingsPath();
         var library = CreateLibraryViewModel();
 
-        _ = new AlbumGridViewModel(library, settingsPath, NullLogger.Instance, allowUserSort: false);
+        _ = new AlbumGridViewModel(library, settingsPath, TestThemeLayout.Default, NullLogger.Instance, allowUserSort: false);
 
         await Assert.That(SettingsStore.LoadAlbumSortMode(settingsPath)).IsNull();
         await Assert.That(SettingsStore.LoadAlbumSortDescending(settingsPath)).IsNull();
@@ -388,7 +388,7 @@ public class AlbumGridViewModelTests
     [Test]
     public async Task AllowUserSort_DefaultsToTrue_PreservingExistingBehavior()
     {
-        var grid = new AlbumGridViewModel(CreateLibraryViewModel(), CreateTempSettingsPath(), NullLogger.Instance);
+        var grid = new AlbumGridViewModel(CreateLibraryViewModel(), CreateTempSettingsPath(), TestThemeLayout.Default, NullLogger.Instance);
 
         await Assert.That(grid.AllowUserSort).IsTrue();
     }

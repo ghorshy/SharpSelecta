@@ -11,10 +11,10 @@
              x:DataType="vm:InterfaceSettingsViewModel">
 
     <StackPanel Spacing="{styles:SpacingValue XXS}">
-        <TextBlock Text="{x:Static res:Strings.Theme}" Opacity="0.7" />
+        <TextBlock Text="{x:Static res:Strings.Theme}" Classes="secondary" />
         <ComboBox ItemsSource="{Binding ThemeDisplayNames}"
                   SelectedItem="{Binding SelectedThemeDisplayName}"
-                  HorizontalAlignment="Left" MinWidth="160" />
+                  HorizontalAlignment="Left" MinWidth="{DynamicResource Size.Settings.FieldMinWidth}" />
 
         <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue S}" Margin="{styles:Spacing Top=S}">
             <Button Content="{x:Static res:Strings.ImportThemeFile}" Command="{Binding ImportThemeCommand}" />
@@ -22,14 +22,14 @@
             <Button Content="{x:Static res:Strings.RefreshThemes}" Command="{Binding RefreshThemesCommand}" />
         </StackPanel>
 
-        <TextBlock Text="{Binding StatusMessage}" Foreground="OrangeRed" TextWrapping="Wrap"
+        <TextBlock Text="{Binding StatusMessage}" Classes="error" TextWrapping="Wrap"
                     IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
                     Margin="{styles:Spacing Top=S}" />
 
         <!-- A custom theme is any Avalonia ResourceDictionary .axaml file (SolidColorBrush/Color overrides, etc.)
              dropped into this folder - either via "Import theme file..." above, or by hand followed by "Refresh". -->
         <TextBlock Text="{Binding CustomThemesFolderCaption}"
-                    Opacity="0.6" TextWrapping="Wrap" FontSize="11" Margin="{styles:Spacing Top=M}" />
+                    Classes="tertiary small" TextWrapping="Wrap" Margin="{styles:Spacing Top=M}" />
     </StackPanel>
 
 </UserControl>

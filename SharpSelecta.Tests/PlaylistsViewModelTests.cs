@@ -21,7 +21,7 @@ public class PlaylistsViewModelTests
             Substitute.For<IAudioEngine>(), new PlaybackQueue(), settingsFilePath, NullLogger<PlaybackControlsViewModel>.Instance);
         library = new LibraryViewModel(
             Substitute.For<IFilePickerService>(), playbackControls, Substitute.For<IFileManagerService>(),
-            settingsFilePath, NullLogger<LibraryViewModel>.Instance);
+            settingsFilePath, TestThemeLayout.Default, NullLogger<LibraryViewModel>.Instance);
         return library.Playlists;
     }
 

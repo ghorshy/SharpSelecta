@@ -12,24 +12,15 @@
         x:Class="SharpSelecta.App.Views.TrackPropertiesWindow"
         x:DataType="vm:TrackPropertiesViewModel"
         Title="{x:Static res:Strings.Properties}"
-        Width="760" Height="620" MinWidth="640" MinHeight="560"
+        Width="{DynamicResource Size.Properties.Width}" Height="{DynamicResource Size.Properties.Height}"
+        MinWidth="{DynamicResource Size.Properties.MinWidth}" MinHeight="{DynamicResource Size.Properties.MinHeight}"
         WindowStartupLocation="CenterOwner">
-
-    <Window.Styles>
-        <Style Selector="TextBox.invalid /template/ Border#PART_BorderElement">
-            <Setter Property="BorderBrush" Value="{DynamicResource SystemFillColorCriticalBrush}" />
-        </Style>
-        <Style Selector="TextBlock.field-label">
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Opacity" Value="0.7" />
-        </Style>
-    </Window.Styles>
 
     <Grid RowDefinitions="*,Auto,Auto">
         <TabControl Grid.Row="0">
-            <TabItem Header="{x:Static res:Strings.TabTagEditor}" FontSize="{DynamicResource ControlContentThemeFontSize}">
+            <TabItem Header="{x:Static res:Strings.TabTagEditor}" FontSize="{DynamicResource FontSize.Content}">
                 <Grid RowDefinitions="Auto,*,Auto" Margin="{styles:Spacing Uniform=M}">
-                    <TextBlock Grid.Row="0" Text="{Binding SelectionSummary}" FontWeight="Bold"
+                    <TextBlock Grid.Row="0" Text="{Binding SelectionSummary}" Classes="strong"
                                Margin="{styles:Spacing Bottom=S}" IsVisible="{Binding IsMultiple}" />
                     <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="{styles:SpacingValue L}">
                         <Grid Grid.Column="0" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*"
@@ -55,26 +46,27 @@
                                      PlaceholderText="{Binding GenrePlaceholder}" />
 
                             <TextBlock Grid.Row="5" Classes="field-label" Text="{x:Static res:Strings.ColumnYear}" />
-                            <TextBox Grid.Row="5" Grid.Column="1" Width="100" HorizontalAlignment="Left"
+                            <TextBox Grid.Row="5" Grid.Column="1" Width="{DynamicResource Size.Properties.NumberFieldWidth}" HorizontalAlignment="Left"
                                      Text="{Binding YearText}" Classes.invalid="{Binding HasYearError}"
                                      PlaceholderText="{Binding YearPlaceholder}" />
 
                             <TextBlock Grid.Row="6" Classes="field-label" Text="{x:Static res:Strings.LabelTrackNumber}" />
-                            <TextBox Grid.Row="6" Grid.Column="1" Width="100" HorizontalAlignment="Left"
+                            <TextBox Grid.Row="6" Grid.Column="1" Width="{DynamicResource Size.Properties.NumberFieldWidth}" HorizontalAlignment="Left"
                                      Text="{Binding TrackNumberText}" Classes.invalid="{Binding HasTrackNumberError}"
                                      PlaceholderText="{Binding TrackNumberPlaceholder}" />
 
                             <TextBlock Grid.Row="7" VerticalAlignment="Top" Margin="{styles:Spacing Top=XS}"
                                        Classes="field-label" Text="{x:Static res:Strings.LabelComments}" />
                             <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding Comment}" PlaceholderText="{Binding CommentPlaceholder}"
-                                     AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" />
+                                     AcceptsReturn="True" TextWrapping="Wrap" MinHeight="{DynamicResource Size.Properties.CommentMinHeight}" />
                         </Grid>
 
-                        <StackPanel Grid.Column="1" Width="220" Spacing="{styles:SpacingValue S}">
+                        <StackPanel Grid.Column="1" Width="{DynamicResource Size.Properties.CoverSize}" Spacing="{styles:SpacingValue S}">
                             <TextBlock Classes="field-label" Text="{x:Static res:Strings.LabelCover}" />
                             <!-- Right-click: choose/remove. Dropping an image file onto it also sets the cover. -->
-                            <Border x:Name="CoverBox" Width="220" Height="220" ClipToBounds="True" CornerRadius="4"
-                                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+                            <Border x:Name="CoverBox" Width="{DynamicResource Size.Properties.CoverSize}" Height="{DynamicResource Size.Properties.CoverSize}"
+                                    ClipToBounds="True" CornerRadius="{DynamicResource Radius.Control}"
+                                    Background="{DynamicResource Brush.Surface}"
                                     DragDrop.AllowDrop="True">
                                 <Border.ContextMenu>
                                     <ContextMenu>
@@ -91,15 +83,10 @@
                                            Stretch="Uniform" />
                                     <views:AlbumCoverPlaceholderIcon IsVisible="{Binding !HasCover}" />
                                     <TextBlock Text="{x:Static res:Strings.Varies}" IsVisible="{Binding CoverVaries}"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center"
-                                               FontWeight="Bold" Foreground="White">
-                                        <TextBlock.Effect>
-                                            <DropShadowEffect BlurRadius="4" OffsetX="0" OffsetY="0" Color="Black" />
-                                        </TextBlock.Effect>
-                                    </TextBlock>
+                                               Classes="strong" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 </Panel>
                             </Border>
-                            <TextBlock Text="{x:Static res:Strings.CoverHint}" Opacity="0.5" TextWrapping="Wrap" />
+                            <TextBlock Text="{x:Static res:Strings.CoverHint}" Classes="tertiary" TextWrapping="Wrap" />
                             <CheckBox Content="{x:Static res:Strings.CoverSaveAsSeparateFile}"
                                       IsChecked="{Binding SaveCoverAsSeparateFile}"
                                       IsEnabled="{Binding HasCover}" />
@@ -108,8 +95,8 @@
 
                     <!-- Read-only file info. -->
                     <Border Grid.Row="2" Margin="{styles:Spacing Top=M}" Padding="{styles:Spacing Top=M}"
-                            BorderThickness="0,1,0,0"
-                            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+                            BorderThickness="{DynamicResource Border.Top.Thin}"
+                            BorderBrush="{DynamicResource Brush.Separator}">
                         <StackPanel Spacing="{styles:SpacingValue S}">
                             <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto,Auto"
                                   ColumnSpacing="{styles:SpacingValue S}" RowSpacing="{styles:SpacingValue XS}">
@@ -139,8 +126,7 @@
             </TabItem>
         </TabControl>
 
-        <TextBlock Grid.Row="1" Text="{Binding ErrorMessage}" TextWrapping="Wrap"
-                   Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+        <TextBlock Grid.Row="1" Text="{Binding ErrorMessage}" TextWrapping="Wrap" Classes="error"
                    Margin="{styles:Spacing Left=M, Right=M}"
                    IsVisible="{Binding ErrorMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
 

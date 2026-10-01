@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using SharpSelecta.App.Collections;
 using SharpSelecta.App.Resources;
 using SharpSelecta.App.Services;
+using SharpSelecta.App.Styles;
 using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.ViewModels;
@@ -320,6 +321,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         PlaybackControlsViewModel playbackControls,
         IFileManagerService fileManagerService,
         string settingsFilePath,
+        ThemeLayout layout,
         ILogger<LibraryViewModel> logger)
     {
         _filePickerService = filePickerService;
@@ -328,8 +330,8 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         _settingsFilePath = settingsFilePath;
         _logger = logger;
 
-        Grid = new AlbumGridViewModel(this, settingsFilePath, _logger);
-        RecentlyAddedGrid = new AlbumGridViewModel(this, settingsFilePath, _logger, allowUserSort: false);
+        Grid = new AlbumGridViewModel(this, settingsFilePath, layout, _logger);
+        RecentlyAddedGrid = new AlbumGridViewModel(this, settingsFilePath, layout, _logger, allowUserSort: false);
         Playlists = new PlaylistsViewModel(this, settingsFilePath);
 
         Tracks.CollectionChanged += (_, _) =>

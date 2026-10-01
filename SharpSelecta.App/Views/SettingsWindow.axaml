@@ -10,11 +10,15 @@
         x:Class="SharpSelecta.App.Views.SettingsWindow"
         x:DataType="vm:SettingsWindowViewModel"
         Title="{x:Static res:Strings.Settings}"
-        Width="600"
-        Height="400"
+        Width="{DynamicResource Size.Settings.Width}"
+        Height="{DynamicResource Size.Settings.Height}"
         Closing="OnClosing">
 
-    <Grid ColumnDefinitions="160,*" RowDefinitions="*,Auto">
+    <Grid RowDefinitions="*,Auto">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="{DynamicResource Size.Settings.CategoryColumn}" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
         <ListBox Grid.Row="0" Grid.Column="0"
                  ItemsSource="{Binding Categories}"
                  SelectedItem="{Binding SelectedCategory}" />

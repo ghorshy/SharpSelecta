@@ -1,0 +1,95 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Every opacity, font, shape and size the app uses (spacing lives in Spacing.axaml, colors in
+         ThemeColors.axaml, icon shapes in Icons.axaml). Views and styles reference these keys only -
+         never a literal number. A custom theme file overrides any of them by redefining the key. -->
+
+    <!-- Opacity -->
+    <x:Double x:Key="Opacity.TextSecondary">0.7</x:Double>
+    <x:Double x:Key="Opacity.TextTertiary">0.5</x:Double>
+    <x:Double x:Key="Opacity.Disabled">0.4</x:Double>
+    <x:Double x:Key="Opacity.Missing">0.5</x:Double>
+    <x:Double x:Key="Opacity.Dragging">0.4</x:Double>
+
+    <!-- Typography -->
+    <x:Double x:Key="FontSize.Content">14</x:Double>
+    <x:Double x:Key="FontSize.Small">11</x:Double>
+    <FontWeight x:Key="FontWeight.Strong">Bold</FontWeight>
+
+    <!-- Shape -->
+    <CornerRadius x:Key="Radius.Control">4</CornerRadius>
+    <Thickness x:Key="Border.All">1</Thickness>
+    <Thickness x:Key="Border.Top.Thin">0,1,0,0</Thickness>
+    <Thickness x:Key="Border.Top.Thick">0,2,0,0</Thickness>
+    <Thickness x:Key="Border.Bottom.Thick">0,0,0,2</Thickness>
+    <x:Double x:Key="Stroke.PlaceholderGroove">0.75</x:Double>
+
+    <!-- Icons -->
+    <x:Double x:Key="Size.Icon.XS">12</x:Double>
+    <x:Double x:Key="Size.Icon.S">14</x:Double>
+    <x:Double x:Key="Size.Icon.M">18</x:Double>
+
+    <!-- Main window -->
+    <x:Double x:Key="Size.MainWindow.Width">1280</x:Double>
+    <x:Double x:Key="Size.MainWindow.Height">720</x:Double>
+    <GridLength x:Key="Size.Splitter.Width">10</GridLength>
+    <x:Double x:Key="Size.MainWindow.RightColumnWidth">220</x:Double>
+
+    <!-- Library -->
+    <x:Double x:Key="Size.Library.SearchMinWidth">160</x:Double>
+    <x:Double x:Key="Size.Library.ProgressWidth">200</x:Double>
+    <x:Double x:Key="Size.TrackList.DropIndicatorWidth">2</x:Double>
+    <x:Double x:Key="Size.TrackList.DropIndicatorHeight">32</x:Double>
+    <x:Double x:Key="Size.Album.TileDefault">160</x:Double>
+    <x:Double x:Key="Size.Album.TileMin">144</x:Double>
+    <x:Double x:Key="Size.Album.TileMax">320</x:Double>
+    <x:Double x:Key="Size.Album.TileStep">10</x:Double>
+    <x:Double x:Key="Size.Album.TileSliderWidth">160</x:Double>
+    <x:Double x:Key="Size.Album.ExpandedCover">160</x:Double>
+    <x:Double x:Key="Size.Album.TrackNumberWidth">30</x:Double>
+
+    <!-- Default track list column widths (a width the user dragged to is saved separately) -->
+    <x:Double x:Key="Size.Column.TrackNumber">60</x:Double>
+    <x:Double x:Key="Size.Column.Title">200</x:Double>
+    <x:Double x:Key="Size.Column.Artist">150</x:Double>
+    <x:Double x:Key="Size.Column.Album">150</x:Double>
+    <x:Double x:Key="Size.Column.Length">80</x:Double>
+    <x:Double x:Key="Size.Column.SampleRate">100</x:Double>
+    <x:Double x:Key="Size.Column.BitDepth">80</x:Double>
+    <x:Double x:Key="Size.Column.Bitrate">90</x:Double>
+    <x:Double x:Key="Size.Column.FileType">80</x:Double>
+    <x:Double x:Key="Size.Column.Year">60</x:Double>
+
+    <!-- Playback bar, queue, waveform -->
+    <GridLength x:Key="Size.Playback.VolumeColumn">80</GridLength>
+    <x:Double x:Key="Size.Playback.TimeWidth">70</x:Double>
+    <x:Double x:Key="Size.Queue.Thumbnail">36</x:Double>
+    <x:Double x:Key="Size.Waveform.BarWidth">2</x:Double>
+    <x:Double x:Key="Size.Waveform.BarGap">1</x:Double>
+    <x:Double x:Key="Size.Waveform.LoadingLine">1</x:Double>
+
+    <!-- Dialogs -->
+    <x:Double x:Key="Size.Dialog.Width">360</x:Double>
+
+    <x:Double x:Key="Size.Equalizer.Width">480</x:Double>
+    <x:Double x:Key="Size.Equalizer.Height">320</x:Double>
+    <x:Double x:Key="Size.Equalizer.SliderHeight">160</x:Double>
+    <x:Double x:Key="Size.Equalizer.PresetWidth">120</x:Double>
+
+    <x:Double x:Key="Size.Settings.Width">600</x:Double>
+    <x:Double x:Key="Size.Settings.Height">400</x:Double>
+    <GridLength x:Key="Size.Settings.CategoryColumn">160</GridLength>
+    <x:Double x:Key="Size.Settings.FieldMinWidth">160</x:Double>
+    <x:Double x:Key="Size.Settings.NumberFieldWidth">100</x:Double>
+    <x:Double x:Key="Size.Settings.ShortcutButtonMinWidth">110</x:Double>
+
+    <x:Double x:Key="Size.Properties.Width">760</x:Double>
+    <x:Double x:Key="Size.Properties.Height">620</x:Double>
+    <x:Double x:Key="Size.Properties.MinWidth">640</x:Double>
+    <x:Double x:Key="Size.Properties.MinHeight">560</x:Double>
+    <x:Double x:Key="Size.Properties.CoverSize">220</x:Double>
+    <x:Double x:Key="Size.Properties.NumberFieldWidth">100</x:Double>
+    <x:Double x:Key="Size.Properties.CommentMinHeight">70</x:Double>
+
+</ResourceDictionary>

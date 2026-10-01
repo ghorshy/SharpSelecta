@@ -10,8 +10,8 @@
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="SharpSelecta"
-        Width="1280"
-        Height="720">
+        Width="{DynamicResource Size.MainWindow.Width}"
+        Height="{DynamicResource Size.MainWindow.Height}">
 
     <!-- KeyBindings are rebindable, so they're built at runtime from ShortcutRegistry in MainWindow.axaml.cs. -->
 
@@ -21,7 +21,7 @@
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="{DynamicResource Size.Splitter.Width}" />
                 <ColumnDefinition Width="{Binding RightColumnWidth, Mode=TwoWay}" />
             </Grid.ColumnDefinitions>
 

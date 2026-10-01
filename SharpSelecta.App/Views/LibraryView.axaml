@@ -16,8 +16,8 @@
 
     <UserControl.Styles>
         <Style Selector="Button.toolbar-button.active">
-            <Setter Property="BorderThickness" Value="0,0,0,2" />
-            <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
+            <Setter Property="BorderThickness" Value="{DynamicResource Border.Bottom.Thick}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
             <Setter Property="CornerRadius" Value="0" />
         </Style>
     </UserControl.Styles>
@@ -55,17 +55,17 @@
                 </Button>
             </StackPanel>
 
-            <Border DockPanel.Dock="Right" BorderBrush="Gray" BorderThickness="1" CornerRadius="4"
+            <Border DockPanel.Dock="Right" BorderBrush="{DynamicResource Brush.SearchBorder}" BorderThickness="{DynamicResource Border.All}" CornerRadius="{DynamicResource Radius.Control}"
                     Padding="{styles:Spacing Left=XS, Right=XS}">
                 <Grid ColumnDefinitions="Auto,Auto,Auto" VerticalAlignment="Center">
-                    <svg:Svg Grid.Column="0" Classes="toolbar-icon" Width="14" Height="14"
+                    <svg:Svg Grid.Column="0" Classes="toolbar-icon" Width="{DynamicResource Size.Icon.S}" Height="{DynamicResource Size.Icon.S}"
                              Path="{DynamicResource Icon.Search}" Margin="{styles:Spacing Right=XXS}" />
                     <TextBox Grid.Column="1" x:Name="SearchBox" Text="{Binding SearchQuery, Mode=TwoWay}"
                              PlaceholderText="{x:Static res:Strings.Search}" BorderThickness="0" Background="Transparent"
-                             MinWidth="160" VerticalAlignment="Center" />
+                             MinWidth="{DynamicResource Size.Library.SearchMinWidth}" VerticalAlignment="Center" />
                     <Button Grid.Column="2" Classes="toolbar-button toolbar-button-hover" Command="{Binding ClearSearchCommand}"
                             IsVisible="{Binding SearchQuery, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}">
-                        <svg:Svg Classes="toolbar-icon" Width="12" Height="12" Path="{DynamicResource Icon.X}" />
+                        <svg:Svg Classes="toolbar-icon" Width="{DynamicResource Size.Icon.XS}" Height="{DynamicResource Size.Icon.XS}" Path="{DynamicResource Icon.X}" />
                     </Button>
                 </Grid>
             </Border>
@@ -78,11 +78,11 @@
              doesn't flash up misleadingly while a remembered folder is still being (re)scanned. -->
         <StackPanel IsVisible="{Binding ShowEmptyState}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{styles:SpacingValue M}">
             <Button Content="{x:Static res:Strings.ChooseLibraryFolder}" Command="{Binding AddFolderCommand}" HorizontalAlignment="Center" />
-            <TextBlock Text="{Binding StatusMessage}" Foreground="OrangeRed" TextWrapping="Wrap" HorizontalAlignment="Center" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+            <TextBlock Text="{Binding StatusMessage}" Classes="error" TextWrapping="Wrap" HorizontalAlignment="Center" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
         </StackPanel>
 
         <StackPanel IsVisible="{Binding IsLoadingLibrary}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{styles:SpacingValue M}">
-            <ProgressBar IsIndeterminate="True" Width="200" />
+            <ProgressBar IsIndeterminate="True" Width="{DynamicResource Size.Library.ProgressWidth}" />
             <TextBlock Text="{x:Static res:Strings.LoadingLibrary}" HorizontalAlignment="Center" />
         </StackPanel>
 

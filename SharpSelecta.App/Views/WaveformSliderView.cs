@@ -19,10 +19,10 @@ public sealed class WaveformSliderView : Control
         AvaloniaProperty.Register<WaveformSliderView, double>(nameof(Maximum), 1.0);
 
     public static readonly StyledProperty<double> BarWidthProperty =
-        AvaloniaProperty.Register<WaveformSliderView, double>(nameof(BarWidth), 2.0);
+        AvaloniaProperty.Register<WaveformSliderView, double>(nameof(BarWidth));
 
     public static readonly StyledProperty<double> BarGapProperty =
-        AvaloniaProperty.Register<WaveformSliderView, double>(nameof(BarGap), 1.0);
+        AvaloniaProperty.Register<WaveformSliderView, double>(nameof(BarGap));
 
     public static readonly StyledProperty<bool> IsLoadingProperty =
         AvaloniaProperty.Register<WaveformSliderView, bool>(nameof(IsLoading));
@@ -172,7 +172,7 @@ public sealed class WaveformSliderView : Control
             return;
 
         var centerY = Bounds.Height / 2;
-        var unplayedBrush = new SolidColorBrush(Color.FromArgb(0x40, 0xA0, 0xA0, 0xA0));
+        var unplayedBrush = Brush("Brush.WaveformUnplayed");
 
         var stride = Math.Max(1.0, BarWidth + BarGap);
         var visibleBarCount = Math.Max(1, (int)(Bounds.Width / stride));
@@ -184,7 +184,8 @@ public sealed class WaveformSliderView : Control
             // (an empty/duration-less file), the control goes back to fully blank.
             if (IsLoading)
             {
-                context.FillRectangle(unplayedBrush, new Rect(0, centerY - 0.5, Bounds.Width, 1));
+                var lineThickness = Number("Size.Waveform.LoadingLine");
+                context.FillRectangle(unplayedBrush, new Rect(0, centerY - lineThickness / 2, Bounds.Width, lineThickness));
             }
 
             return;
@@ -197,17 +198,8 @@ public sealed class WaveformSliderView : Control
         var lowPreview = Math.Min(playedBarCount, hoverBarIndex < 0 ? playedBarCount : hoverBarIndex);
         var highPreview = Math.Max(playedBarCount, hoverBarIndex);
 
-        var accentColor = this.TryFindResource("SystemAccentColor", out var resource)
-            ? resource switch
-            {
-                Color c => c,
-                ISolidColorBrush b => b.Color,
-                _ => Colors.DodgerBlue,
-            }
-            : Colors.DodgerBlue;
-
-        var playedBrush = new SolidColorBrush(accentColor);
-        var previewBrush = new SolidColorBrush(accentColor, 0.5);
+        var playedBrush = Brush("Brush.WaveformPlayed");
+        var previewBrush = Brush("Brush.WaveformPreview");
 
         for (var i = 0; i < peaks.Length; i++)
         {
@@ -225,4 +217,13 @@ public sealed class WaveformSliderView : Control
             context.FillRectangle(brush, rect);
         }
     }
+
+    // Colors and sizes come from the theme (ThemeColors/ThemeMetrics); a key a custom theme dropped
+    // can't happen since the built-in dictionaries are always merged underneath, so the neutral
+    // fallbacks below only keep a render pass from throwing.
+    private IBrush Brush(string key) =>
+        this.TryFindResource(key, ActualThemeVariant, out var resource) && resource is IBrush brush ? brush : Brushes.Transparent;
+
+    private double Number(string key) =>
+        this.TryFindResource(key, ActualThemeVariant, out var resource) && resource is double number ? number : 0;
 }

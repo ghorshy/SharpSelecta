@@ -1,0 +1,59 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Every color the app draws with. Views and styles reference these keys only - never a literal
+         color. A custom theme file is a ResourceDictionary that overrides any of them; Light/Dark
+         follow the active theme variant. Brushes that alias a FluentTheme color (SystemAccentColor
+         etc.) are the one place Fluent's own keys are allowed to appear. -->
+    <ResourceDictionary.ThemeDictionaries>
+
+        <ResourceDictionary x:Key="Light">
+            <Color x:Key="Color.IconForeground">#FF1A1A1A</Color>
+            <Color x:Key="Color.IconDisabled">#FFA0A0A0</Color>
+
+            <SolidColorBrush x:Key="Brush.Accent" Color="{DynamicResource SystemAccentColor}" />
+            <SolidColorBrush x:Key="Brush.Surface" Color="{DynamicResource SystemChromeMediumLowColor}" />
+            <SolidColorBrush x:Key="Brush.Separator" Color="{DynamicResource SystemBaseLowColor}" />
+            <SolidColorBrush x:Key="Brush.ThumbnailPlaceholder" Color="{DynamicResource SystemBaseLowColor}" />
+            <SolidColorBrush x:Key="Brush.Error" Color="#FFFF4500" />
+            <SolidColorBrush x:Key="Brush.SearchBorder" Color="#FF808080" />
+            <SolidColorBrush x:Key="Brush.CoverWindowBackground" Color="#FF000000" />
+            <SolidColorBrush x:Key="Brush.ToolbarHover" Color="#28808080" />
+            <SolidColorBrush x:Key="Brush.ToolbarPressed" Color="#40808080" />
+
+            <SolidColorBrush x:Key="Brush.WaveformPlayed" Color="{DynamicResource SystemAccentColor}" />
+            <SolidColorBrush x:Key="Brush.WaveformPreview" Color="{DynamicResource SystemAccentColor}" Opacity="0.5" />
+            <SolidColorBrush x:Key="Brush.WaveformUnplayed" Color="#40A0A0A0" />
+
+            <SolidColorBrush x:Key="Brush.PlaceholderDisc" Color="#FF2B2B2B" />
+            <SolidColorBrush x:Key="Brush.PlaceholderGroove" Color="#FF1A1A1A" />
+            <SolidColorBrush x:Key="Brush.PlaceholderLabel" Color="#FFB33A3A" />
+            <SolidColorBrush x:Key="Brush.PlaceholderSpindle" Color="#FF0D0D0D" />
+        </ResourceDictionary>
+
+        <ResourceDictionary x:Key="Dark">
+            <Color x:Key="Color.IconForeground">#FFEDEDED</Color>
+            <Color x:Key="Color.IconDisabled">#FF808080</Color>
+
+            <SolidColorBrush x:Key="Brush.Accent" Color="{DynamicResource SystemAccentColor}" />
+            <SolidColorBrush x:Key="Brush.Surface" Color="{DynamicResource SystemChromeMediumLowColor}" />
+            <SolidColorBrush x:Key="Brush.Separator" Color="{DynamicResource SystemBaseLowColor}" />
+            <SolidColorBrush x:Key="Brush.ThumbnailPlaceholder" Color="{DynamicResource SystemBaseLowColor}" />
+            <SolidColorBrush x:Key="Brush.Error" Color="#FFFF4500" />
+            <SolidColorBrush x:Key="Brush.SearchBorder" Color="#FF808080" />
+            <SolidColorBrush x:Key="Brush.CoverWindowBackground" Color="#FF000000" />
+            <SolidColorBrush x:Key="Brush.ToolbarHover" Color="#28808080" />
+            <SolidColorBrush x:Key="Brush.ToolbarPressed" Color="#40808080" />
+
+            <SolidColorBrush x:Key="Brush.WaveformPlayed" Color="{DynamicResource SystemAccentColor}" />
+            <SolidColorBrush x:Key="Brush.WaveformPreview" Color="{DynamicResource SystemAccentColor}" Opacity="0.5" />
+            <SolidColorBrush x:Key="Brush.WaveformUnplayed" Color="#40A0A0A0" />
+
+            <SolidColorBrush x:Key="Brush.PlaceholderDisc" Color="#FF2B2B2B" />
+            <SolidColorBrush x:Key="Brush.PlaceholderGroove" Color="#FF1A1A1A" />
+            <SolidColorBrush x:Key="Brush.PlaceholderLabel" Color="#FFB33A3A" />
+            <SolidColorBrush x:Key="Brush.PlaceholderSpindle" Color="#FF0D0D0D" />
+        </ResourceDictionary>
+
+    </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>
