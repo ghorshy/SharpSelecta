@@ -23,7 +23,9 @@
                  ItemsSource="{Binding Categories}"
                  SelectedItem="{Binding SelectedCategory}" />
 
-        <Border Grid.Row="0" Grid.Column="1" Padding="{styles:Spacing Uniform=M}">
+        <!-- A category taller than the window (the keyboard shortcuts list) scrolls instead of being cut off. -->
+        <ScrollViewer Grid.Row="0" Grid.Column="1" Padding="{styles:Spacing Uniform=M}"
+                      VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <ContentControl Content="{Binding SelectedCategoryViewModel}">
                 <ContentControl.DataTemplates>
                     <DataTemplate DataType="vm:LibraryViewModel">
@@ -43,7 +45,7 @@
                     </DataTemplate>
                 </ContentControl.DataTemplates>
             </ContentControl>
-        </Border>
+        </ScrollViewer>
 
         <StackPanel Grid.Row="1" Grid.Column="1"
                     Orientation="Horizontal"

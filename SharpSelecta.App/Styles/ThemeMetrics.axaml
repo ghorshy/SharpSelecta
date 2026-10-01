@@ -77,12 +77,12 @@
     <x:Double x:Key="Size.Equalizer.SliderHeight">160</x:Double>
     <x:Double x:Key="Size.Equalizer.PresetWidth">120</x:Double>
 
-    <x:Double x:Key="Size.Settings.Width">600</x:Double>
+    <x:Double x:Key="Size.Settings.Width">720</x:Double>
     <x:Double x:Key="Size.Settings.Height">400</x:Double>
     <GridLength x:Key="Size.Settings.CategoryColumn">160</GridLength>
     <x:Double x:Key="Size.Settings.FieldMinWidth">160</x:Double>
     <x:Double x:Key="Size.Settings.NumberFieldWidth">100</x:Double>
-    <x:Double x:Key="Size.Settings.ShortcutButtonMinWidth">110</x:Double>
+    <x:Double x:Key="Size.Settings.ShortcutButtonWidth">200</x:Double>
 
     <x:Double x:Key="Size.CreditsEditor.Width">480</x:Double>
     <x:Double x:Key="Size.CreditsEditor.Height">420</x:Double>
