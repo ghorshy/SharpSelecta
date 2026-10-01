@@ -16,7 +16,7 @@
                 <DataTemplate x:DataType="x:String">
                     <Grid ColumnDefinitions="*,Auto" Margin="{styles:Spacing Bottom=XXS}">
                         <TextBlock Grid.Column="0" Text="{Binding}" TextWrapping="Wrap" VerticalAlignment="Center" />
-                        <Button Grid.Column="1" Content="✕" Click="OnRemoveFolderClick" />
+                        <Button Grid.Column="1" Content="{x:Static res:Strings.Remove}" Click="OnRemoveFolderClick" />
                     </Grid>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
