@@ -45,6 +45,20 @@ public class ShortcutRegistryTests
     }
 
     [Test]
+    public async Task PropertiesShortcut_DefaultsToAltEnter_AndAsksTheViewToOpenTheFocusedTrack()
+    {
+        var mainWindowViewModel = CreateMainWindowViewModel();
+        var properties = ShortcutRegistry.All.Single(s => s.Id == "Library.Properties");
+        var requested = 0;
+        mainWindowViewModel.OpenPropertiesRequested += (_, _) => requested++;
+
+        properties.Command(mainWindowViewModel).Execute(null);
+
+        await Assert.That(properties.DefaultGesture).IsEqualTo("Alt+Enter");
+        await Assert.That(requested).IsEqualTo(1);
+    }
+
+    [Test]
     public async Task IncreaseTileSizeShortcut_TargetsWhicheverGridIsActiveAtTheTimeItFires()
     {
         var mainWindowViewModel = CreateMainWindowViewModel();

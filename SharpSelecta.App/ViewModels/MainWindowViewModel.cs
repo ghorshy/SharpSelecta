@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using SharpSelecta.App.Services;
 using SharpSelecta.Core.Audio;
@@ -56,6 +58,13 @@ public partial class MainWindowViewModel : ViewModelBase
         Equalizer = new EqualizerViewModel(settingsFilePath, audioEngine);
         RightColumnWidth = new GridLength(SettingsStore.LoadRightColumnWidth(_settingsFilePath) ?? DefaultRightColumnWidth);
     }
+
+    // Which track "the selected one" is depends on what has focus (a grid, an expanded album, the
+    // queue), which only the view knows - so the shortcut just asks the view to resolve and open it.
+    public event EventHandler? OpenPropertiesRequested;
+
+    [RelayCommand]
+    private void OpenProperties() => OpenPropertiesRequested?.Invoke(this, EventArgs.Empty);
 
     public void PersistRightColumnWidth() =>
         SettingsStore.SaveRightColumnWidth(_settingsFilePath, RightColumnWidth.Value);

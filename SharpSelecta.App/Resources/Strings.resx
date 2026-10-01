@@ -265,6 +265,9 @@
   <data name="RemoveCoverConfirmMessage" xml:space="preserve">
     <value>This also deletes the cover file in this folder, which is shared by every track in it. Remove it?</value>
   </data>
+  <data name="ShortcutProperties" xml:space="preserve">
+    <value>Open track properties</value>
+  </data>
   <data name="ColumnTrack" xml:space="preserve">
     <value>Track</value>
   </data>

@@ -30,5 +30,6 @@ public static class ShortcutRegistry
         new("Playback.PreviousTrack", "MediaPreviousTrack", () => Strings.ShortcutPreviousTrack, vm => vm.PlaybackControls.PreviousTrackCommand),
         new("Playback.NextTrack", "MediaNextTrack", () => Strings.ShortcutNextTrack, vm => vm.PlaybackControls.NextTrackCommand),
         new("Queue.ClearQueue", "", () => Strings.ShortcutClearQueue, vm => vm.Queue.ClearQueueCommand),
+        new("Library.Properties", "Alt+Enter", () => Strings.ShortcutProperties, vm => vm.OpenPropertiesCommand),
     ];
 }

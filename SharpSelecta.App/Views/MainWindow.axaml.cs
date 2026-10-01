@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -6,6 +7,7 @@ using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using SharpSelecta.App.Shortcuts;
 using SharpSelecta.App.ViewModels;
+using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.Views;
 
@@ -25,6 +27,32 @@ public partial class MainWindow : Window
 
         RebuildKeyBindings(vm);
         vm.ShortcutSettings.ShortcutsChanged += (_, _) => RebuildKeyBindings(vm);
+        vm.OpenPropertiesRequested += async (_, _) => await OpenPropertiesForFocusedTrackAsync(vm);
+    }
+
+    private async Task OpenPropertiesForFocusedTrackAsync(MainWindowViewModel vm)
+    {
+        if (FocusedTrack() is { } track)
+        {
+            await TrackPropertiesWindow.ShowAsync(this, vm.Library, track);
+        }
+    }
+
+    // The selected track of whichever list currently has focus; nothing for a text box or tile.
+    private Track? FocusedTrack()
+    {
+        if (FocusManager?.GetFocusedElement() is not Visual focused)
+            return null;
+
+        if (focused.FindAncestorOfType<DataGrid>(includeSelf: true) is { SelectedItem: LibraryTrackViewModel { IsMissing: false } gridItem })
+            return gridItem.Track;
+
+        return focused.FindAncestorOfType<ListBox>(includeSelf: true)?.SelectedItem switch
+        {
+            AlbumTrackRowViewModel row => row.Track.Track,
+            QueueEntryViewModel entry => entry.Entry.Track,
+            _ => null,
+        };
     }
 
     private void RebuildKeyBindings(MainWindowViewModel vm)
