@@ -57,10 +57,6 @@ dotnet test
 - [Tabler Icons](https://tabler.io/icons) — toolbar icon set
 - [TUnit](https://github.com/thomhurst/TUnit) + [NSubstitute](https://github.com/nsubstitute/NSubstitute) — testing
 
-## TODO
-
-- Crossfade
-
 ## License
 
 MIT — see [LICENSE](LICENSE).
