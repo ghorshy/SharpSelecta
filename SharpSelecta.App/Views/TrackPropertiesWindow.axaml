@@ -103,22 +103,22 @@
                         <StackPanel Spacing="{styles:SpacingValue S}">
                             <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto,Auto"
                                   ColumnSpacing="{styles:SpacingValue S}" RowSpacing="{styles:SpacingValue XS}">
-                                <TextBlock Grid.Row="0" Grid.Column="0" Classes="field-label" Text="{x:Static res:Strings.LabelDuration}" />
+                                <TextBlock Grid.Row="0" Grid.Column="0" Classes="field-label info-label" Text="{x:Static res:Strings.LabelDuration}" />
                                 <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding DurationDisplay}" />
-                                <TextBlock Grid.Row="0" Grid.Column="2" Classes="field-label" Text="{x:Static res:Strings.ColumnFileType}" />
+                                <TextBlock Grid.Row="0" Grid.Column="2" Classes="field-label info-label" Text="{x:Static res:Strings.ColumnFileType}" />
                                 <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding FileTypeDisplay}" />
 
-                                <TextBlock Grid.Row="1" Grid.Column="0" Classes="field-label" Text="{x:Static res:Strings.ColumnBitrate}" />
+                                <TextBlock Grid.Row="1" Grid.Column="0" Classes="field-label info-label" Text="{x:Static res:Strings.ColumnBitrate}" />
                                 <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding BitrateDisplay}" />
-                                <TextBlock Grid.Row="1" Grid.Column="2" Classes="field-label" Text="{x:Static res:Strings.ColumnSampleRate}" />
+                                <TextBlock Grid.Row="1" Grid.Column="2" Classes="field-label info-label" Text="{x:Static res:Strings.ColumnSampleRate}" />
                                 <TextBlock Grid.Row="1" Grid.Column="3" Text="{Binding SampleRateDisplay}" />
 
-                                <TextBlock Grid.Row="2" Grid.Column="0" Classes="field-label" Text="{x:Static res:Strings.LabelDateAdded}" />
+                                <TextBlock Grid.Row="2" Grid.Column="0" Classes="field-label info-label" Text="{x:Static res:Strings.LabelDateAdded}" />
                                 <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DateAddedDisplay}" />
                             </Grid>
 
                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{styles:SpacingValue S}">
-                                <TextBlock Grid.Column="0" Classes="field-label" Text="{x:Static res:Strings.LabelLocation}" />
+                                <TextBlock Grid.Column="0" Classes="field-label info-label" Text="{x:Static res:Strings.LabelLocation}" />
                                 <SelectableTextBlock Grid.Column="1" Text="{Binding Location}" TextWrapping="Wrap" VerticalAlignment="Center" />
                                 <Button Grid.Column="2" Content="{Binding ShowInFileManagerLabel}"
                                         Command="{Binding ShowInFileManagerCommand}" />
