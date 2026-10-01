@@ -14,6 +14,7 @@ using SharpSelecta.App.Resources;
 using SharpSelecta.App.Services;
 using SharpSelecta.App.Styles;
 using SharpSelecta.Core.AlbumArt;
+using SharpSelecta.Core.Conversion;
 using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.ViewModels;
@@ -26,6 +27,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     private readonly string _settingsFilePath;
     private readonly ILogger<LibraryViewModel> _logger;
     private readonly IReadOnlyList<IAlbumArtProvider> _albumArtProviders;
+    private readonly TrackConversionService? _conversionService;
 
     public string ShowInFileManagerLabel => _fileManagerService.ActionLabel;
 
@@ -348,9 +350,11 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         string settingsFilePath,
         ThemeLayout layout,
         ILogger<LibraryViewModel> logger,
-        IReadOnlyList<IAlbumArtProvider>? albumArtProviders = null)
+        IReadOnlyList<IAlbumArtProvider>? albumArtProviders = null,
+        TrackConversionService? conversionService = null)
     {
         _albumArtProviders = albumArtProviders ?? [];
+        _conversionService = conversionService;
         _filePickerService = filePickerService;
         _playbackControls = playbackControls;
         _fileManagerService = fileManagerService;
@@ -619,9 +623,31 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     public TrackPropertiesViewModel CreateTrackProperties(IReadOnlyList<Track> tracks)
     {
-        var properties = new TrackPropertiesViewModel(tracks, _filePickerService, _fileManagerService, _logger, _albumArtProviders);
+        var conversion = _conversionService is null ? null : new TrackConversionViewModel(tracks, _conversionService, _logger);
+        if (conversion is not null)
+        {
+            conversion.Converted += (_, outcomes) => _ = OnTracksConvertedAsync(outcomes);
+        }
+
+        var properties = new TrackPropertiesViewModel(tracks, _filePickerService, _fileManagerService, _logger, _albumArtProviders)
+        {
+            Conversion = conversion,
+        };
         properties.TracksSaved += (_, updated) => OnTracksTagsSaved(updated);
         return properties;
+    }
+
+    // Converted copies join the library; an original that went to the trash hands its playlist spots and
+    // queue entries to its copy.
+    private async Task OnTracksConvertedAsync(IReadOnlyList<ConversionOutcome> outcomes)
+    {
+        foreach (var outcome in outcomes.Where(o => o.OriginalRemoved && o.Converted is not null))
+        {
+            LibraryIndexStore.ReplaceFileInPlaylists(_settingsFilePath, outcome.Source.FilePath, outcome.Converted!.FilePath);
+            await _playbackControls.ReplaceTrackFileAsync(outcome.Source.FilePath, outcome.Converted);
+        }
+
+        await ReconcileFoldersAsync();
     }
 
     // Pushes tracks re-read after a tag/cover edit into everything that holds their old copies: the

@@ -267,6 +267,19 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         CurrentTrackArtworkBytes = await Task.Run(() => MusicLibraryScanner.LoadArtwork(updated.FilePath));
     }
 
+    // The original of a converted track is gone: whatever referred to it now refers to the converted file.
+    public async Task ReplaceTrackFileAsync(string oldFilePath, Track replacement)
+    {
+        _queue.ReplaceFile(oldFilePath, replacement);
+
+        if (CurrentTrack?.FilePath != oldFilePath)
+            return;
+
+        CurrentTrack = replacement;
+        LoadedFileName = replacement.DisplayName;
+        CurrentTrackArtworkBytes = await Task.Run(() => MusicLibraryScanner.LoadArtwork(replacement.FilePath));
+    }
+
     public async Task PlayQueueEntryAsync(QueueEntry entry)
     {
         var index = _queue.IndexOf(entry);

@@ -835,6 +835,28 @@ public class LibraryIndexStoreTests
     }
 
     [Test]
+    public async Task ReplaceFileInPlaylists_PointsEntriesAtTheNewFileKeepingTheirPosition()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            LibraryIndexStore.Reconcile(settingsPath, []);
+            var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "P");
+            LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, ["/music/a.flac", "/music/b.flac"]);
+
+            LibraryIndexStore.ReplaceFileInPlaylists(settingsPath, "/music/a.flac", "/music/a.m4a");
+
+            await Assert.That(LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId).Select(e => e.FilePath))
+                .IsEquivalentTo(["/music/a.m4a", "/music/b.flac"]);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+        }
+    }
+
+    [Test]
     public async Task DeletePlaylist_RemovesItAndItsTracks()
     {
         var settingsPath = CreateTempSettingsPath();

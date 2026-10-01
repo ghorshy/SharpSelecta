@@ -123,6 +123,31 @@ public static class Strings
 
     public static string Properties => Get(nameof(Properties));
     public static string TabTagEditor => Get(nameof(TabTagEditor));
+    public static string TabConvert => Get(nameof(TabConvert));
+    public static string ConvertFromLabel => Get(nameof(ConvertFromLabel));
+    public static string ConvertArrow => Get(nameof(ConvertArrow));
+    public static string ConvertKindLossless => Get(nameof(ConvertKindLossless));
+    public static string ConvertKindLossy => Get(nameof(ConvertKindLossy));
+    public static string ConvertWavTagsHint => Get(nameof(ConvertWavTagsHint));
+    public static string LabelConvertTo => Get(nameof(LabelConvertTo));
+    public static string ConvertFormatMp3 => Get(nameof(ConvertFormatMp3));
+    public static string ConvertFormatFlac => Get(nameof(ConvertFormatFlac));
+    public static string ConvertFormatAlac => Get(nameof(ConvertFormatAlac));
+    public static string ConvertFormatAac => Get(nameof(ConvertFormatAac));
+    public static string ConvertFormatOgg => Get(nameof(ConvertFormatOgg));
+    public static string ConvertFormatAiff => Get(nameof(ConvertFormatAiff));
+    public static string ConvertFormatWav => Get(nameof(ConvertFormatWav));
+    public static string KeepOriginalFile => Get(nameof(KeepOriginalFile));
+    public static string OriginalWillBeTrashed => Get(nameof(OriginalWillBeTrashed));
+    public static string ConvertButton => Get(nameof(ConvertButton));
+    public static string ConverterUnavailable => Get(nameof(ConverterUnavailable));
+    public static string ConvertReadingFiles => Get(nameof(ConvertReadingFiles));
+    public static string ConvertBlockLossyToLossless => Get(nameof(ConvertBlockLossyToLossless));
+    public static string ConvertBlockSameFormat => Get(nameof(ConvertBlockSameFormat));
+    public static string ConvertBlockNoLowerBitrate => Get(nameof(ConvertBlockNoLowerBitrate));
+    public static string ConvertBlockUnreadable => Get(nameof(ConvertBlockUnreadable));
+    public static string ConvertBlockBitrateTooHigh => Get(nameof(ConvertBlockBitrateTooHigh));
+    public static string ConvertCancelled => Get(nameof(ConvertCancelled));
     public static string LabelAlbumArtist => Get(nameof(LabelAlbumArtist));
     public static string LabelGenre => Get(nameof(LabelGenre));
     public static string LabelComments => Get(nameof(LabelComments));
@@ -173,6 +198,30 @@ public static class Strings
 
     public static string FailedToSaveSomeTags(int saved, int total, string failedNames) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToSaveSomeTagsFormat"), saved, total, failedNames);
+
+    public static string ConvertSkipped(int skipped, int total) =>
+        string.Format(CultureInfo.CurrentCulture, Get("ConvertSkippedFormat"), skipped, total);
+
+    public static string ConvertedAll(int count) =>
+        string.Format(CultureInfo.CurrentCulture, Get("ConvertedAllFormat"), count);
+
+    public static string ConvertedSome(int converted, int total, string failedNames) =>
+        string.Format(CultureInfo.CurrentCulture, Get("ConvertedSomeFormat"), converted, total, failedNames);
+
+    public static string ConvertTrashFailed(string reason) =>
+        string.Format(CultureInfo.CurrentCulture, Get("ConvertTrashFailedFormat"), reason);
+
+    public static string ConvertSourceKind(string format, string kind) =>
+        string.Format(CultureInfo.CurrentCulture, Get("ConvertSourceKindFormat"), format, kind);
+
+    public static string ConvertGroup(int count, string label) =>
+        string.Format(CultureInfo.CurrentCulture, Get("ConvertGroupFormat"), count, label);
+
+    public static string ConvertTrackCount(int count) =>
+        string.Format(CultureInfo.CurrentCulture, Get("ConvertTrackCountFormat"), count);
+
+    public static string BitrateKbps(int kbps) =>
+        string.Format(CultureInfo.CurrentCulture, Get("BitrateKbpsFormat"), kbps);
 
     public static string FailedToSaveTags(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToSaveTagsFormat"), reason);

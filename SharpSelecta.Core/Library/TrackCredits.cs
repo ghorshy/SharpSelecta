@@ -53,7 +53,7 @@ internal static class CreditFields
     // MP3/WAV carry ID3v2, whose own "remixed by" frame is TPE4; FLAC (Vorbis comments) and M4A use a
     // REMIXER field. The other name is also checked when reading, for files tagged by other tools.
     private static (string Preferred, string Alternate) RemixerKeys(string filePath) =>
-        Path.GetExtension(filePath).ToLowerInvariant() is ".mp3" or ".wav"
+        Path.GetExtension(filePath).ToLowerInvariant() is ".mp3" or ".wav" or ".aiff" or ".aif"
             ? (Id3RemixerFrame, FreeFormRemixerField)
             : (FreeFormRemixerField, Id3RemixerFrame);
 

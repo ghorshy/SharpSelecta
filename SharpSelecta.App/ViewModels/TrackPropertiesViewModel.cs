@@ -77,6 +77,9 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
 
     public bool IsMultiple => _tracks.Count > 1;
 
+    // Null when conversion isn't wired up (no converter service).
+    public TrackConversionViewModel? Conversion { get; init; }
+
     // Raised once per save with every track that was written (re-read from disk).
     public event EventHandler<IReadOnlyList<Track>>? TracksSaved;
 

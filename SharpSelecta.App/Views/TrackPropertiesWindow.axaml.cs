@@ -27,6 +27,8 @@ public partial class TrackPropertiesWindow : Window
                 vm.CloseRequested += (_, _) => Close();
             }
         };
+        // Closing the window stops a conversion that is still running.
+        Closing += (_, _) => (DataContext as TrackPropertiesViewModel)?.Conversion?.CancelConversion();
     }
 
     public static Task ShowAsync(Control anchor, LibraryViewModel library, Track track) =>

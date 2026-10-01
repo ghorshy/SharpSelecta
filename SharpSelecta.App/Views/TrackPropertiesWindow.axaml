@@ -137,6 +137,11 @@
                     </Border>
                 </Grid>
             </TabItem>
+
+            <TabItem Header="{x:Static res:Strings.TabConvert}" FontSize="{DynamicResource FontSize.Content}"
+                     IsVisible="{Binding Conversion, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+                <views:TrackConversionView DataContext="{Binding Conversion}" Margin="{styles:Spacing Uniform=M}" />
+            </TabItem>
         </TabControl>
 
         <TextBlock Grid.Row="1" Text="{Binding ErrorMessage}" TextWrapping="Wrap" Classes="error"

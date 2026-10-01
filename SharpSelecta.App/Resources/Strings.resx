@@ -544,4 +544,103 @@
   <data name="PlaylistImported" xml:space="preserve">
     <value>Playlist imported</value>
   </data>
+  <data name="TabConvert" xml:space="preserve">
+    <value>Convert</value>
+  </data>
+  <data name="LabelConvertTo" xml:space="preserve">
+    <value>Convert to</value>
+  </data>
+  <data name="ConvertFormatMp3" xml:space="preserve">
+    <value>MP3</value>
+  </data>
+  <data name="ConvertFormatFlac" xml:space="preserve">
+    <value>FLAC</value>
+  </data>
+  <data name="ConvertFormatAlac" xml:space="preserve">
+    <value>M4A (ALAC, lossless)</value>
+  </data>
+  <data name="ConvertFormatAac" xml:space="preserve">
+    <value>M4A (AAC)</value>
+  </data>
+  <data name="ConvertFormatWav" xml:space="preserve">
+    <value>WAV</value>
+  </data>
+  <data name="KeepOriginalFile" xml:space="preserve">
+    <value>Keep original file</value>
+  </data>
+  <data name="OriginalWillBeTrashed" xml:space="preserve">
+    <value>The original is moved to the trash once the conversion has succeeded.</value>
+  </data>
+  <data name="ConvertButton" xml:space="preserve">
+    <value>Convert</value>
+  </data>
+  <data name="ConverterUnavailable" xml:space="preserve">
+    <value>FFmpeg was not found. Install FFmpeg and make sure it is on your PATH to convert files.</value>
+  </data>
+  <data name="ConvertReadingFiles" xml:space="preserve">
+    <value>Reading files...</value>
+  </data>
+  <data name="ConvertBlockLossyToLossless" xml:space="preserve">
+    <value>A lossy file can't be converted to a lossless format.</value>
+  </data>
+  <data name="ConvertBlockSameFormat" xml:space="preserve">
+    <value>The file is already in this format.</value>
+  </data>
+  <data name="ConvertBlockNoLowerBitrate" xml:space="preserve">
+    <value>No lower bitrate is available for this file.</value>
+  </data>
+  <data name="ConvertBlockUnreadable" xml:space="preserve">
+    <value>The file could not be read.</value>
+  </data>
+  <data name="ConvertBlockBitrateTooHigh" xml:space="preserve">
+    <value>The file's bitrate is lower than the one selected.</value>
+  </data>
+  <data name="ConvertCancelled" xml:space="preserve">
+    <value>Conversion cancelled.</value>
+  </data>
+  <data name="ConvertSkippedFormat" xml:space="preserve">
+    <value>{0} of {1} tracks can't be converted this way and will be skipped.</value>
+  </data>
+  <data name="ConvertedAllFormat" xml:space="preserve">
+    <value>Converted {0} track(s).</value>
+  </data>
+  <data name="ConvertedSomeFormat" xml:space="preserve">
+    <value>Converted {0} of {1} tracks. Failed: {2}</value>
+  </data>
+  <data name="ConvertTrashFailedFormat" xml:space="preserve">
+    <value>Converted, but the original could not be moved to the trash: {0}</value>
+  </data>
+  <data name="BitrateKbpsFormat" xml:space="preserve">
+    <value>{0} kbps</value>
+  </data>
+  <data name="ConvertFromLabel" xml:space="preserve">
+    <value>Convert from</value>
+  </data>
+  <data name="ConvertKindLossless" xml:space="preserve">
+    <value>lossless</value>
+  </data>
+  <data name="ConvertKindLossy" xml:space="preserve">
+    <value>lossy</value>
+  </data>
+  <data name="ConvertWavTagsHint" xml:space="preserve">
+    <value>A WAV keeps only the title, artist and album tags - no other tags and no cover art.</value>
+  </data>
+  <data name="ConvertSourceKindFormat" xml:space="preserve">
+    <value>{0} ({1})</value>
+  </data>
+  <data name="ConvertGroupFormat" xml:space="preserve">
+    <value>{0}× {1}</value>
+  </data>
+  <data name="ConvertTrackCountFormat" xml:space="preserve">
+    <value>{0} tracks</value>
+  </data>
+  <data name="ConvertArrow" xml:space="preserve">
+    <value>→</value>
+  </data>
+  <data name="ConvertFormatOgg" xml:space="preserve">
+    <value>Ogg Vorbis</value>
+  </data>
+  <data name="ConvertFormatAiff" xml:space="preserve">
+    <value>AIFF</value>
+  </data>
 </root>

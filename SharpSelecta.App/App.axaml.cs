@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using SharpSelecta.Integrations.AlbumArt;
+using SharpSelecta.Integrations.Conversion;
 using SharpSelecta.Integrations.Discord;
 using SharpSelecta.App.Services;
 using SharpSelecta.App.Styles;
@@ -20,6 +21,7 @@ using SharpSelecta.App.Views;
 using SharpSelecta.Audio;
 using SharpSelecta.Core.AlbumArt;
 using SharpSelecta.Core.Audio;
+using SharpSelecta.Core.Conversion;
 using SharpSelecta.Core.Presence;
 using SharpSelecta.Core.Library;
 
@@ -51,6 +53,9 @@ public partial class App : Application
             services.AddLogging(builder => builder.AddSerilog(dispose: false));
             services.AddAudioEngine();
             services.AddDiscordRichPresence();
+            services.AddAudioConverter();
+            services.AddSingleton<ITrashService, FileTrashService>();
+            services.AddSingleton<TrackConversionService>();
             services.AddAlbumArtProviders(
                 () => SettingsStore.LoadFanartApiKey(settingsFilePath),
                 key => SettingsStore.SaveFanartApiKey(settingsFilePath, key));
@@ -70,7 +75,8 @@ public partial class App : Application
                 provider.GetRequiredService<ILogger<PlaybackControlsViewModel>>(),
                 provider.GetRequiredService<ILogger<LibraryViewModel>>(),
                 provider.GetRequiredService<ILogger<QueueViewModel>>(),
-                provider.GetServices<IAlbumArtProvider>().ToList());
+                provider.GetServices<IAlbumArtProvider>().ToList(),
+                provider.GetRequiredService<TrackConversionService>());
             mainWindow.DataContext = mainWindowViewModel;
             desktop.MainWindow = mainWindow;
 

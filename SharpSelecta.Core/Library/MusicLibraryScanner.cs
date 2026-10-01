@@ -4,7 +4,7 @@ namespace SharpSelecta.Core.Library;
 
 public static class MusicLibraryScanner
 {
-    internal static readonly string[] SupportedExtensions = [".mp3", ".flac", ".wav", ".m4a"];
+    internal static readonly string[] SupportedExtensions = [".mp3", ".flac", ".wav", ".m4a", ".ogg", ".aiff", ".aif"];
 
     static MusicLibraryScanner()
     {

@@ -426,4 +426,18 @@ public class PlaybackQueueTests
 
         await Assert.That(queue.Entries.Select(e => e.Track)).IsEquivalentTo([TrackA]);
     }
+
+    [Test]
+    public async Task ReplaceFile_SwapsEveryEntryOfTheOldFileForTheReplacement()
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow(TrackA);
+        queue.AddToQueue(TrackB);
+        queue.AddToQueue(TrackA);
+
+        queue.ReplaceFile(TrackA.FilePath, TrackC);
+
+        await Assert.That(queue.Entries.Select(e => e.Track)).IsEquivalentTo([TrackC, TrackB, TrackC]);
+        await Assert.That(queue.CurrentIndex).IsEqualTo(0);
+    }
 }

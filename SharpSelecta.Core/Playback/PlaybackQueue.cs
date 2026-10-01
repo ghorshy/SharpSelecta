@@ -119,6 +119,18 @@ public sealed class PlaybackQueue
         }
     }
 
+    // Like ReplaceTrack, for a different file taking over (the original was converted and removed).
+    public void ReplaceFile(string oldFilePath, Track replacement)
+    {
+        for (var i = 0; i < _entries.Count; i++)
+        {
+            if (_entries[i].Track.FilePath == oldFilePath)
+            {
+                _entries[i] = _entries[i] with { Track = replacement };
+            }
+        }
+    }
+
     public void RemoveAt(int index)
     {
         if (index < 0 || index >= _entries.Count || index == CurrentIndex)

@@ -6,7 +6,7 @@ Cross-platform, open-source music player built on .NET 10 + Avalonia.
 
 Early stage, but already usable day to day:
 
-- Point it at one or more folders and it scans your library (MP3, FLAC, WAV, M4A — including AAC and ALAC), then remembers it in a local index so later launches start instantly and only re-check what actually changed on disk
+- Point it at one or more folders and it scans your library (MP3, FLAC, WAV, AIFF, Ogg Vorbis, M4A — including AAC and ALAC), then remembers it in a local index so later launches start instantly and only re-check what actually changed on disk
 - Browse as a sortable, column-configurable table, or as an album grid with cover art (zoomable, sortable by title/artist/year)
 - Click an album tile to expand its tracklist in place; double-click to queue and play the whole album
 - A Recently Added section showing the newest additions to your library first
@@ -24,10 +24,12 @@ Early stage, but already usable day to day:
 - Jump from any track or album straight to its file in your file manager
 - On Linux, integrates with playerctl and desktop media-key bindings (MPRIS)
 - Optional Discord Rich Presence: shows the playing track as a "Listening to" status with a progress bar (off by default, enable it in Settings → Integrations)
+- Convert tracks to MP3, FLAC, M4A (ALAC or AAC), Ogg Vorbis, WAV or AIFF from the Properties window's Convert tab, singly or in batches. Tags and embedded cover art carry over (WAV keeps only title, artist and album), a lossy file is never converted to a lossless format or to a higher bitrate, and the original is kept unless you untick "Keep original file" - then it goes to the trash
 
 ## Requirements
 
 - .NET 10 SDK
+- Optional: [FFmpeg](https://ffmpeg.org/) on your PATH, needed only for the Convert tab
 
 ## Build & run
 
@@ -58,7 +60,6 @@ dotnet test
 ## TODO
 
 - Crossfade
-- File extension converter (WAV->FLAC, etc...)
 
 ## License
 

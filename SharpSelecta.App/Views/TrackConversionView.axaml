@@ -1,0 +1,82 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SharpSelecta.App.ViewModels"
+             xmlns:res="using:SharpSelecta.App.Resources"
+             xmlns:styles="using:SharpSelecta.App.Styles"
+             xmlns:conv="using:Avalonia.Data.Converters"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="400"
+             x:Class="SharpSelecta.App.Views.TrackConversionView"
+             x:DataType="vm:TrackConversionViewModel">
+
+    <StackPanel Spacing="{styles:SpacingValue M}">
+        <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="{styles:SpacingValue L}">
+            <!-- From: the tracks as they are now, read-only. -->
+            <StackPanel Grid.Column="0" Spacing="{styles:SpacingValue S}" IsEnabled="False">
+                <TextBlock Classes="field-label" Text="{x:Static res:Strings.ConvertFromLabel}" />
+                <Border Padding="{styles:Spacing Uniform=M}" CornerRadius="{DynamicResource Radius.Control}"
+                        Background="{DynamicResource Brush.Surface}">
+                    <StackPanel Spacing="{styles:SpacingValue XS}">
+                        <TextBlock Text="{Binding FromSummary}" Classes="strong" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding FromDetails}" TextWrapping="Wrap"
+                                   IsVisible="{Binding FromDetails, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <TextBlock Grid.Column="1" Text="{x:Static res:Strings.ConvertArrow}" VerticalAlignment="Center" />
+
+            <!-- To: what the user picks. -->
+            <StackPanel Grid.Column="2" Spacing="{styles:SpacingValue S}">
+                <TextBlock Classes="field-label" Text="{x:Static res:Strings.LabelConvertTo}" />
+                <ComboBox HorizontalAlignment="Stretch"
+                          ItemsSource="{Binding Targets}" SelectedItem="{Binding SelectedTarget}"
+                          IsEnabled="{Binding !IsConverting}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ConversionTargetOption">
+                            <TextBlock Text="{Binding Label}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <TextBlock Classes="field-label" Text="{x:Static res:Strings.ColumnBitrate}"
+                           IsVisible="{Binding HasBitrateChoice}" />
+                <ComboBox HorizontalAlignment="Stretch"
+                          ItemsSource="{Binding BitrateOptions}" SelectedItem="{Binding SelectedBitrate}"
+                          IsVisible="{Binding HasBitrateChoice}" IsEnabled="{Binding !IsConverting}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:BitrateOption">
+                            <TextBlock Text="{Binding Label}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <TextBlock Text="{x:Static res:Strings.ConvertWavTagsHint}" Classes="tertiary" TextWrapping="Wrap"
+                           IsVisible="{Binding ShowWavTagsHint}" />
+            </StackPanel>
+        </Grid>
+
+        <StackPanel Spacing="{styles:SpacingValue XS}">
+            <CheckBox Content="{x:Static res:Strings.KeepOriginalFile}" IsChecked="{Binding KeepOriginal}"
+                      IsEnabled="{Binding !IsConverting}" />
+            <TextBlock Text="{x:Static res:Strings.OriginalWillBeTrashed}" Classes="tertiary" TextWrapping="Wrap"
+                       IsVisible="{Binding ShowTrashWarning}" />
+        </StackPanel>
+
+        <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap"
+                   IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+
+        <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue S}">
+            <Button Content="{x:Static res:Strings.ConvertButton}" Command="{Binding ConvertCommand}" />
+            <Button Content="{x:Static res:Strings.Cancel}" Command="{Binding CancelConversionCommand}"
+                    IsVisible="{Binding IsConverting}" />
+        </StackPanel>
+
+        <ProgressBar Minimum="0" Maximum="100" Value="{Binding Progress}" IsVisible="{Binding IsConverting}" />
+
+        <TextBlock Text="{Binding ResultMessage}" TextWrapping="Wrap"
+                   IsVisible="{Binding ResultMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+    </StackPanel>
+
+</UserControl>

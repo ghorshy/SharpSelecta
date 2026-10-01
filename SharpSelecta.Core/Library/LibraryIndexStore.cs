@@ -344,6 +344,23 @@ public static class LibraryIndexStore
         DiscNumber = reader.IsDBNull(21) ? null : reader.GetInt32(21),
     };
 
+    // Points every playlist entry of a file at its replacement (e.g. the converted copy), keeping the position.
+    public static void ReplaceFileInPlaylists(string settingsFilePath, string oldFilePath, string newFilePath)
+    {
+        var indexFilePath = IndexFilePath(settingsFilePath);
+        if (!File.Exists(indexFilePath))
+        {
+            return;
+        }
+
+        using var connection = OpenConnection(indexFilePath);
+        using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE PlaylistTracks SET FilePath = @New WHERE FilePath = @Old";
+        command.Parameters.AddWithValue("@New", newFilePath);
+        command.Parameters.AddWithValue("@Old", oldFilePath);
+        command.ExecuteNonQuery();
+    }
+
     public static void ReplacePlaylistTracks(string settingsFilePath, string playlistId, IReadOnlyList<string> filePathsInOrder)
     {
         var indexFilePath = IndexFilePath(settingsFilePath);
