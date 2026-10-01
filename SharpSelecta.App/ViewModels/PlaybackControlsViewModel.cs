@@ -72,7 +72,11 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 
     public string CurrentTrackTechnicalSummary => CurrentTrack is null ? string.Empty : TrackFormatting.TechnicalSummary(CurrentTrack);
 
-    public string DisplayTrackLabel => TrackFormatting.ArtistTitleLabel(CurrentTrack?.Artist, DisplayFileName);
+    // "Album artist - Title": a track with many featured artists would otherwise crowd the line, so
+    // it's labelled by the album artist, and only falls back to its artists when it has none.
+    public string DisplayTrackLabel => TrackFormatting.ArtistTitleLabel(
+        string.IsNullOrWhiteSpace(CurrentTrack?.AlbumArtist) ? CurrentTrack?.Artist : CurrentTrack.AlbumArtist,
+        DisplayFileName);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ArtworkBytes))]

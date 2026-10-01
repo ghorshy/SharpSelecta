@@ -990,4 +990,25 @@ public class PlaybackControlsViewModelTests
 
         await Assert.That(queue.Entries.Select(e => e.Track)).IsEquivalentTo([track]);
     }
+
+    [Test]
+    public async Task DisplayTrackLabel_UsesTheAlbumArtistRatherThanEveryArtistOfTheTrack()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.PlayNowAsync(new Track("/music/a.mp3", "Song")
+        {
+            Title = "Song", Artist = "Pet Shop Boys;Dusty Springfield;Someone Else", AlbumArtist = "Pet Shop Boys",
+        });
+
+        await Assert.That(vm.DisplayTrackLabel).IsEqualTo("Pet Shop Boys - Song");
+    }
+
+    [Test]
+    public async Task DisplayTrackLabel_WithoutAnAlbumArtist_FallsBackToTheTracksArtists()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.PlayNowAsync(new Track("/music/a.mp3", "Song") { Title = "Song", Artist = "A;B" });
+
+        await Assert.That(vm.DisplayTrackLabel).IsEqualTo("A, B - Song");
+    }
 }
