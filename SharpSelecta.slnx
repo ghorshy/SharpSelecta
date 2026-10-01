@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="SharpSelecta.AlbumArt/SharpSelecta.AlbumArt.csproj" />
   <Project Path="SharpSelecta.App/SharpSelecta.App.csproj" />
   <Project Path="SharpSelecta.Audio/SharpSelecta.Audio.csproj" />
   <Project Path="SharpSelecta.Core/SharpSelecta.Core.csproj" />

@@ -35,6 +35,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\SharpSelecta.AlbumArt\SharpSelecta.AlbumArt.csproj" />
         <ProjectReference Include="..\SharpSelecta.Audio\SharpSelecta.Audio.csproj" />
         <ProjectReference Include="..\SharpSelecta.Core\SharpSelecta.Core.csproj" />
     </ItemGroup>
