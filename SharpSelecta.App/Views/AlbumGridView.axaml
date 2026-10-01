@@ -88,7 +88,7 @@
                                              machinery, so the handler gets every press. Background="Transparent" makes
                                              the whole tile (not just its Image/text children) hit-test-visible. -->
                                         <Border Background="Transparent"
-                                                Width="{Binding #Root.DataContext.TileSize}"
+                                                Width="{Binding #Root.((vm:AlbumGridViewModel)DataContext).TileSize}"
                                                 Tapped="OnTileTapped"
                                                 DoubleTapped="OnTileDoubleTapped">
                                             <Border.ContextMenu>
@@ -115,8 +115,8 @@
                                                 </ContextMenu>
                                             </Border.ContextMenu>
                                             <StackPanel Spacing="{styles:SpacingValue XXS}">
-                                                <Border Width="{Binding #Root.DataContext.TileSize}"
-                                                        Height="{Binding #Root.DataContext.TileSize}"
+                                                <Border Width="{Binding #Root.((vm:AlbumGridViewModel)DataContext).TileSize}"
+                                                        Height="{Binding #Root.((vm:AlbumGridViewModel)DataContext).TileSize}"
                                                         ClipToBounds="True"
                                                         CornerRadius="{DynamicResource Radius.Control}"
                                                         Background="{DynamicResource Brush.Surface}">
@@ -128,9 +128,9 @@
                                                     </Panel>
                                                 </Border>
                                                 <TextBlock Text="{Binding Title}" Classes="strong" TextTrimming="CharacterEllipsis"
-                                                           Width="{Binding #Root.DataContext.TileSize}" />
+                                                           Width="{Binding #Root.((vm:AlbumGridViewModel)DataContext).TileSize}" />
                                                 <TextBlock Text="{Binding Artist}" Classes="secondary" TextTrimming="CharacterEllipsis"
-                                                           Width="{Binding #Root.DataContext.TileSize}" />
+                                                           Width="{Binding #Root.((vm:AlbumGridViewModel)DataContext).TileSize}" />
                                             </StackPanel>
                                         </Border>
                                     </DataTemplate>
@@ -154,7 +154,7 @@
                                                 <DockPanel Grid.Column="0">
                                                     <Button DockPanel.Dock="Top" Classes="plain" HorizontalAlignment="Right"
                                                             Content="&#x2715;"
-                                                            Command="{Binding #Root.DataContext.ToggleExpandCommand}"
+                                                            Command="{Binding #Root.((vm:AlbumGridViewModel)DataContext).ToggleExpandCommand}"
                                                             CommandParameter="{Binding}" />
 
                                                     <!-- ListBox rather than ItemsControl for the theme's hover/selected row
