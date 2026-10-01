@@ -2,7 +2,7 @@ using System.Globalization;
 
 using SharpSelecta.Core.AlbumArt;
 
-namespace SharpSelecta.AlbumArt;
+namespace SharpSelecta.Integrations.AlbumArt;
 
 // fanart.tv's album covers (1000x1000, user-curated). Needs an API key; keyed by the MusicBrainz release-group id.
 public sealed class FanartTvArtProvider(

@@ -1,6 +1,6 @@
 using SharpSelecta.Core.AlbumArt;
 
-namespace SharpSelecta.AlbumArt;
+namespace SharpSelecta.Integrations.AlbumArt;
 
 // Deezer's covers, through its keyless public API.
 public sealed class DeezerArtProvider(HttpClient http) : IAlbumArtProvider

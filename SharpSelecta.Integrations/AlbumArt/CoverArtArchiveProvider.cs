@@ -1,6 +1,6 @@
 using SharpSelecta.Core.AlbumArt;
 
-namespace SharpSelecta.AlbumArt;
+namespace SharpSelecta.Integrations.AlbumArt;
 
 // Cover Art Archive (MusicBrainz's cover project): find the album on MusicBrainz, then ask for its front cover.
 public sealed class CoverArtArchiveProvider(HttpClient http, MusicBrainzClient musicBrainz) : IAlbumArtProvider

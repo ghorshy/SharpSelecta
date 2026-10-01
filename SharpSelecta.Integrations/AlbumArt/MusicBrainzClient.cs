@@ -1,6 +1,6 @@
 using SharpSelecta.Core.AlbumArt;
 
-namespace SharpSelecta.AlbumArt;
+namespace SharpSelecta.Integrations.AlbumArt;
 
 public sealed record MusicBrainzReleaseGroup(string Id, string Title);
 

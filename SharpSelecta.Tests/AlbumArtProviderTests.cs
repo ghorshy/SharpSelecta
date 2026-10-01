@@ -1,6 +1,6 @@
 using System.Net;
 using System.Text;
-using SharpSelecta.AlbumArt;
+using SharpSelecta.Integrations.AlbumArt;
 using SharpSelecta.Core.AlbumArt;
 
 namespace SharpSelecta.Tests;

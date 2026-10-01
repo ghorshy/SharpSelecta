@@ -1,6 +1,6 @@
 using SharpSelecta.Core.AlbumArt;
 
-namespace SharpSelecta.AlbumArt;
+namespace SharpSelecta.Integrations.AlbumArt;
 
 // Apple Music's covers, through the keyless iTunes Search API (about 20 requests a minute).
 public sealed class AppleMusicArtProvider(HttpClient http) : IAlbumArtProvider

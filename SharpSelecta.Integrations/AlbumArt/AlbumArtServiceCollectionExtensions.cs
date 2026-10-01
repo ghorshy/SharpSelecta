@@ -1,9 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using SharpSelecta.Core.AlbumArt;
 
-namespace SharpSelecta.AlbumArt;
+namespace SharpSelecta.Integrations.AlbumArt;
 
-public static class ServiceCollectionExtensions
+public static class AlbumArtServiceCollectionExtensions
 {
     extension(IServiceCollection services)
     {

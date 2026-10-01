@@ -3,7 +3,7 @@ using System.Text;
 
 using SharpSelecta.Core.AlbumArt;
 
-namespace SharpSelecta.AlbumArt;
+namespace SharpSelecta.Integrations.AlbumArt;
 
 // Decides which of a service's search hits is the album that was asked for. A wrong cover is worse
 // than none, so a hit needs the right artist AND a title that is the album (or an edition of it).

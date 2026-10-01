@@ -10,7 +10,7 @@ using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using SharpSelecta.AlbumArt;
+using SharpSelecta.Integrations.AlbumArt;
 using SharpSelecta.App.Services;
 using SharpSelecta.App.Styles;
 using SharpSelecta.App.Services.Mpris;

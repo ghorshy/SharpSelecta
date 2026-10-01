@@ -1,6 +1,6 @@
 using System.Buffers.Binary;
 
-namespace SharpSelecta.AlbumArt;
+namespace SharpSelecta.Integrations.AlbumArt;
 
 // Reads width/height from a JPEG or PNG header; null for anything else (so a service answering with
 // an HTML error page or an unsupported format is never taken for a cover).
