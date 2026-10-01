@@ -58,14 +58,14 @@ public partial class TrackPropertiesWindow : Window
         }
     }
 
-    private async void OnEditArtistsClick(object? sender, RoutedEventArgs e)
+    private async void OnEditCreditsClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not TrackPropertiesViewModel vm)
             return;
 
-        if (await ArtistsEditorWindow.ShowAsync(this, vm.CreateArtistsEditor()) is { } artists)
+        if (await CreditsEditorWindow.ShowAsync(this, vm.CreateCreditsEditor()) is { } credits)
         {
-            vm.ApplyArtists(artists);
+            vm.ApplyCredits(credits);
         }
     }
 

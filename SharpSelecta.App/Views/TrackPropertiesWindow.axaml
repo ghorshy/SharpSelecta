@@ -33,7 +33,7 @@
                             <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="{styles:SpacingValue S}">
                                 <TextBox Grid.Column="0" Text="{Binding Artist}"
                                          PlaceholderText="{Binding ArtistPlaceholder}" />
-                                <Button Grid.Column="1" Content="{x:Static res:Strings.ArtistsEllipsis}" Click="OnEditArtistsClick" />
+                                <Button Grid.Column="1" Content="{x:Static res:Strings.CreditsEllipsis}" Click="OnEditCreditsClick" />
                             </Grid>
 
                             <TextBlock Grid.Row="2" Classes="field-label" Text="{x:Static res:Strings.LabelAlbumArtist}" />

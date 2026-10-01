@@ -131,11 +131,15 @@ public static class Strings
     public static string CoverImageFileTypeName => Get(nameof(CoverImageFileTypeName));
     public static string UnsupportedCoverImage => Get(nameof(UnsupportedCoverImage));
 
-    public static string ArtistsEllipsis => Get(nameof(ArtistsEllipsis));
-    public static string ArtistsEditorTitle => Get(nameof(ArtistsEditorTitle));
-    public static string ArtistsEditorNewPlaceholder => Get(nameof(ArtistsEditorNewPlaceholder));
+    public static string CreditsEllipsis => Get(nameof(CreditsEllipsis));
+    public static string CreditsEditorTitle => Get(nameof(CreditsEditorTitle));
+    public static string CreditsEditorNewPlaceholder => Get(nameof(CreditsEditorNewPlaceholder));
     public static string Add => Get(nameof(Add));
     public static string Remove => Get(nameof(Remove));
+    public static string RoleRemixer => Get(nameof(RoleRemixer));
+    public static string RoleComposer => Get(nameof(RoleComposer));
+    public static string RoleConductor => Get(nameof(RoleConductor));
+    public static string RoleLyricist => Get(nameof(RoleLyricist));
     public static string ArtistSeparator => Get(nameof(ArtistSeparator));
     public static string Varies => Get(nameof(Varies));
     public static string MultipleLocations => Get(nameof(MultipleLocations));

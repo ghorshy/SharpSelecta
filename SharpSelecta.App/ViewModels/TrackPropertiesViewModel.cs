@@ -28,7 +28,10 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
     private readonly List<Track> _tracks;
     private readonly HashSet<string> _varyingFields = [];
 
+    private readonly List<TrackCredits> _credits;
+
     private TrackTagEdits _baseline = new(null, null, null, null, null, null, null, null);
+    private TrackCredits _creditsBaseline = TrackCredits.None;
     private bool _persistedHasCover;
     private bool _persistedCoverIsSeparateFile;
     private byte[]? _replacementCover;
@@ -54,6 +57,7 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
             throw new ArgumentException("At least one track is required.", nameof(tracks));
 
         _tracks = [.. tracks];
+        _credits = [.. _tracks.Select(t => TrackCredits.Read(t.FilePath))];
         _filePickerService = filePickerService;
         _fileManagerService = fileManagerService;
         _logger = logger;
@@ -90,6 +94,19 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
 
     [ObservableProperty]
     public partial string? Comment { get; set; }
+
+    // Credits besides Artist: only edited through the credits window, so no text boxes bind to these.
+    [ObservableProperty]
+    public partial string? Remixer { get; set; }
+
+    [ObservableProperty]
+    public partial string? Composer { get; set; }
+
+    [ObservableProperty]
+    public partial string? Conductor { get; set; }
+
+    [ObservableProperty]
+    public partial string? Lyricist { get; set; }
 
     [ObservableProperty]
     public partial string YearText { get; set; } = "";
@@ -171,7 +188,7 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
 
     public bool IsValid => !HasYearError && !HasTrackNumberError;
 
-    public bool IsDirty => CurrentEdits() != _baseline || CurrentCoverEdit() is not null;
+    public bool IsDirty => CurrentEdits() != _baseline || CurrentCredits() != _creditsBaseline || CurrentCoverEdit() is not null;
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
@@ -186,7 +203,8 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
                 RefreshState();
                 break;
             case nameof(Title) or nameof(Artist) or nameof(AlbumArtist) or nameof(Album) or nameof(Genre)
-                or nameof(Comment) or nameof(YearText) or nameof(TrackNumberText) or nameof(SaveCoverAsSeparateFile):
+                or nameof(Comment) or nameof(YearText) or nameof(TrackNumberText) or nameof(SaveCoverAsSeparateFile)
+                or nameof(Remixer) or nameof(Composer) or nameof(Conductor) or nameof(Lyricist):
                 RefreshState();
                 break;
         }
@@ -267,10 +285,27 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
         CoverBytes = null;
     }
 
-    // The Artist field is the artists joined by ATL's separator; the editor works on the list.
-    public ArtistsEditorViewModel CreateArtistsEditor() => new(ArtistList.Split(Artist));
+    // Each role's field is its people joined by ATL's separator; the credits editor works on the list.
+    public CreditsEditorViewModel CreateCreditsEditor() => new(
+    [
+        .. ArtistList.Split(Artist).Select(name => new CreditEntry(CreditRole.Artist, name)),
+        .. ArtistList.Split(Remixer).Select(name => new CreditEntry(CreditRole.Remixer, name)),
+        .. ArtistList.Split(Composer).Select(name => new CreditEntry(CreditRole.Composer, name)),
+        .. ArtistList.Split(Conductor).Select(name => new CreditEntry(CreditRole.Conductor, name)),
+        .. ArtistList.Split(Lyricist).Select(name => new CreditEntry(CreditRole.Lyricist, name)),
+    ]);
 
-    public void ApplyArtists(IReadOnlyList<string> artists) => Artist = ArtistList.Join(artists);
+    // A role that varied across the tracks and gets no entries stays null, i.e. untouched.
+    public void ApplyCredits(IReadOnlyList<CreditEntry> credits)
+    {
+        string? PeopleIn(CreditRole role) => ArtistList.Join(credits.Where(c => c.Role == role).Select(c => c.Name));
+
+        Artist = PeopleIn(CreditRole.Artist);
+        Remixer = PeopleIn(CreditRole.Remixer);
+        Composer = PeopleIn(CreditRole.Composer);
+        Conductor = PeopleIn(CreditRole.Conductor);
+        Lyricist = PeopleIn(CreditRole.Lyricist);
+    }
 
     [RelayCommand]
     private Task ShowInFileManagerAsync() => _fileManagerService.RevealInFileManagerAsync(Track.FilePath);
@@ -287,24 +322,28 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
         var current = CurrentEdits();
         var cover = CurrentCoverEdit();
         // Resolved here, on the UI thread: the user can still type into the fields while saving.
-        var work = _tracks.Select(track => (Track: track, Edits: EditsFor(track, current))).ToList();
+        var typedCredits = CurrentCredits();
+        var writeCredits = typedCredits != _creditsBaseline;
+        var work = _tracks
+            .Select((track, i) => (Track: track, Edits: EditsFor(track, current), Credits: writeCredits ? CreditsFor(_credits[i], typedCredits) : null))
+            .ToList();
         try
         {
             var (results, coverState) = await Task.Run(() =>
             {
-                var saved = new List<(Track Original, Track? Updated, Exception? Error)>();
-                foreach (var (track, edits) in work)
+                var saved = new List<(Track Original, Track? Updated, Exception? Error, TrackCredits? Credits)>();
+                foreach (var (track, edits, credits) in work)
                 {
                     try
                     {
-                        TrackTagEditor.Write(track.FilePath, edits, cover);
+                        TrackTagEditor.Write(track.FilePath, edits, cover, credits);
                         var updated = MusicLibraryScanner.ReadTrackIfExists(track.FilePath)
                             ?? throw new FileNotFoundException("The file disappeared while saving.", track.FilePath);
-                        saved.Add((track, updated with { DateAddedUtc = track.DateAddedUtc }, null));
+                        saved.Add((track, updated with { DateAddedUtc = track.DateAddedUtc }, null, TrackCredits.Read(track.FilePath)));
                     }
                     catch (Exception ex)
                     {
-                        saved.Add((track, null, ex));
+                        saved.Add((track, null, ex, null));
                     }
                 }
 
@@ -319,6 +358,7 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
                     continue;
 
                 _tracks[i] = updated;
+                _credits[i] = results[i].Credits ?? _credits[i];
                 savedTracks.Add(updated);
             }
 
@@ -371,9 +411,26 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
         Comment = CommonText(nameof(Comment), t => t.Comment);
         YearText = CommonNumberText(nameof(YearText), t => t.Year);
         TrackNumberText = CommonNumberText(nameof(TrackNumberText), t => t.TrackNumber);
+        Remixer = CommonCredit(nameof(Remixer), c => c.Remixer);
+        Composer = CommonCredit(nameof(Composer), c => c.Composer);
+        Conductor = CommonCredit(nameof(Conductor), c => c.Conductor);
+        Lyricist = CommonCredit(nameof(Lyricist), c => c.Lyricist);
 
         // Texts are valid here, so no baseline fallback is needed to read them back.
         _baseline = CurrentEdits();
+        _creditsBaseline = CurrentCredits();
+    }
+
+    private string? CommonCredit(string field, Func<TrackCredits, string?> selector)
+    {
+        var values = _credits.Select(c => NormalizeList(selector(c))).Distinct().ToList();
+        if (values.Count > 1)
+        {
+            _varyingFields.Add(field);
+            return null;
+        }
+
+        return values[0];
     }
 
     private string? CommonText(string field, Func<Track, string?> selector)
@@ -446,6 +503,23 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
             Normalize(Genre), Normalize(Comment), year, trackNumber);
     }
 
+    private TrackCredits CurrentCredits() =>
+        new(NormalizeList(Remixer), NormalizeList(Composer), NormalizeList(Conductor), NormalizeList(Lyricist));
+
+    // Same rule as EditsFor: a role that varied across the tracks and was left empty keeps this
+    // track's own people.
+    private TrackCredits CreditsFor(TrackCredits own, TrackCredits typed)
+    {
+        string? Pick(string field, string? value, string? ownValue) =>
+            _varyingFields.Contains(field) && value is null ? NormalizeList(ownValue) : value;
+
+        return new TrackCredits(
+            Pick(nameof(Remixer), typed.Remixer, own.Remixer),
+            Pick(nameof(Composer), typed.Composer, own.Composer),
+            Pick(nameof(Conductor), typed.Conductor, own.Conductor),
+            Pick(nameof(Lyricist), typed.Lyricist, own.Lyricist));
+    }
+
     // What to write to one track: the typed value, except that a field that varied across the tracks
     // and was left empty keeps that track's own value.
     private TrackTagEdits EditsFor(Track track, TrackTagEdits typed)
@@ -480,6 +554,8 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
 
         return null;
     }
+
+    private static string? NormalizeList(string? value) => ArtistList.Join(ArtistList.Split(value));
 
     private static string? Normalize(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
