@@ -30,6 +30,8 @@ public class AlbumArtProviderTests
 
         public StubHandler Status(string urlPrefix, HttpStatusCode status) => Add(urlPrefix, () => new HttpResponseMessage(status));
 
+        public StubHandler Throw(string urlPrefix, Exception exception) => Add(urlPrefix, () => throw exception);
+
         private StubHandler Add(string prefix, Func<HttpResponseMessage> respond)
         {
             Routes.Add((prefix, respond));
@@ -155,6 +157,18 @@ public class AlbumArtProviderTests
     }
 
     [Test]
+    public async Task Apple_FallsBackToASmallerSizeWhenTheLargestIsRefused()
+    {
+        var handler = new StubHandler().Json("https://itunes.apple.com/search", AppleHits)
+            .Status("https://img/plain/3000x3000bb.jpg", HttpStatusCode.NotFound)
+            .Image("https://img/plain/1400x1400bb.jpg", Jpeg16);
+
+        var found = await new AppleMusicArtProvider(Client(handler)).FindAsync(Ram, CancellationToken.None);
+
+        await Assert.That(found!.Image).IsEquivalentTo(Jpeg16);
+    }
+
+    [Test]
     public async Task Apple_ReadsPngDimensionsToo()
     {
         var handler = new StubHandler().Json("https://itunes.apple.com/search", AppleHits).Image("https://img/", Png16);
@@ -196,6 +210,30 @@ public class AlbumArtProviderTests
         var found = await new DeezerArtProvider(Client(handler)).FindAsync(Ram, CancellationToken.None);
 
         await Assert.That(found!.Image).IsEquivalentTo(Jpeg16);
+    }
+
+    [Test]
+    public async Task Deezer_FallsBackToTheStandardSizeWhenTheLargerOneTimesOut()
+    {
+        var handler = new StubHandler().Json("https://api.deezer.com/search/album", DeezerHits)
+            .Throw("https://cdn/cover/abc/1400x1400", new TaskCanceledException("The request timed out."))
+            .Image("https://cdn/cover/abc/1000x1000", Jpeg16);
+
+        var found = await new DeezerArtProvider(Client(handler)).FindAsync(Ram, CancellationToken.None);
+
+        await Assert.That(found!.Image).IsEquivalentTo(Jpeg16);
+    }
+
+    [Test]
+    public async Task Deezer_StillStopsWhenTheSearchItselfIsCancelled()
+    {
+        var handler = new StubHandler().Json("https://api.deezer.com/search/album", DeezerHits)
+            .Throw("https://cdn/cover/abc/1400x1400", new TaskCanceledException());
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+
+        await Assert.That(async () => await new DeezerArtProvider(Client(handler)).FindAsync(Ram, cancellation.Token))
+            .Throws<OperationCanceledException>();
     }
 
     [Test]
@@ -291,6 +329,13 @@ public class AlbumArtProviderTests
         await Assert.That(provider.IsConfigured).IsFalse();
         await Assert.That(await provider.FindAsync(Ram, CancellationToken.None)).IsNull();
         await Assert.That(handler.Requests).IsEmpty();
+    }
+
+    [Test]
+    public async Task Fanart_CanBeConfigured_ButAPlainProviderCannot()
+    {
+        await Assert.That(Fanart(new StubHandler(), null).CanBeConfigured).IsTrue();
+        await Assert.That(((IAlbumArtProvider)new DeezerArtProvider(Client(new StubHandler()))).CanBeConfigured).IsFalse();
     }
 
     [Test]

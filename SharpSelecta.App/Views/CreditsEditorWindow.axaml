@@ -15,13 +15,18 @@
         WindowStartupLocation="CenterOwner">
 
     <Window.Styles>
-        <!-- The row being dragged fades, and a line above the row under the cursor shows where it lands. -->
+        <!-- The row being dragged fades, and a line above or below the row under the cursor (by which half
+             it is over) shows where it lands. -->
         <Style Selector="Border.credit-row.dragging">
             <Setter Property="Opacity" Value="{DynamicResource Opacity.Dragging}" />
         </Style>
         <Style Selector="Border.credit-row.drag-over">
             <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
             <Setter Property="BorderThickness" Value="{DynamicResource Border.Top.Thick}" />
+        </Style>
+        <Style Selector="Border.credit-row.drag-over-below">
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+            <Setter Property="BorderThickness" Value="{DynamicResource Border.Bottom.Thick}" />
         </Style>
     </Window.Styles>
 

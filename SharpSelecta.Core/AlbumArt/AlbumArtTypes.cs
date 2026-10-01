@@ -12,6 +12,10 @@ public interface IAlbumArtProvider
     // False while the provider still needs configuring (an API key); FindAsync then finds nothing.
     bool IsConfigured => true;
 
+    // True for a provider whose setting (an API key) the user can enter or replace - offered again even
+    // after a failed search, since a rejected key is the likely reason.
+    bool CanBeConfigured => false;
+
     void Configure(string value)
     {
     }

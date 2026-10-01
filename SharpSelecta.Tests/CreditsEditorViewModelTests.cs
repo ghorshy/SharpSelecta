@@ -97,15 +97,38 @@ public class CreditsEditorViewModelTests
     }
 
     [Test]
-    public async Task Move_PutsTheDraggedEntryWhereItWasDropped_WhetherUpOrDown()
+    public async Task Move_LandsJustAboveTheRowItWasDroppedOn_WhetherDraggedDownOrUp()
     {
         var vm = Editor(("A", CreditRole.Artist), ("B", CreditRole.Artist), ("C", CreditRole.Artist), ("D", CreditRole.Artist));
 
-        vm.Move(vm.Credits[0], vm.Credits[2]);
-        await Assert.That(Names(vm)).IsEqualTo("B:Artist|C:Artist|A:Artist|D:Artist");
+        vm.Move(vm.Credits[0], vm.Credits[2]); // A onto C, dragged down
+        await Assert.That(Names(vm)).IsEqualTo("B:Artist|A:Artist|C:Artist|D:Artist");
 
-        vm.Move(vm.Credits[3], vm.Credits[0]);
-        await Assert.That(Names(vm)).IsEqualTo("D:Artist|B:Artist|C:Artist|A:Artist");
+        vm.Move(vm.Credits[3], vm.Credits[1]); // D onto A, dragged up
+        await Assert.That(Names(vm)).IsEqualTo("B:Artist|D:Artist|A:Artist|C:Artist");
+    }
+
+    [Test]
+    public async Task Move_WithInsertAfter_LandsJustBelowTheRow_IncludingTheVeryEnd()
+    {
+        var vm = Editor(("A", CreditRole.Artist), ("B", CreditRole.Artist), ("C", CreditRole.Artist));
+
+        vm.Move(vm.Credits[0], vm.Credits[2], insertAfter: true); // A below C: to the end
+        await Assert.That(Names(vm)).IsEqualTo("B:Artist|C:Artist|A:Artist");
+
+        vm.Move(vm.Credits[2], vm.Credits[0], insertAfter: true); // A below B
+        await Assert.That(Names(vm)).IsEqualTo("B:Artist|A:Artist|C:Artist");
+    }
+
+    [Test]
+    public async Task Move_ToWhereTheEntryAlreadyIs_ChangesNothing()
+    {
+        var vm = Editor(("A", CreditRole.Artist), ("B", CreditRole.Artist), ("C", CreditRole.Artist));
+
+        vm.Move(vm.Credits[0], vm.Credits[1]);                       // A above B: already so
+        vm.Move(vm.Credits[1], vm.Credits[0], insertAfter: true);    // B below A: already so
+
+        await Assert.That(Names(vm)).IsEqualTo("A:Artist|B:Artist|C:Artist");
     }
 
     [Test]
@@ -124,7 +147,7 @@ public class CreditsEditorViewModelTests
     {
         var vm = Editor(("First", CreditRole.Artist), ("Second", CreditRole.Artist), ("Cond", CreditRole.Conductor));
 
-        vm.Move(vm.Credits[1], vm.Credits[0]);
+        vm.Move(vm.Credits[1], vm.Credits[0]); // Second above First
 
         await Assert.That(ResultText(vm.Result)).IsEqualTo("Second:Artist|First:Artist|Cond:Conductor");
     }

@@ -59,7 +59,7 @@
                             <TextBlock Text="{Binding StatusText}" Classes="secondary small" HorizontalAlignment="Center"
                                        IsVisible="{Binding !HasImage}" />
                             <Button Content="{x:Static res:Strings.AlbumArtEnterKey}" HorizontalAlignment="Center"
-                                    IsVisible="{Binding NeedsSetup}" Click="OnEnterKeyClick" />
+                                    IsVisible="{Binding ShowEnterKey}" Click="OnEnterKeyClick" />
                         </StackPanel>
                     </Border>
                 </DataTemplate>

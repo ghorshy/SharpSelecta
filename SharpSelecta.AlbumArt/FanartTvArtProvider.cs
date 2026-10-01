@@ -10,6 +10,8 @@ public sealed class FanartTvArtProvider(
 {
     public string Name => "fanart.tv";
 
+    public bool CanBeConfigured => true;
+
     public bool IsConfigured => !string.IsNullOrWhiteSpace(loadApiKey());
 
     public void Configure(string value) => saveApiKey(value.Trim());

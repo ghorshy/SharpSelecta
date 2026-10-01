@@ -25,8 +25,12 @@ public sealed class AppleMusicArtProvider(HttpClient http) : IAlbumArtProvider
 
         // The service serves any size up to the original from the same path - asking for far more than
         // exists returns the original.
-        var url = best.ArtworkUrl.Replace("100x100bb", "3000x3000bb");
-        return await AlbumArtHttp.DownloadImageAsync(http, url, best.Album, cancellationToken);
+        var largest = await AlbumArtHttp.DownloadImageAsync(
+            http, best.ArtworkUrl.Replace("100x100bb", "3000x3000bb"), best.Album, cancellationToken);
+
+        // An original too big to accept (or otherwise refused) shouldn't mean no cover at all.
+        return largest ?? await AlbumArtHttp.DownloadImageAsync(
+            http, best.ArtworkUrl.Replace("100x100bb", "1400x1400bb"), best.Album, cancellationToken);
     }
 
     private sealed record Hit(string Album, string Artist, string ArtworkUrl);

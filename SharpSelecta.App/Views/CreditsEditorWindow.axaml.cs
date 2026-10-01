@@ -48,22 +48,35 @@ public partial class CreditsEditorWindow : Window
         }
 
         e.DragEffects = DragDropEffects.Move;
-        (sender as Border)?.Classes.Add("drag-over");
+        if (sender is Border row)
+        {
+            var below = IsOverLowerHalf(row, e);
+            row.Classes.Set("drag-over", !below);
+            row.Classes.Set("drag-over-below", below);
+        }
     }
 
-    private void OnRowDragLeave(object? sender, DragEventArgs e) => (sender as Border)?.Classes.Remove("drag-over");
+    private void OnRowDragLeave(object? sender, DragEventArgs e) => ClearDropIndicator(sender as Border);
 
     private void OnRowDrop(object? sender, DragEventArgs e)
     {
-        (sender as Border)?.Classes.Remove("drag-over");
+        ClearDropIndicator(sender as Border);
 
-        if (sender is Control { DataContext: CreditEntryViewModel target }
+        if (sender is Border { DataContext: CreditEntryViewModel target } row
             && e.DataTransfer.TryGetValue(DragEntryFormat) is { } dragged
             && DataContext is CreditsEditorViewModel viewModel)
         {
-            viewModel.Move(dragged, target);
+            viewModel.Move(dragged, target, insertAfter: IsOverLowerHalf(row, e));
             e.DragEffects = DragDropEffects.Move;
         }
+    }
+
+    private static bool IsOverLowerHalf(Border row, DragEventArgs e) => e.GetPosition(row).Y > row.Bounds.Height / 2;
+
+    private static void ClearDropIndicator(Border? row)
+    {
+        row?.Classes.Remove("drag-over");
+        row?.Classes.Remove("drag-over-below");
     }
 
     // The edited credits, or null if the user cancelled.

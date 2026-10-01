@@ -27,7 +27,7 @@ public sealed partial class AlbumArtTileViewModel(IAlbumArtProvider provider) : 
     public string Name => Provider.Name;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsSearching), nameof(HasImage), nameof(NeedsSetup), nameof(StatusText))]
+    [NotifyPropertyChangedFor(nameof(IsSearching), nameof(HasImage), nameof(NeedsSetup), nameof(ShowEnterKey), nameof(StatusText))]
     public partial AlbumArtTileState State { get; set; } = AlbumArtTileState.Searching;
 
     [ObservableProperty]
@@ -45,6 +45,10 @@ public sealed partial class AlbumArtTileViewModel(IAlbumArtProvider provider) : 
     public bool HasImage => State == AlbumArtTileState.Found;
 
     public bool NeedsSetup => State == AlbumArtTileState.NeedsSetup;
+
+    // The "Enter key..." button: while a key is missing, and again after a failed search if the key can be
+    // changed (a rejected key makes the search fail).
+    public bool ShowEnterKey => NeedsSetup || (State == AlbumArtTileState.Failed && Provider.CanBeConfigured);
 
     // Shown instead of an image: why there isn't one (null once found - the size is shown then).
     public string? StatusText => State switch

@@ -85,6 +85,39 @@ public class AlbumArtSearchViewModelTests
         await Assert.That(needsKey.Calls).IsEqualTo(0);
     }
 
+    private sealed class ConfigurableFailingProvider : IAlbumArtProvider
+    {
+        public string Name => "Keyed";
+
+        public bool CanBeConfigured => true;
+
+        public bool KeyIsGood { get; private set; }
+
+        public void Configure(string value) => KeyIsGood = value == "good";
+
+        public Task<AlbumArtCandidate?> FindAsync(AlbumArtQuery query, CancellationToken cancellationToken) =>
+            KeyIsGood
+                ? Task.FromResult<AlbumArtCandidate?>(new AlbumArtCandidate(Jpeg16, 16, 16, "T"))
+                : throw new HttpRequestException("401");
+    }
+
+    [Test]
+    public async Task EnterKey_IsOfferedAgainAfterAConfigurableProviderFails_SoARejectedKeyCanBeReplaced()
+    {
+        var provider = new ConfigurableFailingProvider();
+        var vm = new AlbumArtSearchViewModel(Query, [provider, Throws("Plain")]);
+        await vm.SearchAsync();
+
+        await Assert.That(vm.Tiles[0].State).IsEqualTo(AlbumArtTileState.Failed);
+        await Assert.That(vm.Tiles[0].ShowEnterKey).IsTrue();
+        await Assert.That(vm.Tiles[1].ShowEnterKey).IsFalse(); // nothing to configure on a plain provider
+
+        await vm.ConfigureAsync(vm.Tiles[0], "good");
+
+        await Assert.That(vm.Tiles[0].State).IsEqualTo(AlbumArtTileState.Found);
+        await Assert.That(vm.Tiles[0].ShowEnterKey).IsFalse();
+    }
+
     [Test]
     public async Task Configure_StoresTheKeyAndSearchesThatServiceAgain()
     {

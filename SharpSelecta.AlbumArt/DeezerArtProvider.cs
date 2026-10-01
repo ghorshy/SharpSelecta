@@ -45,9 +45,9 @@ public sealed class DeezerArtProvider(HttpClient http) : IAlbumArtProvider
         {
             return await AlbumArtHttp.DownloadImageAsync(http, url, title, cancellationToken);
         }
-        catch (HttpRequestException)
+        catch (Exception ex) when ((ex is HttpRequestException or TaskCanceledException) && !cancellationToken.IsCancellationRequested)
         {
-            return null; // the larger size is a bonus - fall back to the standard one
+            return null; // the larger size is a bonus (a timeout counts too) - fall back to the standard one
         }
     }
 }
