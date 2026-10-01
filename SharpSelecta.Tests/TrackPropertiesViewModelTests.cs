@@ -490,4 +490,33 @@ public class TrackPropertiesViewModelTests
             dir.Delete(recursive: true);
         }
     }
+
+    [Test]
+    public async Task DiscNumber_IsLoaded_ValidatedLikeTheTrackNumber_AndSavedWithTheRest()
+    {
+        var vm = CreateViewModel("untagged-track.mp3", out var path, out var dir, out _, out _);
+        try
+        {
+            await Assert.That(vm.DiscNumberText).IsEqualTo("");
+
+            vm.DiscNumberText = "abc";
+            await Assert.That(vm.HasDiscNumberError).IsTrue();
+            await Assert.That(vm.IsValid).IsFalse();
+            await Assert.That(vm.ApplyCommand.CanExecute(null)).IsFalse();
+
+            vm.DiscNumberText = "2";
+            await Assert.That(vm.HasDiscNumberError).IsFalse();
+            await Assert.That(vm.IsDirty).IsTrue();
+
+            await vm.ApplyCommand.ExecuteAsync(null);
+
+            await Assert.That(MusicLibraryScanner.ReadTrackIfExists(path)!.DiscNumber).IsEqualTo(2);
+            await Assert.That(vm.DiscNumberText).IsEqualTo("2");
+            await Assert.That(vm.IsDirty).IsFalse();
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
 }

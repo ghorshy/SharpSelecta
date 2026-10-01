@@ -51,9 +51,12 @@
 
     <!-- Default track list column widths (a width the user dragged to is saved separately) -->
     <x:Double x:Key="Size.Column.TrackNumber">60</x:Double>
+    <x:Double x:Key="Size.Column.DiscNumber">50</x:Double>
     <x:Double x:Key="Size.Column.Title">200</x:Double>
     <x:Double x:Key="Size.Column.Artist">150</x:Double>
+    <x:Double x:Key="Size.Column.AlbumArtist">150</x:Double>
     <x:Double x:Key="Size.Column.Album">150</x:Double>
+    <x:Double x:Key="Size.Column.Genre">120</x:Double>
     <x:Double x:Key="Size.Column.Length">80</x:Double>
     <x:Double x:Key="Size.Column.SampleRate">100</x:Double>
     <x:Double x:Key="Size.Column.BitDepth">80</x:Double>

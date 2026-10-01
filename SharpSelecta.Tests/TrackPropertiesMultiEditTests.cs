@@ -287,4 +287,39 @@ public class TrackPropertiesMultiEditTests
             new List<Track>(), Substitute.For<IFilePickerService>(), Substitute.For<IFileManagerService>(), NullLogger.Instance))
             .Throws<ArgumentException>();
     }
+
+    [Test]
+    public async Task DiscNumber_DifferingAcrossTracks_StartsEmptyWithAPlaceholder_AndIsKeptPerTrackUnlessTyped()
+    {
+        var dir = Directory.CreateTempSubdirectory("sharpselecta-multi-edit-tests-");
+        try
+        {
+            var paths = new[] { Path.Combine(dir.FullName, "one.mp3"), Path.Combine(dir.FullName, "two.mp3") };
+            foreach (var (path, disc) in paths.Zip([1, 2]))
+            {
+                File.WriteAllBytes(path, Fixture("untagged-track.mp3"));
+                TrackTagEditor.Write(path, new TrackTagEdits("T", "Same", null, "Album", null, null, 2001, 1, DiscNumber: disc));
+            }
+
+            var tracks = paths.Select(p => MusicLibraryScanner.ReadTrackIfExists(p)!).ToList();
+            var vm = new TrackPropertiesViewModel(tracks, Substitute.For<IFilePickerService>(), Substitute.For<IFileManagerService>(), NullLogger.Instance);
+
+            await Assert.That(vm.DiscNumberText).IsEqualTo("");
+            await Assert.That(vm.DiscNumberPlaceholder).IsNotNull();
+
+            vm.Genre = "Jazz"; // an unrelated edit must not flatten the discs
+            await vm.ApplyCommand.ExecuteAsync(null);
+            await Assert.That(MusicLibraryScanner.ReadTrackIfExists(paths[0])!.DiscNumber).IsEqualTo(1);
+            await Assert.That(MusicLibraryScanner.ReadTrackIfExists(paths[1])!.DiscNumber).IsEqualTo(2);
+
+            vm.DiscNumberText = "3";
+            await vm.ApplyCommand.ExecuteAsync(null);
+            await Assert.That(MusicLibraryScanner.ReadTrackIfExists(paths[0])!.DiscNumber).IsEqualTo(3);
+            await Assert.That(MusicLibraryScanner.ReadTrackIfExists(paths[1])!.DiscNumber).IsEqualTo(3);
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
 }

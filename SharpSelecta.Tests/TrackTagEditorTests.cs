@@ -98,4 +98,26 @@ public class TrackTagEditorTests
             dir.Delete(recursive: true);
         }
     }
+
+    [Test]
+    [Arguments("untagged-track.mp3")]
+    [Arguments("untagged-track.flac")]
+    [Arguments("untagged-track.m4a")]
+    [Arguments("untagged-track.wav")]
+    public async Task Write_RoundTripsTheDiscNumber_AndClearsItWhenEmpty(string fixtureName)
+    {
+        var path = CopyFixture(fixtureName, out var dir);
+        try
+        {
+            TrackTagEditor.Write(path, SampleEdits with { DiscNumber = 2 });
+            await Assert.That(MusicLibraryScanner.ReadTrackIfExists(path)!.DiscNumber).IsEqualTo(2);
+
+            TrackTagEditor.Write(path, SampleEdits with { DiscNumber = null });
+            await Assert.That(MusicLibraryScanner.ReadTrackIfExists(path)!.DiscNumber).IsNull();
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
 }

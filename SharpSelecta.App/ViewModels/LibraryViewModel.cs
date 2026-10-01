@@ -48,6 +48,10 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     [ObservableProperty]
     public partial bool IsTrackNumberColumnVisible { get; set; } = true;
 
+    // Columns added later are hidden until switched on (right-click the header), so an existing layout doesn't change.
+    [ObservableProperty]
+    public partial bool IsDiscNumberColumnVisible { get; set; }
+
     [ObservableProperty]
     public partial bool IsTitleColumnVisible { get; set; } = true;
 
@@ -55,7 +59,13 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     public partial bool IsArtistColumnVisible { get; set; } = true;
 
     [ObservableProperty]
+    public partial bool IsAlbumArtistColumnVisible { get; set; }
+
+    [ObservableProperty]
     public partial bool IsAlbumColumnVisible { get; set; } = true;
+
+    [ObservableProperty]
+    public partial bool IsGenreColumnVisible { get; set; }
 
     [ObservableProperty]
     public partial bool IsLengthColumnVisible { get; set; } = true;
@@ -78,9 +88,12 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     private IEnumerable<(string Key, Func<bool> Get, Action<bool> Set)> ColumnVisibilityBindings() =>
     [
         ("TrackNumber", () => IsTrackNumberColumnVisible, v => IsTrackNumberColumnVisible = v),
+        ("DiscNumber", () => IsDiscNumberColumnVisible, v => IsDiscNumberColumnVisible = v),
         ("Title", () => IsTitleColumnVisible, v => IsTitleColumnVisible = v),
         ("Artist", () => IsArtistColumnVisible, v => IsArtistColumnVisible = v),
+        ("AlbumArtist", () => IsAlbumArtistColumnVisible, v => IsAlbumArtistColumnVisible = v),
         ("Album", () => IsAlbumColumnVisible, v => IsAlbumColumnVisible = v),
+        ("Genre", () => IsGenreColumnVisible, v => IsGenreColumnVisible = v),
         ("Length", () => IsLengthColumnVisible, v => IsLengthColumnVisible = v),
         ("SampleRate", () => IsSampleRateColumnVisible, v => IsSampleRateColumnVisible = v),
         ("BitDepth", () => IsBitDepthColumnVisible, v => IsBitDepthColumnVisible = v),
@@ -98,6 +111,12 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     }
 
     partial void OnIsTrackNumberColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsTrackNumberColumnVisible = v);
+
+    partial void OnIsDiscNumberColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsDiscNumberColumnVisible = v);
+
+    partial void OnIsAlbumArtistColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsAlbumArtistColumnVisible = v);
+
+    partial void OnIsGenreColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsGenreColumnVisible = v);
 
     partial void OnIsTitleColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsTitleColumnVisible = v);
 

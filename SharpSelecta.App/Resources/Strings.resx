@@ -361,6 +361,18 @@
   <data name="AutoDjTooltip" xml:space="preserve">
     <value>Keep the queue filled with random tracks</value>
   </data>
+  <data name="ColumnDisc" xml:space="preserve">
+    <value>Disc</value>
+  </data>
+  <data name="ColumnAlbumArtist" xml:space="preserve">
+    <value>Album Artist</value>
+  </data>
+  <data name="ColumnGenre" xml:space="preserve">
+    <value>Genre</value>
+  </data>
+  <data name="LabelDiscNumber" xml:space="preserve">
+    <value>Disc</value>
+  </data>
   <data name="ColumnTrack" xml:space="preserve">
     <value>Track</value>
   </data>

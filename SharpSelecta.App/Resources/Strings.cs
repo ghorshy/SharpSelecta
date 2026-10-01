@@ -84,6 +84,10 @@ public static class Strings
     public static string DiscordPresenceHint => Get(nameof(DiscordPresenceHint));
     public static string AutoDj => Get(nameof(AutoDj));
     public static string AutoDjTooltip => Get(nameof(AutoDjTooltip));
+    public static string ColumnDisc => Get(nameof(ColumnDisc));
+    public static string ColumnAlbumArtist => Get(nameof(ColumnAlbumArtist));
+    public static string ColumnGenre => Get(nameof(ColumnGenre));
+    public static string LabelDiscNumber => Get(nameof(LabelDiscNumber));
     public static string ShortcutRefreshLibrary => Get(nameof(ShortcutRefreshLibrary));
     public static string ShortcutProperties => Get(nameof(ShortcutProperties));
     public static string SeekStepSeconds => Get(nameof(SeekStepSeconds));

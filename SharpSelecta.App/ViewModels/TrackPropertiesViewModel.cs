@@ -120,6 +120,9 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
     public partial string TrackNumberText { get; set; } = "";
 
     [ObservableProperty]
+    public partial string DiscNumberText { get; set; } = "";
+
+    [ObservableProperty]
     public partial byte[]? CoverBytes { get; set; }
 
     // The tracks don't all share the same cover (or only some have one), so none is shown.
@@ -152,6 +155,8 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
     public string? YearPlaceholder => PlaceholderFor(nameof(YearText));
 
     public string? TrackNumberPlaceholder => PlaceholderFor(nameof(TrackNumberText));
+
+    public string? DiscNumberPlaceholder => PlaceholderFor(nameof(DiscNumberText));
 
     public string SelectionSummary => IsMultiple ? Strings.TracksSelected(_tracks.Count) : Track.DisplayName;
 
@@ -194,7 +199,9 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
 
     public bool HasTrackNumberError => !TryParseOptionalNumber(TrackNumberText, out _);
 
-    public bool IsValid => !HasYearError && !HasTrackNumberError;
+    public bool HasDiscNumberError => !TryParseOptionalNumber(DiscNumberText, out _);
+
+    public bool IsValid => !HasYearError && !HasTrackNumberError && !HasDiscNumberError;
 
     public bool IsDirty => CurrentEdits() != _baseline || CurrentCredits() != _creditsBaseline || CurrentCoverEdit() is not null;
 
@@ -215,7 +222,7 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
                 RefreshState();
                 break;
             case nameof(Title) or nameof(Genre)
-                or nameof(Comment) or nameof(YearText) or nameof(TrackNumberText) or nameof(SaveCoverAsSeparateFile)
+                or nameof(Comment) or nameof(YearText) or nameof(TrackNumberText) or nameof(DiscNumberText) or nameof(SaveCoverAsSeparateFile)
                 or nameof(Remixer) or nameof(Composer) or nameof(Conductor) or nameof(Lyricist):
                 RefreshState();
                 break;
@@ -228,6 +235,7 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsValid));
         OnPropertyChanged(nameof(HasYearError));
         OnPropertyChanged(nameof(HasTrackNumberError));
+        OnPropertyChanged(nameof(HasDiscNumberError));
         ApplyCommand.NotifyCanExecuteChanged();
         OkCommand.NotifyCanExecuteChanged();
     }
@@ -440,6 +448,7 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
         Comment = CommonText(nameof(Comment), t => t.Comment);
         YearText = CommonNumberText(nameof(YearText), t => t.Year);
         TrackNumberText = CommonNumberText(nameof(TrackNumberText), t => t.TrackNumber);
+        DiscNumberText = CommonNumberText(nameof(DiscNumberText), t => t.DiscNumber);
         Remixer = CommonCredit(nameof(Remixer), c => c.Remixer);
         Composer = CommonCredit(nameof(Composer), c => c.Composer);
         Conductor = CommonCredit(nameof(Conductor), c => c.Conductor);
@@ -527,9 +536,10 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
         // Apply/OK are disabled, so this value is only ever used for the dirty comparison.
         var year = TryParseOptionalNumber(YearText, out var parsedYear) ? parsedYear : _baseline.Year;
         var trackNumber = TryParseOptionalNumber(TrackNumberText, out var parsedTrack) ? parsedTrack : _baseline.TrackNumber;
+        var discNumber = TryParseOptionalNumber(DiscNumberText, out var parsedDisc) ? parsedDisc : _baseline.DiscNumber;
         return new TrackTagEdits(
             Normalize(Title), Normalize(Artist), Normalize(AlbumArtist), Normalize(Album),
-            Normalize(Genre), Normalize(Comment), year, trackNumber);
+            Normalize(Genre), Normalize(Comment), year, trackNumber, discNumber);
     }
 
     private TrackCredits CurrentCredits() =>
@@ -566,7 +576,8 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
             Text(nameof(Genre), typed.Genre, Normalize(track.Genre)),
             Text(nameof(Comment), typed.Comment, Normalize(track.Comment)),
             Number(nameof(YearText), typed.Year, track.Year),
-            Number(nameof(TrackNumberText), typed.TrackNumber, track.TrackNumber));
+            Number(nameof(TrackNumberText), typed.TrackNumber, track.TrackNumber),
+            Number(nameof(DiscNumberText), typed.DiscNumber, track.DiscNumber));
     }
 
     private CoverArtEdit? CurrentCoverEdit()

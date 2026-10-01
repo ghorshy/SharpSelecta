@@ -39,6 +39,7 @@ public static class MusicLibraryScanner
             {
                 // ATL.NET reports these as 0, not null, when a file has no such tag.
                 TrackNumber = atlTrack.TrackNumber is > 0 ? atlTrack.TrackNumber : null,
+                DiscNumber = atlTrack.DiscNumber is > 0 ? atlTrack.DiscNumber : null,
                 Title = title,
                 Artist = NullIfEmpty(atlTrack.Artist),
                 Album = NullIfEmpty(atlTrack.Album),

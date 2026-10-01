@@ -11,7 +11,8 @@ public sealed record TrackTagEdits(
     string? Genre,
     string? Comment,
     int? Year,
-    int? TrackNumber);
+    int? TrackNumber,
+    int? DiscNumber = null);
 
 public abstract record CoverArtEdit
 {
@@ -52,6 +53,7 @@ public static class TrackTagEditor
                 Comment = edits.Comment ?? "",
                 Year = edits.Year ?? 0,
                 TrackNumber = edits.TrackNumber ?? 0,
+                DiscNumber = edits.DiscNumber ?? 0,
             };
 
             if (credits is not null)

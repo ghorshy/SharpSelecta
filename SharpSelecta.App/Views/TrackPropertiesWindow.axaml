@@ -54,9 +54,16 @@
                                      PlaceholderText="{Binding YearPlaceholder}" />
 
                             <TextBlock Grid.Row="6" Classes="field-label" Text="{x:Static res:Strings.LabelTrackNumber}" />
-                            <TextBox Grid.Row="6" Grid.Column="1" Width="{DynamicResource Size.Properties.NumberFieldWidth}" HorizontalAlignment="Left"
-                                     Text="{Binding TrackNumberText}" Classes.invalid="{Binding HasTrackNumberError}"
-                                     PlaceholderText="{Binding TrackNumberPlaceholder}" />
+                            <StackPanel Grid.Row="6" Grid.Column="1" Orientation="Horizontal" Spacing="{styles:SpacingValue S}">
+                                <TextBox Width="{DynamicResource Size.Properties.NumberFieldWidth}"
+                                         Text="{Binding TrackNumberText}" Classes.invalid="{Binding HasTrackNumberError}"
+                                         PlaceholderText="{Binding TrackNumberPlaceholder}" />
+                                <TextBlock Classes="field-label" Text="{x:Static res:Strings.LabelDiscNumber}"
+                                           Margin="{styles:Spacing Left=S}" />
+                                <TextBox Width="{DynamicResource Size.Properties.NumberFieldWidth}"
+                                         Text="{Binding DiscNumberText}" Classes.invalid="{Binding HasDiscNumberError}"
+                                         PlaceholderText="{Binding DiscNumberPlaceholder}" />
+                            </StackPanel>
 
                             <TextBlock Grid.Row="7" VerticalAlignment="Top" Margin="{styles:Spacing Top=XS}"
                                        Classes="field-label" Text="{x:Static res:Strings.LabelComments}" />

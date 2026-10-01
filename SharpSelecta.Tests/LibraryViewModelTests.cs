@@ -1344,6 +1344,32 @@ public class LibraryViewModelTests
     }
 
     [Test]
+    public async Task NewerColumns_AreHiddenByDefault_AndTheirVisibilityIsRemembered()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            var vm = CreateViewModel(out _, out _, out _, settingsPath);
+            await Assert.That(vm.IsGenreColumnVisible).IsFalse();
+            await Assert.That(vm.IsAlbumArtistColumnVisible).IsFalse();
+            await Assert.That(vm.IsDiscNumberColumnVisible).IsFalse();
+
+            vm.IsGenreColumnVisible = true;
+            vm.IsAlbumArtistColumnVisible = true;
+            vm.IsDiscNumberColumnVisible = true;
+
+            var saved = SettingsStore.LoadColumnVisibility(settingsPath)!;
+            await Assert.That(saved["Genre"]).IsTrue();
+            await Assert.That(saved["AlbumArtist"]).IsTrue();
+            await Assert.That(saved["DiscNumber"]).IsTrue();
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
     public async Task IsLoadingLibrary_IsFalseAfterFoldersFinishLoading()
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);

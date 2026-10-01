@@ -3,6 +3,7 @@ namespace SharpSelecta.Core.Library;
 public sealed record Track(string FilePath, string DisplayName)
 {
     public int? TrackNumber { get; init; }
+    public int? DiscNumber { get; init; }
     public string? Title { get; init; }
     public string? Artist { get; init; }
     public string? Album { get; init; }
