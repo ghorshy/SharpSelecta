@@ -23,11 +23,17 @@
             </ControlTemplate>
         </Setter>
     </Style>
-    <Style Selector="Button.toolbar-button-hover:pointerover">
+    <Style Selector="Button.toolbar-button-hover:not(:disabled):pointerover">
         <Setter Property="Background" Value="#28808080" />
     </Style>
-    <Style Selector="Button.toolbar-button-hover:pressed">
+    <Style Selector="Button.toolbar-button-hover:not(:disabled):pressed">
         <Setter Property="Background" Value="#40808080" />
+    </Style>
+
+    <!-- The template above has no disabled state of its own, so text content (e.g. "View ▾") needs
+         dimming here; icon buttons are handled by the Svg rule below. -->
+    <Style Selector="Button.toolbar-button:disabled TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorDisabledBrush}" />
     </Style>
 
     <!-- CurrentColor must be set here, not as an inline attribute on each Svg - a locally set
