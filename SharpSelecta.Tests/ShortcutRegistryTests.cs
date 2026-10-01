@@ -46,6 +46,16 @@ public class ShortcutRegistryTests
     }
 
     [Test]
+    public async Task RefreshShortcut_DefaultsToF5_AndRescansTheLibrary()
+    {
+        var mainWindowViewModel = CreateMainWindowViewModel();
+        var refresh = ShortcutRegistry.All.Single(s => s.Id == "Library.Refresh");
+
+        await Assert.That(refresh.DefaultGesture).IsEqualTo("F5");
+        await Assert.That(refresh.Command(mainWindowViewModel)).IsSameReferenceAs(mainWindowViewModel.Library.RescanCommand);
+    }
+
+    [Test]
     public async Task PropertiesShortcut_DefaultsToAltEnter_AndAsksTheViewToOpenTheFocusedTrack()
     {
         var mainWindowViewModel = CreateMainWindowViewModel();

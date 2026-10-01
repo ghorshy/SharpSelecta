@@ -497,6 +497,8 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
             _logger.LogInformation("Reconciled {TrackCount} tracks in {ElapsedMs} ms", result.Tracks.Count, stopwatch.ElapsedMilliseconds);
             Tracks.ReplaceAll(result.Tracks.Select(track => new LibraryTrackViewModel(track, this)));
+            // A playlist's rows depend on which of its files are in the index, which a rescan may have changed.
+            Playlists.RefreshTracks();
             StatusMessage = result.FailedFolders.Count > 0
                 ? Strings.FailedToScanFolder(string.Join(", ", result.FailedFolders))
                 : null;

@@ -775,6 +775,31 @@ public class LibraryViewModelTests
     }
 
     [Test]
+    public async Task Rescan_PicksUpFilesAddedOrRemovedOnDisk_IncludingInAnOpenPlaylist()
+    {
+        var (vm, _, tracks, settingsPath, root) = CreatePlaylistWithTracks(3);
+        try
+        {
+            vm.LibraryFolderPaths.Add(root.FullName);
+            await vm.RescanCommand.ExecuteAsync(null);
+            await Assert.That(vm.Tracks.Count).IsEqualTo(3);
+            await Assert.That(vm.Playlists.Tracks.Count(t => t.IsMissing)).IsEqualTo(0);
+
+            File.Delete(tracks[0].FilePath);
+            File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), Path.Combine(root.FullName, "brand-new.mp3"));
+            await vm.RescanCommand.ExecuteAsync(null);
+
+            await Assert.That(vm.Tracks.Count).IsEqualTo(3);
+            await Assert.That(vm.Tracks.Select(t => Path.GetFileName(t.Track.FilePath))).Contains("brand-new.mp3");
+            await Assert.That(vm.Playlists.Tracks.Count(t => t.IsMissing)).IsEqualTo(1);
+        }
+        finally
+        {
+            CleanUp(settingsPath, root);
+        }
+    }
+
+    [Test]
     public async Task PlayTrackItem_InAPlaylist_SkipsMissingFilesWhenBuildingTheQueue()
     {
         var (vm, playback, tracks, settingsPath, root) = CreatePlaylistWithTracks(2, addMissingAtEnd: true);

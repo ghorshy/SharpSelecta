@@ -19,6 +19,7 @@ public static class ShortcutRegistry
 
     public static IReadOnlyList<ShortcutDefinition> All { get; } =
     [
+        new("Library.Refresh", "F5", () => Strings.ShortcutRefreshLibrary, vm => vm.Library.RescanCommand),
         new("Library.FocusSearch", "Ctrl+F", () => Strings.ShortcutSearchLibrary, vm => vm.Library.FocusSearchCommand),
         new("Library.IncreaseTileSize", "Ctrl+OemPlus", () => Strings.ShortcutIncreaseTileSize,
             vm => new RelayCommand(() => ActiveGridOrNull(vm.Library)?.IncreaseTileSizeCommand.Execute(null))),

@@ -343,6 +343,9 @@
   <data name="AlbumArtQueryFormat" xml:space="preserve">
     <value>{0} - {1}</value>
   </data>
+  <data name="ShortcutRefreshLibrary" xml:space="preserve">
+    <value>Refresh library</value>
+  </data>
   <data name="ColumnTrack" xml:space="preserve">
     <value>Track</value>
   </data>
