@@ -61,7 +61,7 @@
     <x:Double x:Key="Size.Column.SampleRate">100</x:Double>
     <x:Double x:Key="Size.Column.BitDepth">80</x:Double>
     <x:Double x:Key="Size.Column.Bitrate">90</x:Double>
-    <x:Double x:Key="Size.Column.FileType">80</x:Double>
+    <x:Double x:Key="Size.Column.FileType">110</x:Double>
     <x:Double x:Key="Size.Column.Year">60</x:Double>
 
     <!-- Playback bar, queue, waveform -->

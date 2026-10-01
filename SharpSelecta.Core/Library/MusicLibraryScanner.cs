@@ -27,7 +27,7 @@ public static class MusicLibraryScanner
     internal static Track ReadTrack(string path)
     {
         var fileName = Path.GetFileName(path);
-        var fileType = Path.GetExtension(path).TrimStart('.').ToUpperInvariant();
+        var fileType = FileTypeOf(path);
 
         try
         {
@@ -58,6 +58,20 @@ public static class MusicLibraryScanner
         {
             return new Track(path, fileName) { FileType = fileType };
         }
+    }
+
+    // An .m4a holds either lossless ALAC or lossy AAC, which matters to the user, so the type says which.
+    private static string FileTypeOf(string path)
+    {
+        var type = Path.GetExtension(path).TrimStart('.').ToUpperInvariant();
+        return type == "M4A"
+            ? Mp4Codec.ReadAudioCodec(path) switch
+            {
+                Mp4Codec.Alac => "M4A (ALAC)",
+                Mp4Codec.Aac => "M4A (AAC)",
+                _ => type,
+            }
+            : type;
     }
 
     private static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;

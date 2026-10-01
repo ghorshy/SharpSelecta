@@ -647,6 +647,13 @@ public static class LibraryIndexStore
             alter.ExecuteNonQuery();
         }
 
+        // M4A rows indexed before the type told ALAC from AAC are re-read; once they are, none is left to match.
+        using (var m4aCommand = connection.CreateCommand())
+        {
+            m4aCommand.CommandText = "UPDATE Tracks SET LastWriteTimeUtcTicks = 0 WHERE FileType = 'M4A'";
+            m4aCommand.ExecuteNonQuery();
+        }
+
         using (var playlistCommand = connection.CreateCommand())
         {
             playlistCommand.CommandText = """
