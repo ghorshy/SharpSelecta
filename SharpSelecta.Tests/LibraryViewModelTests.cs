@@ -800,6 +800,94 @@ public class LibraryViewModelTests
     }
 
     [Test]
+    public async Task PlayTrackItem_InAPlaylist_WithAutoDjOn_StartsThatTrackAndAddsRandomOnesFromThePlaylist()
+    {
+        var (vm, playback, tracks, settingsPath, root) = CreatePlaylistWithTracks(10);
+        try
+        {
+            playback.IsAutoDjEnabled = true;
+            var playlistId = vm.Playlists.SelectedPlaylistId;
+
+            await vm.PlayTrackItemCommand.ExecuteAsync(vm.Playlists.Tracks[3]);
+
+            await Assert.That(playback.QueueEntries[0].Track.FilePath).IsEqualTo(vm.Playlists.Tracks[3].Track.FilePath);
+            await Assert.That(playback.QueueEntries.Count).IsEqualTo(1 + AutoDj.Lookahead);
+            await Assert.That(playback.QueueEntries.Skip(1).All(e => e.Source == QueueEntrySource.AutoDj)).IsTrue();
+            await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath).Distinct().Count()).IsEqualTo(playback.QueueEntries.Count);
+            await Assert.That(playback.QueueEntries.All(e => tracks.Any(t => t.FilePath == e.Track.FilePath))).IsTrue();
+            await Assert.That(SettingsStore.LoadAutoDjSourcePlaylistId(settingsPath)).IsEqualTo(playlistId);
+        }
+        finally
+        {
+            CleanUp(settingsPath, root);
+        }
+    }
+
+    [Test]
+    public async Task PlayTrackItem_InAPlaylist_WithAutoDjOff_StillQueuesTheRestInOrder_ButRemembersThePlaylistForLater()
+    {
+        var (vm, playback, tracks, settingsPath, root) = CreatePlaylistWithTracks(4);
+        try
+        {
+            await vm.PlayTrackItemCommand.ExecuteAsync(vm.Playlists.Tracks[1]);
+
+            await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath)).IsEquivalentTo(tracks.Skip(1).Select(t => t.FilePath));
+            await Assert.That(SettingsStore.LoadAutoDjSourcePlaylistId(settingsPath)).IsEqualTo(vm.Playlists.SelectedPlaylistId);
+
+            playback.ToggleAutoDjCommand.Execute(null); // turning it on later uses that playlist
+            await Assert.That(playback.AutoDjPool!().Count).IsEqualTo(4);
+        }
+        finally
+        {
+            CleanUp(settingsPath, root);
+        }
+    }
+
+    [Test]
+    public async Task PlayingFromTheLibrary_MakesAutoDjDrawFromTheWholeLibrary()
+    {
+        var (vm, playback, tracks, settingsPath, root) = CreatePlaylistWithTracks(3);
+        try
+        {
+            vm.Tracks.ReplaceAll(tracks.Select(t => new LibraryTrackViewModel(t, vm)));
+            await vm.PlayTrackItemCommand.ExecuteAsync(vm.Playlists.Tracks[0]); // from the playlist first
+            vm.LibrarySection = LibrarySection.Library;
+
+            await vm.PlayTrackItemCommand.ExecuteAsync(vm.Tracks[1]);
+
+            await Assert.That(SettingsStore.LoadAutoDjSourcePlaylistId(settingsPath)).IsNull();
+            await Assert.That(playback.AutoDjPool!().Select(t => t.FilePath)).IsEquivalentTo(tracks.Select(t => t.FilePath));
+        }
+        finally
+        {
+            CleanUp(settingsPath, root);
+        }
+    }
+
+    [Test]
+    public async Task AutoDjSource_IsRestoredFromSettings_AndADeletedPlaylistFallsBackToTheLibrary()
+    {
+        var (vm, _, tracks, settingsPath, root) = CreatePlaylistWithTracks(3);
+        try
+        {
+            vm.Tracks.ReplaceAll(tracks.Select(t => new LibraryTrackViewModel(t, vm)));
+            var playlistId = vm.Playlists.SelectedPlaylistId!;
+            SettingsStore.SaveAutoDjSourcePlaylistId(settingsPath, playlistId);
+
+            var restored = CreateViewModel(out _, out _, out var restoredPlayback, settingsPath);
+            restored.Tracks.ReplaceAll(tracks.Select(t => new LibraryTrackViewModel(t, restored)));
+            await Assert.That(restoredPlayback.AutoDjPool!().Count).IsEqualTo(3);
+
+            restored.Playlists.DeletePlaylist(playlistId);
+            await Assert.That(restoredPlayback.AutoDjPool!().Count).IsEqualTo(3); // library, not an empty pool
+        }
+        finally
+        {
+            CleanUp(settingsPath, root);
+        }
+    }
+
+    [Test]
     public async Task PlayTrackItem_InAPlaylist_SkipsMissingFilesWhenBuildingTheQueue()
     {
         var (vm, playback, tracks, settingsPath, root) = CreatePlaylistWithTracks(2, addMissingAtEnd: true);

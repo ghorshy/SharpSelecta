@@ -14,14 +14,6 @@
              x:Class="SharpSelecta.App.Views.LibraryView"
              x:DataType="vm:LibraryViewModel">
 
-    <UserControl.Styles>
-        <Style Selector="Button.toolbar-button.active">
-            <Setter Property="BorderThickness" Value="{DynamicResource Border.Bottom.Thick}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
-            <Setter Property="CornerRadius" Value="0" />
-        </Style>
-    </UserControl.Styles>
-
     <DockPanel LastChildFill="True">
         <DockPanel DockPanel.Dock="Top" LastChildFill="False" Margin="{styles:Spacing Bottom=XS}" IsVisible="{Binding HasTracks}">
             <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="{styles:SpacingValue M}">

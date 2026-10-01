@@ -924,4 +924,27 @@ public class SettingsStoreTests
             File.Delete(path);
         }
     }
+
+    [Test]
+    public async Task AutoDjSettings_AreOffAndLibraryWideByDefault_AndRoundTrip()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"sharpselecta-settings-tests-{Guid.NewGuid():N}.json");
+        try
+        {
+            await Assert.That(SettingsStore.LoadAutoDjEnabled(path)).IsFalse();
+            await Assert.That(SettingsStore.LoadAutoDjSourcePlaylistId(path)).IsNull();
+
+            SettingsStore.SaveAutoDjEnabled(path, true);
+            SettingsStore.SaveAutoDjSourcePlaylistId(path, "playlist-1");
+            await Assert.That(SettingsStore.LoadAutoDjEnabled(path)).IsTrue();
+            await Assert.That(SettingsStore.LoadAutoDjSourcePlaylistId(path)).IsEqualTo("playlist-1");
+
+            SettingsStore.SaveAutoDjSourcePlaylistId(path, null);
+            await Assert.That(SettingsStore.LoadAutoDjSourcePlaylistId(path)).IsNull();
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
 }

@@ -111,6 +111,17 @@ public static partial class SettingsStore
         Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { Theme = theme });
 
     /// <summary>File name (relative to the app's Themes directory) of the selected custom theme.</summary>
+    public static bool LoadAutoDjEnabled(string settingsFilePath) => Load(settingsFilePath)?.AutoDjEnabled ?? false;
+
+    public static void SaveAutoDjEnabled(string settingsFilePath, bool enabled) =>
+        Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { AutoDjEnabled = enabled });
+
+    // The playlist Auto DJ draws from; null means the whole library.
+    public static string? LoadAutoDjSourcePlaylistId(string settingsFilePath) => Load(settingsFilePath)?.AutoDjSourcePlaylistId;
+
+    public static void SaveAutoDjSourcePlaylistId(string settingsFilePath, string? playlistId) =>
+        Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { AutoDjSourcePlaylistId = playlistId });
+
     public static bool LoadDiscordPresenceEnabled(string settingsFilePath) => Load(settingsFilePath)?.DiscordPresenceEnabled ?? false;
 
     public static void SaveDiscordPresenceEnabled(string settingsFilePath, bool enabled) =>
@@ -208,6 +219,8 @@ public static partial class SettingsStore
         public string? SelectedPlaylistId { get; init; }
         public string? FanartApiKey { get; init; }
         public bool? DiscordPresenceEnabled { get; init; }
+        public bool? AutoDjEnabled { get; init; }
+        public string? AutoDjSourcePlaylistId { get; init; }
     }
 
     [JsonSerializable(typeof(SettingsData))]

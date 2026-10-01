@@ -14,6 +14,7 @@ Early stage, but already usable day to day:
 - Double-click any cover art for a full-resolution preview
 - Playlists you can create, rename, reorder by dragging, and import from or export to M3U/M3U8
 - Queue with drag-to-reorder, play-next, and repeat modes (off/all/one)
+- Auto DJ: a toggle on the queue that keeps it topped up with random tracks from the playlist you started playing from (or the whole library), without repeating anything until the pool is used up
 - Play/pause, seek (with an optional waveform seek bar), volume (linear or logarithmic), and a toggle between elapsed and remaining time
 - 10-band graphic equalizer, with named presets or manual per-band gain
 - Playback device selection, and the queue/current track/volume all persist across restarts
@@ -56,7 +57,7 @@ dotnet test
 
 ## TODO
 
-- Auto-DJ / crossfade
+- Crossfade
 - File extension converter (WAV->FLAC, etc...)
 
 ## License

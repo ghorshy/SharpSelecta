@@ -1011,4 +1011,115 @@ public class PlaybackControlsViewModelTests
 
         await Assert.That(vm.DisplayTrackLabel).IsEqualTo("A, B - Song");
     }
+
+    // --- Auto DJ ---
+
+    private static IReadOnlyList<Track> Library(int count) =>
+        Enumerable.Range(0, count).Select(i => new Track($"/music/lib{i:D2}.mp3", $"lib{i:D2}.mp3")).ToList();
+
+    [Test]
+    public async Task AutoDj_KeepsTheQueueFilledAheadOfThePlayingTrack_WithRandomPoolTracks()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        vm.AutoDjPool = () => Library(20);
+        vm.IsAutoDjEnabled = true;
+
+        await vm.PlayNowAsync(new Track("/music/start.mp3", "start.mp3"));
+
+        await Assert.That(queue.Entries.Count).IsEqualTo(1 + AutoDj.Lookahead);
+        await Assert.That(queue.Entries.Skip(1).All(e => e.Source == QueueEntrySource.AutoDj)).IsTrue();
+        await Assert.That(queue.Entries.Select(e => e.Track.FilePath).Distinct().Count()).IsEqualTo(queue.Entries.Count);
+    }
+
+    [Test]
+    public async Task AutoDj_TopsUpAgainEachTimeTheQueueAdvances()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        vm.AutoDjPool = () => Library(30);
+        vm.IsAutoDjEnabled = true;
+        await vm.PlayNowAsync(new Track("/music/start.mp3", "start.mp3"));
+
+        await vm.NextTrackCommand.ExecuteAsync(null);
+        await vm.NextTrackCommand.ExecuteAsync(null);
+
+        await Assert.That(queue.CurrentIndex).IsEqualTo(2);
+        await Assert.That(queue.Entries.Count - 1 - queue.CurrentIndex).IsEqualTo(AutoDj.Lookahead);
+        await Assert.That(queue.Entries.Select(e => e.Track.FilePath).Distinct().Count()).IsEqualTo(queue.Entries.Count);
+    }
+
+    [Test]
+    public async Task AutoDj_DoesNothingWhileDisabled_WithoutAPool_OrBeforeAnythingPlays()
+    {
+        var disabled = CreateViewModel(out _, out var disabledQueue);
+        disabled.AutoDjPool = () => Library(20);
+        await disabled.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
+        await Assert.That(disabledQueue.Entries.Count).IsEqualTo(1);
+
+        var noPool = CreateViewModel(out _, out var noPoolQueue);
+        noPool.IsAutoDjEnabled = true;
+        await noPool.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
+        await Assert.That(noPoolQueue.Entries.Count).IsEqualTo(1);
+
+        var idle = CreateViewModel(out _, out var idleQueue);
+        idle.AutoDjPool = () => Library(20);
+        idle.IsAutoDjEnabled = true;
+        await Assert.That(idleQueue.Entries).IsEmpty();
+    }
+
+    [Test]
+    public async Task AutoDj_SwitchedOnWhileSomethingPlays_FillsTheQueueAtOnce_AndOffStopsAddingMore()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        vm.AutoDjPool = () => Library(20);
+        await vm.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
+
+        vm.ToggleAutoDjCommand.Execute(null);
+        await Assert.That(queue.Entries.Count).IsEqualTo(1 + AutoDj.Lookahead);
+
+        vm.ToggleAutoDjCommand.Execute(null);
+        await vm.NextTrackCommand.ExecuteAsync(null);
+        await Assert.That(queue.Entries.Count).IsEqualTo(1 + AutoDj.Lookahead); // no new picks
+    }
+
+    [Test]
+    public async Task AutoDj_NeverQueuesTheTrackThatIsPlaying_AndAddsOnlyWhatThePoolHas()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        var playing = new Track("/music/lib00.mp3", "lib00.mp3");
+        vm.AutoDjPool = () => Library(3); // lib00, lib01, lib02
+        vm.IsAutoDjEnabled = true;
+
+        await vm.PlayNowAsync(playing);
+
+        await Assert.That(queue.Entries.Select(e => e.Track.FilePath)).IsEquivalentTo(Library(3).Select(t => t.FilePath));
+        await Assert.That(queue.Entries[0].Track).IsEqualTo(playing);
+    }
+
+    [Test]
+    public async Task AutoDj_ManualEntriesGoBeforeItsPicks()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        vm.AutoDjPool = () => Library(20);
+        vm.IsAutoDjEnabled = true;
+        await vm.PlayNowAsync(new Track("/music/start.mp3", "start.mp3"));
+
+        var manual = new Track("/music/manual.mp3", "manual.mp3");
+        await vm.AddToQueue(manual);
+
+        await Assert.That(queue.Entries[1].Track).IsEqualTo(manual);
+        await Assert.That(queue.Entries[1].Source).IsEqualTo(QueueEntrySource.Manual);
+        await Assert.That(queue.Entries.Skip(2).All(e => e.Source == QueueEntrySource.AutoDj)).IsTrue();
+    }
+
+    [Test]
+    public async Task AutoDj_EnabledState_IsRememberedAcrossInstances()
+    {
+        var path = CreateTempSettingsPath();
+        var first = CreateViewModel(out _, out _, path);
+        await Assert.That(first.IsAutoDjEnabled).IsFalse();
+
+        first.ToggleAutoDjCommand.Execute(null);
+
+        await Assert.That(CreateViewModel(out _, out _, path).IsAutoDjEnabled).IsTrue();
+    }
 }

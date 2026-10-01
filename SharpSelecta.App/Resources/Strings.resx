@@ -355,6 +355,12 @@
   <data name="DiscordPresenceHint" xml:space="preserve">
     <value>While a track is playing and Discord is running, it shows as your Discord status. It is cleared when you pause or stop.</value>
   </data>
+  <data name="AutoDj" xml:space="preserve">
+    <value>Auto DJ</value>
+  </data>
+  <data name="AutoDjTooltip" xml:space="preserve">
+    <value>Keep the queue filled with random tracks</value>
+  </data>
   <data name="ColumnTrack" xml:space="preserve">
     <value>Track</value>
   </data>

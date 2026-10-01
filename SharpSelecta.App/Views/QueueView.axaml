@@ -13,9 +13,12 @@
              x:DataType="vm:QueueViewModel">
 
     <DockPanel LastChildFill="True">
-        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="{styles:Spacing Bottom=M}">
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto,Auto" Margin="{styles:Spacing Bottom=M}">
             <TextBlock Grid.Column="0" Text="{x:Static res:Strings.Queue}" Classes="strong" VerticalAlignment="Center" />
-            <Button Grid.Column="1" Classes="toolbar-button toolbar-button-hover" Content="{x:Static res:Strings.Clear}"
+            <Button Grid.Column="1" Classes="toolbar-button toolbar-button-hover" Classes.active="{Binding IsAutoDjEnabled}"
+                    Content="{x:Static res:Strings.AutoDj}" ToolTip.Tip="{x:Static res:Strings.AutoDjTooltip}"
+                    Command="{Binding ToggleAutoDjCommand}" />
+            <Button Grid.Column="2" Classes="toolbar-button toolbar-button-hover" Content="{x:Static res:Strings.Clear}"
                     Command="{Binding ClearQueueCommand}" />
         </Grid>
 
@@ -48,6 +51,11 @@
                     </Setter>
                 </Style>
 
+                <!-- Tracks Auto DJ queued are dimmed so they read as suggestions next to the ones queued by hand. -->
+                <Style Selector="StackPanel.auto-dj">
+                    <Setter Property="Opacity" Value="{DynamicResource Opacity.TextSecondary}" />
+                </Style>
+
                 <!-- The row currently being dragged fades out a bit... -->
                 <Style Selector="ListBoxItem.dragging">
                     <Setter Property="Opacity" Value="{DynamicResource Opacity.Dragging}" />
@@ -77,7 +85,8 @@
                                 <views:AlbumCoverPlaceholderIcon IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNull}}" />
                             </Panel>
                         </Border>
-                        <StackPanel Grid.Column="1" Margin="{styles:Spacing Left=S, Right=XXS}" VerticalAlignment="Center">
+                        <StackPanel Grid.Column="1" Margin="{styles:Spacing Left=S, Right=XXS}" VerticalAlignment="Center"
+                                    Classes.auto-dj="{Binding IsAutoDj}">
                             <TextBlock Text="{Binding Title}" Classes="strong" TextTrimming="CharacterEllipsis" />
                             <TextBlock Text="{Binding Artist}" Classes="secondary small" TextTrimming="CharacterEllipsis" />
                         </StackPanel>

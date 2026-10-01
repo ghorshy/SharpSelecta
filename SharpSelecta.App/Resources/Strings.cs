@@ -82,6 +82,8 @@ public static class Strings
     public static string SettingsCategoryIntegrations => Get(nameof(SettingsCategoryIntegrations));
     public static string DiscordPresenceToggle => Get(nameof(DiscordPresenceToggle));
     public static string DiscordPresenceHint => Get(nameof(DiscordPresenceHint));
+    public static string AutoDj => Get(nameof(AutoDj));
+    public static string AutoDjTooltip => Get(nameof(AutoDjTooltip));
     public static string ShortcutRefreshLibrary => Get(nameof(ShortcutRefreshLibrary));
     public static string ShortcutProperties => Get(nameof(ShortcutProperties));
     public static string SeekStepSeconds => Get(nameof(SeekStepSeconds));

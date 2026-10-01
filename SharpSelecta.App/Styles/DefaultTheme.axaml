@@ -31,6 +31,13 @@
         <Setter Property="Background" Value="{DynamicResource Brush.ToolbarPressed}" />
     </Style>
 
+    <!-- A toggled-on toolbar button (the active library section, Auto DJ): an accent line underneath. -->
+    <Style Selector="Button.toolbar-button.active">
+        <Setter Property="BorderThickness" Value="{DynamicResource Border.Bottom.Thick}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+        <Setter Property="CornerRadius" Value="0" />
+    </Style>
+
     <!-- The template above has no disabled state of its own, so text content (e.g. "View ▾") needs
          dimming here; icon buttons are handled by the Svg rule below. -->
     <Style Selector="Button.toolbar-button:disabled TextBlock">

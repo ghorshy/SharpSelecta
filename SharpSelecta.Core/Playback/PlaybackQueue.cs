@@ -182,6 +182,18 @@ public sealed class PlaybackQueue
         SetCurrentIndex(current is null ? -1 : 0);
     }
 
+    // Removes the tracks Auto DJ queued that haven't played yet, keeping everything added by hand.
+    public void ClearAutoDjTail()
+    {
+        for (var i = _entries.Count - 1; i > CurrentIndex; i--)
+        {
+            if (_entries[i].Source == QueueEntrySource.AutoDj)
+            {
+                _entries.RemoveAt(i);
+            }
+        }
+    }
+
     public void Restore(IReadOnlyList<QueueEntry> entries, int currentIndex)
     {
         _entries.Clear();

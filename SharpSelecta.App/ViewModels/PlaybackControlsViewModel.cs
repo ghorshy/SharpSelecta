@@ -110,13 +110,75 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         _settingsFilePath = settingsFilePath;
         _logger = logger;
 
-        ((INotifyCollectionChanged)_queue.Entries).CollectionChanged += (_, _) => RefreshNavigationCommands();
+        ((INotifyCollectionChanged)_queue.Entries).CollectionChanged += (_, _) =>
+        {
+            RefreshNavigationCommands();
+            TopUpAutoDj();
+        };
         _queue.CurrentIndexChanged += (_, _) =>
         {
             RefreshNavigationCommands();
             OnPropertyChanged(nameof(QueueCurrentIndex));
+            TopUpAutoDj();
         };
+
+        IsAutoDjEnabled = SettingsStore.LoadAutoDjEnabled(settingsFilePath);
+        _autoDjSettingLoaded = true;
     }
+
+    private bool _autoDjSettingLoaded;
+    private bool _isToppingUpAutoDj;
+
+    // Auto DJ keeps the queue topped up with random tracks so the music doesn't run out.
+    [ObservableProperty]
+    public partial bool IsAutoDjEnabled { get; set; }
+
+    // Where Auto DJ draws from (the playlist playback was started from, else the library). Asked each
+    // time rather than copied, so edits to a playlist are picked up.
+    public Func<IReadOnlyList<Track>>? AutoDjPool { get; set; }
+
+    partial void OnIsAutoDjEnabledChanged(bool value)
+    {
+        if (!_autoDjSettingLoaded)
+            return;
+
+        SettingsStore.SaveAutoDjEnabled(_settingsFilePath, value);
+        TopUpAutoDj();
+    }
+
+    [RelayCommand]
+    private void ToggleAutoDj() => IsAutoDjEnabled = !IsAutoDjEnabled;
+
+    // Keeps AutoDj.Lookahead tracks queued after the current one. Does nothing until something is playing.
+    public void TopUpAutoDj()
+    {
+        if (!IsAutoDjEnabled || AutoDjPool is null || _queue.CurrentIndex < 0 || _isToppingUpAutoDj)
+            return;
+
+        var entries = _queue.Entries;
+        var current = _queue.CurrentIndex;
+        var needed = AutoDj.Lookahead - (entries.Count - 1 - current);
+        if (needed <= 0)
+            return;
+
+        _isToppingUpAutoDj = true;
+        try
+        {
+            var played = entries.Take(current).Select(e => e.Track.FilePath).ToHashSet();
+            var inUse = entries.Skip(current).Select(e => e.Track.FilePath).ToHashSet();
+            foreach (var track in AutoDj.Pick(AutoDjPool(), played, inUse, needed, Random.Shared))
+            {
+                _queue.AddAutoDjEntry(track);
+            }
+        }
+        finally
+        {
+            _isToppingUpAutoDj = false;
+        }
+    }
+
+    // With Auto DJ on, "Clear" drops its upcoming picks (and they're re-rolled) but keeps what was queued by hand.
+    public void ClearAutoDjEntries() => _queue.ClearAutoDjTail();
 
     public ReadOnlyObservableCollection<QueueEntry> QueueEntries => _queue.Entries;
 

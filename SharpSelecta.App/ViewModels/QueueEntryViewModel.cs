@@ -22,6 +22,9 @@ public partial class QueueEntryViewModel : ViewModelBase
 
     public QueueViewModel Queue { get; }
 
+    // Queued by Auto DJ rather than by the user.
+    public bool IsAutoDj => Entry.Source == QueueEntrySource.AutoDj;
+
     public string DisplayName => Entry.Track.DisplayName;
 
     public string Title => Entry.Track.DisplayName;

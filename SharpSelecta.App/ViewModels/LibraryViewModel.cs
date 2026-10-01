@@ -341,6 +341,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         Grid = new AlbumGridViewModel(this, settingsFilePath, layout, _logger);
         RecentlyAddedGrid = new AlbumGridViewModel(this, settingsFilePath, layout, _logger, allowUserSort: false, limitToRecentlyAdded: true);
         Playlists = new PlaylistsViewModel(this, settingsFilePath);
+        ApplyAutoDjSource(SettingsStore.LoadAutoDjSourcePlaylistId(settingsFilePath));
 
         Tracks.CollectionChanged += (_, _) =>
         {
@@ -513,7 +514,11 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     }
 
     [RelayCommand]
-    private Task PlayNowAsync(Track track) => _playbackControls.PlayNowAsync(track);
+    private Task PlayNowAsync(Track track)
+    {
+        SetAutoDjSource(null);
+        return _playbackControls.PlayNowAsync(track);
+    }
 
     // In a playlist, starting a track means "play the playlist from here": the queue becomes this
     // track through the end of the playlist. Elsewhere it's a plain Play Now.
@@ -525,11 +530,18 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             var index = Playlists.Tracks.IndexOf(item);
             if (index >= 0)
             {
-                var rest = Playlists.Tracks.Skip(index).Where(t => !t.IsMissing).Select(t => t.Track).ToList();
+                SetAutoDjSource(Playlists.SelectedPlaylistId);
+
+                // With Auto DJ on the playlist isn't queued in order - this track starts and Auto DJ adds
+                // random ones from the same playlist after it.
+                var rest = _playbackControls.IsAutoDjEnabled
+                    ? [item.Track]
+                    : Playlists.Tracks.Skip(index).Where(t => !t.IsMissing).Select(t => t.Track).ToList();
                 return _playbackControls.ReplaceQueueAndPlayAsync(rest);
             }
         }
 
+        SetAutoDjSource(null);
         return _playbackControls.PlayNowAsync(item.Track);
     }
 
@@ -560,6 +572,29 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     [RelayCommand]
     private void RemoveFromPlaylist(Track track) => Playlists.RemoveFromSelectedPlaylist(track);
+
+    // Auto DJ draws from the playlist playback was last started from, or the whole library (null) when it
+    // was started anywhere else. Remembered across restarts.
+    private void SetAutoDjSource(string? playlistId)
+    {
+        if (playlistId != SettingsStore.LoadAutoDjSourcePlaylistId(_settingsFilePath))
+        {
+            SettingsStore.SaveAutoDjSourcePlaylistId(_settingsFilePath, playlistId);
+        }
+
+        ApplyAutoDjSource(playlistId);
+    }
+
+    private void ApplyAutoDjSource(string? playlistId) =>
+        _playbackControls.AutoDjPool = playlistId is null ? LibraryTracks : () => PlaylistTracks(playlistId);
+
+    private IReadOnlyList<Track> LibraryTracks() => Tracks.Select(t => t.Track).ToList();
+
+    // A playlist that has since been deleted falls back to the library rather than silently ending Auto DJ.
+    private IReadOnlyList<Track> PlaylistTracks(string playlistId) =>
+        LibraryIndexStore.ListPlaylists(_settingsFilePath).Any(p => p.Id == playlistId)
+            ? LibraryIndexStore.GetPlaylistTracks(_settingsFilePath, playlistId).Where(e => e.Track is not null).Select(e => e.Track!).ToList()
+            : LibraryTracks();
 
     public TrackPropertiesViewModel CreateTrackProperties(Track track) => CreateTrackProperties([track]);
 
@@ -633,7 +668,11 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             : [clickedTrack];
 
     [RelayCommand]
-    private Task PlayAlbumNowAsync(AlbumViewModel album) => _playbackControls.PlayNowAsync(album.UnderlyingTracks);
+    private Task PlayAlbumNowAsync(AlbumViewModel album)
+    {
+        SetAutoDjSource(null);
+        return _playbackControls.PlayNowAsync(album.UnderlyingTracks);
+    }
 
     [RelayCommand]
     private Task PlayAlbumNext(AlbumViewModel album) => _playbackControls.PlayNext(album.UnderlyingTracks);
