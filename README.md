@@ -18,6 +18,7 @@ Early stage, but already usable day to day:
 - 10-band graphic equalizer, with named presets or manual per-band gain
 - Playback device selection, and the queue/current track/volume all persist across restarts
 - Rebindable keyboard shortcuts, plus light, dark, or custom themes
+- Edit a track's tags (title, artist, album artist, album, genre, year, track number, comments) and cover art from its Properties window, with the cover stored embedded in the file or as a separate cover.jpg
 - Jump from any track or album straight to its file in your file manager
 - On Linux, integrates with playerctl and desktop media-key bindings (MPRIS)
 
@@ -53,7 +54,6 @@ dotnet test
 
 ## TODO
 
-- Tag editing
 - Auto-DJ / crossfade
 - Discord Rich Presence
 - File extension converter (WAV->FLAC, etc...)
