@@ -267,6 +267,11 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
         CoverBytes = null;
     }
 
+    // The Artist field is the artists joined by ATL's separator; the editor works on the list.
+    public ArtistsEditorViewModel CreateArtistsEditor() => new(ArtistList.Split(Artist));
+
+    public void ApplyArtists(IReadOnlyList<string> artists) => Artist = ArtistList.Join(artists);
+
     [RelayCommand]
     private Task ShowInFileManagerAsync() => _fileManagerService.RevealInFileManagerAsync(Track.FilePath);
 

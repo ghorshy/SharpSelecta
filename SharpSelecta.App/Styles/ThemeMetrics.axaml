@@ -84,6 +84,9 @@
     <x:Double x:Key="Size.Settings.NumberFieldWidth">100</x:Double>
     <x:Double x:Key="Size.Settings.ShortcutButtonMinWidth">110</x:Double>
 
+    <x:Double x:Key="Size.ArtistsEditor.Width">380</x:Double>
+    <x:Double x:Key="Size.ArtistsEditor.Height">420</x:Double>
+
     <x:Double x:Key="Size.Properties.Width">760</x:Double>
     <x:Double x:Key="Size.Properties.Height">620</x:Double>
     <x:Double x:Key="Size.Properties.MinWidth">640</x:Double>

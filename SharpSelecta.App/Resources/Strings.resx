@@ -280,6 +280,21 @@
   <data name="FailedToSaveSomeTagsFormat" xml:space="preserve">
     <value>Saved {0} of {1} tracks. Failed: {2}</value>
   </data>
+  <data name="ArtistsEllipsis" xml:space="preserve">
+    <value>Artists...</value>
+  </data>
+  <data name="ArtistsEditorTitle" xml:space="preserve">
+    <value>Artists</value>
+  </data>
+  <data name="ArtistsEditorNewPlaceholder" xml:space="preserve">
+    <value>Add an artist</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
   <data name="ColumnTrack" xml:space="preserve">
     <value>Track</value>
   </data>

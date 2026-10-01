@@ -58,6 +58,17 @@ public partial class TrackPropertiesWindow : Window
         }
     }
 
+    private async void OnEditArtistsClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not TrackPropertiesViewModel vm)
+            return;
+
+        if (await ArtistsEditorWindow.ShowAsync(this, vm.CreateArtistsEditor()) is { } artists)
+        {
+            vm.ApplyArtists(artists);
+        }
+    }
+
     private async void OnRemoveCoverClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not TrackPropertiesViewModel vm)

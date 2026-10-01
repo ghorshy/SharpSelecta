@@ -30,8 +30,11 @@
                                      PlaceholderText="{Binding TitlePlaceholder}" />
 
                             <TextBlock Grid.Row="1" Classes="field-label" Text="{x:Static res:Strings.ColumnArtist}" />
-                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Artist}"
-                                     PlaceholderText="{Binding ArtistPlaceholder}" />
+                            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="{styles:SpacingValue S}">
+                                <TextBox Grid.Column="0" Text="{Binding Artist}"
+                                         PlaceholderText="{Binding ArtistPlaceholder}" />
+                                <Button Grid.Column="1" Content="{x:Static res:Strings.ArtistsEllipsis}" Click="OnEditArtistsClick" />
+                            </Grid>
 
                             <TextBlock Grid.Row="2" Classes="field-label" Text="{x:Static res:Strings.LabelAlbumArtist}" />
                             <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding AlbumArtist}"
