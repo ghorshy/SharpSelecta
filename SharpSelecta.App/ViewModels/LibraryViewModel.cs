@@ -295,19 +295,23 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     public BulkObservableCollection<LibraryTrackViewModel> RecentlyAddedTracks { get; } = [];
 
+    // "Recently Added" is only the latest additions, not the whole library in date order.
+    public const int RecentlyAddedLimit = 100;
+
+    // The newest tracks by date added (newest first) - what the Recently Added views are made of.
+    public IReadOnlyList<LibraryTrackViewModel> NewestTracks() => Tracks
+        .OrderByDescending(t => t.Track.DateAddedUtc)
+        .ThenBy(t => t.Track.FilePath, StringComparer.Ordinal)
+        .Take(RecentlyAddedLimit)
+        .ToList();
+
+    // A search narrows what is shown, so it looks within those newest tracks, not the whole library.
     private void RefreshRecentlyAddedTracks()
     {
-        if (string.IsNullOrWhiteSpace(SearchQuery))
-        {
-            RecentlyAddedTracks.ReplaceAll(Tracks.OrderByDescending(t => t.Track.DateAddedUtc));
-            return;
-        }
-
-        var matching = Tracks
-            .Where(t => FuzzySearch.Score(t.Track, SearchQuery) is not null)
-            .OrderByDescending(t => t.Track.DateAddedUtc);
-
-        RecentlyAddedTracks.ReplaceAll(matching);
+        var newest = NewestTracks();
+        RecentlyAddedTracks.ReplaceAll(string.IsNullOrWhiteSpace(SearchQuery)
+            ? newest
+            : newest.Where(t => FuzzySearch.Score(t.Track, SearchQuery) is not null));
     }
 
     public AlbumGridViewModel Grid { get; }
@@ -335,7 +339,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         _logger = logger;
 
         Grid = new AlbumGridViewModel(this, settingsFilePath, layout, _logger);
-        RecentlyAddedGrid = new AlbumGridViewModel(this, settingsFilePath, layout, _logger, allowUserSort: false);
+        RecentlyAddedGrid = new AlbumGridViewModel(this, settingsFilePath, layout, _logger, allowUserSort: false, limitToRecentlyAdded: true);
         Playlists = new PlaylistsViewModel(this, settingsFilePath);
 
         Tracks.CollectionChanged += (_, _) =>

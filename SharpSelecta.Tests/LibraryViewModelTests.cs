@@ -1122,6 +1122,58 @@ public class LibraryViewModelTests
         await Assert.That(vm.IsPlaylistViewVisible).IsTrue();
     }
 
+    private static LibraryTrackViewModel DatedTrack(LibraryViewModel vm, string path, string album, DateTime added) =>
+        new(new Track(path, path) { Album = album, DateAddedUtc = added }, vm);
+
+    [Test]
+    public async Task RecentlyAddedTracks_AreOnlyTheNewest_NotTheWholeLibrary()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+        var now = DateTime.UtcNow;
+        vm.Tracks.ReplaceAll(Enumerable.Range(0, LibraryViewModel.RecentlyAddedLimit + 20)
+            .Select(i => DatedTrack(vm, $"/music/{i:D3}.mp3", "Album", now.AddMinutes(-i))));
+
+        await Assert.That(vm.RecentlyAddedTracks.Count).IsEqualTo(100);
+        await Assert.That(vm.RecentlyAddedTracks[0].Track.FilePath).IsEqualTo("/music/000.mp3");
+        await Assert.That(vm.RecentlyAddedTracks[99].Track.FilePath).IsEqualTo("/music/099.mp3");
+    }
+
+    [Test]
+    public async Task RecentlyAddedTracks_WithASearch_LooksOnlyWithinTheNewest()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+        var now = DateTime.UtcNow;
+        var tracks = Enumerable.Range(0, LibraryViewModel.RecentlyAddedLimit)
+            .Select(i => DatedTrack(vm, $"/music/new{i:D3}.mp3", "Fresh", now.AddMinutes(-i)))
+            .Append(DatedTrack(vm, "/music/zxqvkj.mp3", "Ancient", now.AddDays(-900)))
+            .ToList();
+        vm.Tracks.ReplaceAll(tracks);
+
+        vm.SearchQuery = "zxqvkj";
+        await vm.SearchDebounceTask;
+
+        await Assert.That(vm.RecentlyAddedTracks).IsEmpty();
+        await Assert.That(vm.DisplayedTracks.Count).IsEqualTo(1); // the library view still finds it
+    }
+
+    [Test]
+    public async Task RecentlyAddedGrid_ShowsWholeAlbumsThatContainANewTrack_AndNothingElse()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+        var now = DateTime.UtcNow;
+        var tracks = Enumerable.Range(1, LibraryViewModel.RecentlyAddedLimit - 1)
+            .Select(i => DatedTrack(vm, $"/music/fresh{i:D3}.mp3", "Fresh", now.AddMinutes(-i)))
+            .Append(DatedTrack(vm, "/music/straddle-new.mp3", "Straddle", now))
+            .Append(DatedTrack(vm, "/music/straddle-old.mp3", "Straddle", now.AddDays(-1000)))
+            .Append(DatedTrack(vm, "/music/ancient.mp3", "Ancient", now.AddDays(-2000)))
+            .ToList();
+        vm.Tracks.ReplaceAll(tracks);
+
+        await Assert.That(vm.RecentlyAddedGrid.Albums.Select(a => a.Title)).IsEquivalentTo(["Fresh", "Straddle"]);
+        await Assert.That(vm.RecentlyAddedGrid.Albums.Single(a => a.Title == "Straddle").Tracks.Count).IsEqualTo(2);
+        await Assert.That(vm.Grid.Albums.Count).IsEqualTo(3);
+    }
+
     [Test]
     public async Task RecentlyAddedTracks_OrdersByDateAddedUtcDescending()
     {

@@ -20,6 +20,7 @@ namespace SharpSelecta.App.ViewModels;
 public partial class AlbumGridViewModel : ViewModelBase
 {
     private readonly ThemeLayout _layout;
+    private readonly bool _limitToRecentlyAdded;
 
     private static readonly int ArtworkLoadConcurrency = Math.Max(1, Environment.ProcessorCount / 2);
 
@@ -52,8 +53,9 @@ public partial class AlbumGridViewModel : ViewModelBase
 
     public bool AllowUserSort { get; }
 
-    public AlbumGridViewModel(LibraryViewModel library, string settingsFilePath, ThemeLayout layout, ILogger logger, bool allowUserSort = true)
+    public AlbumGridViewModel(LibraryViewModel library, string settingsFilePath, ThemeLayout layout, ILogger logger, bool allowUserSort = true, bool limitToRecentlyAdded = false)
     {
+        _limitToRecentlyAdded = limitToRecentlyAdded;
         _library = library;
         _layout = layout;
         _settingsFilePath = settingsFilePath;
@@ -200,10 +202,17 @@ public partial class AlbumGridViewModel : ViewModelBase
 
     private void RebuildAlbums()
     {
+        // The Recently Added grid shows every album that has one of the newest tracks - the whole album,
+        // not just those tracks, so an expanded album is never missing songs.
+        var newestPaths = _limitToRecentlyAdded
+            ? _library.NewestTracks().Select(t => t.Track.FilePath).ToHashSet()
+            : null;
+
         var groups = _library.Tracks
             .GroupBy(
                 t => (Album: (t.Track.Album ?? string.Empty).Trim(), AlbumArtist: (t.Track.AlbumArtist ?? string.Empty).Trim()),
                 AlbumGroupKeyComparer.Instance)
+            .Where(g => newestPaths is null || g.Any(t => newestPaths.Contains(t.Track.FilePath)))
             .OrderBy(g => g.Key.Album, StringComparer.OrdinalIgnoreCase)
             .ThenBy(g => g.Key.AlbumArtist, StringComparer.OrdinalIgnoreCase)
             .Select(g =>
