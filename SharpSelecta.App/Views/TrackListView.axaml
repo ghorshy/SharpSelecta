@@ -89,8 +89,8 @@
                     <Setter.Value>
                         <ContextMenu x:DataType="vm:LibraryTrackViewModel">
                             <MenuItem Header="{x:Static res:Strings.PlayNow}"
-                                      Command="{Binding Library.PlayNowCommand}"
-                                      CommandParameter="{Binding Track}"
+                                      Command="{Binding Library.PlayTrackItemCommand}"
+                                      CommandParameter="{Binding}"
                                       IsEnabled="{Binding !IsMissing}" />
                             <MenuItem Header="{x:Static res:Strings.PlayNext}"
                                       Command="{Binding Library.PlayNextCommand}"

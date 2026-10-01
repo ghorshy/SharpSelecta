@@ -957,4 +957,37 @@ public class PlaybackControlsViewModelTests
         await Assert.That(vm.CurrentTrack).IsEqualTo(current);
         await Assert.That(queue.Entries[1].Track).IsEqualTo(updated);
     }
+
+    [Test]
+    public async Task ReplaceQueueAndPlayAsync_DiscardsTheOldQueueAndPlaysTheNewTracksFromTheFirst()
+    {
+        var vm = CreateViewModel(out var audioEngine, out var queue);
+        var oldCurrent = new Track("/music/old1.mp3", "old1.mp3");
+        var oldNext = new Track("/music/old2.mp3", "old2.mp3");
+        await vm.PlayNowAsync(oldCurrent);
+        await vm.AddToQueue(oldNext);
+        var a = new Track("/music/a.mp3", "a.mp3");
+        var b = new Track("/music/b.mp3", "b.mp3");
+        var c = new Track("/music/c.mp3", "c.mp3");
+
+        await vm.ReplaceQueueAndPlayAsync([b, c]);
+
+        await Assert.That(queue.Entries.Select(e => e.Track)).IsEquivalentTo([b, c]);
+        await Assert.That(queue.CurrentIndex).IsEqualTo(0);
+        await Assert.That(vm.CurrentTrack).IsEqualTo(b);
+        audioEngine.Received().Load(b.FilePath);
+        await Assert.That(queue.Entries.Select(e => e.Track)).DoesNotContain(a);
+    }
+
+    [Test]
+    public async Task ReplaceQueueAndPlayAsync_WithNoTracks_LeavesTheQueueAlone()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        var track = new Track("/music/a.mp3", "a.mp3");
+        await vm.PlayNowAsync(track);
+
+        await vm.ReplaceQueueAndPlayAsync([]);
+
+        await Assert.That(queue.Entries.Select(e => e.Track)).IsEquivalentTo([track]);
+    }
 }

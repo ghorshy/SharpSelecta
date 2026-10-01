@@ -503,6 +503,24 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     [RelayCommand]
     private Task PlayNowAsync(Track track) => _playbackControls.PlayNowAsync(track);
 
+    // In a playlist, starting a track means "play the playlist from here": the queue becomes this
+    // track through the end of the playlist. Elsewhere it's a plain Play Now.
+    [RelayCommand]
+    private Task PlayTrackItemAsync(LibraryTrackViewModel item)
+    {
+        if (LibrarySection == LibrarySection.Playlist)
+        {
+            var index = Playlists.Tracks.IndexOf(item);
+            if (index >= 0)
+            {
+                var rest = Playlists.Tracks.Skip(index).Where(t => !t.IsMissing).Select(t => t.Track).ToList();
+                return _playbackControls.ReplaceQueueAndPlayAsync(rest);
+            }
+        }
+
+        return _playbackControls.PlayNowAsync(item.Track);
+    }
+
     [RelayCommand]
     private Task PlayNext(Track track) => _playbackControls.PlayNext(ResolveSelection(track));
 

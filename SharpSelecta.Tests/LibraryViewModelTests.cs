@@ -722,6 +722,95 @@ public class LibraryViewModelTests
         }
     }
 
+    private static (LibraryViewModel Vm, PlaybackControlsViewModel Playback, List<Track> Tracks, string SettingsPath, DirectoryInfo Root) CreatePlaylistWithTracks(int count, bool addMissingAtEnd = false)
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+        for (var i = 1; i <= count; i++)
+        {
+            File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), Path.Combine(root.FullName, $"track{i}.mp3"));
+        }
+
+        var indexed = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]).Tracks.OrderBy(t => t.FilePath).ToList();
+        var vm = CreateViewModel(out _, out _, out var playback, settingsPath);
+        var playlistTracks = new List<Track>(indexed);
+        if (addMissingAtEnd)
+        {
+            playlistTracks.Add(new Track(Path.Combine(root.FullName, "gone.mp3"), "gone.mp3"));
+        }
+
+        vm.Playlists.CreatePlaylist("Mix");
+        vm.Playlists.AddTracksToSelectedPlaylist(playlistTracks);
+        vm.LibrarySection = LibrarySection.Playlist;
+        return (vm, playback, indexed, settingsPath, root);
+    }
+
+    private static void CleanUp(string settingsPath, DirectoryInfo root)
+    {
+        File.Delete(settingsPath);
+        File.Delete(Path.Combine(Path.GetDirectoryName(settingsPath)!, $"{Path.GetFileNameWithoutExtension(settingsPath)}.library-index.db"));
+        root.Delete(recursive: true);
+    }
+
+    [Test]
+    public async Task PlayTrackItem_InAPlaylist_ReplacesTheQueueWithTheClickedTrackThroughTheEndOfThePlaylist()
+    {
+        var (vm, playback, tracks, settingsPath, root) = CreatePlaylistWithTracks(4);
+        try
+        {
+            await playback.PlayNowAsync(new Track("/music/something-else.mp3", "else.mp3"));
+
+            await vm.PlayTrackItemCommand.ExecuteAsync(vm.Playlists.Tracks[1]);
+
+            await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath))
+                .IsEquivalentTo(tracks.Skip(1).Select(t => t.FilePath));
+            await Assert.That(playback.QueueCurrentIndex).IsEqualTo(0);
+            await Assert.That(playback.CurrentTrack!.FilePath).IsEqualTo(tracks[1].FilePath);
+        }
+        finally
+        {
+            CleanUp(settingsPath, root);
+        }
+    }
+
+    [Test]
+    public async Task PlayTrackItem_InAPlaylist_SkipsMissingFilesWhenBuildingTheQueue()
+    {
+        var (vm, playback, tracks, settingsPath, root) = CreatePlaylistWithTracks(2, addMissingAtEnd: true);
+        try
+        {
+            await vm.PlayTrackItemCommand.ExecuteAsync(vm.Playlists.Tracks[0]);
+
+            await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath))
+                .IsEquivalentTo(tracks.Select(t => t.FilePath));
+        }
+        finally
+        {
+            CleanUp(settingsPath, root);
+        }
+    }
+
+    [Test]
+    public async Task PlayTrackItem_OutsideAPlaylist_IsAPlainPlayNow()
+    {
+        var (vm, playback, tracks, settingsPath, root) = CreatePlaylistWithTracks(3);
+        try
+        {
+            vm.LibrarySection = LibrarySection.Library;
+            var existing = new Track("/music/existing.mp3", "existing.mp3");
+            await playback.PlayNowAsync(existing);
+
+            await vm.PlayTrackItemCommand.ExecuteAsync(new LibraryTrackViewModel(tracks[2], vm));
+
+            await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath))
+                .IsEquivalentTo([existing.FilePath, tracks[2].FilePath]);
+        }
+        finally
+        {
+            CleanUp(settingsPath, root);
+        }
+    }
+
     [Test]
     public async Task RemoveFromPlaylistCommand_RemovesOnlyTheClickedTrackFromTheCurrentlySelectedPlaylist()
     {

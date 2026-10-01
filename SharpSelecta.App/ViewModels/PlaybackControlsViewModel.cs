@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -334,6 +335,16 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
             return;
 
         _queue.PlayNow(tracks);
+        await LoadTrackAsync(tracks[0]);
+    }
+
+    // Throws away the current queue (including whatever is playing) and starts the given tracks, in order.
+    public async Task ReplaceQueueAndPlayAsync(IReadOnlyList<Track> tracks)
+    {
+        if (tracks.Count == 0)
+            return;
+
+        _queue.Restore(tracks.Select(track => new QueueEntry(track, QueueEntrySource.Manual)).ToList(), 0);
         await LoadTrackAsync(tracks[0]);
     }
 
