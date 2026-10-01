@@ -110,11 +110,10 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         _settingsFilePath = settingsFilePath;
         _logger = logger;
 
-        ((INotifyCollectionChanged)_queue.Entries).CollectionChanged += (_, _) =>
-        {
-            RefreshNavigationCommands();
-            TopUpAutoDj();
-        };
+        // Auto DJ must not top the queue up from in here: adding entries while a change to the queue is still
+        // being announced makes the queue view receive the events out of order and drift from the real
+        // queue. Top-ups run after the operation instead (CurrentIndexChanged, and the explicit calls below).
+        ((INotifyCollectionChanged)_queue.Entries).CollectionChanged += (_, _) => RefreshNavigationCommands();
         _queue.CurrentIndexChanged += (_, _) =>
         {
             RefreshNavigationCommands();
@@ -152,11 +151,11 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     // Keeps AutoDj.Lookahead tracks queued after the current one. Does nothing until something is playing.
     public void TopUpAutoDj()
     {
-        if (!IsAutoDjEnabled || AutoDjPool is null || _queue.CurrentIndex < 0 || _isToppingUpAutoDj)
-            return;
-
         var entries = _queue.Entries;
         var current = _queue.CurrentIndex;
+        if (!IsAutoDjEnabled || AutoDjPool is null || current < 0 || current >= entries.Count || _isToppingUpAutoDj)
+            return;
+
         var needed = AutoDj.Lookahead - (entries.Count - 1 - current);
         if (needed <= 0)
             return;
@@ -177,8 +176,6 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         }
     }
 
-    // With Auto DJ on, "Clear" drops its upcoming picks (and they're re-rolled) but keeps what was queued by hand.
-    public void ClearAutoDjEntries() => _queue.ClearAutoDjTail();
 
     public ReadOnlyObservableCollection<QueueEntry> QueueEntries => _queue.Entries;
 
@@ -249,9 +246,11 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         if (index >= 0)
         {
             _queue.RemoveAt(index);
+            TopUpAutoDj();
         }
     }
 
+    // Everything but the current track goes - with Auto DJ on it then refills the queue with fresh picks.
     public void ClearQueueExceptCurrent() => _queue.ClearExceptCurrent();
 
     // Called after a track's tags/cover were edited: the queue and the now-playing display keep

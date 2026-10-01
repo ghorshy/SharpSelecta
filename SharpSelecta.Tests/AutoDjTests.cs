@@ -85,21 +85,4 @@ public class AutoDjTests
 
         await Assert.That(picks.Select(t => t.FilePath)).IsEquivalentTo(Paths("a", "b"));
     }
-
-    [Test]
-    public async Task ClearAutoDjTail_RemovesOnlyUpcomingAutoDjEntries_KeepingManualAndHistory()
-    {
-        var queue = new PlaybackQueue();
-        queue.AddAutoDjEntry(T("history-auto"));
-        queue.AddToQueue(T("current"));
-        queue.JumpTo(1);
-        queue.AddToQueue(T("manual"));
-        queue.AddAutoDjEntry(T("auto1"));
-        queue.AddAutoDjEntry(T("auto2"));
-
-        queue.ClearAutoDjTail();
-
-        await Assert.That(queue.Entries.Select(e => e.Track.DisplayName)).IsEquivalentTo(["history-auto", "current", "manual"]);
-        await Assert.That(queue.CurrentIndex).IsEqualTo(1);
-    }
 }

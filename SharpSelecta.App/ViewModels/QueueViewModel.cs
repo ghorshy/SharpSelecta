@@ -2,7 +2,6 @@ using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Threading.Tasks;
-using System.Linq;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using SharpSelecta.Core.Playback;
@@ -33,13 +32,11 @@ public partial class QueueViewModel : ViewModelBase
             {
                 OnPropertyChanged(nameof(CurrentIndex));
                 RemoveFromQueueCommand.NotifyCanExecuteChanged();
-                ClearQueueCommand.NotifyCanExecuteChanged();
                 RefreshIsCurrent();
             }
             else if (e.PropertyName == nameof(PlaybackControlsViewModel.IsAutoDjEnabled))
             {
                 OnPropertyChanged(nameof(IsAutoDjEnabled));
-                ClearQueueCommand.NotifyCanExecuteChanged();
             }
         };
     }
@@ -114,21 +111,9 @@ public partial class QueueViewModel : ViewModelBase
     public IRelayCommand ToggleAutoDjCommand => _playbackControls.ToggleAutoDjCommand;
 
     [RelayCommand(CanExecute = nameof(CanClearQueue))]
-    private void ClearQueue()
-    {
-        if (IsAutoDjEnabled)
-        {
-            _playbackControls.ClearAutoDjEntries();
-        }
-        else
-        {
-            _playbackControls.ClearQueueExceptCurrent();
-        }
-    }
+    private void ClearQueue() => _playbackControls.ClearQueueExceptCurrent();
 
-    private bool CanClearQueue() => IsAutoDjEnabled
-        ? Entries.Skip(CurrentIndex + 1).Any(e => e.Entry.Source == QueueEntrySource.AutoDj)
-        : Entries.Count > 1;
+    private bool CanClearQueue() => Entries.Count > 1;
 
     public void MoveEntry(QueueEntryViewModel entry, QueueEntryViewModel? targetEntry) =>
         _playbackControls.MoveQueueEntry(entry.Entry, targetEntry?.Entry);
