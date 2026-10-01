@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using SharpSelecta.App.Formatting;
 using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.ViewModels;
@@ -45,7 +46,7 @@ public sealed partial class AlbumViewModel(
                 .Select(t =>
                 {
                     var trackArtist = (t.Track.Artist ?? string.Empty).Trim();
-                    var artistSuffix = distinctArtistCount > 1 && trackArtist.Length > 0 ? $"({trackArtist})" : null;
+                    var artistSuffix = distinctArtistCount > 1 && trackArtist.Length > 0 ? $"({TrackFormatting.FormatArtists(trackArtist)})" : null;
                     return new AlbumTrackRowViewModel(t, artistSuffix);
                 })
         ];

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using SharpSelecta.App.ViewModels;
 using SharpSelecta.Core.Library;
 using Tmds.DBus;
@@ -24,9 +25,11 @@ public static class MprisMapping
             metadata["mpris:length"] = (long)track.Duration.TotalMicroseconds;
             metadata["xesam:title"] = track.DisplayName;
 
-            if (!string.IsNullOrWhiteSpace(track.Artist))
+            // xesam:artist is a list, so every artist of the track goes in separately.
+            var artists = ArtistList.Split(track.Artist);
+            if (artists.Count > 0)
             {
-                metadata["xesam:artist"] = new[] { track.Artist };
+                metadata["xesam:artist"] = artists.ToArray();
             }
 
             if (!string.IsNullOrWhiteSpace(track.Album))

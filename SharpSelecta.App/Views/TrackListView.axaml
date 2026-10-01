@@ -129,7 +129,7 @@
         <DataGrid.Columns>
             <DataGridTextColumn Tag="TrackNumber" Header="{x:Static res:Strings.ColumnTrack}" Binding="{Binding Track.TrackNumber}" IsVisible="{Binding IsTrackNumberColumnVisible}" />
             <DataGridTextColumn Tag="Title" Header="{x:Static res:Strings.ColumnTitle}" Binding="{Binding Track.Title}" IsVisible="{Binding IsTitleColumnVisible}" />
-            <DataGridTextColumn Tag="Artist" Header="{x:Static res:Strings.ColumnArtist}" Binding="{Binding Track.Artist}" IsVisible="{Binding IsArtistColumnVisible}" />
+            <DataGridTextColumn Tag="Artist" Header="{x:Static res:Strings.ColumnArtist}" Binding="{Binding Track.Artist, Converter={x:Static converters:ArtistsDisplayConverter.Instance}}" IsVisible="{Binding IsArtistColumnVisible}" />
             <DataGridTextColumn Tag="Album" Header="{x:Static res:Strings.ColumnAlbum}" Binding="{Binding Track.Album}" IsVisible="{Binding IsAlbumColumnVisible}" />
             <DataGridTextColumn Tag="Length" Header="{x:Static res:Strings.ColumnLength}" Binding="{Binding LengthDisplay}" SortMemberPath="Track.Duration" IsVisible="{Binding IsLengthColumnVisible}" />
             <DataGridTextColumn Tag="SampleRate" Header="{x:Static res:Strings.ColumnSampleRate}" Binding="{Binding SampleRateDisplay}" SortMemberPath="Track.SampleRate" IsVisible="{Binding IsSampleRateColumnVisible}" />

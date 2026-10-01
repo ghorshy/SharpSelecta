@@ -62,4 +62,22 @@ public class TrackFormattingTests
 
         await Assert.That(TrackFormatting.TechnicalSummary(track)).IsEqualTo("MP3 44.1 kHz, 320 kbps, 3:05");
     }
+
+    [Test]
+    [Arguments("TRC;Trilla Jermaine Trilloski", "TRC, Trilla Jermaine Trilloski")]
+    [Arguments("Solo", "Solo")]
+    [Arguments(" A ; B ;; a ", "A, B")]
+    [Arguments("", "")]
+    [Arguments(null, "")]
+    public async Task FormatArtists_ShowsSeveralArtistsWithTheDisplaySeparator(string? artist, string expected)
+    {
+        await Assert.That(TrackFormatting.FormatArtists(artist)).IsEqualTo(expected);
+    }
+
+    [Test]
+    public async Task ArtistTitleLabel_FormatsSeveralArtists()
+    {
+        await Assert.That(TrackFormatting.ArtistTitleLabel("A;B", "Song")).IsEqualTo("A, B - Song");
+        await Assert.That(TrackFormatting.ArtistTitleLabel(null, "Song")).IsEqualTo("Song");
+    }
 }

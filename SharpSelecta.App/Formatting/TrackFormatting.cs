@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using SharpSelecta.App.Resources;
 using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.Formatting;
@@ -21,6 +22,11 @@ public static class TrackFormatting
     public static string TechnicalSummary(Track track) =>
         $"{track.FileType} {FormatSampleRate(track.SampleRate)}, {FormatBitrate(track.Bitrate)}, {FormatDuration(track.Duration)}";
 
+    // The tag stores several artists joined by ATL's separator; the UI shows them with the
+    // (localizable) display separator, e.g. "TRC;Trilla" -> "TRC, Trilla".
+    public static string FormatArtists(string? artist) =>
+        string.Join(Strings.ArtistSeparator, ArtistList.Split(artist));
+
     public static string ArtistTitleLabel(string? artist, string displayName) =>
-        string.IsNullOrWhiteSpace(artist) ? displayName : $"{artist} - {displayName}";
+        string.IsNullOrWhiteSpace(artist) ? displayName : $"{FormatArtists(artist)} - {displayName}";
 }

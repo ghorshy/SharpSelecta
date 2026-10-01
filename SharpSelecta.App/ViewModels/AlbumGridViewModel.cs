@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using SharpSelecta.App.Collections;
+using SharpSelecta.App.Formatting;
 using SharpSelecta.App.Resources;
 using SharpSelecta.App.Services;
 using SharpSelecta.App.Styles;
@@ -311,7 +312,7 @@ public partial class AlbumGridViewModel : ViewModelBase
         return distinctArtists.Count switch
         {
             0 => string.Empty,
-            1 => distinctArtists[0],
+            1 => TrackFormatting.FormatArtists(distinctArtists[0]),
             _ => Strings.VariousArtists,
         };
     }

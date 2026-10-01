@@ -159,6 +159,16 @@ public class AlbumGridViewModelTests
     }
 
     [Test]
+    public async Task Tile_ForATrackWithSeveralArtists_ShowsThemWithTheDisplaySeparator()
+    {
+        var vm = CreateLibraryViewModel();
+        AddTrack(vm, "/music/a.mp3", "Collab Album", "TRC;Trilla Jermaine Trilloski", null);
+        vm.Grid.SetViewportWidth(2000);
+
+        await Assert.That(vm.Grid.Rows[0].Tiles[0].Artist).IsEqualTo("TRC, Trilla Jermaine Trilloski");
+    }
+
+    [Test]
     public async Task SetSortMode_ToArtist_OrdersRowsByArtist()
     {
         var vm = CreateLibraryViewModel();

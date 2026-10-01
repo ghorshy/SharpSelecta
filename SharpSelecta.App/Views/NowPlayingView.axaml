@@ -13,7 +13,7 @@
 
     <StackPanel Spacing="{styles:SpacingValue XS}" IsVisible="{Binding CurrentTrack, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
         <TextBlock Text="{Binding CurrentTrack.Title}" Classes="strong" TextWrapping="Wrap" />
-        <TextBlock Text="{Binding CurrentTrack.Artist}" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding CurrentTrack.Artist, Converter={x:Static converters:ArtistsDisplayConverter.Instance}}" TextWrapping="Wrap" />
         <TextBlock Text="{Binding CurrentTrack.Album}" TextWrapping="Wrap" />
         <TextBlock Text="{Binding CurrentTrack.Year}" />
         <TextBlock Text="{Binding CurrentTrackTechnicalSummary}" Classes="secondary small" TextWrapping="Wrap" />

@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
+using SharpSelecta.App.Formatting;
 using SharpSelecta.Core.Library;
 using SharpSelecta.Core.Playback;
 
@@ -25,7 +26,7 @@ public partial class QueueEntryViewModel : ViewModelBase
 
     public string Title => Entry.Track.DisplayName;
 
-    public string Artist => Entry.Track.Artist ?? string.Empty;
+    public string Artist => TrackFormatting.FormatArtists(Entry.Track.Artist);
 
     public bool IsCurrent => Queue.Entries.IndexOf(this) == Queue.CurrentIndex;
 

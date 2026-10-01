@@ -139,4 +139,14 @@ public class MprisMappingTests
     {
         await Assert.That(MprisMapping.CanPlay(canResumeOrPause: false, hasCurrentTrack: true, canGoNext: false)).IsFalse();
     }
+
+    [Test]
+    public async Task BuildMetadata_PutsEveryArtistOfTheTrackInTheArtistList()
+    {
+        var track = new Track("/music/a.mp3", "a.mp3") { Artist = "TRC;Trilla Jermaine Trilloski" };
+
+        var metadata = MprisMapping.BuildMetadata(track);
+
+        await Assert.That((string[])metadata["xesam:artist"]).IsEquivalentTo(["TRC", "Trilla Jermaine Trilloski"]);
+    }
 }

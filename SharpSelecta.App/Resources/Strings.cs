@@ -136,6 +136,7 @@ public static class Strings
     public static string ArtistsEditorNewPlaceholder => Get(nameof(ArtistsEditorNewPlaceholder));
     public static string Add => Get(nameof(Add));
     public static string Remove => Get(nameof(Remove));
+    public static string ArtistSeparator => Get(nameof(ArtistSeparator));
     public static string Varies => Get(nameof(Varies));
     public static string MultipleLocations => Get(nameof(MultipleLocations));
 

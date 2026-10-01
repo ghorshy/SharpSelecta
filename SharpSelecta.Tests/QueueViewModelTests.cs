@@ -86,4 +86,13 @@ public class QueueViewModelTests
 
         vm.ReportDragReorderFailure(new InvalidOperationException("simulated drag failure"));
     }
+
+    [Test]
+    public async Task EntryArtist_ShowsSeveralArtistsWithTheDisplaySeparator()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        queue.PlayNow(new Track("/music/a.mp3", "a.mp3") { Artist = "TRC;Trilla Jermaine Trilloski" });
+
+        await Assert.That(vm.Entries[0].Artist).IsEqualTo("TRC, Trilla Jermaine Trilloski");
+    }
 }
