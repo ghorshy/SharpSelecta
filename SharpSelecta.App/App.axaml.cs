@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using SharpSelecta.Integrations.AlbumArt;
+using SharpSelecta.Integrations.Discord;
 using SharpSelecta.App.Services;
 using SharpSelecta.App.Styles;
 using SharpSelecta.App.Services.Mpris;
@@ -19,6 +20,7 @@ using SharpSelecta.App.Views;
 using SharpSelecta.Audio;
 using SharpSelecta.Core.AlbumArt;
 using SharpSelecta.Core.Audio;
+using SharpSelecta.Core.Presence;
 using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App;
@@ -48,6 +50,7 @@ public partial class App : Application
             var services = new ServiceCollection();
             services.AddLogging(builder => builder.AddSerilog(dispose: false));
             services.AddAudioEngine();
+            services.AddDiscordRichPresence();
             services.AddAlbumArtProviders(
                 () => SettingsStore.LoadFanartApiKey(settingsFilePath),
                 key => SettingsStore.SaveFanartApiKey(settingsFilePath, key));
@@ -79,10 +82,14 @@ public partial class App : Application
 
             mainWindow.Activated += (_, _) => Mpris()?.NudgePriority();
 
+            var richPresence = new RichPresenceCoordinator(
+                mainWindowViewModel.PlaybackControls, provider.GetRequiredService<IRichPresence>(), mainWindowViewModel.Integrations);
+
             desktop.Exit += (_, _) =>
             {
                 mainWindowViewModel.PersistQueueStateIfEnabled();
                 mainWindowViewModel.PersistVolume();
+                richPresence.Dispose();
 
                 if (Mpris() is { } mprisService)
                 {

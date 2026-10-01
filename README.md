@@ -22,6 +22,7 @@ Early stage, but already usable day to day:
 - Find a cover online for an album from Apple Music, Deezer, Cover Art Archive or fanart.tv (fanart.tv needs your own free API key), compare them side by side, and use the one you like
 - Jump from any track or album straight to its file in your file manager
 - On Linux, integrates with playerctl and desktop media-key bindings (MPRIS)
+- Optional Discord Rich Presence: shows the playing track as a "Listening to" status with a progress bar (off by default, enable it in Settings → Integrations)
 
 ## Requirements
 
@@ -56,7 +57,6 @@ dotnet test
 ## TODO
 
 - Auto-DJ / crossfade
-- Discord Rich Presence
 - File extension converter (WAV->FLAC, etc...)
 
 ## License

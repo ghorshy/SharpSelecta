@@ -35,6 +35,9 @@
                     <DataTemplate DataType="vm:InterfaceSettingsViewModel">
                         <views:InterfaceSettingsView />
                     </DataTemplate>
+                    <DataTemplate DataType="vm:IntegrationsSettingsViewModel">
+                        <views:IntegrationsSettingsView />
+                    </DataTemplate>
                     <DataTemplate DataType="vm:KeyboardShortcutsViewModel">
                         <views:KeyboardShortcutsSettingsView />
                     </DataTemplate>

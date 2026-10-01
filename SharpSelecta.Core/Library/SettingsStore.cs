@@ -111,6 +111,11 @@ public static partial class SettingsStore
         Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { Theme = theme });
 
     /// <summary>File name (relative to the app's Themes directory) of the selected custom theme.</summary>
+    public static bool LoadDiscordPresenceEnabled(string settingsFilePath) => Load(settingsFilePath)?.DiscordPresenceEnabled ?? false;
+
+    public static void SaveDiscordPresenceEnabled(string settingsFilePath, bool enabled) =>
+        Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { DiscordPresenceEnabled = enabled });
+
     public static string? LoadFanartApiKey(string settingsFilePath) => Load(settingsFilePath)?.FanartApiKey;
 
     public static void SaveFanartApiKey(string settingsFilePath, string? apiKey) =>
@@ -202,6 +207,7 @@ public static partial class SettingsStore
         public LibraryViewMode? RecentlyAddedViewMode { get; init; }
         public string? SelectedPlaylistId { get; init; }
         public string? FanartApiKey { get; init; }
+        public bool? DiscordPresenceEnabled { get; init; }
     }
 
     [JsonSerializable(typeof(SettingsData))]

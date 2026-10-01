@@ -43,7 +43,8 @@ public partial class PlaybackControlsView : UserControl
         new SettingsWindow
         {
             DataContext = new SettingsWindowViewModel(
-                mainWindowViewModel.Library, mainWindowViewModel.PlaybackSettings, mainWindowViewModel.InterfaceSettings, mainWindowViewModel.ShortcutSettings),
+                mainWindowViewModel.Library, mainWindowViewModel.PlaybackSettings, mainWindowViewModel.InterfaceSettings,
+                mainWindowViewModel.Integrations, mainWindowViewModel.ShortcutSettings),
         }.ShowDialog(window);
     }
 

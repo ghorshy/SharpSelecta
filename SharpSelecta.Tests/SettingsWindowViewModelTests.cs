@@ -39,18 +39,20 @@ public class SettingsWindowViewModelTests
     private static InterfaceSettingsViewModel CreateInterfaceSettingsViewModel() =>
         new(CreateTempSettingsPath(), Substitute.For<IFilePickerService>());
 
+    private static IntegrationsSettingsViewModel CreateIntegrationsSettingsViewModel() => new(CreateTempSettingsPath());
+
     private static ShortcutSettingsService CreateShortcutSettingsService() => new(CreateTempSettingsPath());
 
     private static SettingsWindowViewModel CreateViewModel() =>
-        new(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel(), CreateInterfaceSettingsViewModel(), CreateShortcutSettingsService());
+        new(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel(), CreateInterfaceSettingsViewModel(), CreateIntegrationsSettingsViewModel(), CreateShortcutSettingsService());
 
     [Test]
-    public async Task Categories_ContainsLibraryPlaybackInterfaceAndKeyboardShortcuts()
+    public async Task Categories_ContainsLibraryPlaybackInterfaceIntegrationsAndKeyboardShortcuts()
     {
         var vm = CreateViewModel();
 
         await Assert.That(vm.Categories).IsEquivalentTo(
-            [Strings.SettingsCategoryLibrary, Strings.SettingsCategoryPlayback, Strings.SettingsCategoryInterface, Strings.SettingsCategoryKeyboardShortcuts]);
+            [Strings.SettingsCategoryLibrary, Strings.SettingsCategoryPlayback, Strings.SettingsCategoryInterface, Strings.SettingsCategoryIntegrations, Strings.SettingsCategoryKeyboardShortcuts]);
     }
 
     [Test]
@@ -66,7 +68,7 @@ public class SettingsWindowViewModelTests
     {
         var library = CreateLibraryViewModel();
 
-        var vm = new SettingsWindowViewModel(library, CreatePlaybackSettingsViewModel(), CreateInterfaceSettingsViewModel(), CreateShortcutSettingsService());
+        var vm = new SettingsWindowViewModel(library, CreatePlaybackSettingsViewModel(), CreateInterfaceSettingsViewModel(), CreateIntegrationsSettingsViewModel(), CreateShortcutSettingsService());
 
         await Assert.That(vm.Library).IsEqualTo(library);
     }
@@ -76,7 +78,7 @@ public class SettingsWindowViewModelTests
     {
         var playback = CreatePlaybackSettingsViewModel();
 
-        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), playback, CreateInterfaceSettingsViewModel(), CreateShortcutSettingsService());
+        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), playback, CreateInterfaceSettingsViewModel(), CreateIntegrationsSettingsViewModel(), CreateShortcutSettingsService());
 
         await Assert.That(vm.Playback).IsEqualTo(playback);
     }
@@ -86,9 +88,21 @@ public class SettingsWindowViewModelTests
     {
         var interfaceSettings = CreateInterfaceSettingsViewModel();
 
-        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel(), interfaceSettings, CreateShortcutSettingsService());
+        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel(), interfaceSettings, CreateIntegrationsSettingsViewModel(), CreateShortcutSettingsService());
 
         await Assert.That(vm.Interface).IsEqualTo(interfaceSettings);
+    }
+
+    [Test]
+    public async Task SelectedCategoryViewModel_AfterSwitchingToIntegrations_ResolvesToIntegrations()
+    {
+        var integrations = CreateIntegrationsSettingsViewModel();
+        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel(), CreateInterfaceSettingsViewModel(), integrations, CreateShortcutSettingsService());
+
+        vm.SelectedCategory = Strings.SettingsCategoryIntegrations;
+
+        await Assert.That(vm.Integrations).IsEqualTo(integrations);
+        await Assert.That(vm.SelectedCategoryViewModel).IsEqualTo(integrations);
     }
 
     [Test]
@@ -96,7 +110,7 @@ public class SettingsWindowViewModelTests
     {
         var library = CreateLibraryViewModel();
 
-        var vm = new SettingsWindowViewModel(library, CreatePlaybackSettingsViewModel(), CreateInterfaceSettingsViewModel(), CreateShortcutSettingsService());
+        var vm = new SettingsWindowViewModel(library, CreatePlaybackSettingsViewModel(), CreateInterfaceSettingsViewModel(), CreateIntegrationsSettingsViewModel(), CreateShortcutSettingsService());
 
         await Assert.That(vm.SelectedCategoryViewModel).IsEqualTo(library);
     }
@@ -105,7 +119,7 @@ public class SettingsWindowViewModelTests
     public async Task SelectedCategoryViewModel_AfterSwitchingToPlayback_ResolvesToPlayback()
     {
         var playback = CreatePlaybackSettingsViewModel();
-        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), playback, CreateInterfaceSettingsViewModel(), CreateShortcutSettingsService());
+        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), playback, CreateInterfaceSettingsViewModel(), CreateIntegrationsSettingsViewModel(), CreateShortcutSettingsService());
 
         vm.SelectedCategory = Strings.SettingsCategoryPlayback;
 
@@ -116,7 +130,7 @@ public class SettingsWindowViewModelTests
     public async Task SelectedCategoryViewModel_AfterSwitchingToInterface_ResolvesToInterface()
     {
         var interfaceSettings = CreateInterfaceSettingsViewModel();
-        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel(), interfaceSettings, CreateShortcutSettingsService());
+        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel(), interfaceSettings, CreateIntegrationsSettingsViewModel(), CreateShortcutSettingsService());
 
         vm.SelectedCategory = Strings.SettingsCategoryInterface;
 

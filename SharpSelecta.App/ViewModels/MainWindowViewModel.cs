@@ -29,6 +29,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public InterfaceSettingsViewModel InterfaceSettings { get; }
 
+    public IntegrationsSettingsViewModel Integrations { get; }
+
     public ShortcutSettingsService ShortcutSettings { get; }
 
     public EqualizerViewModel Equalizer { get; }
@@ -56,6 +58,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Queue = new QueueViewModel(PlaybackControls, queueLogger);
         PlaybackSettings = new PlaybackSettingsViewModel(settingsFilePath, outputDeviceService, PlaybackControls);
         InterfaceSettings = new InterfaceSettingsViewModel(settingsFilePath, filePickerService);
+        Integrations = new IntegrationsSettingsViewModel(settingsFilePath);
         ShortcutSettings = new ShortcutSettingsService(settingsFilePath);
         Equalizer = new EqualizerViewModel(settingsFilePath, audioEngine);
         RightColumnWidth = new GridLength(SettingsStore.LoadRightColumnWidth(_settingsFilePath) ?? layout.RightColumnWidth);

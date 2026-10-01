@@ -79,6 +79,9 @@ public static class Strings
     public static string ShortcutPreviousTrack => Get(nameof(ShortcutPreviousTrack));
     public static string ShortcutNextTrack => Get(nameof(ShortcutNextTrack));
     public static string ShortcutClearQueue => Get(nameof(ShortcutClearQueue));
+    public static string SettingsCategoryIntegrations => Get(nameof(SettingsCategoryIntegrations));
+    public static string DiscordPresenceToggle => Get(nameof(DiscordPresenceToggle));
+    public static string DiscordPresenceHint => Get(nameof(DiscordPresenceHint));
     public static string ShortcutRefreshLibrary => Get(nameof(ShortcutRefreshLibrary));
     public static string ShortcutProperties => Get(nameof(ShortcutProperties));
     public static string SeekStepSeconds => Get(nameof(SeekStepSeconds));
