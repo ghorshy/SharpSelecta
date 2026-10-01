@@ -10,7 +10,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using SharpSelecta.App.Collections;
-using SharpSelecta.App.Formatting;
 using SharpSelecta.App.Resources;
 using SharpSelecta.App.Services;
 using SharpSelecta.App.Styles;
@@ -303,18 +302,16 @@ public partial class AlbumGridViewModel : ViewModelBase
 
     private static string ResolveArtistLabel(IEnumerable<LibraryTrackViewModel> tracks)
     {
-        var distinctArtists = tracks
-            .Select(t => (t.Track.Artist ?? string.Empty).Trim())
-            .Where(artist => artist.Length > 0)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var artists = tracks.Select(t => t.Track.Artist).ToList();
 
-        return distinctArtists.Count switch
-        {
-            0 => string.Empty,
-            1 => TrackFormatting.FormatArtists(distinctArtists[0]),
-            _ => Strings.VariousArtists,
-        };
+        // Artists on every track name the album even when some tracks have guests ("Pet Shop Boys" for a
+        // track by "Pet Shop Boys" and one by "Pet Shop Boys;Dusty Springfield"); only with nobody in
+        // common is it "Various Artists".
+        var common = ArtistList.Common(artists);
+        if (common.Count > 0)
+            return string.Join(Strings.ArtistSeparator, common);
+
+        return artists.Any(a => ArtistList.Split(a).Count > 0) ? Strings.VariousArtists : string.Empty;
     }
 
     private void RebuildRows(bool force)

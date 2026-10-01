@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
-using SharpSelecta.App.Formatting;
+using SharpSelecta.App.Resources;
 using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.ViewModels;
@@ -39,14 +39,21 @@ public sealed partial class AlbumViewModel(
             .Where(a => a.Length > 0)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Count();
+        var common = ArtistList.Common(tracks.Select(t => t.Track.Artist));
 
         return
         [
             .. tracks
                 .Select(t =>
                 {
-                    var trackArtist = (t.Track.Artist ?? string.Empty).Trim();
-                    var artistSuffix = distinctArtistCount > 1 && trackArtist.Length > 0 ? $"({TrackFormatting.FormatArtists(trackArtist)})" : null;
+                    // Artists the whole album shares are already in its label, so a track only adds the
+                    // others (the guests); with nobody in common it shows all of its artists.
+                    var shown = ArtistList.Split(t.Track.Artist)
+                        .Where(artist => common.Count == 0
+                            ? distinctArtistCount > 1
+                            : !common.Contains(artist, StringComparer.OrdinalIgnoreCase))
+                        .ToList();
+                    var artistSuffix = shown.Count > 0 ? $"({string.Join(Strings.ArtistSeparator, shown)})" : null;
                     return new AlbumTrackRowViewModel(t, artistSuffix);
                 })
         ];

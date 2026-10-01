@@ -12,6 +12,16 @@ public static class ArtistList
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
+    // The artists every track of an album shares (tracks with no artist are ignored), in the order the
+    // first such track lists them - what an album with guests on some tracks is "by".
+    public static IReadOnlyList<string> Common(IEnumerable<string?> artistValues)
+    {
+        var lists = artistValues.Select(Split).Where(list => list.Count > 0).ToList();
+        return lists.Count == 0
+            ? []
+            : lists[0].Where(artist => lists.Skip(1).All(list => list.Contains(artist, StringComparer.OrdinalIgnoreCase))).ToList();
+    }
+
     // Null for an empty list, matching how the rest of the tag fields represent "no value".
     public static string? Join(IEnumerable<string> artists)
     {

@@ -28,6 +28,26 @@ public class ArtistListTests
     }
 
     [Test]
+    public async Task Common_IsTheArtistsOnEveryTrack_InTheOrderOfTheFirstTrackThatHasArtists()
+    {
+        await Assert.That(string.Join("|", ArtistList.Common(["B;A;C", "A;B", "c;B;A"]))).IsEqualTo("B|A");
+    }
+
+    [Test]
+    public async Task Common_IgnoresTracksWithNoArtist()
+    {
+        await Assert.That(string.Join("|", ArtistList.Common([null, "A;B", "", "A"]))).IsEqualTo("A");
+    }
+
+    [Test]
+    public async Task Common_WithNothingInCommonOrNoArtists_IsEmpty()
+    {
+        await Assert.That(ArtistList.Common(["A", "B"])).IsEmpty();
+        await Assert.That(ArtistList.Common([null, ""])).IsEmpty();
+        await Assert.That(ArtistList.Common([])).IsEmpty();
+    }
+
+    [Test]
     public async Task Join_NormalizesAndJoinsInOrder()
     {
         await Assert.That(ArtistList.Join([" A ", "B", "a", ""])).IsEqualTo("A;B");

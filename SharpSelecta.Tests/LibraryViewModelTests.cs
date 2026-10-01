@@ -993,6 +993,56 @@ public class LibraryViewModelTests
     }
 
     [Test]
+    public async Task Albums_WhereSomeTracksHaveGuests_AreByTheArtistsEveryTrackShares()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+
+        AddTrack(vm, "/music/a.mp3", "Actually", "Pet Shop Boys", trackNumber: 1);
+        AddTrack(vm, "/music/b.mp3", "Actually", "Pet Shop Boys;Dusty Springfield", trackNumber: 2);
+
+        await Assert.That(vm.Grid.Albums[0].Artist).IsEqualTo("Pet Shop Boys");
+        // The shared artist is in the label already, so rows only name the guests.
+        await Assert.That(vm.Grid.Albums[0].TrackRows.Select(r => r.ArtistSuffix))
+            .IsEquivalentTo(new string?[] { null, "(Dusty Springfield)" });
+    }
+
+    [Test]
+    public async Task Albums_WithSeveralSharedArtists_ListsThemAllInTheDisplayFormat()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+
+        AddTrack(vm, "/music/a.mp3", "Collab", "A;B;C", trackNumber: 1);
+        AddTrack(vm, "/music/b.mp3", "Collab", "A;B", trackNumber: 2);
+
+        await Assert.That(vm.Grid.Albums[0].Artist).IsEqualTo("A, B");
+        await Assert.That(vm.Grid.Albums[0].TrackRows.Select(r => r.ArtistSuffix)).IsEquivalentTo(new string?[] { "(C)", null });
+    }
+
+    [Test]
+    public async Task Albums_WhereEveryTrackHasTheSameSeveralArtists_ShowAllOfThemAndNoSuffix()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+
+        AddTrack(vm, "/music/a.mp3", "Duo", "TRC;Trilla");
+        AddTrack(vm, "/music/b.mp3", "Duo", "TRC;Trilla");
+
+        await Assert.That(vm.Grid.Albums[0].Artist).IsEqualTo("TRC, Trilla");
+        await Assert.That(vm.Grid.Albums[0].TrackRows.Select(r => r.ArtistSuffix)).IsEquivalentTo(new string?[] { null, null });
+    }
+
+    [Test]
+    public async Task Albums_WhoseTracksShareNoArtist_AreStillVariousArtists_WithEachTracksArtistsAsSuffix()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+
+        AddTrack(vm, "/music/a.mp3", "Mixed", "A;B", trackNumber: 1);
+        AddTrack(vm, "/music/b.mp3", "Mixed", "C", trackNumber: 2);
+
+        await Assert.That(vm.Grid.Albums[0].Artist).IsEqualTo(Strings.VariousArtists);
+        await Assert.That(vm.Grid.Albums[0].TrackRows.Select(r => r.ArtistSuffix)).IsEquivalentTo(new string?[] { "(A, B)", "(C)" });
+    }
+
+    [Test]
     public async Task Albums_WithASingleArtist_ShowsThatArtistNotVariousArtists()
     {
         var vm = CreateViewModel(out _, out _, out _);
