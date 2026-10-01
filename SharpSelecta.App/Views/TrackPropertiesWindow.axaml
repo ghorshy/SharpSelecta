@@ -75,6 +75,9 @@
                                     <ContextMenu>
                                         <MenuItem Header="{x:Static res:Strings.CoverChooseImage}"
                                                   Command="{Binding ChangeCoverCommand}" />
+                                        <MenuItem Header="{x:Static res:Strings.AlbumArtFindOnline}"
+                                                  Click="OnFindCoverOnlineClick"
+                                                  IsEnabled="{Binding CanSearchCoverOnline}" />
                                         <MenuItem Header="{x:Static res:Strings.CoverRemove}"
                                                   Click="OnRemoveCoverClick"
                                                   IsEnabled="{Binding CanRemoveCover}" />

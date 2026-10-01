@@ -19,6 +19,7 @@ Early stage, but already usable day to day:
 - Playback device selection, and the queue/current track/volume all persist across restarts
 - Rebindable keyboard shortcuts, plus light, dark, or custom themes
 - Edit tags (title, artist, album artist, album, genre, year, track number, comments) and cover art from the Properties window (Alt+Enter) for one track, a selection of tracks, or a whole album, with the cover stored embedded in the files or as a separate cover.jpg. Tracks can have several artists, plus remixer, composer, conductor and lyricist credits
+- Find a cover online for an album from Apple Music, Deezer, Cover Art Archive or fanart.tv (fanart.tv needs your own free API key), compare them side by side, and use the one you like
 - Jump from any track or album straight to its file in your file manager
 - On Linux, integrates with playerctl and desktop media-key bindings (MPRIS)
 

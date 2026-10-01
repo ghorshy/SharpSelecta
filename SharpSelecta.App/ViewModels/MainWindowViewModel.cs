@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using SharpSelecta.App.Services;
 using SharpSelecta.App.Styles;
+using SharpSelecta.Core.AlbumArt;
 using SharpSelecta.Core.Audio;
 using SharpSelecta.Core.Library;
 using SharpSelecta.Core.Playback;
@@ -44,13 +45,14 @@ public partial class MainWindowViewModel : ViewModelBase
         ThemeLayout layout,
         ILogger<PlaybackControlsViewModel> playbackControlsLogger,
         ILogger<LibraryViewModel> libraryLogger,
-        ILogger<QueueViewModel> queueLogger)
+        ILogger<QueueViewModel> queueLogger,
+        IReadOnlyList<IAlbumArtProvider>? albumArtProviders = null)
     {
         _settingsFilePath = settingsFilePath;
 
         var queue = new PlaybackQueue();
         PlaybackControls = new PlaybackControlsViewModel(audioEngine, queue, settingsFilePath, playbackControlsLogger);
-        Library = new LibraryViewModel(filePickerService, PlaybackControls, fileManagerService, settingsFilePath, layout, libraryLogger);
+        Library = new LibraryViewModel(filePickerService, PlaybackControls, fileManagerService, settingsFilePath, layout, libraryLogger, albumArtProviders);
         Queue = new QueueViewModel(PlaybackControls, queueLogger);
         PlaybackSettings = new PlaybackSettingsViewModel(settingsFilePath, outputDeviceService, PlaybackControls);
         InterfaceSettings = new InterfaceSettingsViewModel(settingsFilePath, filePickerService);

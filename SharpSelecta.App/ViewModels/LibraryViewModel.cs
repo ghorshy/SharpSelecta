@@ -13,6 +13,7 @@ using SharpSelecta.App.Collections;
 using SharpSelecta.App.Resources;
 using SharpSelecta.App.Services;
 using SharpSelecta.App.Styles;
+using SharpSelecta.Core.AlbumArt;
 using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.ViewModels;
@@ -24,6 +25,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     private readonly IFileManagerService _fileManagerService;
     private readonly string _settingsFilePath;
     private readonly ILogger<LibraryViewModel> _logger;
+    private readonly IReadOnlyList<IAlbumArtProvider> _albumArtProviders;
 
     public string ShowInFileManagerLabel => _fileManagerService.ActionLabel;
 
@@ -322,8 +324,10 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         IFileManagerService fileManagerService,
         string settingsFilePath,
         ThemeLayout layout,
-        ILogger<LibraryViewModel> logger)
+        ILogger<LibraryViewModel> logger,
+        IReadOnlyList<IAlbumArtProvider>? albumArtProviders = null)
     {
+        _albumArtProviders = albumArtProviders ?? [];
         _filePickerService = filePickerService;
         _playbackControls = playbackControls;
         _fileManagerService = fileManagerService;
@@ -555,7 +559,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     public TrackPropertiesViewModel CreateTrackProperties(IReadOnlyList<Track> tracks)
     {
-        var properties = new TrackPropertiesViewModel(tracks, _filePickerService, _fileManagerService, _logger);
+        var properties = new TrackPropertiesViewModel(tracks, _filePickerService, _fileManagerService, _logger, _albumArtProviders);
         properties.TracksSaved += (_, updated) => OnTracksTagsSaved(updated);
         return properties;
     }

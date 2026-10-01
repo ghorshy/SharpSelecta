@@ -904,4 +904,24 @@ public class SettingsStoreTests
             File.Delete(settingsPath);
         }
     }
+
+    [Test]
+    public async Task FanartApiKey_IsSavedTrimmed_AndClearedByABlankValue()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"sharpselecta-settings-tests-{Guid.NewGuid():N}.json");
+        try
+        {
+            await Assert.That(SettingsStore.LoadFanartApiKey(path)).IsNull();
+
+            SettingsStore.SaveFanartApiKey(path, "  abc123  ");
+            await Assert.That(SettingsStore.LoadFanartApiKey(path)).IsEqualTo("abc123");
+
+            SettingsStore.SaveFanartApiKey(path, "   ");
+            await Assert.That(SettingsStore.LoadFanartApiKey(path)).IsNull();
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
 }

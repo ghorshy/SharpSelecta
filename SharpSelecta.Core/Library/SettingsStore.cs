@@ -111,6 +111,11 @@ public static partial class SettingsStore
         Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { Theme = theme });
 
     /// <summary>File name (relative to the app's Themes directory) of the selected custom theme.</summary>
+    public static string? LoadFanartApiKey(string settingsFilePath) => Load(settingsFilePath)?.FanartApiKey;
+
+    public static void SaveFanartApiKey(string settingsFilePath, string? apiKey) =>
+        Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { FanartApiKey = string.IsNullOrWhiteSpace(apiKey) ? null : apiKey.Trim() });
+
     public static string? LoadCustomThemeFileName(string settingsFilePath) => Load(settingsFilePath)?.CustomThemeFileName;
 
     public static void SaveCustomThemeFileName(string settingsFilePath, string? fileName) =>
@@ -196,6 +201,7 @@ public static partial class SettingsStore
         public bool? UseWaveformSlider { get; init; }
         public LibraryViewMode? RecentlyAddedViewMode { get; init; }
         public string? SelectedPlaylistId { get; init; }
+        public string? FanartApiKey { get; init; }
     }
 
     [JsonSerializable(typeof(SettingsData))]

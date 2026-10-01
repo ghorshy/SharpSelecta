@@ -136,6 +136,20 @@ public static class Strings
     public static string CreditsEditorNewPlaceholder => Get(nameof(CreditsEditorNewPlaceholder));
     public static string Add => Get(nameof(Add));
     public static string Remove => Get(nameof(Remove));
+    public static string AlbumArtFindOnline => Get(nameof(AlbumArtFindOnline));
+    public static string AlbumArtWindowTitle => Get(nameof(AlbumArtWindowTitle));
+    public static string AlbumArtSearching => Get(nameof(AlbumArtSearching));
+    public static string AlbumArtNotFound => Get(nameof(AlbumArtNotFound));
+    public static string AlbumArtFailed => Get(nameof(AlbumArtFailed));
+    public static string AlbumArtNeedsKey => Get(nameof(AlbumArtNeedsKey));
+    public static string AlbumArtEnterKey => Get(nameof(AlbumArtEnterKey));
+    public static string AlbumArtKeyPromptTitle => Get(nameof(AlbumArtKeyPromptTitle));
+    public static string AlbumArtKeyPrompt => Get(nameof(AlbumArtKeyPrompt));
+    public static string AlbumArtNothingSelected => Get(nameof(AlbumArtNothingSelected));
+
+    public static string AlbumArtQuery(string artist, string album) =>
+        string.Format(CultureInfo.CurrentCulture, Get("AlbumArtQueryFormat"), artist, album);
+
     public static string RoleRemixer => Get(nameof(RoleRemixer));
     public static string RoleComposer => Get(nameof(RoleComposer));
     public static string RoleConductor => Get(nameof(RoleConductor));

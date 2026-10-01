@@ -69,6 +69,17 @@ public partial class TrackPropertiesWindow : Window
         }
     }
 
+    private async void OnFindCoverOnlineClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not TrackPropertiesViewModel { CanSearchCoverOnline: true } vm)
+            return;
+
+        if (await AlbumArtSearchWindow.ShowAsync(this, vm.CreateAlbumArtSearch()) is { } cover)
+        {
+            vm.SetCover(cover);
+        }
+    }
+
     private async void OnRemoveCoverClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not TrackPropertiesViewModel vm)

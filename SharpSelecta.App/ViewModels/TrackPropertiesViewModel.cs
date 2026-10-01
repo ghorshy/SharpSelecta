@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using SharpSelecta.App.Formatting;
 using SharpSelecta.App.Resources;
 using SharpSelecta.App.Services;
+using SharpSelecta.Core.AlbumArt;
 using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.ViewModels;
@@ -29,6 +30,7 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
     private readonly HashSet<string> _varyingFields = [];
 
     private readonly List<TrackCredits> _credits;
+    private readonly IReadOnlyList<IAlbumArtProvider> _albumArtProviders;
 
     private TrackTagEdits _baseline = new(null, null, null, null, null, null, null, null);
     private TrackCredits _creditsBaseline = TrackCredits.None;
@@ -42,8 +44,9 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
         Track track,
         IFilePickerService filePickerService,
         IFileManagerService fileManagerService,
-        ILogger logger)
-        : this([track], filePickerService, fileManagerService, logger)
+        ILogger logger,
+        IReadOnlyList<IAlbumArtProvider>? albumArtProviders = null)
+        : this([track], filePickerService, fileManagerService, logger, albumArtProviders)
     {
     }
 
@@ -51,7 +54,8 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
         IReadOnlyList<Track> tracks,
         IFilePickerService filePickerService,
         IFileManagerService fileManagerService,
-        ILogger logger)
+        ILogger logger,
+        IReadOnlyList<IAlbumArtProvider>? albumArtProviders = null)
     {
         if (tracks.Count == 0)
             throw new ArgumentException("At least one track is required.", nameof(tracks));
@@ -61,6 +65,7 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
         _filePickerService = filePickerService;
         _fileManagerService = fileManagerService;
         _logger = logger;
+        _albumArtProviders = albumArtProviders ?? [];
 
         LoadFieldsFromTracks();
         ApplyCoverState(ReadCoverState(_tracks));
@@ -180,6 +185,9 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
 
     public bool HasCover => CoverBytes is not null;
 
+    // Looking a cover up online needs to know which album: the (shared) album and artist fields.
+    public bool CanSearchCoverOnline => _albumArtProviders.Count > 0 && SearchQuery() is not null;
+
     public bool CanRemoveCover => HasCover || CoverVaries;
 
     public bool HasYearError => !TryParseOptionalNumber(YearText, out _);
@@ -202,7 +210,11 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
                 RemoveCoverCommand.NotifyCanExecuteChanged();
                 RefreshState();
                 break;
-            case nameof(Title) or nameof(Artist) or nameof(AlbumArtist) or nameof(Album) or nameof(Genre)
+            case nameof(Artist) or nameof(AlbumArtist) or nameof(Album):
+                OnPropertyChanged(nameof(CanSearchCoverOnline));
+                RefreshState();
+                break;
+            case nameof(Title) or nameof(Genre)
                 or nameof(Comment) or nameof(YearText) or nameof(TrackNumberText) or nameof(SaveCoverAsSeparateFile)
                 or nameof(Remixer) or nameof(Composer) or nameof(Conductor) or nameof(Lyricist):
                 RefreshState();
@@ -248,6 +260,33 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
         }
     }
 
+    public AlbumArtSearchViewModel CreateAlbumArtSearch() =>
+        new(SearchQuery() ?? throw new InvalidOperationException("No album to search for."), _albumArtProviders);
+
+    // Prefers the album artist (a compilation's artist is "Various Artists" on the tracks but not here).
+    private AlbumArtQuery? SearchQuery()
+    {
+        var album = Normalize(Album);
+        var artist = Normalize(AlbumArtist) ?? ArtistList.Split(Artist).FirstOrDefault();
+        return album is null || artist is null ? null : new AlbumArtQuery(artist, album);
+    }
+
+    // Sets the cover from image bytes that already exist in memory (e.g. one downloaded online).
+    public void SetCover(byte[] bytes)
+    {
+        if (!TrackTagEditor.IsSupportedCoverImage(bytes))
+        {
+            ErrorMessage = Strings.UnsupportedCoverImage;
+            return;
+        }
+
+        ErrorMessage = null;
+        _replacementCover = bytes;
+        _coverRemoved = false;
+        CoverVaries = false;
+        CoverBytes = bytes;
+    }
+
     // Shared by the picker and by dropping an image onto the cover.
     public async Task SetCoverFromFileAsync(string path)
     {
@@ -262,17 +301,7 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
             return;
         }
 
-        if (!TrackTagEditor.IsSupportedCoverImage(bytes))
-        {
-            ErrorMessage = Strings.UnsupportedCoverImage;
-            return;
-        }
-
-        ErrorMessage = null;
-        _replacementCover = bytes;
-        _coverRemoved = false;
-        CoverVaries = false;
-        CoverBytes = bytes;
+        SetCover(bytes);
     }
 
     [RelayCommand(CanExecute = nameof(CanRemoveCover))]

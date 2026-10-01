@@ -310,6 +310,39 @@
   <data name="RoleLyricist" xml:space="preserve">
     <value>Lyricist</value>
   </data>
+  <data name="AlbumArtFindOnline" xml:space="preserve">
+    <value>Find cover online...</value>
+  </data>
+  <data name="AlbumArtWindowTitle" xml:space="preserve">
+    <value>Find cover online</value>
+  </data>
+  <data name="AlbumArtSearching" xml:space="preserve">
+    <value>Searching...</value>
+  </data>
+  <data name="AlbumArtNotFound" xml:space="preserve">
+    <value>No cover found</value>
+  </data>
+  <data name="AlbumArtFailed" xml:space="preserve">
+    <value>Search failed</value>
+  </data>
+  <data name="AlbumArtNeedsKey" xml:space="preserve">
+    <value>API key needed</value>
+  </data>
+  <data name="AlbumArtEnterKey" xml:space="preserve">
+    <value>Enter key...</value>
+  </data>
+  <data name="AlbumArtKeyPromptTitle" xml:space="preserve">
+    <value>fanart.tv API key</value>
+  </data>
+  <data name="AlbumArtKeyPrompt" xml:space="preserve">
+    <value>API key:</value>
+  </data>
+  <data name="AlbumArtNothingSelected" xml:space="preserve">
+    <value>No cover selected</value>
+  </data>
+  <data name="AlbumArtQueryFormat" xml:space="preserve">
+    <value>{0} - {1}</value>
+  </data>
   <data name="ColumnTrack" xml:space="preserve">
     <value>Track</value>
   </data>

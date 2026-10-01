@@ -1,0 +1,85 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SharpSelecta.App.ViewModels"
+        xmlns:res="using:SharpSelecta.App.Resources"
+        xmlns:converters="using:SharpSelecta.App.Converters"
+        xmlns:conv="using:Avalonia.Data.Converters"
+        xmlns:styles="using:SharpSelecta.App.Styles"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="780" d:DesignHeight="660"
+        x:Class="SharpSelecta.App.Views.AlbumArtSearchWindow"
+        x:DataType="vm:AlbumArtSearchViewModel"
+        Title="{x:Static res:Strings.AlbumArtWindowTitle}"
+        Width="{DynamicResource Size.AlbumArtSearch.Width}"
+        Height="{DynamicResource Size.AlbumArtSearch.Height}"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Styles>
+        <Style Selector="Border.album-art-tile">
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Separator}" />
+            <Setter Property="BorderThickness" Value="{DynamicResource Border.All}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource Radius.Control}" />
+            <Setter Property="Padding" Value="{styles:Spacing Uniform=S}" />
+            <Setter Property="Margin" Value="{styles:Spacing Uniform=XS}" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="Border.album-art-tile.selected">
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="{styles:Spacing Uniform=M}" RowSpacing="{styles:SpacingValue M}">
+        <TextBlock Grid.Row="0" Text="{Binding QueryText}" Classes="secondary" TextTrimming="CharacterEllipsis" />
+
+        <!-- One tile per service, side by side; the preview below spans the same width. -->
+        <ItemsControl Grid.Row="1" ItemsSource="{Binding Tiles}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Rows="1" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:AlbumArtTileViewModel">
+                    <Border Classes="album-art-tile" Classes.selected="{Binding IsSelected}" Tapped="OnTileTapped">
+                        <StackPanel Spacing="{styles:SpacingValue XS}">
+                            <Border Height="{DynamicResource Size.AlbumArtSearch.TileImage}" ClipToBounds="True"
+                                    CornerRadius="{DynamicResource Radius.Control}"
+                                    Background="{DynamicResource Brush.Surface}">
+                                <Panel>
+                                    <Image Source="{Binding Image, Converter={x:Static converters:ArtworkConverter.Instance}}"
+                                           IsVisible="{Binding HasImage}" Stretch="Uniform" />
+                                    <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsSearching}"
+                                                 VerticalAlignment="Center" Margin="{styles:Spacing Uniform=M}" />
+                                </Panel>
+                            </Border>
+                            <TextBlock Text="{Binding Name}" Classes="strong" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding SizeText}" Classes="secondary small" HorizontalAlignment="Center"
+                                       IsVisible="{Binding HasImage}" />
+                            <TextBlock Text="{Binding StatusText}" Classes="secondary small" HorizontalAlignment="Center"
+                                       IsVisible="{Binding !HasImage}" />
+                            <Button Content="{x:Static res:Strings.AlbumArtEnterKey}" HorizontalAlignment="Center"
+                                    IsVisible="{Binding NeedsSetup}" Click="OnEnterKeyClick" />
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <Border Grid.Row="2" CornerRadius="{DynamicResource Radius.Control}" ClipToBounds="True"
+                Background="{DynamicResource Brush.Surface}">
+            <Panel>
+                <Image Source="{Binding PreviewBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
+                       IsVisible="{Binding HasSelection}" Stretch="Uniform" />
+                <TextBlock Text="{x:Static res:Strings.AlbumArtNothingSelected}" Classes="secondary"
+                           IsVisible="{Binding !HasSelection}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Panel>
+        </Border>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{styles:SpacingValue S}">
+            <Button Content="{x:Static res:Strings.Ok}" Command="{Binding OkCommand}" IsDefault="True" />
+            <Button Content="{x:Static res:Strings.Cancel}" Command="{Binding CancelCommand}" IsCancel="True" />
+        </StackPanel>
+    </Grid>
+</Window>

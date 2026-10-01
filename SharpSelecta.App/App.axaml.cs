@@ -10,12 +10,14 @@ using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using SharpSelecta.AlbumArt;
 using SharpSelecta.App.Services;
 using SharpSelecta.App.Styles;
 using SharpSelecta.App.Services.Mpris;
 using SharpSelecta.App.ViewModels;
 using SharpSelecta.App.Views;
 using SharpSelecta.Audio;
+using SharpSelecta.Core.AlbumArt;
 using SharpSelecta.Core.Audio;
 using SharpSelecta.Core.Library;
 
@@ -46,6 +48,9 @@ public partial class App : Application
             var services = new ServiceCollection();
             services.AddLogging(builder => builder.AddSerilog(dispose: false));
             services.AddAudioEngine();
+            services.AddAlbumArtProviders(
+                () => SettingsStore.LoadFanartApiKey(settingsFilePath),
+                key => SettingsStore.SaveFanartApiKey(settingsFilePath, key));
             services.AddSingleton<IFilePickerService>(new AvaloniaFilePickerService(mainWindow));
             services.AddSingleton<IFileManagerService, FileManagerService>();
             var provider = services.BuildServiceProvider();
@@ -61,7 +66,8 @@ public partial class App : Application
                 ThemeLayout.From(this),
                 provider.GetRequiredService<ILogger<PlaybackControlsViewModel>>(),
                 provider.GetRequiredService<ILogger<LibraryViewModel>>(),
-                provider.GetRequiredService<ILogger<QueueViewModel>>());
+                provider.GetRequiredService<ILogger<QueueViewModel>>(),
+                provider.GetServices<IAlbumArtProvider>().ToList());
             mainWindow.DataContext = mainWindowViewModel;
             desktop.MainWindow = mainWindow;
 
