@@ -3,6 +3,7 @@
         xmlns:vm="using:SharpSelecta.App.ViewModels"
         xmlns:res="using:SharpSelecta.App.Resources"
         xmlns:styles="using:SharpSelecta.App.Styles"
+        xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Svg.Controls.Skia.Avalonia"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="460" d:DesignHeight="420"
@@ -13,15 +14,34 @@
         Height="{DynamicResource Size.CreditsEditor.Height}"
         WindowStartupLocation="CenterOwner">
 
+    <Window.Styles>
+        <!-- The row being dragged fades, and a line above the row under the cursor shows where it lands. -->
+        <Style Selector="Border.credit-row.dragging">
+            <Setter Property="Opacity" Value="{DynamicResource Opacity.Dragging}" />
+        </Style>
+        <Style Selector="Border.credit-row.drag-over">
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+            <Setter Property="BorderThickness" Value="{DynamicResource Border.Top.Thick}" />
+        </Style>
+    </Window.Styles>
+
     <Grid RowDefinitions="*,Auto,Auto" Margin="{styles:Spacing Uniform=M}" RowSpacing="{styles:SpacingValue M}">
         <ScrollViewer Grid.Row="0">
             <ItemsControl ItemsSource="{Binding Credits}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:CreditEntryViewModel">
-                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{styles:SpacingValue S}"
-                              Margin="{styles:Spacing Bottom=S}">
-                            <TextBox Grid.Column="0" Text="{Binding Name}" />
-                            <ComboBox Grid.Column="1" Width="{DynamicResource Size.CreditsEditor.RoleWidth}"
+                        <Border Classes="credit-row" Margin="{styles:Spacing Bottom=S}"
+                                DragDrop.AllowDrop="True"
+                                DragDrop.DragOver="OnRowDragOver" DragDrop.DragLeave="OnRowDragLeave" DragDrop.Drop="OnRowDrop">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="{styles:SpacingValue S}">
+                            <!-- Grab here to reorder. -->
+                            <Border Grid.Column="0" Background="Transparent" Cursor="SizeAll" VerticalAlignment="Center"
+                                    PointerPressed="OnGripPressed">
+                                <svg:Svg Classes="toolbar-icon" Width="{DynamicResource Size.Icon.S}" Height="{DynamicResource Size.Icon.S}"
+                                         Path="{DynamicResource Icon.GripVertical}" />
+                            </Border>
+                            <TextBox Grid.Column="1" Text="{Binding Name}" />
+                            <ComboBox Grid.Column="2" Width="{DynamicResource Size.CreditsEditor.RoleWidth}"
                                       ItemsSource="{Binding $parent[ItemsControl].((vm:CreditsEditorViewModel)DataContext).Roles}"
                                       SelectedItem="{Binding Role}">
                                 <ComboBox.ItemTemplate>
@@ -30,10 +50,11 @@
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
-                            <Button Grid.Column="2" Content="{x:Static res:Strings.Remove}"
+                            <Button Grid.Column="3" Content="{x:Static res:Strings.Remove}"
                                     Command="{Binding $parent[ItemsControl].((vm:CreditsEditorViewModel)DataContext).RemoveCommand}"
                                     CommandParameter="{Binding}" />
                         </Grid>
+                        </Border>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

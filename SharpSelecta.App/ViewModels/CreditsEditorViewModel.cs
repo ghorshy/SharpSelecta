@@ -86,6 +86,17 @@ public sealed partial class CreditsEditorViewModel : ViewModelBase
         NewCreditName = "";
     }
 
+    // Drag-reorder: the dragged entry takes the place of the one it was dropped on.
+    public void Move(CreditEntryViewModel entry, CreditEntryViewModel target)
+    {
+        var from = Credits.IndexOf(entry);
+        var to = Credits.IndexOf(target);
+        if (from >= 0 && to >= 0 && from != to)
+        {
+            Credits.Move(from, to);
+        }
+    }
+
     [RelayCommand]
     private void Remove(CreditEntryViewModel entry) => Credits.Remove(entry);
 

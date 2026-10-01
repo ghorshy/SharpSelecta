@@ -97,6 +97,39 @@ public class CreditsEditorViewModelTests
     }
 
     [Test]
+    public async Task Move_PutsTheDraggedEntryWhereItWasDropped_WhetherUpOrDown()
+    {
+        var vm = Editor(("A", CreditRole.Artist), ("B", CreditRole.Artist), ("C", CreditRole.Artist), ("D", CreditRole.Artist));
+
+        vm.Move(vm.Credits[0], vm.Credits[2]);
+        await Assert.That(Names(vm)).IsEqualTo("B:Artist|C:Artist|A:Artist|D:Artist");
+
+        vm.Move(vm.Credits[3], vm.Credits[0]);
+        await Assert.That(Names(vm)).IsEqualTo("D:Artist|B:Artist|C:Artist|A:Artist");
+    }
+
+    [Test]
+    public async Task Move_OntoItselfOrAnUnknownEntry_ChangesNothing()
+    {
+        var vm = Editor(("A", CreditRole.Artist), ("B", CreditRole.Artist));
+
+        vm.Move(vm.Credits[0], vm.Credits[0]);
+        vm.Move(vm.Credits[0], new CreditEntryViewModel("Stranger", vm.Roles[0]));
+
+        await Assert.That(Names(vm)).IsEqualTo("A:Artist|B:Artist");
+    }
+
+    [Test]
+    public async Task Result_KeepsTheReorderedOrderWithinARole_SoThePrimaryArtistCanBeChanged()
+    {
+        var vm = Editor(("First", CreditRole.Artist), ("Second", CreditRole.Artist), ("Cond", CreditRole.Conductor));
+
+        vm.Move(vm.Credits[1], vm.Credits[0]);
+
+        await Assert.That(ResultText(vm.Result)).IsEqualTo("Second:Artist|First:Artist|Cond:Conductor");
+    }
+
+    [Test]
     public async Task Result_GroupsByRole_AndReflectsRenamesRoleChangesAndDropsBlanksAndDuplicates()
     {
         var vm = Editor(("A", CreditRole.Composer), ("B", CreditRole.Artist), ("C", CreditRole.Artist), ("D", CreditRole.Artist));
