@@ -28,36 +28,45 @@
     <Grid RowDefinitions="*,Auto,Auto">
         <TabControl Grid.Row="0">
             <TabItem Header="{x:Static res:Strings.TabTagEditor}" FontSize="{DynamicResource ControlContentThemeFontSize}">
-                <Grid RowDefinitions="*,Auto" Margin="{styles:Spacing Uniform=M}">
-                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="{styles:SpacingValue L}">
+                <Grid RowDefinitions="Auto,*,Auto" Margin="{styles:Spacing Uniform=M}">
+                    <TextBlock Grid.Row="0" Text="{Binding SelectionSummary}" FontWeight="Bold"
+                               Margin="{styles:Spacing Bottom=S}" IsVisible="{Binding IsMultiple}" />
+                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="{styles:SpacingValue L}">
                         <Grid Grid.Column="0" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*"
                               ColumnSpacing="{styles:SpacingValue S}" RowSpacing="{styles:SpacingValue S}">
                             <TextBlock Grid.Row="0" Classes="field-label" Text="{x:Static res:Strings.ColumnTitle}" />
-                            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Title}" />
+                            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Title}"
+                                     PlaceholderText="{Binding TitlePlaceholder}" />
 
                             <TextBlock Grid.Row="1" Classes="field-label" Text="{x:Static res:Strings.ColumnArtist}" />
-                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Artist}" />
+                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Artist}"
+                                     PlaceholderText="{Binding ArtistPlaceholder}" />
 
                             <TextBlock Grid.Row="2" Classes="field-label" Text="{x:Static res:Strings.LabelAlbumArtist}" />
-                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding AlbumArtist}" />
+                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding AlbumArtist}"
+                                     PlaceholderText="{Binding AlbumArtistPlaceholder}" />
 
                             <TextBlock Grid.Row="3" Classes="field-label" Text="{x:Static res:Strings.ColumnAlbum}" />
-                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Album}" />
+                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Album}"
+                                     PlaceholderText="{Binding AlbumPlaceholder}" />
 
                             <TextBlock Grid.Row="4" Classes="field-label" Text="{x:Static res:Strings.LabelGenre}" />
-                            <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Genre}" />
+                            <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Genre}"
+                                     PlaceholderText="{Binding GenrePlaceholder}" />
 
                             <TextBlock Grid.Row="5" Classes="field-label" Text="{x:Static res:Strings.ColumnYear}" />
                             <TextBox Grid.Row="5" Grid.Column="1" Width="100" HorizontalAlignment="Left"
-                                     Text="{Binding YearText}" Classes.invalid="{Binding HasYearError}" />
+                                     Text="{Binding YearText}" Classes.invalid="{Binding HasYearError}"
+                                     PlaceholderText="{Binding YearPlaceholder}" />
 
                             <TextBlock Grid.Row="6" Classes="field-label" Text="{x:Static res:Strings.LabelTrackNumber}" />
                             <TextBox Grid.Row="6" Grid.Column="1" Width="100" HorizontalAlignment="Left"
-                                     Text="{Binding TrackNumberText}" Classes.invalid="{Binding HasTrackNumberError}" />
+                                     Text="{Binding TrackNumberText}" Classes.invalid="{Binding HasTrackNumberError}"
+                                     PlaceholderText="{Binding TrackNumberPlaceholder}" />
 
                             <TextBlock Grid.Row="7" VerticalAlignment="Top" Margin="{styles:Spacing Top=XS}"
                                        Classes="field-label" Text="{x:Static res:Strings.LabelComments}" />
-                            <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding Comment}"
+                            <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding Comment}" PlaceholderText="{Binding CommentPlaceholder}"
                                      AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" />
                         </Grid>
 
@@ -73,7 +82,7 @@
                                                   Command="{Binding ChangeCoverCommand}" />
                                         <MenuItem Header="{x:Static res:Strings.CoverRemove}"
                                                   Click="OnRemoveCoverClick"
-                                                  IsEnabled="{Binding HasCover}" />
+                                                  IsEnabled="{Binding CanRemoveCover}" />
                                     </ContextMenu>
                                 </Border.ContextMenu>
                                 <Panel>
@@ -81,6 +90,13 @@
                                            IsVisible="{Binding HasCover}"
                                            Stretch="Uniform" />
                                     <views:AlbumCoverPlaceholderIcon IsVisible="{Binding !HasCover}" />
+                                    <TextBlock Text="{x:Static res:Strings.Varies}" IsVisible="{Binding CoverVaries}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               FontWeight="Bold" Foreground="White">
+                                        <TextBlock.Effect>
+                                            <DropShadowEffect BlurRadius="4" OffsetX="0" OffsetY="0" Color="Black" />
+                                        </TextBlock.Effect>
+                                    </TextBlock>
                                 </Panel>
                             </Border>
                             <TextBlock Text="{x:Static res:Strings.CoverHint}" Opacity="0.5" TextWrapping="Wrap" />
@@ -91,7 +107,7 @@
                     </Grid>
 
                     <!-- Read-only file info. -->
-                    <Border Grid.Row="1" Margin="{styles:Spacing Top=M}" Padding="{styles:Spacing Top=M}"
+                    <Border Grid.Row="2" Margin="{styles:Spacing Top=M}" Padding="{styles:Spacing Top=M}"
                             BorderThickness="0,1,0,0"
                             BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
                         <StackPanel Spacing="{styles:SpacingValue S}">

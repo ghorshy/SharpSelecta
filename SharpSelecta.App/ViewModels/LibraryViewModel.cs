@@ -531,32 +531,57 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     [RelayCommand]
     private void RemoveFromPlaylist(Track track) => Playlists.RemoveFromSelectedPlaylist(track);
 
-    public TrackPropertiesViewModel CreateTrackProperties(Track track)
+    public TrackPropertiesViewModel CreateTrackProperties(Track track) => CreateTrackProperties([track]);
+
+    public TrackPropertiesViewModel CreateTrackProperties(IReadOnlyList<Track> tracks)
     {
-        var properties = new TrackPropertiesViewModel(track, _filePickerService, _fileManagerService, _logger);
-        properties.TrackSaved += (_, updated) => OnTrackTagsSaved(updated);
+        var properties = new TrackPropertiesViewModel(tracks, _filePickerService, _fileManagerService, _logger);
+        properties.TracksSaved += (_, updated) => OnTracksTagsSaved(updated);
         return properties;
     }
 
-    // Pushes a track re-read after a tag/cover edit into everything that holds its old copy: the
+    // Pushes tracks re-read after a tag/cover edit into everything that holds their old copies: the
     // index, the library grids, the playlist view, the queue and now-playing display.
-    private void OnTrackTagsSaved(Track updated)
+    private void OnTracksTagsSaved(IReadOnlyList<Track> updatedTracks)
     {
-        LibraryIndexStore.UpdateTrack(_settingsFilePath, updated);
+        var updatedByPath = updatedTracks.ToDictionary(t => t.FilePath);
+        var cacheDirectory = AlbumGridViewModel.ArtworkCacheDirectoryFor(_settingsFilePath);
 
-        var index = Tracks.Select((item, i) => (item, i)).FirstOrDefault(x => x.item.Track.FilePath == updated.FilePath);
-        if (index.item is not null)
+        foreach (var updated in updatedTracks)
         {
-            // The album's cached thumbnail may show the old cover (or sit under the old album name).
-            var cacheDirectory = AlbumGridViewModel.ArtworkCacheDirectoryFor(_settingsFilePath);
-            AlbumArtworkCache.Invalidate(cacheDirectory, AlbumGridViewModel.ArtworkKey(index.item.Track));
-            AlbumArtworkCache.Invalidate(cacheDirectory, AlbumGridViewModel.ArtworkKey(updated));
+            LibraryIndexStore.UpdateTrack(_settingsFilePath, updated);
 
-            Tracks[index.i] = new LibraryTrackViewModel(updated, this);
+            // The album's cached thumbnail may show the old cover (or sit under the old album name).
+            var old = Tracks.FirstOrDefault(item => item.Track.FilePath == updated.FilePath)?.Track;
+            if (old is not null)
+            {
+                AlbumArtworkCache.Invalidate(cacheDirectory, AlbumGridViewModel.ArtworkKey(old));
+            }
+
+            AlbumArtworkCache.Invalidate(cacheDirectory, AlbumGridViewModel.ArtworkKey(updated));
+        }
+
+        // A single changed track is swapped in place (keeps the grid's scroll/selection); several at
+        // once are swapped in one reset, so the album grid isn't rebuilt once per track.
+        if (updatedTracks.Count == 1)
+        {
+            var index = Tracks.Select((item, i) => (item, i)).FirstOrDefault(x => x.item.Track.FilePath == updatedTracks[0].FilePath);
+            if (index.item is not null)
+            {
+                Tracks[index.i] = new LibraryTrackViewModel(updatedTracks[0], this);
+            }
+        }
+        else
+        {
+            Tracks.ReplaceAll(Tracks.ToList().Select(item =>
+                updatedByPath.TryGetValue(item.Track.FilePath, out var updated) ? new LibraryTrackViewModel(updated, this) : item));
         }
 
         Playlists.RefreshTracks();
-        _ = _playbackControls.RefreshTrackMetadataAsync(updated);
+        foreach (var updated in updatedTracks)
+        {
+            _ = _playbackControls.RefreshTrackMetadataAsync(updated);
+        }
     }
 
     public Task<string?> PickM3uImportFileAsync() => _filePickerService.PickM3uImportFileAsync();
@@ -572,7 +597,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     // A right-click inside the current multi-selection acts on the whole (ordered) selection;
     // a right-click outside it acts on just the clicked track, like most file browsers.
     // The cover art views have no multi-selection, so a stale list-view selection must not leak in.
-    private IReadOnlyList<Track> ResolveSelection(Track clickedTrack) =>
+    public IReadOnlyList<Track> ResolveSelection(Track clickedTrack) =>
         !IsAlbumGridViewVisible && !IsRecentlyAddedCoverArtVisible && _selectedTracksInOrder.Contains(clickedTrack)
             ? _selectedTracksInOrder
             : [clickedTrack];

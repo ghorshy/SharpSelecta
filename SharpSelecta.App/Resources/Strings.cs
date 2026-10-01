@@ -131,6 +131,15 @@ public static class Strings
     public static string CoverImageFileTypeName => Get(nameof(CoverImageFileTypeName));
     public static string UnsupportedCoverImage => Get(nameof(UnsupportedCoverImage));
 
+    public static string Varies => Get(nameof(Varies));
+    public static string MultipleLocations => Get(nameof(MultipleLocations));
+
+    public static string TracksSelected(int count) =>
+        string.Format(CultureInfo.CurrentCulture, Get("TracksSelectedFormat"), count);
+
+    public static string FailedToSaveSomeTags(int saved, int total, string failedNames) =>
+        string.Format(CultureInfo.CurrentCulture, Get("FailedToSaveSomeTagsFormat"), saved, total, failedNames);
+
     public static string FailedToSaveTags(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToSaveTagsFormat"), reason);
 

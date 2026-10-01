@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
@@ -27,12 +29,17 @@ public partial class TrackPropertiesWindow : Window
         };
     }
 
-    public static Task ShowAsync(Control anchor, LibraryViewModel library, Track track)
+    public static Task ShowAsync(Control anchor, LibraryViewModel library, Track track) =>
+        ShowAsync(anchor, library, [track]);
+
+    public static Task ShowAsync(Control anchor, LibraryViewModel library, IReadOnlyList<Track> tracks)
     {
-        if (TopLevel.GetTopLevel(anchor) is not Window owner)
+        // A missing-file placeholder (e.g. in a playlist) has nothing on disk to edit.
+        var editable = tracks.Where(track => File.Exists(track.FilePath)).ToList();
+        if (editable.Count == 0 || TopLevel.GetTopLevel(anchor) is not Window owner)
             return Task.CompletedTask;
 
-        var window = new TrackPropertiesWindow { DataContext = library.CreateTrackProperties(track) };
+        var window = new TrackPropertiesWindow { DataContext = library.CreateTrackProperties(editable) };
         return window.ShowDialog(owner);
     }
 

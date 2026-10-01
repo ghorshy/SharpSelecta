@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using SharpSelecta.App.Services;
@@ -124,13 +125,13 @@ public class TrackPropertiesViewModelTests
     }
 
     [Test]
-    public async Task Apply_WritesTheFile_RaisesTrackSavedAndClearsDirty()
+    public async Task Apply_WritesTheFile_RaisesTracksSavedAndClearsDirty()
     {
         var vm = CreateViewModel("untagged-track.mp3", out var path, out var dir, out _, out _);
         try
         {
             Track? saved = null;
-            vm.TrackSaved += (_, track) => saved = track;
+            vm.TracksSaved += (_, tracks) => saved = tracks.Single();
 
             vm.Title = "New Title";
             vm.Artist = "New Artist";

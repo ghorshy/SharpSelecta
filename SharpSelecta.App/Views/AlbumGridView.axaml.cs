@@ -93,6 +93,14 @@ public partial class AlbumGridView : UserControl
         }
     }
 
+    private async void OnAlbumPropertiesClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { DataContext: AlbumViewModel album })
+        {
+            await TrackPropertiesWindow.ShowAsync(this, album.Library, album.UnderlyingTracks);
+        }
+    }
+
     private async void OnTrackPropertiesClick(object? sender, RoutedEventArgs e)
     {
         if (sender is MenuItem { DataContext: AlbumTrackRowViewModel { Track: var trackItem } })

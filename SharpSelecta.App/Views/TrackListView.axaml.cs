@@ -260,7 +260,7 @@ public sealed partial class TrackListView : UserControl
     {
         if (sender is MenuItem { DataContext: LibraryTrackViewModel item })
         {
-            await TrackPropertiesWindow.ShowAsync(this, item.Library, item.Track);
+            await TrackPropertiesWindow.ShowAsync(this, item.Library, item.Library.ResolveSelection(item.Track));
         }
     }
 }

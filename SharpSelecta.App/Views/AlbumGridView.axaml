@@ -109,6 +109,9 @@
                                                     <MenuItem Header="{Binding Library.ShowInFileManagerLabel}"
                                                               Command="{Binding Library.ShowAlbumInFileManagerCommand}"
                                                               CommandParameter="{Binding}" />
+                                                    <Separator />
+                                                    <MenuItem Header="{x:Static res:Strings.Properties}"
+                                                              Click="OnAlbumPropertiesClick" />
                                                 </ContextMenu>
                                             </Border.ContextMenu>
                                             <StackPanel Spacing="{styles:SpacingValue XXS}">

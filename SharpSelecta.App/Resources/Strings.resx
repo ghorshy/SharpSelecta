@@ -268,6 +268,18 @@
   <data name="ShortcutProperties" xml:space="preserve">
     <value>Open track properties</value>
   </data>
+  <data name="Varies" xml:space="preserve">
+    <value>(varies)</value>
+  </data>
+  <data name="TracksSelectedFormat" xml:space="preserve">
+    <value>{0} tracks</value>
+  </data>
+  <data name="MultipleLocations" xml:space="preserve">
+    <value>(multiple locations)</value>
+  </data>
+  <data name="FailedToSaveSomeTagsFormat" xml:space="preserve">
+    <value>Saved {0} of {1} tracks. Failed: {2}</value>
+  </data>
   <data name="ColumnTrack" xml:space="preserve">
     <value>Track</value>
   </data>

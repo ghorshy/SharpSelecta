@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -32,25 +33,25 @@ public partial class MainWindow : Window
 
     private async Task OpenPropertiesForFocusedTrackAsync(MainWindowViewModel vm)
     {
-        if (FocusedTrack() is { } track)
+        if (FocusedTracks(vm) is { Count: > 0 } tracks)
         {
-            await TrackPropertiesWindow.ShowAsync(this, vm.Library, track);
+            await TrackPropertiesWindow.ShowAsync(this, vm.Library, tracks);
         }
     }
 
-    // The selected track of whichever list currently has focus; nothing for a text box or tile.
-    private Track? FocusedTrack()
+    // The selected track(s) of whichever list currently has focus; nothing for a text box or tile.
+    private IReadOnlyList<Track>? FocusedTracks(MainWindowViewModel vm)
     {
         if (FocusManager?.GetFocusedElement() is not Visual focused)
             return null;
 
         if (focused.FindAncestorOfType<DataGrid>(includeSelf: true) is { SelectedItem: LibraryTrackViewModel { IsMissing: false } gridItem })
-            return gridItem.Track;
+            return vm.Library.ResolveSelection(gridItem.Track);
 
         return focused.FindAncestorOfType<ListBox>(includeSelf: true)?.SelectedItem switch
         {
-            AlbumTrackRowViewModel row => row.Track.Track,
-            QueueEntryViewModel entry => entry.Entry.Track,
+            AlbumTrackRowViewModel row => [row.Track.Track],
+            QueueEntryViewModel entry => [entry.Entry.Track],
             _ => null,
         };
     }
