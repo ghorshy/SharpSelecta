@@ -1,0 +1,84 @@
+name: Release
+
+# Push a tag like v0.1.0 (or v0.1.0-beta.1 for a pre-release) to build and publish a release.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+env:
+  VPK_VERSION: 1.2.161
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Version from tag
+        run: |
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then echo "PRE=--pre" >> "$GITHUB_ENV"; fi
+
+      - run: dotnet test
+
+      - name: Publish
+        run: dotnet publish SharpSelecta.App -c Release -r win-x64 --self-contained -p:Version="$VERSION" -o publish
+
+      - name: Portable zip
+        run: |
+          mkdir dist
+          (cd publish && 7z a "../dist/SharpSelecta-$VERSION-win-x64.zip" .)
+
+      - run: dotnet tool install -g vpk --version "$VPK_VERSION"
+
+      # The previous release lets vpk build a delta package, so updates download only what changed.
+      - name: Previous release
+        continue-on-error: true
+        run: vpk download github --repoUrl "https://github.com/${{ github.repository }}" --token "${{ secrets.GITHUB_TOKEN }}" -o releases
+
+      - name: Installer
+        run: >
+          vpk pack --packId SharpSelecta --packVersion "$VERSION" --packDir publish
+          --mainExe SharpSelecta.App.exe --packTitle SharpSelecta --packAuthors ghorshy
+          --runtime win-x64 --noPortable -o releases
+
+      - name: Create the release
+        run: >
+          vpk upload github --repoUrl "https://github.com/${{ github.repository }}" --token "${{ secrets.GITHUB_TOKEN }}"
+          -o releases --publish $PRE --tag "$GITHUB_REF_NAME" --releaseName "SharpSelecta $VERSION"
+
+      - name: Attach the portable zip
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "$GITHUB_REF_NAME" dist/*.zip
+
+  linux:
+    needs: windows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Version from tag
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Publish
+        run: dotnet publish SharpSelecta.App -c Release -r linux-x64 --self-contained -p:Version="$VERSION" -o "SharpSelecta-$VERSION-linux-x64"
+
+      - name: Attach the tarball
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tar czf "SharpSelecta-$VERSION-linux-x64.tar.gz" "SharpSelecta-$VERSION-linux-x64"
+          gh release upload "$GITHUB_REF_NAME" "SharpSelecta-$VERSION-linux-x64.tar.gz"
