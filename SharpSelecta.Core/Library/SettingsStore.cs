@@ -127,6 +127,11 @@ public static partial class SettingsStore
     public static void SaveDiscordPresenceEnabled(string settingsFilePath, bool enabled) =>
         Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { DiscordPresenceEnabled = enabled });
 
+    public static bool LoadCheckForUpdatesAutomatically(string settingsFilePath) => Load(settingsFilePath)?.CheckForUpdatesAutomatically ?? true;
+
+    public static void SaveCheckForUpdatesAutomatically(string settingsFilePath, bool enabled) =>
+        Save(settingsFilePath, CurrentOrEmpty(settingsFilePath) with { CheckForUpdatesAutomatically = enabled });
+
     public static string? LoadFanartApiKey(string settingsFilePath) => Load(settingsFilePath)?.FanartApiKey;
 
     public static void SaveFanartApiKey(string settingsFilePath, string? apiKey) =>
@@ -221,6 +226,7 @@ public static partial class SettingsStore
         public bool? DiscordPresenceEnabled { get; init; }
         public bool? AutoDjEnabled { get; init; }
         public string? AutoDjSourcePlaylistId { get; init; }
+        public bool? CheckForUpdatesAutomatically { get; init; }
     }
 
     [JsonSerializable(typeof(SettingsData))]

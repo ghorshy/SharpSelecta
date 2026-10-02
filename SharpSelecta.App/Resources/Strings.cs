@@ -80,6 +80,15 @@ public static class Strings
     public static string ShortcutNextTrack => Get(nameof(ShortcutNextTrack));
     public static string ShortcutClearQueue => Get(nameof(ShortcutClearQueue));
     public static string SettingsCategoryIntegrations => Get(nameof(SettingsCategoryIntegrations));
+    public static string SettingsCategoryUpdates => Get(nameof(SettingsCategoryUpdates));
+    public static string CheckForUpdatesAutomatically => Get(nameof(CheckForUpdatesAutomatically));
+    public static string CheckForUpdatesHint => Get(nameof(CheckForUpdatesHint));
+    public static string CheckForUpdatesNow => Get(nameof(CheckForUpdatesNow));
+    public static string CheckingForUpdates => Get(nameof(CheckingForUpdates));
+    public static string UpToDate => Get(nameof(UpToDate));
+    public static string UpdateCheckFailed => Get(nameof(UpdateCheckFailed));
+    public static string RestartToUpdate => Get(nameof(RestartToUpdate));
+    public static string UpdateLater => Get(nameof(UpdateLater));
     public static string DiscordPresenceToggle => Get(nameof(DiscordPresenceToggle));
     public static string DiscordPresenceHint => Get(nameof(DiscordPresenceHint));
     public static string AutoDj => Get(nameof(AutoDj));
@@ -219,6 +228,12 @@ public static class Strings
 
     public static string ConvertTrackCount(int count) =>
         string.Format(CultureInfo.CurrentCulture, Get("ConvertTrackCountFormat"), count);
+
+    public static string UpdateReady(string version) =>
+        string.Format(CultureInfo.CurrentCulture, Get("UpdateReadyFormat"), version);
+
+    public static string CurrentVersion(string version) =>
+        string.Format(CultureInfo.CurrentCulture, Get("CurrentVersionFormat"), version);
 
     public static string BitrateKbps(int kbps) =>
         string.Format(CultureInfo.CurrentCulture, Get("BitrateKbpsFormat"), kbps);

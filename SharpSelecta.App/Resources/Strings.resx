@@ -643,4 +643,37 @@
   <data name="ConvertFormatAiff" xml:space="preserve">
     <value>AIFF</value>
   </data>
+  <data name="SettingsCategoryUpdates" xml:space="preserve">
+    <value>Updates</value>
+  </data>
+  <data name="CheckForUpdatesAutomatically" xml:space="preserve">
+    <value>Check for updates automatically</value>
+  </data>
+  <data name="CheckForUpdatesHint" xml:space="preserve">
+    <value>New versions download in the background and install the next time SharpSelecta restarts.</value>
+  </data>
+  <data name="CheckForUpdatesNow" xml:space="preserve">
+    <value>Check now</value>
+  </data>
+  <data name="CheckingForUpdates" xml:space="preserve">
+    <value>Checking for updates...</value>
+  </data>
+  <data name="UpToDate" xml:space="preserve">
+    <value>You're on the latest version.</value>
+  </data>
+  <data name="UpdateCheckFailed" xml:space="preserve">
+    <value>Couldn't check for updates. Try again later.</value>
+  </data>
+  <data name="RestartToUpdate" xml:space="preserve">
+    <value>Restart now</value>
+  </data>
+  <data name="UpdateLater" xml:space="preserve">
+    <value>Later</value>
+  </data>
+  <data name="UpdateReadyFormat" xml:space="preserve">
+    <value>SharpSelecta {0} is ready to install.</value>
+  </data>
+  <data name="CurrentVersionFormat" xml:space="preserve">
+    <value>Version {0}</value>
+  </data>
 </root>

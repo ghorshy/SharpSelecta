@@ -13,6 +13,7 @@ using Serilog;
 using SharpSelecta.Integrations.AlbumArt;
 using SharpSelecta.Integrations.Conversion;
 using SharpSelecta.Integrations.Discord;
+using SharpSelecta.Integrations.Updates;
 using SharpSelecta.App.Services;
 using SharpSelecta.App.Styles;
 using SharpSelecta.App.Services.Mpris;
@@ -23,6 +24,7 @@ using SharpSelecta.Core.AlbumArt;
 using SharpSelecta.Core.Audio;
 using SharpSelecta.Core.Conversion;
 using SharpSelecta.Core.Presence;
+using SharpSelecta.Core.Updates;
 using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App;
@@ -54,6 +56,7 @@ public partial class App : Application
             services.AddAudioEngine();
             services.AddDiscordRichPresence();
             services.AddAudioConverter();
+            services.AddUpdates();
             services.AddSingleton<ITrashService, FileTrashService>();
             services.AddSingleton<TrackConversionService>();
             services.AddAlbumArtProviders(
@@ -76,7 +79,8 @@ public partial class App : Application
                 provider.GetRequiredService<ILogger<LibraryViewModel>>(),
                 provider.GetRequiredService<ILogger<QueueViewModel>>(),
                 provider.GetServices<IAlbumArtProvider>().ToList(),
-                provider.GetRequiredService<TrackConversionService>());
+                provider.GetRequiredService<TrackConversionService>(),
+                new UpdatesViewModel(settingsFilePath, provider.GetRequiredService<IUpdateService>(), provider.GetRequiredService<ILogger<UpdatesViewModel>>()));
             mainWindow.DataContext = mainWindowViewModel;
             desktop.MainWindow = mainWindow;
 
@@ -91,10 +95,17 @@ public partial class App : Application
             var richPresence = new RichPresenceCoordinator(
                 mainWindowViewModel.PlaybackControls, provider.GetRequiredService<IRichPresence>(), mainWindowViewModel.Integrations);
 
+            mainWindowViewModel.Updates.RestartingToUpdate += (_, _) =>
+            {
+                mainWindowViewModel.PersistQueueStateIfEnabled();
+                mainWindowViewModel.PersistVolume();
+            };
+
             desktop.Exit += (_, _) =>
             {
                 mainWindowViewModel.PersistQueueStateIfEnabled();
                 mainWindowViewModel.PersistVolume();
+                mainWindowViewModel.Updates.InstallPendingUpdateOnExit();
                 richPresence.Dispose();
 
                 if (Mpris() is { } mprisService)
@@ -107,6 +118,7 @@ public partial class App : Application
 
             _ = InitializeAudioEngineAndRestoreStateAsync(audioEngine, mainWindowViewModel);
             _ = mainWindowViewModel.Library.InitializeAsync();
+            _ = mainWindowViewModel.Updates.CheckOnStartupAsync();
         }
 
         base.OnFrameworkInitializationCompleted();

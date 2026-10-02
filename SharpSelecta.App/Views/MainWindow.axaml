@@ -3,6 +3,7 @@
         xmlns:vm="using:SharpSelecta.App.ViewModels"
         xmlns:views="using:SharpSelecta.App.Views"
         xmlns:styles="using:SharpSelecta.App.Styles"
+        xmlns:res="using:SharpSelecta.App.Resources"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="720"
@@ -16,6 +17,17 @@
     <!-- KeyBindings are rebindable, so they're built at runtime from ShortcutRegistry in MainWindow.axaml.cs. -->
 
     <DockPanel Margin="{styles:Spacing Uniform=M}" LastChildFill="True">
+        <!-- Shown once an update has downloaded (Windows installer only). -->
+        <Border DockPanel.Dock="Top" IsVisible="{Binding Updates.ShowUpdateBar}"
+                Margin="{styles:Spacing Bottom=M}" Padding="{styles:Spacing Uniform=S}"
+                CornerRadius="{DynamicResource Radius.Control}" Background="{DynamicResource Brush.Surface}">
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{styles:SpacingValue S}">
+                <TextBlock Grid.Column="0" Text="{Binding Updates.UpdateReadyMessage}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                <Button Grid.Column="1" Content="{x:Static res:Strings.RestartToUpdate}" Command="{Binding Updates.RestartToUpdateCommand}" />
+                <Button Grid.Column="2" Content="{x:Static res:Strings.UpdateLater}" Command="{Binding Updates.DismissUpdateBarCommand}" />
+            </Grid>
+        </Border>
+
         <views:PlaybackControlsView DockPanel.Dock="Bottom" Margin="{styles:Spacing Top=M}" DataContext="{Binding PlaybackControls}" />
 
         <Grid>

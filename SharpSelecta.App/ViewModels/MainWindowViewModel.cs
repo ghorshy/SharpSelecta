@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using SharpSelecta.App.Services;
 using SharpSelecta.App.Styles;
 using SharpSelecta.Core.AlbumArt;
@@ -32,6 +33,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public IntegrationsSettingsViewModel Integrations { get; }
 
+    public UpdatesViewModel Updates { get; }
+
     public ShortcutSettingsService ShortcutSettings { get; }
 
     public EqualizerViewModel Equalizer { get; }
@@ -50,7 +53,8 @@ public partial class MainWindowViewModel : ViewModelBase
         ILogger<LibraryViewModel> libraryLogger,
         ILogger<QueueViewModel> queueLogger,
         IReadOnlyList<IAlbumArtProvider>? albumArtProviders = null,
-        TrackConversionService? conversionService = null)
+        TrackConversionService? conversionService = null,
+        UpdatesViewModel? updates = null)
     {
         _settingsFilePath = settingsFilePath;
 
@@ -61,6 +65,7 @@ public partial class MainWindowViewModel : ViewModelBase
         PlaybackSettings = new PlaybackSettingsViewModel(settingsFilePath, outputDeviceService, PlaybackControls);
         InterfaceSettings = new InterfaceSettingsViewModel(settingsFilePath, filePickerService);
         Integrations = new IntegrationsSettingsViewModel(settingsFilePath);
+        Updates = updates ?? new UpdatesViewModel(settingsFilePath, null, NullLogger.Instance);
         ShortcutSettings = new ShortcutSettingsService(settingsFilePath);
         Equalizer = new EqualizerViewModel(settingsFilePath, audioEngine);
         RightColumnWidth = new GridLength(SettingsStore.LoadRightColumnWidth(_settingsFilePath) ?? layout.RightColumnWidth);

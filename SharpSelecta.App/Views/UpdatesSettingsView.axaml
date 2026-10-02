@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SharpSelecta.App.ViewModels"
+             xmlns:res="using:SharpSelecta.App.Resources"
+             xmlns:styles="using:SharpSelecta.App.Styles"
+             xmlns:conv="using:Avalonia.Data.Converters"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="200"
+             x:Class="SharpSelecta.App.Views.UpdatesSettingsView"
+             x:DataType="vm:UpdatesViewModel">
+
+    <StackPanel Spacing="{styles:SpacingValue S}">
+        <TextBlock Text="{Binding CurrentVersionDisplay}" Classes="strong"
+                   IsVisible="{Binding CurrentVersionDisplay, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+
+        <StackPanel Spacing="{styles:SpacingValue XXS}">
+            <CheckBox Content="{x:Static res:Strings.CheckForUpdatesAutomatically}" IsChecked="{Binding CheckAutomatically}" />
+            <TextBlock Text="{x:Static res:Strings.CheckForUpdatesHint}" Classes="tertiary small" TextWrapping="Wrap"
+                       Margin="{styles:Spacing Left=L}" />
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue S}">
+            <Button Content="{x:Static res:Strings.CheckForUpdatesNow}" Command="{Binding CheckNowCommand}" />
+            <Button Content="{x:Static res:Strings.RestartToUpdate}" Command="{Binding RestartToUpdateCommand}"
+                    IsVisible="{Binding IsUpdateReady}" />
+        </StackPanel>
+
+        <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap"
+                   IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+    </StackPanel>
+
+</UserControl>

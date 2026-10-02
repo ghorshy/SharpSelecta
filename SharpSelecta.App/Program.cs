@@ -2,6 +2,7 @@ using Avalonia;
 using System;
 using System.IO;
 using Serilog;
+using Velopack;
 
 namespace SharpSelecta.App;
 
@@ -10,6 +11,12 @@ sealed class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        // Must run first: the Windows installer/updater may start the app just to run a hook and exit.
+        if (OperatingSystem.IsWindows())
+        {
+            VelopackApp.Build().Run();
+        }
+
         var logDirectory = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "SharpSelecta", "logs");

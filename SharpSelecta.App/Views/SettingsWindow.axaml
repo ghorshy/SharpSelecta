@@ -43,6 +43,9 @@
                     <DataTemplate DataType="vm:KeyboardShortcutsViewModel">
                         <views:KeyboardShortcutsSettingsView />
                     </DataTemplate>
+                    <DataTemplate DataType="vm:UpdatesViewModel">
+                        <views:UpdatesSettingsView />
+                    </DataTemplate>
                 </ContentControl.DataTemplates>
             </ContentControl>
         </ScrollViewer>

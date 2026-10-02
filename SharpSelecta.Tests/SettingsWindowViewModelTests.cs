@@ -146,4 +146,24 @@ public class SettingsWindowViewModelTests
 
         await Assert.That(vm.SelectedCategoryViewModel).IsEqualTo(vm.KeyboardShortcuts);
     }
+
+    [Test]
+    public async Task Categories_IncludeUpdates_OnlyWhenThisInstallCanUpdateItself()
+    {
+        var service = Substitute.For<SharpSelecta.Core.Updates.IUpdateService>();
+        service.IsSupported.Returns(true);
+        var updates = new UpdatesViewModel(CreateTempSettingsPath(), service, NullLogger.Instance);
+
+        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel(), CreateInterfaceSettingsViewModel(),
+            CreateIntegrationsSettingsViewModel(), CreateShortcutSettingsService(), updates);
+        vm.SelectedCategory = Strings.SettingsCategoryUpdates;
+
+        await Assert.That(vm.Categories).Contains(Strings.SettingsCategoryUpdates);
+        await Assert.That(vm.SelectedCategoryViewModel).IsEqualTo(updates);
+
+        var unsupported = new SettingsWindowViewModel(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel(), CreateInterfaceSettingsViewModel(),
+            CreateIntegrationsSettingsViewModel(), CreateShortcutSettingsService(), new UpdatesViewModel(CreateTempSettingsPath(), null, NullLogger.Instance));
+
+        await Assert.That(unsupported.Categories).DoesNotContain(Strings.SettingsCategoryUpdates);
+    }
 }
