@@ -17,7 +17,13 @@
         <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="{styles:SpacingValue S}">
             <CheckBox Grid.Column="0" Content="{x:Static res:Strings.EqualizerEnabled}" IsChecked="{Binding Enabled}" />
             <TextBlock Grid.Column="2" Text="{x:Static res:Strings.EqualizerPreset}" VerticalAlignment="Center" Classes="secondary" />
-            <ComboBox Grid.Column="3" ItemsSource="{Binding PresetNames}" SelectedItem="{Binding SelectedPresetName}" Width="{DynamicResource Size.Equalizer.PresetWidth}" />
+            <ComboBox Grid.Column="3" ItemsSource="{Binding PresetOptions}" SelectedItem="{Binding SelectedPreset}" Width="{DynamicResource Size.Equalizer.PresetWidth}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:EqualizerPresetOption">
+                        <TextBlock Text="{Binding Label}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
         </Grid>
 
         <ItemsControl x:Name="BandsPanel" ItemsSource="{Binding Bands}">

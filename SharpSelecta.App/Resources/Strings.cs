@@ -27,6 +27,15 @@ public static class Strings
     public static string Equalizer => Get(nameof(Equalizer));
     public static string EqualizerEnabled => Get(nameof(EqualizerEnabled));
     public static string EqualizerPreset => Get(nameof(EqualizerPreset));
+    public static string EqualizerPresetDefault => Get(nameof(EqualizerPresetDefault));
+    public static string EqualizerPresetBass => Get(nameof(EqualizerPresetBass));
+    public static string EqualizerPresetTreble => Get(nameof(EqualizerPresetTreble));
+    public static string EqualizerPresetRock => Get(nameof(EqualizerPresetRock));
+    public static string EqualizerPresetClassical => Get(nameof(EqualizerPresetClassical));
+    public static string EqualizerPresetPop => Get(nameof(EqualizerPresetPop));
+    public static string EqualizerPresetJazz => Get(nameof(EqualizerPresetJazz));
+    public static string EqualizerPresetVoice => Get(nameof(EqualizerPresetVoice));
+    public static string EqualizerPresetCustom => Get(nameof(EqualizerPresetCustom));
     public static string SettingsCategoryLibrary => Get(nameof(SettingsCategoryLibrary));
     public static string SettingsCategoryPlayback => Get(nameof(SettingsCategoryPlayback));
     public static string SettingsCategoryInterface => Get(nameof(SettingsCategoryInterface));

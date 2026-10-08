@@ -6,6 +6,7 @@
              xmlns:core="using:SharpSelecta.Core.Library"
              xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:converters="using:SharpSelecta.App.Converters"
+             xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Svg.Controls.Skia.Avalonia"
              xmlns:styles="using:SharpSelecta.App.Styles"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -43,7 +44,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue XXS}">
                         <TextBlock Text="{x:Static res:Strings.SortBy}" Classes="secondary" VerticalAlignment="Center" />
                         <TextBlock Text="{Binding SortModeLabel}" VerticalAlignment="Center" />
-                        <TextBlock Text="▾" VerticalAlignment="Center" />
+                        <svg:Svg Classes="toolbar-icon" Width="{DynamicResource Size.Icon.XS}" Height="{DynamicResource Size.Icon.XS}" Path="{DynamicResource Icon.ChevronDown}" VerticalAlignment="Center" />
                     </StackPanel>
                     <Button.Flyout>
                         <MenuFlyout>
@@ -153,9 +154,10 @@
                                             <Grid ColumnDefinitions="*,Auto">
                                                 <DockPanel Grid.Column="0">
                                                     <Button DockPanel.Dock="Top" Classes="plain" HorizontalAlignment="Right"
-                                                            Content="&#x2715;"
                                                             Command="{Binding #Root.((vm:AlbumGridViewModel)DataContext).ToggleExpandCommand}"
-                                                            CommandParameter="{Binding}" />
+                                                            CommandParameter="{Binding}">
+                                                        <svg:Svg Classes="toolbar-icon" Width="{DynamicResource Size.Icon.XS}" Height="{DynamicResource Size.Icon.XS}" Path="{DynamicResource Icon.X}" />
+                                                    </Button>
 
                                                     <!-- ListBox rather than ItemsControl for the theme's hover/selected row
                                                          highlight, same as the Queue - otherwise rows don't look clickable. -->

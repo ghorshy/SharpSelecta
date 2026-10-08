@@ -38,7 +38,7 @@
         <Setter Property="CornerRadius" Value="0" />
     </Style>
 
-    <!-- The template above has no disabled state of its own, so text content (e.g. "View ▾") needs
+    <!-- The template above has no disabled state of its own, so text content (e.g. "View") needs
          dimming here; icon buttons are handled by the Svg rule below. -->
     <Style Selector="Button.toolbar-button:disabled TextBlock">
         <Setter Property="Opacity" Value="{DynamicResource Opacity.Disabled}" />

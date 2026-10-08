@@ -31,6 +31,19 @@ public class EqualizerViewModelTests
         await Assert.That(vm.Bands[9].Index).IsEqualTo(9);
     }
 
+    private static EqualizerPresetOption Option(EqualizerViewModel vm, EqualizerPreset? preset) =>
+        vm.PresetOptions.Single(o => o.Preset == preset);
+
+    [Test]
+    public async Task PresetOptions_ListEveryPresetWithLocalizedLabelsThenCustom()
+    {
+        var vm = CreateViewModel(out _);
+
+        await Assert.That(string.Join(",", vm.PresetOptions.Select(o => o.Label)))
+            .IsEqualTo("Default,Bass,Treble,Rock,Classical,Pop,Jazz,Voice,Custom");
+        await Assert.That(vm.PresetOptions[^1].Preset).IsNull();
+    }
+
     [Test]
     public async Task EnabledChanged_PushesToEngineAndPersists()
     {
@@ -51,12 +64,12 @@ public class EqualizerViewModelTests
     }
 
     [Test]
-    public async Task SelectedPresetNameChanged_AppliesPresetAndRefreshesBands()
+    public async Task SelectedPresetChanged_AppliesPresetAndRefreshesBands()
     {
         var vm = CreateViewModel(out var audioEngine);
         audioEngine.EqualizerBandGainsDb.Returns([3f, 3f, 0f, 0f, 0f, 0f, 0f, 0f, -2f, -2f]);
 
-        vm.SelectedPresetName = nameof(EqualizerPreset.Bass);
+        vm.SelectedPreset = Option(vm, EqualizerPreset.Bass);
 
         audioEngine.Received(1).ApplyEqualizerPreset(EqualizerPreset.Bass);
         await Assert.That(vm.Bands[0].GainDb).IsEqualTo(3.0);
@@ -71,7 +84,7 @@ public class EqualizerViewModelTests
         vm.Bands[2].GainDb = 4.5;
 
         audioEngine.Received(1).SetEqualizerBandGain(2, 4.5f);
-        await Assert.That(vm.SelectedPresetName).IsEqualTo(EqualizerViewModel.CustomPresetName);
+        await Assert.That(vm.SelectedPreset.Preset).IsNull();
     }
 
     [Test]
@@ -87,7 +100,7 @@ public class EqualizerViewModelTests
 
             var saved = SettingsStore.LoadEqualizerBandGainsDb(settingsPath);
             await Assert.That(saved![0]).IsEqualTo(5f);
-            await Assert.That(SettingsStore.LoadEqualizerPresetName(settingsPath)).IsEqualTo(EqualizerViewModel.CustomPresetName);
+            await Assert.That(SettingsStore.LoadEqualizerPresetName(settingsPath)).IsEqualTo("Custom");
         }
         finally
         {
@@ -102,7 +115,7 @@ public class EqualizerViewModelTests
         try
         {
             SettingsStore.SaveEqualizerEnabled(settingsPath, true);
-            SettingsStore.SaveEqualizerPresetName(settingsPath, EqualizerViewModel.CustomPresetName);
+            SettingsStore.SaveEqualizerPresetName(settingsPath, "Custom");
             SettingsStore.SaveEqualizerBandGainsDb(settingsPath, [1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f]);
 
             var vm = CreateViewModel(out var audioEngine, settingsPath);
@@ -110,7 +123,7 @@ public class EqualizerViewModelTests
             vm.ApplyPersistedState();
 
             await Assert.That(vm.Enabled).IsTrue();
-            await Assert.That(vm.SelectedPresetName).IsEqualTo(EqualizerViewModel.CustomPresetName);
+            await Assert.That(vm.SelectedPreset.Preset).IsNull();
             await Assert.That(vm.Bands[9].GainDb).IsEqualTo(10.0);
             audioEngine.Received(1).SetEqualizerBandGain(9, 10f);
             audioEngine.Received(1).EqualizerEnabled = true;
@@ -138,7 +151,7 @@ public class EqualizerViewModelTests
 
             vm.ApplyPersistedState();
 
-            await Assert.That(vm.SelectedPresetName).IsEqualTo(nameof(EqualizerPreset.Bass));
+            await Assert.That(vm.SelectedPreset.Preset).IsEqualTo(EqualizerPreset.Bass);
             await Assert.That(vm.Bands[0].GainDb).IsEqualTo(1.0);
             await Assert.That(vm.Bands[9].GainDb).IsEqualTo(10.0);
             audioEngine.DidNotReceive().ApplyEqualizerPreset(Arg.Any<EqualizerPreset>());

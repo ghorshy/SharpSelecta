@@ -124,6 +124,33 @@
   <data name="EqualizerPreset" xml:space="preserve">
     <value>Preset</value>
   </data>
+  <data name="EqualizerPresetDefault" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="EqualizerPresetBass" xml:space="preserve">
+    <value>Bass</value>
+  </data>
+  <data name="EqualizerPresetTreble" xml:space="preserve">
+    <value>Treble</value>
+  </data>
+  <data name="EqualizerPresetRock" xml:space="preserve">
+    <value>Rock</value>
+  </data>
+  <data name="EqualizerPresetClassical" xml:space="preserve">
+    <value>Classical</value>
+  </data>
+  <data name="EqualizerPresetPop" xml:space="preserve">
+    <value>Pop</value>
+  </data>
+  <data name="EqualizerPresetJazz" xml:space="preserve">
+    <value>Jazz</value>
+  </data>
+  <data name="EqualizerPresetVoice" xml:space="preserve">
+    <value>Voice</value>
+  </data>
+  <data name="EqualizerPresetCustom" xml:space="preserve">
+    <value>Custom</value>
+  </data>
   <data name="SettingsCategoryLibrary" xml:space="preserve">
     <value>Library</value>
   </data>

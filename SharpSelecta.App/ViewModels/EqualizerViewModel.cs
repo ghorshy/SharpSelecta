@@ -1,18 +1,24 @@
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using SharpSelecta.App.Resources;
 using SharpSelecta.Core.Audio;
 using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.ViewModels;
 
+// Preset is null for Custom (hand-edited bands).
+public sealed record EqualizerPresetOption(EqualizerPreset? Preset, string Label)
+{
+    public const string CustomSettingsKey = "Custom";
+
+    public string SettingsKey => Preset?.ToString() ?? CustomSettingsKey;
+}
+
 public partial class EqualizerViewModel : ObservableObject
 {
-    public const string CustomPresetName = "Custom";
-
     private readonly string _settingsFilePath;
     private readonly IAudioEngine _audioEngine;
 
@@ -22,18 +28,35 @@ public partial class EqualizerViewModel : ObservableObject
 
     public ObservableCollection<EqualizerBandViewModel> Bands { get; }
 
-    public IReadOnlyList<string> PresetNames { get; } = [.. Enum.GetNames<EqualizerPreset>(), CustomPresetName];
+    public IReadOnlyList<EqualizerPresetOption> PresetOptions { get; } =
+    [
+        new(EqualizerPreset.Default, Strings.EqualizerPresetDefault),
+        new(EqualizerPreset.Bass, Strings.EqualizerPresetBass),
+        new(EqualizerPreset.Treble, Strings.EqualizerPresetTreble),
+        new(EqualizerPreset.Rock, Strings.EqualizerPresetRock),
+        new(EqualizerPreset.Classical, Strings.EqualizerPresetClassical),
+        new(EqualizerPreset.Pop, Strings.EqualizerPresetPop),
+        new(EqualizerPreset.Jazz, Strings.EqualizerPresetJazz),
+        new(EqualizerPreset.Voice, Strings.EqualizerPresetVoice),
+        new(null, Strings.EqualizerPresetCustom),
+    ];
 
     [ObservableProperty]
     public partial bool Enabled { get; set; }
 
+    private EqualizerPresetOption DefaultOption => PresetOptions[0];
+    private EqualizerPresetOption CustomOption => PresetOptions[^1];
+
     [ObservableProperty]
-    public partial string SelectedPresetName { get; set; } = nameof(EqualizerPreset.Default);
+    public partial EqualizerPresetOption SelectedPreset { get; set; }
 
     public EqualizerViewModel(string settingsFilePath, IAudioEngine audioEngine)
     {
         _settingsFilePath = settingsFilePath;
         _audioEngine = audioEngine;
+        _suppressPresetChangeSideEffects = true;
+        SelectedPreset = DefaultOption;
+        _suppressPresetChangeSideEffects = false;
 
         var frequencies = audioEngine.EqualizerBandFrequenciesHz;
         var gains = audioEngine.EqualizerBandGainsDb;
@@ -56,12 +79,11 @@ public partial class EqualizerViewModel : ObservableObject
         SettingsStore.SaveEqualizerEnabled(_settingsFilePath, value);
     }
 
-    partial void OnSelectedPresetNameChanged(string value)
+    partial void OnSelectedPresetChanged(EqualizerPresetOption value)
     {
-        if (_suppressPresetChangeSideEffects || value == CustomPresetName)
+        if (_suppressPresetChangeSideEffects || value.Preset is not { } preset)
             return;
 
-        var preset = Enum.Parse<EqualizerPreset>(value);
         _audioEngine.ApplyEqualizerPreset(preset);
 
         _suppressBandGainSideEffects = true;
@@ -89,14 +111,14 @@ public partial class EqualizerViewModel : ObservableObject
         _audioEngine.SetEqualizerBandGain(band.Index, (float)band.GainDb);
 
         _suppressPresetChangeSideEffects = true;
-        SelectedPresetName = CustomPresetName;
+        SelectedPreset = CustomOption;
         _suppressPresetChangeSideEffects = false;
     }
 
     public void PersistBandGains()
     {
         SettingsStore.SaveEqualizerBandGainsDb(_settingsFilePath, Bands.Select(b => (float)b.GainDb).ToList());
-        SettingsStore.SaveEqualizerPresetName(_settingsFilePath, SelectedPresetName);
+        SettingsStore.SaveEqualizerPresetName(_settingsFilePath, SelectedPreset.SettingsKey);
     }
 
     public void ApplyPersistedState()
@@ -121,9 +143,7 @@ public partial class EqualizerViewModel : ObservableObject
 
         var savedPresetName = SettingsStore.LoadEqualizerPresetName(_settingsFilePath);
         _suppressPresetChangeSideEffects = true;
-        SelectedPresetName = savedPresetName is not null && PresetNames.Contains(savedPresetName)
-            ? savedPresetName
-            : nameof(EqualizerPreset.Default);
+        SelectedPreset = PresetOptions.FirstOrDefault(o => o.SettingsKey == savedPresetName) ?? DefaultOption;
         _suppressPresetChangeSideEffects = false;
 
         var savedEnabled = SettingsStore.LoadEqualizerEnabled(_settingsFilePath);
