@@ -63,6 +63,7 @@ public partial class App : Application
                 () => SettingsStore.LoadFanartApiKey(settingsFilePath),
                 key => SettingsStore.SaveFanartApiKey(settingsFilePath, key));
             services.AddSingleton<IFilePickerService>(new AvaloniaFilePickerService(mainWindow));
+            services.AddSingleton<IFileManagerShell, SystemFileManagerShell>();
             services.AddSingleton<IFileManagerService, FileManagerService>();
             var provider = services.BuildServiceProvider();
 
