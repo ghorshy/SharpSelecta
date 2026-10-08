@@ -947,4 +947,63 @@ public class SettingsStoreTests
             File.Delete(path);
         }
     }
+
+    [Test]
+    public async Task ConcurrentSavesOfDifferentSettings_AllSurvive()
+    {
+        var path = CreateTempSettingsPath();
+        try
+        {
+            var saves = new Action[]
+            {
+                () => SettingsStore.SaveVolume(path, 0.42),
+                () => SettingsStore.SaveTileSize(path, 180),
+                () => SettingsStore.SaveSeekStepSeconds(path, 15),
+                () => SettingsStore.SaveAutoDjEnabled(path, true),
+                () => SettingsStore.SaveDiscordPresenceEnabled(path, true),
+                () => SettingsStore.SaveUseWaveformSlider(path, true),
+                () => SettingsStore.SaveEqualizerEnabled(path, true),
+                () => SettingsStore.SaveTheme(path, AppTheme.Light),
+            };
+
+            for (var round = 0; round < 20; round++)
+            {
+                File.Delete(path);
+                await Task.WhenAll(saves.Select(Task.Run));
+            }
+
+            await Assert.That(SettingsStore.LoadVolume(path)).IsEqualTo(0.42);
+            await Assert.That(SettingsStore.LoadTileSize(path)).IsEqualTo(180);
+            await Assert.That(SettingsStore.LoadSeekStepSeconds(path)).IsEqualTo(15);
+            await Assert.That(SettingsStore.LoadAutoDjEnabled(path)).IsTrue();
+            await Assert.That(SettingsStore.LoadDiscordPresenceEnabled(path)).IsTrue();
+            await Assert.That(SettingsStore.LoadUseWaveformSlider(path)).IsTrue();
+            await Assert.That(SettingsStore.LoadEqualizerEnabled(path)).IsTrue();
+            await Assert.That(SettingsStore.LoadTheme(path)).IsEqualTo(AppTheme.Light);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Test]
+    public async Task Save_WhenFileIsCorrupted_KeepsTheCorruptedFileAside()
+    {
+        var path = CreateTempSettingsPath();
+        try
+        {
+            File.WriteAllText(path, "{ not valid json");
+
+            SettingsStore.SaveVolume(path, 0.5);
+
+            await Assert.That(SettingsStore.LoadVolume(path)).IsEqualTo(0.5);
+            await Assert.That(File.ReadAllText(path + ".corrupt")).IsEqualTo("{ not valid json");
+        }
+        finally
+        {
+            File.Delete(path);
+            File.Delete(path + ".corrupt");
+        }
+    }
 }
