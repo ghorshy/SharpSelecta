@@ -4,9 +4,7 @@ namespace SharpSelecta.Integrations.AlbumArt;
 
 public sealed record MusicBrainzReleaseGroup(string Id, string Title);
 
-// Looks up an album's release-group id, which Cover Art Archive and fanart.tv are both keyed by.
-// MusicBrainz allows one request per second, so lookups are spaced out, and the same query asked
-// by both providers is answered once.
+// MusicBrainz allows one request per second; the same query from both providers is answered once.
 public sealed class MusicBrainzClient(HttpClient http, TimeSpan? minimumRequestInterval = null)
 {
     private static readonly TimeSpan DefaultInterval = TimeSpan.FromMilliseconds(1100);

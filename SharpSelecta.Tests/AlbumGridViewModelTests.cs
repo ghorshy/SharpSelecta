@@ -345,10 +345,7 @@ public class AlbumGridViewModelTests
     [Test]
     public async Task SearchQuery_RanksAlbumsByRelevanceInsteadOfTheCurrentSortMode()
     {
-        // Alphabetically-by-artist, "Aardvark" (artist starting with A) would always sort before
-        // "Millitary Dance" (artist "Thirtzy", starting with T) - but the album whose own Title
-        // matches the query should still rank first once a search is active, regardless of the
-        // manually selected sort mode.
+        // Sorted by artist, "Aardvark" would come first; the title match must win once a search is active.
         var vm = CreateLibraryViewModel();
         vm.Tracks.Add(new LibraryTrackViewModel(
             new Track("/music/a.mp3", "a.mp3") { Album = "Aardvark", Artist = "Milli Vanilli", Title = "Aardvark" }, vm));
@@ -376,9 +373,7 @@ public class AlbumGridViewModelTests
         var grid = new AlbumGridViewModel(library, CreateTempSettingsPath(), TestThemeLayout.Default, NullLogger.Instance, allowUserSort: false);
         grid.SetViewportWidth(2000);
 
-        // "Old Album" has a track added just now (`now`), newer than "New Album"'s only track
-        // (`now.AddDays(-1)`) - it must sort first, exactly like MusicBee's behavior the user wanted
-        // to avoid the opposite of: a fresh addition bumps its whole album back to the top.
+        // "Old Album" has the most recently added track, so the whole album sorts first.
         await Assert.That(grid.Rows[0].Tiles[0].Title).IsEqualTo("Old Album");
         await Assert.That(grid.Rows[0].Tiles[1].Title).IsEqualTo("New Album");
     }

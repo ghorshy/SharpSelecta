@@ -11,7 +11,7 @@ public enum ConversionTarget
     Aiff,
 }
 
-// Bitrate only matters for the lossy targets (Mp3, AacM4a); null otherwise.
+// BitrateKbps is null for lossless targets.
 public sealed record ConversionRequest(string SourcePath, string TargetPath, ConversionTarget Target, int? BitrateKbps);
 
 // What a file is, as far as converting it goes. Codec is the lower-case codec name ("flac", "alac", "aac",

@@ -1,8 +1,6 @@
 namespace SharpSelecta.Core.Library;
 
-// A track can have several artists. ATL exposes them as one string joined with its display
-// separator and splits it back into the format's native multiple values (e.g. several ID3v2 TPE1
-// values, several Vorbis ARTIST fields) on save, so the list is just that string split/joined.
+// ATL joins multiple artists with its display separator and splits them back into native values on save.
 public static class ArtistList
 {
     public static IReadOnlyList<string> Split(string? artist) =>

@@ -4,9 +4,6 @@ using Avalonia.Markup.Xaml;
 
 namespace SharpSelecta.Tests;
 
-// Enforces the rule that every visual value (color, opacity, font, shape, size) comes from the theme
-// tokens in Styles/ThemeColors.axaml, ThemeMetrics.axaml, Spacing.axaml and Icons.axaml - never a
-// literal in a view, a style or code - so a custom theme can change any of them.
 public partial class ThemeTokenTests
 {
     private static readonly string[] TokenFileNames = ["ThemeColors.axaml", "ThemeMetrics.axaml", "Spacing.axaml", "Icons.axaml"];

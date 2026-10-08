@@ -16,9 +16,7 @@ using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.ViewModels;
 
-// Edits one track or several at once. With several, a field whose value differs between the
-// tracks starts empty (shown as "varies") and is only written if the user types something into it;
-// every other field starts at the shared value and is written to all tracks.
+// With several tracks, a field whose value differs starts empty and is only written if the user edits it.
 public sealed partial class TrackPropertiesViewModel : ViewModelBase
 {
     private const int MaxYearOrTrackNumber = 9999;
@@ -298,7 +296,6 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
         CoverBytes = bytes;
     }
 
-    // Shared by the picker and by dropping an image onto the cover.
     public async Task SetCoverFromFileAsync(string path)
     {
         byte[] bytes;

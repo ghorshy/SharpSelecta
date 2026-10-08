@@ -1,8 +1,7 @@
 namespace SharpSelecta.Core.Presence;
 
-// Discord allows only a handful of presence updates per half minute and drops the rest, so changes are
-// coalesced: the first goes out at once, later ones wait until the interval has passed and only the
-// latest state is sent. Disposing clears the status immediately (the app is closing).
+// Discord drops presence updates beyond a few per 30s: the first goes out at once, later ones are
+// coalesced to the latest state until the interval passes.
 public sealed class ThrottledRichPresence(IRichPresence inner, TimeSpan minimumInterval, TimeProvider time) : IRichPresence, IDisposable
 {
     private readonly Lock _lock = new();

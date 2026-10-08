@@ -91,8 +91,6 @@ public static class LibraryIndexStore
                     }
 
                     var track = MusicLibraryScanner.ReadTrack(path);
-                    // For new/changed files, set DateAddedUtc to either the original date (if previously indexed)
-                    // or the shared "now" timestamp (if new). This matches what UpsertAll will write to the DB.
                     track = track with { DateAddedUtc = wasIndexed ? indexed.Track.DateAddedUtc : new DateTime(dateAddedUtcTicks, DateTimeKind.Utc) };
                     return (path, track, lastWriteTimeUtc, fileSizeBytes, Changed: true);
                 })
@@ -159,9 +157,7 @@ public static class LibraryIndexStore
         command.ExecuteNonQuery();
     }
 
-    // Refreshes an already-indexed row after its tags were edited in-app. Mtime/size are updated
-    // too so the next Reconcile treats the file as unchanged instead of re-reading it; DateAddedUtc
-    // and cached waveform peaks (the audio itself didn't change) are deliberately left alone.
+    // Updates mtime/size so Reconcile doesn't re-read the file; keeps DateAddedUtc and waveform peaks.
     public static void UpdateTrack(string settingsFilePath, Track track)
     {
         var indexFilePath = IndexFilePath(settingsFilePath);
@@ -444,9 +440,7 @@ public static class LibraryIndexStore
                 BitDepth = excluded.BitDepth, Bitrate = excluded.Bitrate, FileType = excluded.FileType,
                 LastWriteTimeUtcTicks = excluded.LastWriteTimeUtcTicks, FileSizeBytes = excluded.FileSizeBytes,
                 WaveformPeaks = NULL
-                -- DateAddedUtc is deliberately absent here: SQLite's ON CONFLICT DO UPDATE only touches
-                -- listed columns, so an existing row keeps its original value. A metadata refresh must
-                -- never bump a track back to the top of "Recently Added".
+                -- DateAddedUtc is left out so a refresh never bumps a track in Recently Added.
             """;
 
         var pFilePath = command.Parameters.Add("@FilePath", SqliteType.Text);

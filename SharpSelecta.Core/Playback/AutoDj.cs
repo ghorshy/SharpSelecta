@@ -6,12 +6,9 @@ namespace SharpSelecta.Core.Playback;
 // played yet this session so nothing repeats until the whole pool has been used.
 public static class AutoDj
 {
-    // How many upcoming tracks the queue is kept at.
     public const int Lookahead = 5;
 
-    // played: tracks already behind the current one in the queue; inUse: the current track and what's
-    // queued after it. Neither is picked again while an unplayed track is left; once the pool is used up
-    // the played ones come round again (never what's playing or already queued next).
+    // Prefers tracks that are neither played nor inUse; once those run out, played ones repeat (never inUse).
     public static IReadOnlyList<Track> Pick(
         IReadOnlyList<Track> pool, IReadOnlySet<string> played, IReadOnlySet<string> inUse, int count, Random random)
     {

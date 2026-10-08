@@ -2,8 +2,6 @@ using AtlTrack = ATL.Track;
 
 namespace SharpSelecta.Core.Library;
 
-// The roles a person can have on a track. Artist is the track's main Artist tag; the rest are the
-// extra credits (several people each, joined by ArtistList's separator like Artist).
 public enum CreditRole
 {
     Artist,
@@ -13,18 +11,13 @@ public enum CreditRole
     Lyricist,
 }
 
-// One person in one role, as the credits editor lists them.
 public sealed record CreditEntry(CreditRole Role, string Name);
 
-// The credits besides Artist, which Track/the library index don't carry - read from the file when
-// they're needed (the Properties window).
 public sealed record TrackCredits(string? Remixer, string? Composer, string? Conductor, string? Lyricist)
 {
     public static readonly TrackCredits None = new(null, null, null, null);
 
-    // Composer/Conductor/Lyricist are tags ATL knows natively in every format we scan. There's no
-    // such tag for a remixer, so it goes through ATL's free-form fields under the name each format's
-    // tagging convention uses (see CreditFields).
+    // Remixer has no native tag, so it uses each format's conventional free-form field (see CreditFields).
     public static TrackCredits Read(string filePath)
     {
         try

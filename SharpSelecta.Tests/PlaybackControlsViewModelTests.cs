@@ -878,11 +878,7 @@ public class PlaybackControlsViewModelTests
     public async Task PlayNowAsync_StartsPlaybackWithoutWaitingForWaveformPeaks()
     {
         var vm = CreateViewModel(out var audioEngine, out _);
-        // A bounded sleep, not a TaskCompletionSource + blocking wait: the latter ties up a
-        // thread-pool worker until *this test's own later code* runs to release it, which is
-        // exactly the kind of sync-over-async pattern that can starve the pool when the full
-        // suite runs hundreds of tests in parallel. A short Thread.Sleep resolves on its own via
-        // the OS timer regardless of what else the pool is doing, so it can't create that stall.
+        // A bounded sleep, not a blocking TaskCompletionSource wait, which can starve the thread pool in parallel runs.
         audioEngine.GetWaveformPeaks(2000).Returns(_ =>
         {
             Thread.Sleep(50);
@@ -904,11 +900,7 @@ public class PlaybackControlsViewModelTests
     public async Task LoadTrackAsync_WhenTrackChangesBeforePeaksFinish_DropsTheStaleResult()
     {
         var vm = CreateViewModel(out var audioEngine, out _);
-        // NSubstitute's Returns(a, b, ...) sequence is keyed by actual invocation order inside
-        // the mock, not by which Task.Run was dispatched first - each load runs on its own
-        // thread-pool work item, so under contention the second load's call could physically
-        // reach the mock before the first load's call does. Signal once the first call has
-        // truly started so the second load is only kicked off after invocation order is settled.
+        // Returns(a, b) follows invocation order, so the second load starts only after the first call has.
         using var firstCallStarted = new ManualResetEventSlim();
         audioEngine.GetWaveformPeaks(2000).Returns(
             _ => { firstCallStarted.Set(); Thread.Sleep(100); return new float[] { 0.1f }; },

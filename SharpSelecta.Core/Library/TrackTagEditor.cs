@@ -30,9 +30,8 @@ public static class TrackTagEditor
 {
     public static bool IsSupportedCoverImage(byte[] imageBytes) => CoverFile.TryGetExtension(imageBytes, out _);
 
-    // Writes through a temp copy in the same directory and renames it over the original, so a
-    // failed save can never leave the user's file half-written. Credits are written only when given
-    // (null leaves the file's credits as they are).
+    // Writes a temp copy in the same directory and renames it over the original.
+    // Null credits leave the file's credits as they are.
     public static void Write(string filePath, TrackTagEdits edits, CoverArtEdit? cover = null, TrackCredits? credits = null)
     {
         var tempPath = Path.Combine(

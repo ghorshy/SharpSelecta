@@ -110,7 +110,6 @@ public static partial class SettingsStore
     public static void SaveTheme(string settingsFilePath, AppTheme theme) =>
         Update(settingsFilePath, data => data with { Theme = theme });
 
-    /// <summary>File name (relative to the app's Themes directory) of the selected custom theme.</summary>
     public static bool LoadAutoDjEnabled(string settingsFilePath) => Load(settingsFilePath)?.AutoDjEnabled ?? false;
 
     public static void SaveAutoDjEnabled(string settingsFilePath, bool enabled) =>

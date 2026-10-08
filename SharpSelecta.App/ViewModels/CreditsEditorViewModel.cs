@@ -21,9 +21,6 @@ public sealed partial class CreditEntryViewModel(string name, RoleOption role) :
     public partial RoleOption Role { get; set; } = role;
 }
 
-// Edits the people credited on a track: each entry is a name plus a role, renamable and removable in
-// place, with a name + role row to add more. Result is the normalized list (trimmed, no blanks, no
-// case-insensitive duplicates within a role), or null if the dialog was cancelled.
 public sealed partial class CreditsEditorViewModel : ViewModelBase
 {
     public CreditsEditorViewModel(IEnumerable<CreditEntry> credits)

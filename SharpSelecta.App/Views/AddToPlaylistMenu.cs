@@ -5,10 +5,7 @@ using SharpSelecta.App.ViewModels;
 
 namespace SharpSelecta.App.Views;
 
-// Shared by every "Add to playlist" submenu. XAML only declares a placeholder item (so the submenu
-// is never empty at layout time); the real entries - existing playlists first, then
-// "+ New playlist..." - are rebuilt on every open, same reasoning as
-// LibraryView.axaml.cs's OnPlaylistsFlyoutOpening.
+// XAML declares a placeholder so the submenu is never empty at layout time; entries are rebuilt on every open.
 internal static class AddToPlaylistMenu
 {
     public static void Rebuild(MenuItem submenu, PlaylistsViewModel playlists, Action<string> addToPlaylist)

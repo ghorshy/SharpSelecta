@@ -114,9 +114,7 @@ public class FuzzySearchTests
     [Test]
     public async Task Score_Track_TitleMatchOutranksAnArtistMatchThatWouldOtherwiseTie()
     {
-        // Both fields match "milli" as an exact, word-start substring - same raw Score(string?,
-        // string) result - so without field weighting these would tie and fall back to whatever
-        // order the tracks happened to be in.
+        // Both fields score "milli" the same, so only field weighting breaks the tie.
         var militaryDance = new Track("/music/a.mp3", "a.mp3") { Title = "Millitary Dance", Artist = "Some Artist" };
         var milliVanilli = new Track("/music/b.mp3", "b.mp3") { Title = "Girl You Know It's True", Artist = "Milli Vanilli" };
 

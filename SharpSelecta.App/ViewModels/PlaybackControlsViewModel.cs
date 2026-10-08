@@ -128,7 +128,6 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     private bool _autoDjSettingLoaded;
     private bool _isToppingUpAutoDj;
 
-    // Auto DJ keeps the queue topped up with random tracks so the music doesn't run out.
     [ObservableProperty]
     public partial bool IsAutoDjEnabled { get; set; }
 
@@ -462,10 +461,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
                 PlayPauseCommand.Execute(null);
             }
 
-            // Off the critical path deliberately - a big/HQ file's decoder pass here must never
-            // delay playback start. WaveformPeaks is cleared immediately so a fast track switch
-            // doesn't show the previous track's bars, and the generation check drops a stale
-            // result if the user has already moved on to another track by the time this finishes.
+            // Not awaited so decoding never delays playback; the generation check drops stale results.
             WaveformPeaks = [];
             IsWaveformLoading = true;
             WaveformLoadTask = LoadWaveformPeaksAsync(track, ++_waveformLoadGeneration);

@@ -35,10 +35,8 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
         };
         _mixer.AddMasterEffect(_equalizer);
 
-        // EqualizerEffect has no headroom compensation, so boosting a band on already-hot
-        // material hard-clips (verified empirically). This lookahead limiter sits right after
-        // it as a near-inaudible safety net (threshold/ceiling just under 0 dBFS) and is toggled
-        // together with the equalizer, so plain playback with the EQ off is untouched.
+        // EqualizerEffect has no headroom compensation; this limiter guards against clipping
+        // and is toggled together with the equalizer.
         _limiter = new OwnaudioNET.Effects.LimiterEffect(OwnaudioNet.Engine.Config.SampleRate, threshold: -0.3f, ceiling: -0.1f, release: 60f, lookAheadMs: 5f)
         {
             Enabled = false,
@@ -126,11 +124,8 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
         }
     }
 
-    // EqualizerEffect clips - and audibly distorts - internally whenever a boosted band's own
-    // linear gain would push the signal past unity, regardless of anything downstream (verified
-    // empirically: harmonic distortion tracks the boosted level exceeding 0 dBFS, not the final
-    // clamped sample). Subtracting the current highest positive requested gain from every band
-    // keeps the loudest band at or below unity while preserving the requested EQ shape.
+    // EqualizerEffect clips internally when a boosted band exceeds unity, so every band is
+    // shifted down by the highest boost, keeping the EQ shape.
     private void ApplyRequestedGainsToEngine()
     {
         var preampDb = -Math.Max(0f, _requestedBandGainsDb.Max());

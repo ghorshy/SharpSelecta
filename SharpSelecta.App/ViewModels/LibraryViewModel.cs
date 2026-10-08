@@ -212,9 +212,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     [RelayCommand]
     private void FocusSearch() => SearchFocusRequested?.Invoke(this, EventArgs.Empty);
 
-    // Column widths/order live in one shared settings file, not per TrackListView instance - this
-    // lets the Library and Recently Added grids (two separate control instances, same DataContext)
-    // push a layout change to each other immediately instead of only agreeing after a restart.
+    // Lets the Library and Recently Added grids pick up each other's column layout changes live.
     public event EventHandler? ColumnLayoutChanged;
 
     public void NotifyColumnLayoutChanged() => ColumnLayoutChanged?.Invoke(this, EventArgs.Empty);
@@ -704,9 +702,8 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     // preserve click order, so the view tracks it there and hands the ordered list here.
     public void SetSelectedTracksInOrder(IReadOnlyList<Track> tracks) => _selectedTracksInOrder = tracks;
 
-    // A right-click inside the current multi-selection acts on the whole (ordered) selection;
-    // a right-click outside it acts on just the clicked track, like most file browsers.
-    // The cover art views have no multi-selection, so a stale list-view selection must not leak in.
+    // Right-clicking inside the multi-selection acts on all of it, outside it on the clicked track only.
+    // The cover art views have no multi-selection, so a stale list selection must not leak in.
     public IReadOnlyList<Track> ResolveSelection(Track clickedTrack) =>
         !IsAlbumGridViewVisible && !IsRecentlyAddedCoverArtVisible && _selectedTracksInOrder.Contains(clickedTrack)
             ? _selectedTracksInOrder
