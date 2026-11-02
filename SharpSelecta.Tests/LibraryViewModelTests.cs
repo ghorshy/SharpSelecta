@@ -10,22 +10,20 @@ using SharpSelecta.Core.Playback;
 
 namespace SharpSelecta.Tests;
 
-public class LibraryViewModelTests
+public class LibraryViewModelTests : IDisposable
 {
-    private static string CreateTempSettingsPath() =>
-        Path.Combine(Path.GetTempPath(), $"sharpselecta-library-vm-settings-{Guid.NewGuid():N}.json");
+    private readonly TempDirectory _temp = new();
 
-    private static string IndexFilePath(string settingsPath) =>
-        Path.Combine(Path.GetDirectoryName(settingsPath)!, $"{Path.GetFileNameWithoutExtension(settingsPath)}.library-index.db");
+    public void Dispose() => _temp.Dispose();
 
-    private static LibraryViewModel CreateViewModel(
+    private LibraryViewModel CreateViewModel(
         out IAudioEngine audioEngine,
         out IFilePickerService filePickerService,
         out PlaybackControlsViewModel playbackControls,
         string? settingsFilePath = null) =>
         CreateViewModel(out audioEngine, out filePickerService, out playbackControls, out _, settingsFilePath);
 
-    private static LibraryViewModel CreateViewModel(
+    private LibraryViewModel CreateViewModel(
         out IAudioEngine audioEngine,
         out IFilePickerService filePickerService,
         out PlaybackControlsViewModel playbackControls,
@@ -36,7 +34,7 @@ public class LibraryViewModelTests
         filePickerService = Substitute.For<IFilePickerService>();
         fileManagerService = Substitute.For<IFileManagerService>();
         var queue = new PlaybackQueue();
-        var settings = new SettingsStore(settingsFilePath ?? CreateTempSettingsPath());
+        var settings = new SettingsStore(settingsFilePath ?? _temp.NewSettingsPath());
         playbackControls = new PlaybackControlsViewModel(audioEngine, queue, settings, NullLogger<PlaybackControlsViewModel>.Instance);
         return new LibraryViewModel(
             filePickerService,
@@ -51,148 +49,104 @@ public class LibraryViewModelTests
     public async Task AddFolderCommand_WhenFolderSelected_PopulatesTracksFromScan()
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
-        try
-        {
-            File.WriteAllBytes(Path.Combine(root.FullName, "song.mp3"), []);
-            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+        var root = _temp.NewSubdirectory();
+        File.WriteAllBytes(Path.Combine(root.FullName, "song.mp3"), []);
+        filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
 
-            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
+        await vm.Folders.AddFolderCommand.ExecuteAsync(null);
 
-            await Assert.That(vm.Tracks.Count).IsEqualTo(1);
-            await Assert.That(vm.Tracks[0].Track.FilePath).IsEqualTo(Path.Combine(root.FullName, "song.mp3"));
-        }
-        finally
-        {
-            root.Delete(recursive: true);
-        }
+        await Assert.That(vm.Tracks.Count).IsEqualTo(1);
+        await Assert.That(vm.Tracks[0].Track.FilePath).IsEqualTo(Path.Combine(root.FullName, "song.mp3"));
     }
 
     [Test]
     public async Task AddFolderCommand_WithMultipleFolders_MergesTracksFromBoth()
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);
-        var rootA = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-a-");
-        var rootB = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-b-");
-        try
-        {
-            File.WriteAllBytes(Path.Combine(rootA.FullName, "songA.mp3"), []);
-            File.WriteAllBytes(Path.Combine(rootB.FullName, "songB.mp3"), []);
+        var rootA = _temp.NewSubdirectory();
+        var rootB = _temp.NewSubdirectory();
+        File.WriteAllBytes(Path.Combine(rootA.FullName, "songA.mp3"), []);
+        File.WriteAllBytes(Path.Combine(rootB.FullName, "songB.mp3"), []);
 
-            filePickerService.PickLibraryFolderAsync().Returns(rootA.FullName);
-            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
-            filePickerService.PickLibraryFolderAsync().Returns(rootB.FullName);
-            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
+        filePickerService.PickLibraryFolderAsync().Returns(rootA.FullName);
+        await vm.Folders.AddFolderCommand.ExecuteAsync(null);
+        filePickerService.PickLibraryFolderAsync().Returns(rootB.FullName);
+        await vm.Folders.AddFolderCommand.ExecuteAsync(null);
 
-            await Assert.That(vm.Tracks.Count).IsEqualTo(2);
-            await Assert.That(vm.Tracks.Select(t => t.Track.FilePath)).Contains(Path.Combine(rootA.FullName, "songA.mp3"));
-            await Assert.That(vm.Tracks.Select(t => t.Track.FilePath)).Contains(Path.Combine(rootB.FullName, "songB.mp3"));
-        }
-        finally
-        {
-            rootA.Delete(recursive: true);
-            rootB.Delete(recursive: true);
-        }
+        await Assert.That(vm.Tracks.Count).IsEqualTo(2);
+        await Assert.That(vm.Tracks.Select(t => t.Track.FilePath)).Contains(Path.Combine(rootA.FullName, "songA.mp3"));
+        await Assert.That(vm.Tracks.Select(t => t.Track.FilePath)).Contains(Path.Combine(rootB.FullName, "songB.mp3"));
     }
 
     [Test]
     public async Task RescanCommand_PicksUpFilesAddedSinceTheLastScan()
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
-        try
-        {
-            File.WriteAllBytes(Path.Combine(root.FullName, "songA.mp3"), []);
-            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
-            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
-            await Assert.That(vm.Tracks.Count).IsEqualTo(1);
+        var root = _temp.NewSubdirectory();
+        File.WriteAllBytes(Path.Combine(root.FullName, "songA.mp3"), []);
+        filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+        await vm.Folders.AddFolderCommand.ExecuteAsync(null);
+        await Assert.That(vm.Tracks.Count).IsEqualTo(1);
 
-            File.WriteAllBytes(Path.Combine(root.FullName, "songB.mp3"), []);
-            await vm.RescanCommand.ExecuteAsync(null);
+        File.WriteAllBytes(Path.Combine(root.FullName, "songB.mp3"), []);
+        await vm.RescanCommand.ExecuteAsync(null);
 
-            await Assert.That(vm.Tracks.Count).IsEqualTo(2);
-        }
-        finally
-        {
-            root.Delete(recursive: true);
-        }
+        await Assert.That(vm.Tracks.Count).IsEqualTo(2);
     }
 
     [Test]
     public async Task ApplyPendingFolderChangesCommand_AfterRemovingAPendingFolder_RescansRemainingFolders()
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);
-        var rootA = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-a-");
-        var rootB = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-b-");
-        try
-        {
-            File.WriteAllBytes(Path.Combine(rootA.FullName, "songA.mp3"), []);
-            File.WriteAllBytes(Path.Combine(rootB.FullName, "songB.mp3"), []);
+        var rootA = _temp.NewSubdirectory();
+        var rootB = _temp.NewSubdirectory();
+        File.WriteAllBytes(Path.Combine(rootA.FullName, "songA.mp3"), []);
+        File.WriteAllBytes(Path.Combine(rootB.FullName, "songB.mp3"), []);
 
-            filePickerService.PickLibraryFolderAsync().Returns(rootA.FullName);
-            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
-            filePickerService.PickLibraryFolderAsync().Returns(rootB.FullName);
-            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
+        filePickerService.PickLibraryFolderAsync().Returns(rootA.FullName);
+        await vm.Folders.AddFolderCommand.ExecuteAsync(null);
+        filePickerService.PickLibraryFolderAsync().Returns(rootB.FullName);
+        await vm.Folders.AddFolderCommand.ExecuteAsync(null);
 
-            vm.Folders.RemovePendingFolderCommand.Execute(rootA.FullName);
-            await vm.Folders.ApplyPendingChangesCommand.ExecuteAsync(null);
+        vm.Folders.RemovePendingFolderCommand.Execute(rootA.FullName);
+        await vm.Folders.ApplyPendingChangesCommand.ExecuteAsync(null);
 
-            await Assert.That(vm.Folders.Paths).IsEquivalentTo([rootB.FullName]);
-            await Assert.That(vm.Tracks.Count).IsEqualTo(1);
-            await Assert.That(vm.Tracks[0].Track.FilePath).IsEqualTo(Path.Combine(rootB.FullName, "songB.mp3"));
-        }
-        finally
-        {
-            rootA.Delete(recursive: true);
-            rootB.Delete(recursive: true);
-        }
+        await Assert.That(vm.Folders.Paths).IsEquivalentTo([rootB.FullName]);
+        await Assert.That(vm.Tracks.Count).IsEqualTo(1);
+        await Assert.That(vm.Tracks[0].Track.FilePath).IsEqualTo(Path.Combine(rootB.FullName, "songB.mp3"));
     }
 
     [Test]
     public async Task ApplyPendingFolderChangesCommand_WithNoPendingChanges_DoesNotRescan()
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
-        try
-        {
-            File.WriteAllBytes(Path.Combine(root.FullName, "songA.mp3"), []);
-            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
-            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
-            await Assert.That(vm.Tracks.Count).IsEqualTo(1);
+        var root = _temp.NewSubdirectory();
+        File.WriteAllBytes(Path.Combine(root.FullName, "songA.mp3"), []);
+        filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+        await vm.Folders.AddFolderCommand.ExecuteAsync(null);
+        await Assert.That(vm.Tracks.Count).IsEqualTo(1);
 
-            File.WriteAllBytes(Path.Combine(root.FullName, "songB.mp3"), []);
-            await vm.Folders.ApplyPendingChangesCommand.ExecuteAsync(null);
+        File.WriteAllBytes(Path.Combine(root.FullName, "songB.mp3"), []);
+        await vm.Folders.ApplyPendingChangesCommand.ExecuteAsync(null);
 
-            await Assert.That(vm.Tracks.Count).IsEqualTo(1);
-        }
-        finally
-        {
-            root.Delete(recursive: true);
-        }
+        await Assert.That(vm.Tracks.Count).IsEqualTo(1);
     }
 
     [Test]
     public async Task ApplyPendingFolderChangesCommand_WhenLastFolderRemoved_ClearsTracks()
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
-        try
-        {
-            File.WriteAllBytes(Path.Combine(root.FullName, "song.mp3"), []);
-            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
-            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
+        var root = _temp.NewSubdirectory();
+        File.WriteAllBytes(Path.Combine(root.FullName, "song.mp3"), []);
+        filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+        await vm.Folders.AddFolderCommand.ExecuteAsync(null);
 
-            vm.Folders.RemovePendingFolderCommand.Execute(root.FullName);
-            await vm.Folders.ApplyPendingChangesCommand.ExecuteAsync(null);
+        vm.Folders.RemovePendingFolderCommand.Execute(root.FullName);
+        await vm.Folders.ApplyPendingChangesCommand.ExecuteAsync(null);
 
-            await Assert.That(vm.Folders.Paths).IsEmpty();
-            await Assert.That(vm.Tracks).IsEmpty();
-            await Assert.That(vm.Folders.HasFolders).IsFalse();
-        }
-        finally
-        {
-            root.Delete(recursive: true);
-        }
+        await Assert.That(vm.Folders.Paths).IsEmpty();
+        await Assert.That(vm.Tracks).IsEmpty();
+        await Assert.That(vm.Folders.HasFolders).IsFalse();
     }
 
     [Test]
@@ -224,73 +178,42 @@ public class LibraryViewModelTests
         await Assert.That(vm.NoTracks).IsTrue();
         await Assert.That(vm.HasTracks).IsFalse();
 
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
-        try
-        {
-            File.WriteAllBytes(Path.Combine(root.FullName, "song.mp3"), []);
-            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+        var root = _temp.NewSubdirectory();
+        File.WriteAllBytes(Path.Combine(root.FullName, "song.mp3"), []);
+        filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
 
-            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
+        await vm.Folders.AddFolderCommand.ExecuteAsync(null);
 
-            await Assert.That(vm.HasTracks).IsTrue();
-            await Assert.That(vm.NoTracks).IsFalse();
-        }
-        finally
-        {
-            root.Delete(recursive: true);
-        }
+        await Assert.That(vm.HasTracks).IsTrue();
+        await Assert.That(vm.NoTracks).IsFalse();
     }
 
     [Test]
     public async Task AddFolderCommand_PersistsFolderPathForNextLaunch()
     {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            var vm = CreateViewModel(out _, out var filePickerService, out _, settingsPath);
-            var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
-            try
-            {
-                filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = CreateViewModel(out _, out var filePickerService, out _, settingsPath);
+        var root = _temp.NewSubdirectory();
+        filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
 
-                await vm.Folders.AddFolderCommand.ExecuteAsync(null);
+        await vm.Folders.AddFolderCommand.ExecuteAsync(null);
 
-                await Assert.That(new SettingsStore(settingsPath).Current.LibraryFolderPaths).IsEquivalentTo([root.FullName]);
-            }
-            finally
-            {
-                root.Delete(recursive: true);
-            }
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-        }
+        await Assert.That(new SettingsStore(settingsPath).Current.LibraryFolderPaths).IsEquivalentTo([root.FullName]);
     }
 
     [Test]
     public async Task InitializeAsync_WhenFoldersRemembered_ScansThemAutomatically()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
-        try
-        {
-            File.WriteAllBytes(Path.Combine(root.FullName, "song.mp3"), []);
-            new SettingsStore(settingsPath).Update(s => s with { LibraryFolderPaths = [root.FullName] });
-            var vm = CreateViewModel(out _, out _, out _, settingsPath);
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        File.WriteAllBytes(Path.Combine(root.FullName, "song.mp3"), []);
+        new SettingsStore(settingsPath).Update(s => s with { LibraryFolderPaths = [root.FullName] });
+        var vm = CreateViewModel(out _, out _, out _, settingsPath);
 
-            await vm.InitializeAsync();
+        await vm.InitializeAsync();
 
-            await Assert.That(vm.Tracks.Count).IsEqualTo(1);
-            await Assert.That(vm.Tracks[0].Track.FilePath).IsEqualTo(Path.Combine(root.FullName, "song.mp3"));
-        }
-        finally
-        {
-            root.Delete(recursive: true);
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-        }
+        await Assert.That(vm.Tracks.Count).IsEqualTo(1);
+        await Assert.That(vm.Tracks[0].Track.FilePath).IsEqualTo(Path.Combine(root.FullName, "song.mp3"));
     }
 
     [Test]
@@ -306,85 +229,58 @@ public class LibraryViewModelTests
     [Test]
     public async Task InitializeAsync_WhenIndexAlreadyHasMatchingTracks_HydratesFromIndexImmediately()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
-        try
-        {
-            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
-            File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), trackPath);
-            new SettingsStore(settingsPath).Update(s => s with { LibraryFolderPaths = [root.FullName] });
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), trackPath);
+        new SettingsStore(settingsPath).Update(s => s with { LibraryFolderPaths = [root.FullName] });
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
 
-            var vm = CreateViewModel(out _, out _, out _, settingsPath);
-            await vm.InitializeAsync();
+        var vm = CreateViewModel(out _, out _, out _, settingsPath);
+        await vm.InitializeAsync();
 
-            await Assert.That(vm.Tracks.Count).IsEqualTo(1);
-            await Assert.That(vm.Tracks[0].Track.FilePath).IsEqualTo(trackPath);
-            await Assert.That(vm.Tracks[0].Track.Title).IsEqualTo("Test Song");
-        }
-        finally
-        {
-            root.Delete(recursive: true);
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-        }
+        await Assert.That(vm.Tracks.Count).IsEqualTo(1);
+        await Assert.That(vm.Tracks[0].Track.FilePath).IsEqualTo(trackPath);
+        await Assert.That(vm.Tracks[0].Track.Title).IsEqualTo("Test Song");
     }
 
     [Test]
     public async Task InitializeAsync_WhenPlaylistSectionAndSelectionWereSaved_RestoresTheSelectedPlaylistAndItsTracks()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
-        try
-        {
-            var trackPath = Path.Combine(root.FullName, "song.mp3");
-            File.WriteAllBytes(trackPath, []);
-            new SettingsStore(settingsPath).Update(s => s with { LibraryFolderPaths = [root.FullName] });
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        var trackPath = Path.Combine(root.FullName, "song.mp3");
+        File.WriteAllBytes(trackPath, []);
+        new SettingsStore(settingsPath).Update(s => s with { LibraryFolderPaths = [root.FullName] });
 
-            var vm = CreateViewModel(out _, out _, out _, settingsPath);
-            await vm.InitializeAsync();
-            var playlistId = vm.Playlists.CreatePlaylist("Saved");
-            vm.Playlists.ReorderSelectedPlaylist([trackPath]);
-            vm.LibrarySection = LibrarySection.Playlist;
+        var vm = CreateViewModel(out _, out _, out _, settingsPath);
+        await vm.InitializeAsync();
+        var playlistId = vm.Playlists.CreatePlaylist("Saved");
+        vm.Playlists.ReorderSelectedPlaylist([trackPath]);
+        vm.LibrarySection = LibrarySection.Playlist;
 
-            var restarted = CreateViewModel(out _, out _, out _, settingsPath);
-            await restarted.InitializeAsync();
+        var restarted = CreateViewModel(out _, out _, out _, settingsPath);
+        await restarted.InitializeAsync();
 
-            await Assert.That(restarted.LibrarySection).IsEqualTo(LibrarySection.Playlist);
-            await Assert.That(restarted.Playlists.SelectedPlaylistId).IsEqualTo(playlistId);
-            await Assert.That(restarted.Playlists.Tracks.Select(t => t.Track.FilePath)).IsEquivalentTo([trackPath]);
-        }
-        finally
-        {
-            root.Delete(recursive: true);
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-        }
+        await Assert.That(restarted.LibrarySection).IsEqualTo(LibrarySection.Playlist);
+        await Assert.That(restarted.Playlists.SelectedPlaylistId).IsEqualTo(playlistId);
+        await Assert.That(restarted.Playlists.Tracks.Select(t => t.Track.FilePath)).IsEquivalentTo([trackPath]);
     }
 
     [Test]
     public async Task InitializeAsync_WhenSavedSelectedPlaylistNoLongerExists_FallsBackToLibrarySection()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
-        try
-        {
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]); // ensures the index db/schema exists
-            new SettingsStore(settingsPath).Update(s => s with { LibrarySection = LibrarySection.Playlist, SelectedPlaylistId = "does-not-exist" });
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]); // ensures the index db/schema exists
+        new SettingsStore(settingsPath).Update(s => s with { LibrarySection = LibrarySection.Playlist, SelectedPlaylistId = "does-not-exist" });
 
-            var vm = CreateViewModel(out _, out _, out _, settingsPath);
-            await vm.InitializeAsync();
+        var vm = CreateViewModel(out _, out _, out _, settingsPath);
+        await vm.InitializeAsync();
 
-            await Assert.That(vm.LibrarySection).IsEqualTo(LibrarySection.Library);
-            await Assert.That(vm.Playlists.SelectedPlaylistId).IsNull();
-            await Assert.That(vm.Playlists.Tracks).IsEmpty();
-        }
-        finally
-        {
-            root.Delete(recursive: true);
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-        }
+        await Assert.That(vm.LibrarySection).IsEqualTo(LibrarySection.Library);
+        await Assert.That(vm.Playlists.SelectedPlaylistId).IsNull();
+        await Assert.That(vm.Playlists.Tracks).IsEmpty();
     }
 
     [Test]
@@ -392,24 +288,17 @@ public class LibraryViewModelTests
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);
         var category = (ISettingsCategoryViewModel)vm;
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
-        try
-        {
-            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
-            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
-            vm.Folders.RemovePendingFolderCommand.Execute(root.FullName);
+        var root = _temp.NewSubdirectory();
+        filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+        await vm.Folders.AddFolderCommand.ExecuteAsync(null);
+        vm.Folders.RemovePendingFolderCommand.Execute(root.FullName);
 
-            await Assert.That(category.HasPendingChanges).IsTrue();
+        await Assert.That(category.HasPendingChanges).IsTrue();
 
-            await ((IAsyncRelayCommand)category.ApplyCommand).ExecuteAsync(null);
+        await ((IAsyncRelayCommand)category.ApplyCommand).ExecuteAsync(null);
 
-            await Assert.That(vm.Folders.Paths).IsEmpty();
-            await Assert.That(category.HasPendingChanges).IsFalse();
-        }
-        finally
-        {
-            root.Delete(recursive: true);
-        }
+        await Assert.That(vm.Folders.Paths).IsEmpty();
+        await Assert.That(category.HasPendingChanges).IsFalse();
     }
 
     [Test]
@@ -417,22 +306,15 @@ public class LibraryViewModelTests
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);
         var category = (ISettingsCategoryViewModel)vm;
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
-        try
-        {
-            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
-            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
-            vm.Folders.RemovePendingFolderCommand.Execute(root.FullName);
+        var root = _temp.NewSubdirectory();
+        filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+        await vm.Folders.AddFolderCommand.ExecuteAsync(null);
+        vm.Folders.RemovePendingFolderCommand.Execute(root.FullName);
 
-            category.CancelCommand.Execute(null);
+        category.CancelCommand.Execute(null);
 
-            await Assert.That(vm.Folders.PendingPaths).IsEquivalentTo([root.FullName]);
-            await Assert.That(category.HasPendingChanges).IsFalse();
-        }
-        finally
-        {
-            root.Delete(recursive: true);
-        }
+        await Assert.That(vm.Folders.PendingPaths).IsEquivalentTo([root.FullName]);
+        await Assert.That(category.HasPendingChanges).IsFalse();
     }
 
     [Test]
@@ -538,57 +420,41 @@ public class LibraryViewModelTests
     [Test]
     public async Task AddToPlaylistCommand_WhenClickedTrackIsPartOfTheOrderedSelection_AddsAllOfThemInClickOrder()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
-        try
-        {
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]); // ensures the index db/schema exists
-            var vm = CreateViewModel(out _, out _, out _, settingsPath);
-            var trackA = new Track("/music/a.mp3", "a.mp3");
-            var trackB = new Track("/music/b.mp3", "b.mp3");
-            vm.Tracks.Add(new LibraryTrackViewModel(trackA, vm));
-            vm.Tracks.Add(new LibraryTrackViewModel(trackB, vm));
-            vm.SetSelectedTracksInOrder([trackB, trackA]);
-            var playlistId = vm.Playlists.CreatePlaylist("Target");
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]); // ensures the index db/schema exists
+        var vm = CreateViewModel(out _, out _, out _, settingsPath);
+        var trackA = new Track("/music/a.mp3", "a.mp3");
+        var trackB = new Track("/music/b.mp3", "b.mp3");
+        vm.Tracks.Add(new LibraryTrackViewModel(trackA, vm));
+        vm.Tracks.Add(new LibraryTrackViewModel(trackB, vm));
+        vm.SetSelectedTracksInOrder([trackB, trackA]);
+        var playlistId = vm.Playlists.CreatePlaylist("Target");
 
-            vm.AddToPlaylistCommand.Execute((trackA, playlistId));
+        vm.AddToPlaylistCommand.Execute((trackA, playlistId));
 
-            var persistedOrder = vm.Playlists.Tracks.Select(t => t.Track.FilePath).ToList();
-            await Assert.That(persistedOrder).IsEquivalentTo(["/music/b.mp3", "/music/a.mp3"]);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            root.Delete(recursive: true);
-        }
+        var persistedOrder = vm.Playlists.Tracks.Select(t => t.Track.FilePath).ToList();
+        await Assert.That(persistedOrder).IsEquivalentTo(["/music/b.mp3", "/music/a.mp3"]);
     }
 
     [Test]
     public async Task AddAlbumToPlaylistCommand_AppendsEveryAlbumTrackInAlbumOrder()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
-        try
-        {
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-            var vm = CreateViewModel(out _, out _, out _, settingsPath);
-            var existing = new Track("/music/existing.mp3", "existing.mp3");
-            var albumTracks = new[] { new Track("/music/01.mp3", "01.mp3"), new Track("/music/02.mp3", "02.mp3") }
-                .Select(t => new LibraryTrackViewModel(t, vm)).ToList();
-            var album = new AlbumViewModel("Album", "Artist", null, albumTracks, vm);
-            var playlistId = vm.Playlists.CreatePlaylist("Target");
-            vm.Playlists.AddTracksToSelectedPlaylist([existing]);
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var vm = CreateViewModel(out _, out _, out _, settingsPath);
+        var existing = new Track("/music/existing.mp3", "existing.mp3");
+        var albumTracks = new[] { new Track("/music/01.mp3", "01.mp3"), new Track("/music/02.mp3", "02.mp3") }
+            .Select(t => new LibraryTrackViewModel(t, vm)).ToList();
+        var album = new AlbumViewModel("Album", "Artist", null, albumTracks, vm);
+        var playlistId = vm.Playlists.CreatePlaylist("Target");
+        vm.Playlists.AddTracksToSelectedPlaylist([existing]);
 
-            vm.AddAlbumToPlaylistCommand.Execute((album, playlistId));
+        vm.AddAlbumToPlaylistCommand.Execute((album, playlistId));
 
-            var persistedOrder = vm.Playlists.Tracks.Select(t => t.Track.FilePath).ToList();
-            await Assert.That(persistedOrder).IsEquivalentTo(["/music/existing.mp3", "/music/01.mp3", "/music/02.mp3"]);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            root.Delete(recursive: true);
-        }
+        var persistedOrder = vm.Playlists.Tracks.Select(t => t.Track.FilePath).ToList();
+        await Assert.That(persistedOrder).IsEquivalentTo(["/music/existing.mp3", "/music/01.mp3", "/music/02.mp3"]);
     }
 
     [Test]
@@ -611,41 +477,32 @@ public class LibraryViewModelTests
     [Test]
     public async Task SavingTagsInTheProperties_RefreshesIndexLibraryQueueAndNowPlaying()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
-        try
-        {
-            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
-            File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), trackPath);
-            var indexed = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]).Tracks[0];
-            var vm = CreateViewModel(out _, out _, out var playbackControls, settingsPath);
-            vm.Tracks.Add(new LibraryTrackViewModel(indexed, vm));
-            await playbackControls.PlayNowAsync(indexed);
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), trackPath);
+        var indexed = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]).Tracks[0];
+        var vm = CreateViewModel(out _, out _, out var playbackControls, settingsPath);
+        vm.Tracks.Add(new LibraryTrackViewModel(indexed, vm));
+        await playbackControls.PlayNowAsync(indexed);
 
-            var properties = vm.CreateTrackProperties(indexed);
-            properties.Title = "Edited Title";
-            properties.Genre = "Jazz";
-            await properties.ApplyCommand.ExecuteAsync(null);
+        var properties = vm.CreateTrackProperties(indexed);
+        properties.Title = "Edited Title";
+        properties.Genre = "Jazz";
+        await properties.ApplyCommand.ExecuteAsync(null);
 
-            await Assert.That(vm.Tracks[0].Track.Title).IsEqualTo("Edited Title");
-            await Assert.That(vm.DisplayedTracks[0].Track.Title).IsEqualTo("Edited Title");
-            await Assert.That(vm.Tracks.Count).IsEqualTo(1);
-            await Assert.That(LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName])[0].Genre).IsEqualTo("Jazz");
-            await Assert.That(playbackControls.QueueEntries[0].Track.Title).IsEqualTo("Edited Title");
-            await Assert.That(playbackControls.CurrentTrack!.Title).IsEqualTo("Edited Title");
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(Path.Combine(Path.GetDirectoryName(settingsPath)!, $"{Path.GetFileNameWithoutExtension(settingsPath)}.library-index.db"));
-            root.Delete(recursive: true);
-        }
+        await Assert.That(vm.Tracks[0].Track.Title).IsEqualTo("Edited Title");
+        await Assert.That(vm.DisplayedTracks[0].Track.Title).IsEqualTo("Edited Title");
+        await Assert.That(vm.Tracks.Count).IsEqualTo(1);
+        await Assert.That(LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName])[0].Genre).IsEqualTo("Jazz");
+        await Assert.That(playbackControls.QueueEntries[0].Track.Title).IsEqualTo("Edited Title");
+        await Assert.That(playbackControls.CurrentTrack!.Title).IsEqualTo("Edited Title");
     }
 
-    private static (LibraryViewModel Vm, PlaybackControlsViewModel Playback, List<Track> Tracks, string SettingsPath, DirectoryInfo Root) CreatePlaylistWithTracks(int count, bool addMissingAtEnd = false)
+    private (LibraryViewModel Vm, PlaybackControlsViewModel Playback, List<Track> Tracks, string SettingsPath, DirectoryInfo Root) CreatePlaylistWithTracks(int count, bool addMissingAtEnd = false)
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
         for (var i = 1; i <= count; i++)
         {
             File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), Path.Combine(root.FullName, $"track{i}.mp3"));
@@ -665,207 +522,136 @@ public class LibraryViewModelTests
         return (vm, playback, indexed, settingsPath, root);
     }
 
-    private static void CleanUp(string settingsPath, DirectoryInfo root)
-    {
-        File.Delete(settingsPath);
-        File.Delete(Path.Combine(Path.GetDirectoryName(settingsPath)!, $"{Path.GetFileNameWithoutExtension(settingsPath)}.library-index.db"));
-        root.Delete(recursive: true);
-    }
-
     [Test]
     public async Task PlayTrackItem_InAPlaylist_ReplacesTheQueueWithTheClickedTrackThroughTheEndOfThePlaylist()
     {
-        var (vm, playback, tracks, settingsPath, root) = CreatePlaylistWithTracks(4);
-        try
-        {
-            await playback.PlayNowAsync(new Track("/music/something-else.mp3", "else.mp3"));
+        var (vm, playback, tracks, _, _) = CreatePlaylistWithTracks(4);
+        await playback.PlayNowAsync(new Track("/music/something-else.mp3", "else.mp3"));
 
-            await vm.PlayTrackItemCommand.ExecuteAsync(vm.Playlists.Tracks[1]);
+        await vm.PlayTrackItemCommand.ExecuteAsync(vm.Playlists.Tracks[1]);
 
-            await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath))
-                .IsEquivalentTo(tracks.Skip(1).Select(t => t.FilePath));
-            await Assert.That(playback.QueueCurrentIndex).IsEqualTo(0);
-            await Assert.That(playback.CurrentTrack!.FilePath).IsEqualTo(tracks[1].FilePath);
-        }
-        finally
-        {
-            CleanUp(settingsPath, root);
-        }
+        await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath))
+            .IsEquivalentTo(tracks.Skip(1).Select(t => t.FilePath));
+        await Assert.That(playback.QueueCurrentIndex).IsEqualTo(0);
+        await Assert.That(playback.CurrentTrack!.FilePath).IsEqualTo(tracks[1].FilePath);
     }
 
     [Test]
     public async Task Rescan_PicksUpFilesAddedOrRemovedOnDisk_IncludingInAnOpenPlaylist()
     {
-        var (vm, _, tracks, settingsPath, root) = CreatePlaylistWithTracks(3);
-        try
-        {
-            vm.Folders.Paths.Add(root.FullName);
-            await vm.RescanCommand.ExecuteAsync(null);
-            await Assert.That(vm.Tracks.Count).IsEqualTo(3);
-            await Assert.That(vm.Playlists.Tracks.Count(t => t.IsMissing)).IsEqualTo(0);
+        var (vm, _, tracks, _, root) = CreatePlaylistWithTracks(3);
+        vm.Folders.Paths.Add(root.FullName);
+        await vm.RescanCommand.ExecuteAsync(null);
+        await Assert.That(vm.Tracks.Count).IsEqualTo(3);
+        await Assert.That(vm.Playlists.Tracks.Count(t => t.IsMissing)).IsEqualTo(0);
 
-            File.Delete(tracks[0].FilePath);
-            File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), Path.Combine(root.FullName, "brand-new.mp3"));
-            await vm.RescanCommand.ExecuteAsync(null);
+        File.Delete(tracks[0].FilePath);
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), Path.Combine(root.FullName, "brand-new.mp3"));
+        await vm.RescanCommand.ExecuteAsync(null);
 
-            await Assert.That(vm.Tracks.Count).IsEqualTo(3);
-            await Assert.That(vm.Tracks.Select(t => Path.GetFileName(t.Track.FilePath))).Contains("brand-new.mp3");
-            await Assert.That(vm.Playlists.Tracks.Count(t => t.IsMissing)).IsEqualTo(1);
-        }
-        finally
-        {
-            CleanUp(settingsPath, root);
-        }
+        await Assert.That(vm.Tracks.Count).IsEqualTo(3);
+        await Assert.That(vm.Tracks.Select(t => Path.GetFileName(t.Track.FilePath))).Contains("brand-new.mp3");
+        await Assert.That(vm.Playlists.Tracks.Count(t => t.IsMissing)).IsEqualTo(1);
     }
 
     [Test]
     public async Task PlayTrackItem_InAPlaylist_WithAutoDjOn_StartsThatTrackAndAddsRandomOnesFromThePlaylist()
     {
-        var (vm, playback, tracks, settingsPath, root) = CreatePlaylistWithTracks(10);
-        try
-        {
-            playback.IsAutoDjEnabled = true;
-            var playlistId = vm.Playlists.SelectedPlaylistId;
+        var (vm, playback, tracks, settingsPath, _) = CreatePlaylistWithTracks(10);
+        playback.IsAutoDjEnabled = true;
+        var playlistId = vm.Playlists.SelectedPlaylistId;
 
-            await vm.PlayTrackItemCommand.ExecuteAsync(vm.Playlists.Tracks[3]);
+        await vm.PlayTrackItemCommand.ExecuteAsync(vm.Playlists.Tracks[3]);
 
-            await Assert.That(playback.QueueEntries[0].Track.FilePath).IsEqualTo(vm.Playlists.Tracks[3].Track.FilePath);
-            await Assert.That(playback.QueueEntries.Count).IsEqualTo(1 + AutoDj.Lookahead);
-            await Assert.That(playback.QueueEntries.Skip(1).All(e => e.Source == QueueEntrySource.AutoDj)).IsTrue();
-            await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath).Distinct().Count()).IsEqualTo(playback.QueueEntries.Count);
-            await Assert.That(playback.QueueEntries.All(e => tracks.Any(t => t.FilePath == e.Track.FilePath))).IsTrue();
-            await Assert.That(new SettingsStore(settingsPath).Current.AutoDjSourcePlaylistId).IsEqualTo(playlistId);
-        }
-        finally
-        {
-            CleanUp(settingsPath, root);
-        }
+        await Assert.That(playback.QueueEntries[0].Track.FilePath).IsEqualTo(vm.Playlists.Tracks[3].Track.FilePath);
+        await Assert.That(playback.QueueEntries.Count).IsEqualTo(1 + AutoDj.Lookahead);
+        await Assert.That(playback.QueueEntries.Skip(1).All(e => e.Source == QueueEntrySource.AutoDj)).IsTrue();
+        await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath).Distinct().Count()).IsEqualTo(playback.QueueEntries.Count);
+        await Assert.That(playback.QueueEntries.All(e => tracks.Any(t => t.FilePath == e.Track.FilePath))).IsTrue();
+        await Assert.That(new SettingsStore(settingsPath).Current.AutoDjSourcePlaylistId).IsEqualTo(playlistId);
     }
 
     [Test]
     public async Task PlayTrackItem_InAPlaylist_WithAutoDjOff_StillQueuesTheRestInOrder_ButRemembersThePlaylistForLater()
     {
-        var (vm, playback, tracks, settingsPath, root) = CreatePlaylistWithTracks(4);
-        try
-        {
-            await vm.PlayTrackItemCommand.ExecuteAsync(vm.Playlists.Tracks[1]);
+        var (vm, playback, tracks, settingsPath, _) = CreatePlaylistWithTracks(4);
+        await vm.PlayTrackItemCommand.ExecuteAsync(vm.Playlists.Tracks[1]);
 
-            await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath)).IsEquivalentTo(tracks.Skip(1).Select(t => t.FilePath));
-            await Assert.That(new SettingsStore(settingsPath).Current.AutoDjSourcePlaylistId).IsEqualTo(vm.Playlists.SelectedPlaylistId);
+        await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath)).IsEquivalentTo(tracks.Skip(1).Select(t => t.FilePath));
+        await Assert.That(new SettingsStore(settingsPath).Current.AutoDjSourcePlaylistId).IsEqualTo(vm.Playlists.SelectedPlaylistId);
 
-            playback.ToggleAutoDjCommand.Execute(null); // turning it on later uses that playlist
-            await Assert.That(playback.AutoDjPool!().Count).IsEqualTo(4);
-        }
-        finally
-        {
-            CleanUp(settingsPath, root);
-        }
+        playback.ToggleAutoDjCommand.Execute(null); // turning it on later uses that playlist
+        await Assert.That(playback.AutoDjPool!().Count).IsEqualTo(4);
     }
 
     [Test]
     public async Task PlayingFromTheLibrary_MakesAutoDjDrawFromTheWholeLibrary()
     {
-        var (vm, playback, tracks, settingsPath, root) = CreatePlaylistWithTracks(3);
-        try
-        {
-            vm.Tracks.ReplaceAll(tracks.Select(t => new LibraryTrackViewModel(t, vm)));
-            await vm.PlayTrackItemCommand.ExecuteAsync(vm.Playlists.Tracks[0]); // from the playlist first
-            vm.LibrarySection = LibrarySection.Library;
+        var (vm, playback, tracks, settingsPath, _) = CreatePlaylistWithTracks(3);
+        vm.Tracks.ReplaceAll(tracks.Select(t => new LibraryTrackViewModel(t, vm)));
+        await vm.PlayTrackItemCommand.ExecuteAsync(vm.Playlists.Tracks[0]); // from the playlist first
+        vm.LibrarySection = LibrarySection.Library;
 
-            await vm.PlayTrackItemCommand.ExecuteAsync(vm.Tracks[1]);
+        await vm.PlayTrackItemCommand.ExecuteAsync(vm.Tracks[1]);
 
-            await Assert.That(new SettingsStore(settingsPath).Current.AutoDjSourcePlaylistId).IsNull();
-            await Assert.That(playback.AutoDjPool!().Select(t => t.FilePath)).IsEquivalentTo(tracks.Select(t => t.FilePath));
-        }
-        finally
-        {
-            CleanUp(settingsPath, root);
-        }
+        await Assert.That(new SettingsStore(settingsPath).Current.AutoDjSourcePlaylistId).IsNull();
+        await Assert.That(playback.AutoDjPool!().Select(t => t.FilePath)).IsEquivalentTo(tracks.Select(t => t.FilePath));
     }
 
     [Test]
     public async Task AutoDjSource_IsRestoredFromSettings_AndADeletedPlaylistFallsBackToTheLibrary()
     {
-        var (vm, _, tracks, settingsPath, root) = CreatePlaylistWithTracks(3);
-        try
-        {
-            vm.Tracks.ReplaceAll(tracks.Select(t => new LibraryTrackViewModel(t, vm)));
-            var playlistId = vm.Playlists.SelectedPlaylistId!;
-            new SettingsStore(settingsPath).Update(s => s with { AutoDjSourcePlaylistId = playlistId });
+        var (vm, _, tracks, settingsPath, _) = CreatePlaylistWithTracks(3);
+        vm.Tracks.ReplaceAll(tracks.Select(t => new LibraryTrackViewModel(t, vm)));
+        var playlistId = vm.Playlists.SelectedPlaylistId!;
+        new SettingsStore(settingsPath).Update(s => s with { AutoDjSourcePlaylistId = playlistId });
 
-            var restored = CreateViewModel(out _, out _, out var restoredPlayback, settingsPath);
-            restored.Tracks.ReplaceAll(tracks.Select(t => new LibraryTrackViewModel(t, restored)));
-            await Assert.That(restoredPlayback.AutoDjPool!().Count).IsEqualTo(3);
+        var restored = CreateViewModel(out _, out _, out var restoredPlayback, settingsPath);
+        restored.Tracks.ReplaceAll(tracks.Select(t => new LibraryTrackViewModel(t, restored)));
+        await Assert.That(restoredPlayback.AutoDjPool!().Count).IsEqualTo(3);
 
-            restored.Playlists.DeletePlaylist(playlistId);
-            await Assert.That(restoredPlayback.AutoDjPool!().Count).IsEqualTo(3); // library, not an empty pool
-        }
-        finally
-        {
-            CleanUp(settingsPath, root);
-        }
+        restored.Playlists.DeletePlaylist(playlistId);
+        await Assert.That(restoredPlayback.AutoDjPool!().Count).IsEqualTo(3); // library, not an empty pool
     }
 
     [Test]
     public async Task PlayTrackItem_InAPlaylist_SkipsMissingFilesWhenBuildingTheQueue()
     {
-        var (vm, playback, tracks, settingsPath, root) = CreatePlaylistWithTracks(2, addMissingAtEnd: true);
-        try
-        {
-            await vm.PlayTrackItemCommand.ExecuteAsync(vm.Playlists.Tracks[0]);
+        var (vm, playback, tracks, _, _) = CreatePlaylistWithTracks(2, addMissingAtEnd: true);
+        await vm.PlayTrackItemCommand.ExecuteAsync(vm.Playlists.Tracks[0]);
 
-            await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath))
-                .IsEquivalentTo(tracks.Select(t => t.FilePath));
-        }
-        finally
-        {
-            CleanUp(settingsPath, root);
-        }
+        await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath))
+            .IsEquivalentTo(tracks.Select(t => t.FilePath));
     }
 
     [Test]
     public async Task PlayTrackItem_OutsideAPlaylist_IsAPlainPlayNow()
     {
-        var (vm, playback, tracks, settingsPath, root) = CreatePlaylistWithTracks(3);
-        try
-        {
-            vm.LibrarySection = LibrarySection.Library;
-            var existing = new Track("/music/existing.mp3", "existing.mp3");
-            await playback.PlayNowAsync(existing);
+        var (vm, playback, tracks, _, _) = CreatePlaylistWithTracks(3);
+        vm.LibrarySection = LibrarySection.Library;
+        var existing = new Track("/music/existing.mp3", "existing.mp3");
+        await playback.PlayNowAsync(existing);
 
-            await vm.PlayTrackItemCommand.ExecuteAsync(new LibraryTrackViewModel(tracks[2], vm));
+        await vm.PlayTrackItemCommand.ExecuteAsync(new LibraryTrackViewModel(tracks[2], vm));
 
-            await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath))
-                .IsEquivalentTo([existing.FilePath, tracks[2].FilePath]);
-        }
-        finally
-        {
-            CleanUp(settingsPath, root);
-        }
+        await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath))
+            .IsEquivalentTo([existing.FilePath, tracks[2].FilePath]);
     }
 
     [Test]
     public async Task RemoveFromPlaylistCommand_RemovesOnlyTheClickedTrackFromTheCurrentlySelectedPlaylist()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
-        try
-        {
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-            var vm = CreateViewModel(out _, out _, out _, settingsPath);
-            var trackA = new Track("/music/a.mp3", "a.mp3");
-            vm.Playlists.CreatePlaylist("Target");
-            vm.Playlists.AddTracksToSelectedPlaylist([trackA]);
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var vm = CreateViewModel(out _, out _, out _, settingsPath);
+        var trackA = new Track("/music/a.mp3", "a.mp3");
+        vm.Playlists.CreatePlaylist("Target");
+        vm.Playlists.AddTracksToSelectedPlaylist([trackA]);
 
-            vm.RemoveFromPlaylistCommand.Execute(trackA);
+        vm.RemoveFromPlaylistCommand.Execute(trackA);
 
-            await Assert.That(vm.Playlists.Tracks).IsEmpty();
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            root.Delete(recursive: true);
-        }
+        await Assert.That(vm.Playlists.Tracks).IsEmpty();
     }
 
     private static void AddTrack(LibraryViewModel vm, string filePath, string? album, string? artist, int? trackNumber = null, string? albumArtist = null, string? title = null) =>
@@ -1212,45 +998,26 @@ public class LibraryViewModelTests
     public async Task IsLoadingLibrary_IsFalseAfterFoldersFinishLoading()
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
-        try
-        {
-            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+        var root = _temp.NewSubdirectory();
+        filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
 
-            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
+        await vm.Folders.AddFolderCommand.ExecuteAsync(null);
 
-            await Assert.That(vm.IsLoadingLibrary).IsFalse();
-        }
-        finally
-        {
-            root.Delete(recursive: true);
-        }
+        await Assert.That(vm.IsLoadingLibrary).IsFalse();
     }
 
     [Test]
     public async Task ClearArtworkCacheCommand_DeletesCachedThumbnailFiles()
     {
-        var settingsPath = CreateTempSettingsPath();
+        var settingsPath = _temp.NewSettingsPath();
         var cacheDirectory = Path.Combine(Path.GetDirectoryName(settingsPath)!, "artwork-cache");
-        try
-        {
-            var vm = CreateViewModel(out _, out _, out _, settingsPath);
-            Directory.CreateDirectory(cacheDirectory);
-            File.WriteAllBytes(Path.Combine(cacheDirectory, "fake.jpg"), [1, 2, 3]);
+        var vm = CreateViewModel(out _, out _, out _, settingsPath);
+        Directory.CreateDirectory(cacheDirectory);
+        File.WriteAllBytes(Path.Combine(cacheDirectory, "fake.jpg"), [1, 2, 3]);
 
-            vm.Grid.ClearArtworkCacheCommand.Execute(null);
+        vm.Grid.ClearArtworkCacheCommand.Execute(null);
 
-            await Assert.That(Directory.EnumerateFiles(cacheDirectory)).IsEmpty();
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            if (Directory.Exists(cacheDirectory))
-            {
-                Directory.Delete(cacheDirectory, recursive: true);
-            }
-        }
+        await Assert.That(Directory.EnumerateFiles(cacheDirectory)).IsEmpty();
     }
 
     [Test]

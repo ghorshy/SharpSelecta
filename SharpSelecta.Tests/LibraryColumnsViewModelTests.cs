@@ -3,13 +3,15 @@ using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.Tests;
 
-public class LibraryColumnsViewModelTests
+public class LibraryColumnsViewModelTests : IDisposable
 {
-    private readonly string _settingsPath =
-        Path.Combine(Path.GetTempPath(), $"sharpselecta-columns-vm-tests-{Guid.NewGuid():N}.json");
+    private readonly TempDirectory _temp = new();
 
-    [After(Test)]
-    public void DeleteSettingsFile() => File.Delete(_settingsPath);
+    private readonly string _settingsPath;
+
+    public LibraryColumnsViewModelTests() => _settingsPath = _temp.NewSettingsPath();
+
+    public void Dispose() => _temp.Dispose();
 
     [Test]
     public async Task HidingEveryColumn_LeavesTheLastOneVisible()

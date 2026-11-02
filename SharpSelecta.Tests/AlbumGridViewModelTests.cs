@@ -8,19 +8,20 @@ using SharpSelecta.Core.Playback;
 
 namespace SharpSelecta.Tests;
 
-public class AlbumGridViewModelTests
+public class AlbumGridViewModelTests : IDisposable
 {
-    private static string CreateTempSettingsPath() =>
-        Path.Combine(Path.GetTempPath(), $"sharpselecta-album-grid-vm-settings-{Guid.NewGuid():N}.json");
+    private readonly TempDirectory _temp = new();
 
-    private static LibraryViewModel CreateLibraryViewModel(string? settingsFilePath = null)
+    public void Dispose() => _temp.Dispose();
+
+    private LibraryViewModel CreateLibraryViewModel(string? settingsFilePath = null)
     {
         var audioEngine = Substitute.For<IAudioEngine>();
         var filePickerService = Substitute.For<IFilePickerService>();
-        var playbackControls = new PlaybackControlsViewModel(audioEngine, new PlaybackQueue(), new SettingsStore(CreateTempSettingsPath()), NullLogger<PlaybackControlsViewModel>.Instance);
+        var playbackControls = new PlaybackControlsViewModel(audioEngine, new PlaybackQueue(), new SettingsStore(_temp.NewSettingsPath()), NullLogger<PlaybackControlsViewModel>.Instance);
         return new LibraryViewModel(
             filePickerService, playbackControls, Substitute.For<IFileManagerService>(),
-            new SettingsStore(settingsFilePath ?? CreateTempSettingsPath()), TestThemeLayout.Default, NullLogger<LibraryViewModel>.Instance);
+            new SettingsStore(settingsFilePath ?? _temp.NewSettingsPath()), TestThemeLayout.Default, NullLogger<LibraryViewModel>.Instance);
     }
 
     private static void AddTrack(LibraryViewModel vm, string filePath, string album) =>
@@ -134,20 +135,13 @@ public class AlbumGridViewModelTests
     [Test]
     public async Task TileSize_RoundTripsThroughSettings()
     {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            var vm = CreateLibraryViewModel(settingsPath);
-            vm.Grid.AdjustTileSize(50);
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = CreateLibraryViewModel(settingsPath);
+        vm.Grid.AdjustTileSize(50);
 
-            var restarted = CreateLibraryViewModel(settingsPath);
+        var restarted = CreateLibraryViewModel(settingsPath);
 
-            await Assert.That(restarted.Grid.TileSize).IsEqualTo(vm.Grid.TileSize);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
+        await Assert.That(restarted.Grid.TileSize).IsEqualTo(vm.Grid.TileSize);
     }
 
     [Test]
@@ -267,22 +261,15 @@ public class AlbumGridViewModelTests
     [Test]
     public async Task SortModeAndDirection_RoundTripThroughSettings()
     {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            var vm = CreateLibraryViewModel(settingsPath);
-            vm.Grid.SetSortModeCommand.Execute(AlbumSortMode.Year);
-            vm.Grid.ToggleSortDirectionCommand.Execute(null);
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = CreateLibraryViewModel(settingsPath);
+        vm.Grid.SetSortModeCommand.Execute(AlbumSortMode.Year);
+        vm.Grid.ToggleSortDirectionCommand.Execute(null);
 
-            var restarted = CreateLibraryViewModel(settingsPath);
+        var restarted = CreateLibraryViewModel(settingsPath);
 
-            await Assert.That(restarted.Grid.SortMode).IsEqualTo(AlbumSortMode.Year);
-            await Assert.That(restarted.Grid.SortDescending).IsTrue();
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
+        await Assert.That(restarted.Grid.SortMode).IsEqualTo(AlbumSortMode.Year);
+        await Assert.That(restarted.Grid.SortDescending).IsTrue();
     }
 
     [Test]
@@ -370,7 +357,7 @@ public class AlbumGridViewModelTests
         library.Tracks.Add(new LibraryTrackViewModel(new Track("/music/new-album/b.mp3", "b.mp3") { Album = "New Album", DateAddedUtc = now.AddDays(-1) }, library));
         library.Tracks.Add(new LibraryTrackViewModel(new Track("/music/old-album/c.mp3", "c.mp3") { Album = "Old Album", DateAddedUtc = now }, library));
 
-        var grid = new AlbumGridViewModel(library, new SettingsStore(CreateTempSettingsPath()), TestThemeLayout.Default, NullLogger.Instance, allowUserSort: false);
+        var grid = new AlbumGridViewModel(library, new SettingsStore(_temp.NewSettingsPath()), TestThemeLayout.Default, NullLogger.Instance, allowUserSort: false);
         grid.SetViewportWidth(2000);
 
         // "Old Album" has the most recently added track, so the whole album sorts first.
@@ -381,7 +368,7 @@ public class AlbumGridViewModelTests
     [Test]
     public async Task Constructor_WithAllowUserSortFalse_NeverPersistsToSettings()
     {
-        var settingsPath = CreateTempSettingsPath();
+        var settingsPath = _temp.NewSettingsPath();
         var library = CreateLibraryViewModel();
 
         _ = new AlbumGridViewModel(library, new SettingsStore(settingsPath), TestThemeLayout.Default, NullLogger.Instance, allowUserSort: false);
@@ -394,7 +381,7 @@ public class AlbumGridViewModelTests
     [Test]
     public async Task AllowUserSort_DefaultsToTrue_PreservingExistingBehavior()
     {
-        var grid = new AlbumGridViewModel(CreateLibraryViewModel(), new SettingsStore(CreateTempSettingsPath()), TestThemeLayout.Default, NullLogger.Instance);
+        var grid = new AlbumGridViewModel(CreateLibraryViewModel(), new SettingsStore(_temp.NewSettingsPath()), TestThemeLayout.Default, NullLogger.Instance);
 
         await Assert.That(grid.AllowUserSort).IsTrue();
     }

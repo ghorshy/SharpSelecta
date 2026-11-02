@@ -6,16 +6,14 @@ using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.Tests;
 
-public class MainWindowViewModelTests
+public class MainWindowViewModelTests : IDisposable
 {
-    private static string CreateTempSettingsPath() =>
-        Path.Combine(Path.GetTempPath(), $"sharpselecta-mainwindow-vm-settings-{Guid.NewGuid():N}.json");
+    private readonly TempDirectory _temp = new();
 
-    private static string QueueStateFilePath(string settingsPath) =>
-        Path.Combine(Path.GetDirectoryName(settingsPath)!, $"{Path.GetFileNameWithoutExtension(settingsPath)}.queue-state.json");
+    public void Dispose() => _temp.Dispose();
 
-    private static MainWindowViewModel CreateViewModel(out IAudioEngine audioEngine, string? settingsFilePath = null) =>
-        TestMainWindowViewModel.Create(settingsFilePath ?? CreateTempSettingsPath(), out audioEngine);
+    private MainWindowViewModel CreateViewModel(out IAudioEngine audioEngine, string? settingsFilePath = null) =>
+        TestMainWindowViewModel.Create(settingsFilePath ?? _temp.NewSettingsPath(), out audioEngine);
 
     [Test]
     public async Task Updates_IsUnsupportedWhenNoUpdateServiceIsRegistered()
@@ -65,40 +63,26 @@ public class MainWindowViewModelTests
     [Test]
     public async Task RightColumnWidth_PersistsAcrossInstancesForTheSameSettingsFile()
     {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            var vm = CreateViewModel(out _, settingsPath);
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = CreateViewModel(out _, settingsPath);
 
-            vm.RightColumnWidth = new GridLength(300);
-            vm.PersistRightColumnWidth();
+        vm.RightColumnWidth = new GridLength(300);
+        vm.PersistRightColumnWidth();
 
-            var restarted = CreateViewModel(out _, settingsPath);
-            await Assert.That(restarted.RightColumnWidth.Value).IsEqualTo(300);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
+        var restarted = CreateViewModel(out _, settingsPath);
+        await Assert.That(restarted.RightColumnWidth.Value).IsEqualTo(300);
     }
 
     [Test]
     public async Task ASavedVolumeCurve_ReachesTheSettingsCheckboxAndPlaybackControls()
     {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            new SettingsStore(settingsPath).Update(s => s with { VolumeCurve = VolumeCurve.Logarithmic });
+        var settingsPath = _temp.NewSettingsPath();
+        new SettingsStore(settingsPath).Update(s => s with { VolumeCurve = VolumeCurve.Logarithmic });
 
-            var vm = CreateViewModel(out _, settingsPath);
+        var vm = CreateViewModel(out _, settingsPath);
 
-            await Assert.That(vm.PlaybackSettings.UseLogarithmicVolumeScale).IsTrue();
-            await Assert.That(vm.PlaybackControls.Volume.Curve).IsEqualTo(VolumeCurve.Logarithmic);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
+        await Assert.That(vm.PlaybackSettings.UseLogarithmicVolumeScale).IsTrue();
+        await Assert.That(vm.PlaybackControls.Volume.Curve).IsEqualTo(VolumeCurve.Logarithmic);
     }
 
     private static readonly string TaggedTrackFixturePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3");
@@ -106,97 +90,65 @@ public class MainWindowViewModelTests
     [Test]
     public async Task PersistThenRestoreQueueState_RoundTripsTheQueueAcrossInstances()
     {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            var vm = CreateViewModel(out _, settingsPath);
-            await vm.PlaybackControls.PlayNowAsync(new Track(TaggedTrackFixturePath, "tagged-track.mp3"));
-            vm.PlaybackControls.PositionSeconds = 12.0;
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = CreateViewModel(out _, settingsPath);
+        await vm.PlaybackControls.PlayNowAsync(new Track(TaggedTrackFixturePath, "tagged-track.mp3"));
+        vm.PlaybackControls.PositionSeconds = 12.0;
 
-            vm.PersistQueueStateIfEnabled();
+        vm.PersistQueueStateIfEnabled();
 
-            var restarted = CreateViewModel(out var restartedAudioEngine, settingsPath);
-            await restarted.RestoreQueueIfEnabledAsync();
+        var restarted = CreateViewModel(out var restartedAudioEngine, settingsPath);
+        await restarted.RestoreQueueIfEnabledAsync();
 
-            restartedAudioEngine.Received(1).Load(TaggedTrackFixturePath);
-            restartedAudioEngine.Received(1).Seek(12.0);
-            await Assert.That(restarted.PlaybackControls.IsPlaying).IsFalse();
-            await Assert.That(restarted.Queue.Entries.Count).IsEqualTo(1);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(QueueStateFilePath(settingsPath));
-        }
+        restartedAudioEngine.Received(1).Load(TaggedTrackFixturePath);
+        restartedAudioEngine.Received(1).Seek(12.0);
+        await Assert.That(restarted.PlaybackControls.IsPlaying).IsFalse();
+        await Assert.That(restarted.Queue.Entries.Count).IsEqualTo(1);
     }
 
     [Test]
     public async Task RestoreQueueIfEnabledAsync_WhenDisabled_LeavesQueueEmpty()
     {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            var vm = CreateViewModel(out _, settingsPath);
-            await vm.PlaybackControls.PlayNowAsync(new Track(TaggedTrackFixturePath, "tagged-track.mp3"));
-            vm.PersistQueueStateIfEnabled();
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = CreateViewModel(out _, settingsPath);
+        await vm.PlaybackControls.PlayNowAsync(new Track(TaggedTrackFixturePath, "tagged-track.mp3"));
+        vm.PersistQueueStateIfEnabled();
 
-            var restarted = CreateViewModel(out var restartedAudioEngine, settingsPath);
-            restarted.PlaybackSettings.RestoreQueueOnStartup = false;
+        var restarted = CreateViewModel(out var restartedAudioEngine, settingsPath);
+        restarted.PlaybackSettings.RestoreQueueOnStartup = false;
 
-            await restarted.RestoreQueueIfEnabledAsync();
+        await restarted.RestoreQueueIfEnabledAsync();
 
-            restartedAudioEngine.DidNotReceive().Load(Arg.Any<string>());
-            await Assert.That(restarted.Queue.Entries.Count).IsEqualTo(0);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(QueueStateFilePath(settingsPath));
-        }
+        restartedAudioEngine.DidNotReceive().Load(Arg.Any<string>());
+        await Assert.That(restarted.Queue.Entries.Count).IsEqualTo(0);
     }
 
     [Test]
     public async Task PersistQueueStateIfEnabled_WhenDisabled_DoesNotSaveAnything()
     {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            var vm = CreateViewModel(out _, settingsPath);
-            await vm.PlaybackControls.PlayNowAsync(new Track(TaggedTrackFixturePath, "tagged-track.mp3"));
-            vm.PlaybackSettings.RestoreQueueOnStartup = false;
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = CreateViewModel(out _, settingsPath);
+        await vm.PlaybackControls.PlayNowAsync(new Track(TaggedTrackFixturePath, "tagged-track.mp3"));
+        vm.PlaybackSettings.RestoreQueueOnStartup = false;
 
-            vm.PersistQueueStateIfEnabled();
+        vm.PersistQueueStateIfEnabled();
 
-            await Assert.That(QueueStateStore.Load(settingsPath)).IsNull();
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(QueueStateFilePath(settingsPath));
-        }
+        await Assert.That(QueueStateStore.Load(settingsPath)).IsNull();
     }
 
     [Test]
     public async Task PersistQueueStateIfEnabled_WithAnEmptyQueue_ClearsAnyPreviouslySavedState()
     {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            var vm = CreateViewModel(out _, settingsPath);
-            await vm.PlaybackControls.PlayNowAsync(new Track(TaggedTrackFixturePath, "tagged-track.mp3"));
-            vm.PersistQueueStateIfEnabled();
-            await Assert.That(QueueStateStore.Load(settingsPath)).IsNotNull();
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = CreateViewModel(out _, settingsPath);
+        await vm.PlaybackControls.PlayNowAsync(new Track(TaggedTrackFixturePath, "tagged-track.mp3"));
+        vm.PersistQueueStateIfEnabled();
+        await Assert.That(QueueStateStore.Load(settingsPath)).IsNotNull();
 
-            var emptied = CreateViewModel(out _, settingsPath);
-            emptied.PersistQueueStateIfEnabled();
+        var emptied = CreateViewModel(out _, settingsPath);
+        emptied.PersistQueueStateIfEnabled();
 
-            await Assert.That(QueueStateStore.Load(settingsPath)).IsNull();
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(QueueStateFilePath(settingsPath));
-        }
+        await Assert.That(QueueStateStore.Load(settingsPath)).IsNull();
     }
 
     [Test]

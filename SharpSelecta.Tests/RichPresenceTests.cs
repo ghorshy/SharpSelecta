@@ -9,8 +9,12 @@ using SharpSelecta.Core.Presence;
 
 namespace SharpSelecta.Tests;
 
-public class RichPresenceTests
+public class RichPresenceTests : IDisposable
 {
+    private readonly TempDirectory _temp = new();
+
+    public void Dispose() => _temp.Dispose();
+
     private sealed class RecordingPresence : IRichPresence, IDisposable
     {
         public List<string> Calls { get; } = [];
@@ -147,9 +151,9 @@ public class RichPresenceTests
 
         public RichPresenceCoordinator Coordinator { get; }
 
-        public Fixture(bool enabled = true)
+        public Fixture(string settingsPath, bool enabled = true)
         {
-            var settings = new SettingsStore(Path.Combine(Path.GetTempPath(), $"sharpselecta-presence-tests-{Guid.NewGuid():N}.json"));
+            var settings = new SettingsStore(settingsPath);
             Playback = new PlaybackControlsViewModel(Engine, new PlaybackQueue(), settings, NullLogger<PlaybackControlsViewModel>.Instance);
             Settings = new IntegrationsSettingsViewModel(settings);
             Coordinator = new RichPresenceCoordinator(Playback, Presence, Settings, Time);
@@ -179,7 +183,7 @@ public class RichPresenceTests
     [Test]
     public async Task Coordinator_WhilePlaying_ShowsTheTrackWithTheDisplaySeparatorAndTimestamps()
     {
-        var f = new Fixture();
+        var f = new Fixture(_temp.NewSettingsPath());
         await f.Playback.PlayNowAsync(Fixture.Song());
         await f.SetPositionAsync(30, 200);
 
@@ -195,7 +199,7 @@ public class RichPresenceTests
     [Test]
     public async Task Coordinator_WhenPaused_ClearsTheStatus()
     {
-        var f = new Fixture();
+        var f = new Fixture(_temp.NewSettingsPath());
         await f.Playback.PlayNowAsync(Fixture.Song());
         f.Playback.PlayPauseCommand.Execute(null); // pause
 
@@ -206,7 +210,7 @@ public class RichPresenceTests
     [Test]
     public async Task Coordinator_NormalProgressDoesNotResend_ButASeekDoes()
     {
-        var f = new Fixture();
+        var f = new Fixture(_temp.NewSettingsPath());
         await f.Playback.PlayNowAsync(Fixture.Song());
         await f.SetPositionAsync(0);
         var before = f.Presence.Shown.Count;
@@ -224,7 +228,7 @@ public class RichPresenceTests
     [Test]
     public async Task Coordinator_ANewTrack_ReplacesTheStatus()
     {
-        var f = new Fixture();
+        var f = new Fixture(_temp.NewSettingsPath());
         await f.Playback.PlayNowAsync(Fixture.Song("First"));
         await f.Playback.PlayNowAsync(Fixture.Song("Second", "Other"));
 
@@ -235,7 +239,7 @@ public class RichPresenceTests
     [Test]
     public async Task Coordinator_WhenDisabled_NeverShowsAnything()
     {
-        var f = new Fixture(enabled: false);
+        var f = new Fixture(_temp.NewSettingsPath(), enabled: false);
 
         await f.Playback.PlayNowAsync(Fixture.Song());
 
@@ -245,7 +249,7 @@ public class RichPresenceTests
     [Test]
     public async Task Coordinator_SwitchingItOnWhilePlaying_ShowsAtOnce_AndOffClearsIt()
     {
-        var f = new Fixture(enabled: false);
+        var f = new Fixture(_temp.NewSettingsPath(), enabled: false);
         await f.Playback.PlayNowAsync(Fixture.Song());
 
         f.Enable();
@@ -258,7 +262,7 @@ public class RichPresenceTests
     [Test]
     public async Task Coordinator_Dispose_ClearsTheStatusAndStopsListening()
     {
-        var f = new Fixture();
+        var f = new Fixture(_temp.NewSettingsPath());
         await f.Playback.PlayNowAsync(Fixture.Song());
 
         f.Coordinator.Dispose();
@@ -271,12 +275,10 @@ public class RichPresenceTests
 
     // --- IntegrationsSettingsViewModel ---
 
-    private static string TempSettings() => Path.Combine(Path.GetTempPath(), $"sharpselecta-integrations-tests-{Guid.NewGuid():N}.json");
-
     [Test]
     public async Task Integrations_DiscordPresenceIsOffByDefault()
     {
-        var vm = new IntegrationsSettingsViewModel(new SettingsStore(TempSettings()));
+        var vm = new IntegrationsSettingsViewModel(new SettingsStore(_temp.NewSettingsPath()));
 
         await Assert.That(vm.DiscordPresenceEnabled).IsFalse();
         await Assert.That(vm.IsDiscordPresenceEnabled).IsFalse();
@@ -286,7 +288,7 @@ public class RichPresenceTests
     [Test]
     public async Task Integrations_AnEditOnlyTakesEffectOnApply_WhichPersistsItAndRaisesTheEvent()
     {
-        var path = TempSettings();
+        var path = _temp.NewSettingsPath();
         var vm = new IntegrationsSettingsViewModel(new SettingsStore(path));
         var raised = 0;
         vm.DiscordPresenceEnabledChanged += (_, _) => raised++;
@@ -307,7 +309,7 @@ public class RichPresenceTests
     [Test]
     public async Task Integrations_CancelRevertsAnUnappliedEdit()
     {
-        var vm = new IntegrationsSettingsViewModel(new SettingsStore(TempSettings()));
+        var vm = new IntegrationsSettingsViewModel(new SettingsStore(_temp.NewSettingsPath()));
         vm.DiscordPresenceEnabled = true;
 
         ((SharpSelecta.App.ViewModels.ISettingsCategoryViewModel)vm).CancelCommand.Execute(null);
@@ -319,7 +321,7 @@ public class RichPresenceTests
     [Test]
     public async Task Integrations_ApplyingWithoutAChange_DoesNotRaiseTheEvent()
     {
-        var vm = new IntegrationsSettingsViewModel(new SettingsStore(TempSettings()));
+        var vm = new IntegrationsSettingsViewModel(new SettingsStore(_temp.NewSettingsPath()));
         var raised = 0;
         vm.DiscordPresenceEnabledChanged += (_, _) => raised++;
 

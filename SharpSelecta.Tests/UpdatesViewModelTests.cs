@@ -8,10 +8,11 @@ using SharpSelecta.Core.Updates;
 
 namespace SharpSelecta.Tests;
 
-public class UpdatesViewModelTests
+public class UpdatesViewModelTests : IDisposable
 {
-    private static string CreateTempSettingsPath() =>
-        Path.Combine(Path.GetTempPath(), $"sharpselecta-updates-tests-{Guid.NewGuid():N}.json");
+    private readonly TempDirectory _temp = new();
+
+    public void Dispose() => _temp.Dispose();
 
     private static IUpdateService Service(bool supported = true, string? newVersion = null)
     {
@@ -22,8 +23,8 @@ public class UpdatesViewModelTests
         return service;
     }
 
-    private static UpdatesViewModel Create(IUpdateService? service, string? settingsPath = null) =>
-        new(new SettingsStore(settingsPath ?? CreateTempSettingsPath()), service, NullLogger.Instance);
+    private UpdatesViewModel Create(IUpdateService? service, string? settingsPath = null) =>
+        new(new SettingsStore(settingsPath ?? _temp.NewSettingsPath()), service, NullLogger.Instance);
 
     [Test]
     public async Task CheckAutomatically_DefaultsToTrue()
@@ -70,7 +71,7 @@ public class UpdatesViewModelTests
     [Test]
     public async Task StartupCheck_WhenTurnedOff_DoesNotCheck()
     {
-        var settingsPath = CreateTempSettingsPath();
+        var settingsPath = _temp.NewSettingsPath();
         var service = Service(newVersion: "1.1.0");
         var first = Create(service, settingsPath);
         first.CheckAutomatically = false;

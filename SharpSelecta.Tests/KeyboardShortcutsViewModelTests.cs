@@ -5,14 +5,15 @@ using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.Tests;
 
-public class KeyboardShortcutsViewModelTests
+public class KeyboardShortcutsViewModelTests : IDisposable
 {
-    private static string CreateTempSettingsPath() =>
-        Path.Combine(Path.GetTempPath(), $"sharpselecta-keyboard-shortcuts-vm-tests-{Guid.NewGuid():N}.json");
+    private readonly TempDirectory _temp = new();
 
-    private static KeyboardShortcutsViewModel CreateViewModel(out ShortcutSettingsService settings)
+    public void Dispose() => _temp.Dispose();
+
+    private KeyboardShortcutsViewModel CreateViewModel(out ShortcutSettingsService settings)
     {
-        settings = new ShortcutSettingsService(new SettingsStore(CreateTempSettingsPath()));
+        settings = new ShortcutSettingsService(new SettingsStore(_temp.NewSettingsPath()));
         return new KeyboardShortcutsViewModel(settings);
     }
 

@@ -31,7 +31,7 @@ public static partial class QueueStateStore
         File.WriteAllText(path, JsonSerializer.Serialize(data, QueueStateJsonContext.Default.QueueStateData));
     }
 
-    private static string QueueStateFilePath(string settingsFilePath) =>
+    public static string QueueStateFilePath(string settingsFilePath) =>
         SettingsSiblingFile.PathFor(settingsFilePath, ".queue-state.json");
 
     private static QueueStateData? LoadRaw(string settingsFilePath)

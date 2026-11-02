@@ -704,6 +704,6 @@ public static class LibraryIndexStore
         return connection;
     }
 
-    private static string IndexFilePath(string settingsFilePath) =>
+    public static string IndexFilePath(string settingsFilePath) =>
         SettingsSiblingFile.PathFor(settingsFilePath, ".library-index.db");
 }

@@ -3,15 +3,13 @@ using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.Tests;
 
-public class LibraryIndexStoreTests
+public class LibraryIndexStoreTests : IDisposable
 {
+    private readonly TempDirectory _temp = new();
+
+    public void Dispose() => _temp.Dispose();
+
     private static readonly string TaggedTrackFixturePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3");
-
-    private static string CreateTempSettingsPath() =>
-        Path.Combine(Path.GetTempPath(), $"sharpselecta-library-index-tests-{Guid.NewGuid():N}.json");
-
-    private static string IndexFilePath(string settingsPath) =>
-        Path.Combine(Path.GetDirectoryName(settingsPath)!, $"{Path.GetFileNameWithoutExtension(settingsPath)}.library-index.db");
 
     private static void CopyFixtureInto(string folder, string fileName) =>
         File.Copy(TaggedTrackFixturePath, Path.Combine(folder, fileName));
@@ -19,7 +17,7 @@ public class LibraryIndexStoreTests
     [Test]
     public async Task LoadIndexed_WhenNoIndexFileExists_ReturnsEmpty()
     {
-        var settingsPath = CreateTempSettingsPath();
+        var settingsPath = _temp.NewSettingsPath();
 
         var loaded = LibraryIndexStore.LoadIndexed(settingsPath, ["/music/library"]);
 
@@ -29,165 +27,119 @@ public class LibraryIndexStoreTests
     [Test]
     public async Task Reconcile_OnFirstRun_ScansDiskAndPersistsToIndex()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
 
-            var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
 
-            await Assert.That(result.Tracks.Count).IsEqualTo(1);
-            await Assert.That(result.Tracks[0].Title).IsEqualTo("Test Song");
-            await Assert.That(result.FailedFolders).IsEmpty();
+        await Assert.That(result.Tracks.Count).IsEqualTo(1);
+        await Assert.That(result.Tracks[0].Title).IsEqualTo("Test Song");
+        await Assert.That(result.FailedFolders).IsEmpty();
 
-            root.Delete(recursive: true);
+        root.Delete(recursive: true);
 
-            var hydrated = LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName]);
-            await Assert.That(hydrated.Count).IsEqualTo(1);
-            await Assert.That(hydrated[0].Title).IsEqualTo("Test Song");
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            if (root.Exists) root.Delete(recursive: true);
-        }
+        var hydrated = LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName]);
+        await Assert.That(hydrated.Count).IsEqualTo(1);
+        await Assert.That(hydrated[0].Title).IsEqualTo("Test Song");
     }
 
     [Test]
     public async Task Reconcile_ReturnsTracksOrderedByPathDespiteParallelReads()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        string[] names = ["charlie.mp3", "alpha.mp3", "echo.mp3", "bravo.mp3", "delta.mp3"];
+        foreach (var name in names)
         {
-            string[] names = ["charlie.mp3", "alpha.mp3", "echo.mp3", "bravo.mp3", "delta.mp3"];
-            foreach (var name in names)
-            {
-                CopyFixtureInto(root.FullName, name);
-            }
-
-            var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-
-            var expectedOrder = names
-                .Select(name => Path.Combine(root.FullName, name))
-                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
-            await Assert.That(result.Tracks.Select(t => t.FilePath)).IsEquivalentTo(expectedOrder);
+            CopyFixtureInto(root.FullName, name);
         }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+
+        var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+        var expectedOrder = names
+            .Select(name => Path.Combine(root.FullName, name))
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
+        await Assert.That(result.Tracks.Select(t => t.FilePath)).IsEquivalentTo(expectedOrder);
     }
 
     [Test]
     public async Task Reconcile_WhenMtimeAndSizeUnchanged_ReusesIndexedTagsWithoutReReadingTheFile()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+        await using (var connection = new SqliteConnection($"Data Source={LibraryIndexStore.IndexFilePath(settingsPath)}"))
         {
-            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-
-            await using (var connection = new SqliteConnection($"Data Source={IndexFilePath(settingsPath)}"))
-            {
-                await connection.OpenAsync();
-                var command = connection.CreateCommand();
-                command.CommandText = "UPDATE Tracks SET Title = 'mutated' WHERE FilePath = @path";
-                command.Parameters.AddWithValue("@path", trackPath);
-                await command.ExecuteNonQueryAsync();
-            }
-
-            var unchanged = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-            await Assert.That(unchanged.Tracks[0].Title).IsEqualTo("mutated");
-
-            await File.WriteAllBytesAsync(trackPath, await File.ReadAllBytesAsync(TaggedTrackFixturePath));
-            File.SetLastWriteTimeUtc(trackPath, DateTime.UtcNow);
-
-            var changed = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-            await Assert.That(changed.Tracks[0].Title).IsEqualTo("Test Song");
+            await connection.OpenAsync();
+            var command = connection.CreateCommand();
+            command.CommandText = "UPDATE Tracks SET Title = 'mutated' WHERE FilePath = @path";
+            command.Parameters.AddWithValue("@path", trackPath);
+            await command.ExecuteNonQueryAsync();
         }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+
+        var unchanged = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        await Assert.That(unchanged.Tracks[0].Title).IsEqualTo("mutated");
+
+        await File.WriteAllBytesAsync(trackPath, await File.ReadAllBytesAsync(TaggedTrackFixturePath));
+        File.SetLastWriteTimeUtc(trackPath, DateTime.UtcNow);
+
+        var changed = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        await Assert.That(changed.Tracks[0].Title).IsEqualTo("Test Song");
     }
 
     [Test]
     public async Task Reconcile_WhenFileDeletedFromDisk_RemovesItFromIndex()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            CopyFixtureInto(root.FullName, "a.mp3");
-            CopyFixtureInto(root.FullName, "b.mp3");
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        CopyFixtureInto(root.FullName, "a.mp3");
+        CopyFixtureInto(root.FullName, "b.mp3");
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
 
-            File.Delete(Path.Combine(root.FullName, "a.mp3"));
-            var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        File.Delete(Path.Combine(root.FullName, "a.mp3"));
+        var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
 
-            await Assert.That(result.Tracks.Count).IsEqualTo(1);
-            await Assert.That(result.Tracks[0].FilePath).IsEqualTo(Path.Combine(root.FullName, "b.mp3"));
+        await Assert.That(result.Tracks.Count).IsEqualTo(1);
+        await Assert.That(result.Tracks[0].FilePath).IsEqualTo(Path.Combine(root.FullName, "b.mp3"));
 
-            await using var connection = new SqliteConnection($"Data Source={IndexFilePath(settingsPath)}");
-            await connection.OpenAsync();
-            var command = connection.CreateCommand();
-            command.CommandText = "SELECT COUNT(*) FROM Tracks";
-            var count = (long)(await command.ExecuteScalarAsync())!;
-            await Assert.That(count).IsEqualTo(1L);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+        await using var connection = new SqliteConnection($"Data Source={LibraryIndexStore.IndexFilePath(settingsPath)}");
+        await connection.OpenAsync();
+        var command = connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM Tracks";
+        var count = (long)(await command.ExecuteScalarAsync())!;
+        await Assert.That(count).IsEqualTo(1L);
     }
 
     [Test]
     public async Task Reconcile_WhenFolderRemovedFromConfiguredList_PrunesItsTracksFromTheIndex()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var folderA = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-a-");
-        var folderB = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-b-");
-        try
-        {
-            CopyFixtureInto(folderA.FullName, "a.mp3");
-            CopyFixtureInto(folderB.FullName, "b.mp3");
-            LibraryIndexStore.Reconcile(settingsPath, [folderA.FullName, folderB.FullName]);
+        var settingsPath = _temp.NewSettingsPath();
+        var folderA = _temp.NewSubdirectory();
+        var folderB = _temp.NewSubdirectory();
+        CopyFixtureInto(folderA.FullName, "a.mp3");
+        CopyFixtureInto(folderB.FullName, "b.mp3");
+        LibraryIndexStore.Reconcile(settingsPath, [folderA.FullName, folderB.FullName]);
 
-            LibraryIndexStore.Reconcile(settingsPath, [folderB.FullName]);
+        LibraryIndexStore.Reconcile(settingsPath, [folderB.FullName]);
 
-            await using var connection = new SqliteConnection($"Data Source={IndexFilePath(settingsPath)}");
-            await connection.OpenAsync();
-            var command = connection.CreateCommand();
-            command.CommandText = "SELECT COUNT(*) FROM Tracks WHERE FolderPath = @folder";
-            command.Parameters.AddWithValue("@folder", folderA.FullName);
-            var count = (long)(await command.ExecuteScalarAsync())!;
-            await Assert.That(count).IsEqualTo(0L);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            folderA.Delete(recursive: true);
-            folderB.Delete(recursive: true);
-        }
+        await using var connection = new SqliteConnection($"Data Source={LibraryIndexStore.IndexFilePath(settingsPath)}");
+        await connection.OpenAsync();
+        var command = connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM Tracks WHERE FolderPath = @folder";
+        command.Parameters.AddWithValue("@folder", folderA.FullName);
+        var count = (long)(await command.ExecuteScalarAsync())!;
+        await Assert.That(count).IsEqualTo(0L);
     }
 
     [Test]
     public async Task TryGetWaveformPeaks_WhenIndexFileDoesNotExist_ReturnsNull()
     {
-        var settingsPath = CreateTempSettingsPath();
+        var settingsPath = _temp.NewSettingsPath();
 
         var peaks = LibraryIndexStore.TryGetWaveformPeaks(settingsPath, "/music/a.mp3");
 
@@ -197,859 +149,626 @@ public class LibraryIndexStoreTests
     [Test]
     public async Task TryGetWaveformPeaks_WhenNoPeaksHaveBeenSavedForTheTrack_ReturnsNull()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
 
-            var peaks = LibraryIndexStore.TryGetWaveformPeaks(settingsPath, Path.Combine(root.FullName, "tagged-track.mp3"));
+        var peaks = LibraryIndexStore.TryGetWaveformPeaks(settingsPath, Path.Combine(root.FullName, "tagged-track.mp3"));
 
-            await Assert.That(peaks).IsNull();
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+        await Assert.That(peaks).IsNull();
     }
 
     [Test]
     public async Task SaveWaveformPeaks_ThenTryGetWaveformPeaks_RoundTripsTheValues()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
 
-            LibraryIndexStore.SaveWaveformPeaks(settingsPath, trackPath, [0.1f, 0.5f, 1f, 0f]);
-            var peaks = LibraryIndexStore.TryGetWaveformPeaks(settingsPath, trackPath);
+        LibraryIndexStore.SaveWaveformPeaks(settingsPath, trackPath, [0.1f, 0.5f, 1f, 0f]);
+        var peaks = LibraryIndexStore.TryGetWaveformPeaks(settingsPath, trackPath);
 
-            await Assert.That(peaks).IsEquivalentTo([0.1f, 0.5f, 1f, 0f]);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+        await Assert.That(peaks).IsEquivalentTo([0.1f, 0.5f, 1f, 0f]);
     }
 
     [Test]
     public async Task Reconcile_WhenAFileChanges_ClearsAnyPreviouslyCachedWaveformPeaks()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-            LibraryIndexStore.SaveWaveformPeaks(settingsPath, trackPath, [0.1f, 0.5f]);
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        LibraryIndexStore.SaveWaveformPeaks(settingsPath, trackPath, [0.1f, 0.5f]);
 
-            await File.WriteAllBytesAsync(trackPath, await File.ReadAllBytesAsync(TaggedTrackFixturePath));
-            File.SetLastWriteTimeUtc(trackPath, DateTime.UtcNow);
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        await File.WriteAllBytesAsync(trackPath, await File.ReadAllBytesAsync(TaggedTrackFixturePath));
+        File.SetLastWriteTimeUtc(trackPath, DateTime.UtcNow);
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
 
-            var peaks = LibraryIndexStore.TryGetWaveformPeaks(settingsPath, trackPath);
-            await Assert.That(peaks).IsNull();
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+        var peaks = LibraryIndexStore.TryGetWaveformPeaks(settingsPath, trackPath);
+        await Assert.That(peaks).IsNull();
     }
 
     [Test]
     public async Task Reconcile_OnAnIndexFileFromBeforeWaveformCachingExisted_MigratesTheSchemaWithoutLosingData()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+
+        var indexFilePath = LibraryIndexStore.IndexFilePath(settingsPath);
+        Directory.CreateDirectory(Path.GetDirectoryName(indexFilePath)!);
+        await using (var connection = new SqliteConnection($"Data Source={indexFilePath}"))
         {
-            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-
-            var indexFilePath = IndexFilePath(settingsPath);
-            Directory.CreateDirectory(Path.GetDirectoryName(indexFilePath)!);
-            await using (var connection = new SqliteConnection($"Data Source={indexFilePath}"))
-            {
-                await connection.OpenAsync();
-                var command = connection.CreateCommand();
-                command.CommandText = """
-                    CREATE TABLE Tracks (
-                        FilePath              TEXT    NOT NULL PRIMARY KEY,
-                        FolderPath            TEXT    NOT NULL,
-                        DisplayName           TEXT    NOT NULL,
-                        TrackNumber           INTEGER NULL,
-                        Title                 TEXT    NULL,
-                        Artist                TEXT    NULL,
-                        Album                 TEXT    NULL,
-                        AlbumArtist           TEXT    NULL,
-                        Year                  INTEGER NULL,
-                        DurationSeconds       REAL    NOT NULL,
-                        SampleRate            INTEGER NOT NULL,
-                        BitDepth              INTEGER NOT NULL,
-                        Bitrate               INTEGER NOT NULL,
-                        FileType              TEXT    NULL,
-                        LastWriteTimeUtcTicks INTEGER NOT NULL,
-                        FileSizeBytes         INTEGER NOT NULL
-                    );
-                    """;
-                await command.ExecuteNonQueryAsync();
-            }
-
-            var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-
-            await Assert.That(result.Tracks.Count).IsEqualTo(1);
-            LibraryIndexStore.SaveWaveformPeaks(settingsPath, trackPath, [0.3f]);
-            var peaks = LibraryIndexStore.TryGetWaveformPeaks(settingsPath, trackPath);
-            await Assert.That(peaks).IsEquivalentTo([0.3f]);
+            await connection.OpenAsync();
+            var command = connection.CreateCommand();
+            command.CommandText = """
+                CREATE TABLE Tracks (
+                    FilePath              TEXT    NOT NULL PRIMARY KEY,
+                    FolderPath            TEXT    NOT NULL,
+                    DisplayName           TEXT    NOT NULL,
+                    TrackNumber           INTEGER NULL,
+                    Title                 TEXT    NULL,
+                    Artist                TEXT    NULL,
+                    Album                 TEXT    NULL,
+                    AlbumArtist           TEXT    NULL,
+                    Year                  INTEGER NULL,
+                    DurationSeconds       REAL    NOT NULL,
+                    SampleRate            INTEGER NOT NULL,
+                    BitDepth              INTEGER NOT NULL,
+                    Bitrate               INTEGER NOT NULL,
+                    FileType              TEXT    NULL,
+                    LastWriteTimeUtcTicks INTEGER NOT NULL,
+                    FileSizeBytes         INTEGER NOT NULL
+                );
+                """;
+            await command.ExecuteNonQueryAsync();
         }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+
+        var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+        await Assert.That(result.Tracks.Count).IsEqualTo(1);
+        LibraryIndexStore.SaveWaveformPeaks(settingsPath, trackPath, [0.3f]);
+        var peaks = LibraryIndexStore.TryGetWaveformPeaks(settingsPath, trackPath);
+        await Assert.That(peaks).IsEquivalentTo([0.3f]);
     }
 
     [Test]
     public async Task Reconcile_WhenAFolderIsMissing_ReportsItFailedButKeepsServingItsLastIndexedTracks()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-            var firstResult = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-            await Assert.That(firstResult.Tracks.Count).IsEqualTo(1);
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+        var firstResult = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        await Assert.That(firstResult.Tracks.Count).IsEqualTo(1);
 
-            root.Delete(recursive: true);
+        root.Delete(recursive: true);
 
-            var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
 
-            await Assert.That(result.FailedFolders).IsEquivalentTo([root.FullName]);
-            await Assert.That(result.Tracks.Count).IsEqualTo(1);
-            await Assert.That(result.Tracks[0].Title).IsEqualTo("Test Song");
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            if (root.Exists) root.Delete(recursive: true);
-        }
+        await Assert.That(result.FailedFolders).IsEquivalentTo([root.FullName]);
+        await Assert.That(result.Tracks.Count).IsEqualTo(1);
+        await Assert.That(result.Tracks[0].Title).IsEqualTo("Test Song");
     }
 
     [Test]
     public async Task Reconcile_OnANewTrack_SetsDateAddedUtcToApproximatelyNow()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-            var before = DateTime.UtcNow;
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+        var before = DateTime.UtcNow;
 
-            var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
 
-            var after = DateTime.UtcNow;
-            await Assert.That(result.Tracks[0].DateAddedUtc).IsGreaterThanOrEqualTo(before);
-            await Assert.That(result.Tracks[0].DateAddedUtc).IsLessThanOrEqualTo(after);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+        var after = DateTime.UtcNow;
+        await Assert.That(result.Tracks[0].DateAddedUtc).IsGreaterThanOrEqualTo(before);
+        await Assert.That(result.Tracks[0].DateAddedUtc).IsLessThanOrEqualTo(after);
     }
 
     [Test]
     public async Task Reconcile_WhenATrackIsUnchanged_PreservesItsOriginalDateAddedUtc()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-            var first = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-            var originalDateAdded = first.Tracks[0].DateAddedUtc;
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+        var first = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var originalDateAdded = first.Tracks[0].DateAddedUtc;
 
-            var second = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var second = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
 
-            await Assert.That(second.Tracks[0].DateAddedUtc).IsEqualTo(originalDateAdded);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+        await Assert.That(second.Tracks[0].DateAddedUtc).IsEqualTo(originalDateAdded);
     }
 
     [Test]
     public async Task Reconcile_WhenATracksContentChanges_StillPreservesItsOriginalDateAddedUtc()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-            var first = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-            var originalDateAdded = first.Tracks[0].DateAddedUtc;
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+        var first = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var originalDateAdded = first.Tracks[0].DateAddedUtc;
 
-            await File.WriteAllBytesAsync(trackPath, await File.ReadAllBytesAsync(TaggedTrackFixturePath));
-            File.SetLastWriteTimeUtc(trackPath, DateTime.UtcNow);
-            var second = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        await File.WriteAllBytesAsync(trackPath, await File.ReadAllBytesAsync(TaggedTrackFixturePath));
+        File.SetLastWriteTimeUtc(trackPath, DateTime.UtcNow);
+        var second = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
 
-            await Assert.That(second.Tracks[0].DateAddedUtc).IsEqualTo(originalDateAdded);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+        await Assert.That(second.Tracks[0].DateAddedUtc).IsEqualTo(originalDateAdded);
     }
 
     [Test]
     public async Task Reconcile_OnAnIndexFileFromBeforeDateAddedUtcExisted_BackfillsFromLastWriteTime()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+        var lastWriteTimeUtc = File.GetLastWriteTimeUtc(trackPath);
+
+        var indexFilePath = LibraryIndexStore.IndexFilePath(settingsPath);
+        Directory.CreateDirectory(Path.GetDirectoryName(indexFilePath)!);
+        await using (var connection = new SqliteConnection($"Data Source={indexFilePath}"))
         {
-            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-            var lastWriteTimeUtc = File.GetLastWriteTimeUtc(trackPath);
-
-            var indexFilePath = IndexFilePath(settingsPath);
-            Directory.CreateDirectory(Path.GetDirectoryName(indexFilePath)!);
-            await using (var connection = new SqliteConnection($"Data Source={indexFilePath}"))
-            {
-                await connection.OpenAsync();
-                var command = connection.CreateCommand();
-                command.CommandText = """
-                    CREATE TABLE Tracks (
-                        FilePath              TEXT    NOT NULL PRIMARY KEY,
-                        FolderPath            TEXT    NOT NULL,
-                        DisplayName           TEXT    NOT NULL,
-                        TrackNumber           INTEGER NULL,
-                        Title                 TEXT    NULL,
-                        Artist                TEXT    NULL,
-                        Album                 TEXT    NULL,
-                        AlbumArtist           TEXT    NULL,
-                        Year                  INTEGER NULL,
-                        DurationSeconds       REAL    NOT NULL,
-                        SampleRate            INTEGER NOT NULL,
-                        BitDepth              INTEGER NOT NULL,
-                        Bitrate               INTEGER NOT NULL,
-                        FileType              TEXT    NULL,
-                        LastWriteTimeUtcTicks INTEGER NOT NULL,
-                        FileSizeBytes         INTEGER NOT NULL,
-                        WaveformPeaks         BLOB    NULL
-                    );
-                    INSERT INTO Tracks (FilePath, FolderPath, DisplayName, DurationSeconds, SampleRate, BitDepth, Bitrate, LastWriteTimeUtcTicks, FileSizeBytes)
-                    VALUES (@FilePath, @FolderPath, @DisplayName, 0, 0, 0, 0, @Ticks, 0);
-                    """;
-                command.Parameters.AddWithValue("@FilePath", trackPath);
-                command.Parameters.AddWithValue("@FolderPath", root.FullName);
-                command.Parameters.AddWithValue("@DisplayName", "tagged-track.mp3");
-                command.Parameters.AddWithValue("@Ticks", lastWriteTimeUtc.Ticks);
-                await command.ExecuteNonQueryAsync();
-            }
-
-            var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-
-            await Assert.That(result.Tracks[0].DateAddedUtc).IsEqualTo(lastWriteTimeUtc);
+            await connection.OpenAsync();
+            var command = connection.CreateCommand();
+            command.CommandText = """
+                CREATE TABLE Tracks (
+                    FilePath              TEXT    NOT NULL PRIMARY KEY,
+                    FolderPath            TEXT    NOT NULL,
+                    DisplayName           TEXT    NOT NULL,
+                    TrackNumber           INTEGER NULL,
+                    Title                 TEXT    NULL,
+                    Artist                TEXT    NULL,
+                    Album                 TEXT    NULL,
+                    AlbumArtist           TEXT    NULL,
+                    Year                  INTEGER NULL,
+                    DurationSeconds       REAL    NOT NULL,
+                    SampleRate            INTEGER NOT NULL,
+                    BitDepth              INTEGER NOT NULL,
+                    Bitrate               INTEGER NOT NULL,
+                    FileType              TEXT    NULL,
+                    LastWriteTimeUtcTicks INTEGER NOT NULL,
+                    FileSizeBytes         INTEGER NOT NULL,
+                    WaveformPeaks         BLOB    NULL
+                );
+                INSERT INTO Tracks (FilePath, FolderPath, DisplayName, DurationSeconds, SampleRate, BitDepth, Bitrate, LastWriteTimeUtcTicks, FileSizeBytes)
+                VALUES (@FilePath, @FolderPath, @DisplayName, 0, 0, 0, 0, @Ticks, 0);
+                """;
+            command.Parameters.AddWithValue("@FilePath", trackPath);
+            command.Parameters.AddWithValue("@FolderPath", root.FullName);
+            command.Parameters.AddWithValue("@DisplayName", "tagged-track.mp3");
+            command.Parameters.AddWithValue("@Ticks", lastWriteTimeUtc.Ticks);
+            await command.ExecuteNonQueryAsync();
         }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+
+        var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+        await Assert.That(result.Tracks[0].DateAddedUtc).IsEqualTo(lastWriteTimeUtc);
     }
 
     [Test]
     public async Task LoadIndexed_OnAnIndexFileFromBeforeDateAddedUtcExisted_MigratesSchemaAndBackfillsFromLastWriteTime()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+        var lastWriteTimeUtc = File.GetLastWriteTimeUtc(trackPath);
+
+        var indexFilePath = LibraryIndexStore.IndexFilePath(settingsPath);
+        Directory.CreateDirectory(Path.GetDirectoryName(indexFilePath)!);
+        await using (var connection = new SqliteConnection($"Data Source={indexFilePath}"))
         {
-            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-            var lastWriteTimeUtc = File.GetLastWriteTimeUtc(trackPath);
-
-            var indexFilePath = IndexFilePath(settingsPath);
-            Directory.CreateDirectory(Path.GetDirectoryName(indexFilePath)!);
-            await using (var connection = new SqliteConnection($"Data Source={indexFilePath}"))
-            {
-                await connection.OpenAsync();
-                var command = connection.CreateCommand();
-                command.CommandText = """
-                    CREATE TABLE Tracks (
-                        FilePath              TEXT    NOT NULL PRIMARY KEY,
-                        FolderPath            TEXT    NOT NULL,
-                        DisplayName           TEXT    NOT NULL,
-                        TrackNumber           INTEGER NULL,
-                        Title                 TEXT    NULL,
-                        Artist                TEXT    NULL,
-                        Album                 TEXT    NULL,
-                        AlbumArtist           TEXT    NULL,
-                        Year                  INTEGER NULL,
-                        DurationSeconds       REAL    NOT NULL,
-                        SampleRate            INTEGER NOT NULL,
-                        BitDepth              INTEGER NOT NULL,
-                        Bitrate               INTEGER NOT NULL,
-                        FileType              TEXT    NULL,
-                        LastWriteTimeUtcTicks INTEGER NOT NULL,
-                        FileSizeBytes         INTEGER NOT NULL,
-                        WaveformPeaks         BLOB    NULL
-                    );
-                    INSERT INTO Tracks (FilePath, FolderPath, DisplayName, DurationSeconds, SampleRate, BitDepth, Bitrate, LastWriteTimeUtcTicks, FileSizeBytes)
-                    VALUES (@FilePath, @FolderPath, @DisplayName, 0, 0, 0, 0, @Ticks, 0);
-                    """;
-                command.Parameters.AddWithValue("@FilePath", trackPath);
-                command.Parameters.AddWithValue("@FolderPath", root.FullName);
-                command.Parameters.AddWithValue("@DisplayName", "tagged-track.mp3");
-                command.Parameters.AddWithValue("@Ticks", lastWriteTimeUtc.Ticks);
-                await command.ExecuteNonQueryAsync();
-            }
-
-            var result = LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName]);
-
-            await Assert.That(result.Count).IsEqualTo(1);
-            await Assert.That(result[0].DateAddedUtc).IsEqualTo(lastWriteTimeUtc);
+            await connection.OpenAsync();
+            var command = connection.CreateCommand();
+            command.CommandText = """
+                CREATE TABLE Tracks (
+                    FilePath              TEXT    NOT NULL PRIMARY KEY,
+                    FolderPath            TEXT    NOT NULL,
+                    DisplayName           TEXT    NOT NULL,
+                    TrackNumber           INTEGER NULL,
+                    Title                 TEXT    NULL,
+                    Artist                TEXT    NULL,
+                    Album                 TEXT    NULL,
+                    AlbumArtist           TEXT    NULL,
+                    Year                  INTEGER NULL,
+                    DurationSeconds       REAL    NOT NULL,
+                    SampleRate            INTEGER NOT NULL,
+                    BitDepth              INTEGER NOT NULL,
+                    Bitrate               INTEGER NOT NULL,
+                    FileType              TEXT    NULL,
+                    LastWriteTimeUtcTicks INTEGER NOT NULL,
+                    FileSizeBytes         INTEGER NOT NULL,
+                    WaveformPeaks         BLOB    NULL
+                );
+                INSERT INTO Tracks (FilePath, FolderPath, DisplayName, DurationSeconds, SampleRate, BitDepth, Bitrate, LastWriteTimeUtcTicks, FileSizeBytes)
+                VALUES (@FilePath, @FolderPath, @DisplayName, 0, 0, 0, 0, @Ticks, 0);
+                """;
+            command.Parameters.AddWithValue("@FilePath", trackPath);
+            command.Parameters.AddWithValue("@FolderPath", root.FullName);
+            command.Parameters.AddWithValue("@DisplayName", "tagged-track.mp3");
+            command.Parameters.AddWithValue("@Ticks", lastWriteTimeUtc.Ticks);
+            await command.ExecuteNonQueryAsync();
         }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+
+        var result = LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName]);
+
+        await Assert.That(result.Count).IsEqualTo(1);
+        await Assert.That(result[0].DateAddedUtc).IsEqualTo(lastWriteTimeUtc);
     }
 
     [Test]
     public async Task Reconcile_PersistsGenreAndComment()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-            TrackTagEditor.Write(trackPath, new TrackTagEdits("T", "A", null, "Al", "Jazz", "A comment", 2001, 3));
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+        TrackTagEditor.Write(trackPath, new TrackTagEdits("T", "A", null, "Al", "Jazz", "A comment", 2001, 3));
 
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-            File.Delete(trackPath);
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        File.Delete(trackPath);
 
-            var hydrated = LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName]);
-            await Assert.That(hydrated[0].Genre).IsEqualTo("Jazz");
-            await Assert.That(hydrated[0].Comment).IsEqualTo("A comment");
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+        var hydrated = LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName]);
+        await Assert.That(hydrated[0].Genre).IsEqualTo("Jazz");
+        await Assert.That(hydrated[0].Comment).IsEqualTo("A comment");
     }
 
     [Test]
     public async Task Reconcile_OnAnIndexFileFromBeforeGenreAndCommentExisted_ReReadsEveryRowSoTheNewColumnsGetFilled()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+        TrackTagEditor.Write(trackPath, new TrackTagEdits("T", "A", null, "Al", "Jazz", "A comment", 2001, 3));
+        var fileInfo = new FileInfo(trackPath);
+
+        var indexFilePath = LibraryIndexStore.IndexFilePath(settingsPath);
+        Directory.CreateDirectory(Path.GetDirectoryName(indexFilePath)!);
+        await using (var connection = new SqliteConnection($"Data Source={indexFilePath}"))
         {
-            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-            TrackTagEditor.Write(trackPath, new TrackTagEdits("T", "A", null, "Al", "Jazz", "A comment", 2001, 3));
-            var fileInfo = new FileInfo(trackPath);
-
-            var indexFilePath = IndexFilePath(settingsPath);
-            Directory.CreateDirectory(Path.GetDirectoryName(indexFilePath)!);
-            await using (var connection = new SqliteConnection($"Data Source={indexFilePath}"))
-            {
-                await connection.OpenAsync();
-                var command = connection.CreateCommand();
-                // Mtime and size match the file on disk, so without the migration forcing a re-read
-                // Reconcile would happily reuse this row (and its missing Genre) forever.
-                command.CommandText = """
-                    CREATE TABLE Tracks (
-                        FilePath              TEXT    NOT NULL PRIMARY KEY,
-                        FolderPath            TEXT    NOT NULL,
-                        DisplayName           TEXT    NOT NULL,
-                        TrackNumber           INTEGER NULL,
-                        Title                 TEXT    NULL,
-                        Artist                TEXT    NULL,
-                        Album                 TEXT    NULL,
-                        AlbumArtist           TEXT    NULL,
-                        Year                  INTEGER NULL,
-                        DurationSeconds       REAL    NOT NULL,
-                        SampleRate            INTEGER NOT NULL,
-                        BitDepth              INTEGER NOT NULL,
-                        Bitrate               INTEGER NOT NULL,
-                        FileType              TEXT    NULL,
-                        LastWriteTimeUtcTicks INTEGER NOT NULL,
-                        FileSizeBytes         INTEGER NOT NULL,
-                        WaveformPeaks         BLOB    NULL,
-                        DateAddedUtc          INTEGER NOT NULL DEFAULT 0
-                    );
-                    INSERT INTO Tracks (FilePath, FolderPath, DisplayName, DurationSeconds, SampleRate, BitDepth, Bitrate, LastWriteTimeUtcTicks, FileSizeBytes, DateAddedUtc)
-                    VALUES (@FilePath, @FolderPath, 'T', 0, 0, 0, 0, @Ticks, @Size, 1);
-                    """;
-                command.Parameters.AddWithValue("@FilePath", trackPath);
-                command.Parameters.AddWithValue("@FolderPath", root.FullName);
-                command.Parameters.AddWithValue("@Ticks", fileInfo.LastWriteTimeUtc.Ticks);
-                command.Parameters.AddWithValue("@Size", fileInfo.Length);
-                await command.ExecuteNonQueryAsync();
-            }
-
-            var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-
-            await Assert.That(result.Tracks[0].Genre).IsEqualTo("Jazz");
-            await Assert.That(result.Tracks[0].Comment).IsEqualTo("A comment");
-            await Assert.That(result.Tracks[0].DateAddedUtc).IsEqualTo(new DateTime(1, DateTimeKind.Utc));
+            await connection.OpenAsync();
+            var command = connection.CreateCommand();
+            // Mtime and size match the file on disk, so without the migration forcing a re-read
+            // Reconcile would happily reuse this row (and its missing Genre) forever.
+            command.CommandText = """
+                CREATE TABLE Tracks (
+                    FilePath              TEXT    NOT NULL PRIMARY KEY,
+                    FolderPath            TEXT    NOT NULL,
+                    DisplayName           TEXT    NOT NULL,
+                    TrackNumber           INTEGER NULL,
+                    Title                 TEXT    NULL,
+                    Artist                TEXT    NULL,
+                    Album                 TEXT    NULL,
+                    AlbumArtist           TEXT    NULL,
+                    Year                  INTEGER NULL,
+                    DurationSeconds       REAL    NOT NULL,
+                    SampleRate            INTEGER NOT NULL,
+                    BitDepth              INTEGER NOT NULL,
+                    Bitrate               INTEGER NOT NULL,
+                    FileType              TEXT    NULL,
+                    LastWriteTimeUtcTicks INTEGER NOT NULL,
+                    FileSizeBytes         INTEGER NOT NULL,
+                    WaveformPeaks         BLOB    NULL,
+                    DateAddedUtc          INTEGER NOT NULL DEFAULT 0
+                );
+                INSERT INTO Tracks (FilePath, FolderPath, DisplayName, DurationSeconds, SampleRate, BitDepth, Bitrate, LastWriteTimeUtcTicks, FileSizeBytes, DateAddedUtc)
+                VALUES (@FilePath, @FolderPath, 'T', 0, 0, 0, 0, @Ticks, @Size, 1);
+                """;
+            command.Parameters.AddWithValue("@FilePath", trackPath);
+            command.Parameters.AddWithValue("@FolderPath", root.FullName);
+            command.Parameters.AddWithValue("@Ticks", fileInfo.LastWriteTimeUtc.Ticks);
+            command.Parameters.AddWithValue("@Size", fileInfo.Length);
+            await command.ExecuteNonQueryAsync();
         }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+
+        var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+        await Assert.That(result.Tracks[0].Genre).IsEqualTo("Jazz");
+        await Assert.That(result.Tracks[0].Comment).IsEqualTo("A comment");
+        await Assert.That(result.Tracks[0].DateAddedUtc).IsEqualTo(new DateTime(1, DateTimeKind.Utc));
     }
 
     [Test]
     public async Task UpdateTrack_RewritesMetadata_ButKeepsDateAddedAndWaveformPeaks()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-            var indexed = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]).Tracks[0];
-            LibraryIndexStore.SaveWaveformPeaks(settingsPath, trackPath, [0.1f, 0.2f]);
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+        var indexed = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]).Tracks[0];
+        LibraryIndexStore.SaveWaveformPeaks(settingsPath, trackPath, [0.1f, 0.2f]);
 
-            TrackTagEditor.Write(trackPath, new TrackTagEdits("Edited", null, null, "New Album", "Jazz", null, 2005, 9));
-            var edited = MusicLibraryScanner.ReadTrackIfExists(trackPath)!;
-            LibraryIndexStore.UpdateTrack(settingsPath, edited);
+        TrackTagEditor.Write(trackPath, new TrackTagEdits("Edited", null, null, "New Album", "Jazz", null, 2005, 9));
+        var edited = MusicLibraryScanner.ReadTrackIfExists(trackPath)!;
+        LibraryIndexStore.UpdateTrack(settingsPath, edited);
 
-            var reloaded = LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName])[0];
-            await Assert.That(reloaded.Title).IsEqualTo("Edited");
-            await Assert.That(reloaded.Album).IsEqualTo("New Album");
-            await Assert.That(reloaded.Genre).IsEqualTo("Jazz");
-            await Assert.That(reloaded.Artist).IsNull();
-            await Assert.That(reloaded.Year).IsEqualTo(2005);
-            await Assert.That(reloaded.TrackNumber).IsEqualTo(9);
-            await Assert.That(reloaded.DateAddedUtc).IsEqualTo(indexed.DateAddedUtc);
-            await Assert.That(LibraryIndexStore.TryGetWaveformPeaks(settingsPath, trackPath)).IsEquivalentTo([0.1f, 0.2f]);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+        var reloaded = LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName])[0];
+        await Assert.That(reloaded.Title).IsEqualTo("Edited");
+        await Assert.That(reloaded.Album).IsEqualTo("New Album");
+        await Assert.That(reloaded.Genre).IsEqualTo("Jazz");
+        await Assert.That(reloaded.Artist).IsNull();
+        await Assert.That(reloaded.Year).IsEqualTo(2005);
+        await Assert.That(reloaded.TrackNumber).IsEqualTo(9);
+        await Assert.That(reloaded.DateAddedUtc).IsEqualTo(indexed.DateAddedUtc);
+        await Assert.That(LibraryIndexStore.TryGetWaveformPeaks(settingsPath, trackPath)).IsEquivalentTo([0.1f, 0.2f]);
     }
 
     [Test]
     public async Task UpdateTrack_MakesTheNextReconcileReuseTheRowInsteadOfReReadingTheFile()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
 
-            TrackTagEditor.Write(trackPath, new TrackTagEdits("Edited", null, null, null, null, null, null, null));
-            // A Track whose Title differs from what's on disk: if Reconcile re-read the file it would
-            // report "Edited", so seeing the sentinel proves the indexed row was reused as-is.
-            var sentinel = MusicLibraryScanner.ReadTrackIfExists(trackPath)! with { Title = "Sentinel" };
-            LibraryIndexStore.UpdateTrack(settingsPath, sentinel);
+        TrackTagEditor.Write(trackPath, new TrackTagEdits("Edited", null, null, null, null, null, null, null));
+        // A Track whose Title differs from what's on disk: if Reconcile re-read the file it would
+        // report "Edited", so seeing the sentinel proves the indexed row was reused as-is.
+        var sentinel = MusicLibraryScanner.ReadTrackIfExists(trackPath)! with { Title = "Sentinel" };
+        LibraryIndexStore.UpdateTrack(settingsPath, sentinel);
 
-            var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
 
-            await Assert.That(result.Tracks[0].Title).IsEqualTo("Sentinel");
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+        await Assert.That(result.Tracks[0].Title).IsEqualTo("Sentinel");
     }
 
     [Test]
     public async Task UpdateTrack_WhenNoIndexExists_DoesNothing()
     {
-        var settingsPath = CreateTempSettingsPath();
+        var settingsPath = _temp.NewSettingsPath();
 
         LibraryIndexStore.UpdateTrack(settingsPath, new Track("/music/a.mp3", "a.mp3"));
 
-        await Assert.That(File.Exists(IndexFilePath(settingsPath))).IsFalse();
+        await Assert.That(File.Exists(LibraryIndexStore.IndexFilePath(settingsPath))).IsFalse();
     }
 
     [Test]
     public async Task Reconcile_PersistsTheDiscNumber_AlsoThroughAPlaylistsJoinAndUpdateTrack()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-            TrackTagEditor.Write(trackPath, new TrackTagEdits("T", "A", null, "Al", null, null, 2001, 3, DiscNumber: 2));
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+        TrackTagEditor.Write(trackPath, new TrackTagEdits("T", "A", null, "Al", null, null, 2001, 3, DiscNumber: 2));
 
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-            var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "P");
-            LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [trackPath]);
-            File.Delete(trackPath);
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "P");
+        LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [trackPath]);
+        File.Delete(trackPath);
 
-            await Assert.That(LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName])[0].DiscNumber).IsEqualTo(2);
-            await Assert.That(LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId)[0].Track!.DiscNumber).IsEqualTo(2);
+        await Assert.That(LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName])[0].DiscNumber).IsEqualTo(2);
+        await Assert.That(LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId)[0].Track!.DiscNumber).IsEqualTo(2);
 
-            var edited = LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName])[0] with { DiscNumber = 5 };
-            File.WriteAllBytes(trackPath, [0]); // UpdateTrack only touches rows whose file still exists
-            LibraryIndexStore.UpdateTrack(settingsPath, edited);
-            await Assert.That(LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName])[0].DiscNumber).IsEqualTo(5);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+        var edited = LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName])[0] with { DiscNumber = 5 };
+        File.WriteAllBytes(trackPath, [0]); // UpdateTrack only touches rows whose file still exists
+        LibraryIndexStore.UpdateTrack(settingsPath, edited);
+        await Assert.That(LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName])[0].DiscNumber).IsEqualTo(5);
     }
 
     [Test]
     public async Task GetPlaylistTracks_ResolvesTheSameTrackAsLoadIndexed()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-            TrackTagEditor.Write(trackPath, new TrackTagEdits("T", "A", "AA", "Al", "G", "C", 2001, 3, DiscNumber: 2));
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+        TrackTagEditor.Write(trackPath, new TrackTagEdits("T", "A", "AA", "Al", "G", "C", 2001, 3, DiscNumber: 2));
 
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-            var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "P");
-            LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [trackPath]);
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "P");
+        LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [trackPath]);
 
-            var indexed = LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName])[0];
-            await Assert.That(LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId)[0].Track).IsEqualTo(indexed);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+        var indexed = LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName])[0];
+        await Assert.That(LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId)[0].Track).IsEqualTo(indexed);
     }
 
     [Test]
     public async Task Reconcile_OnAnIndexFileFromBeforeDiscNumberExisted_ReReadsEveryRowSoTheNewColumnGetsFilled()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+        TrackTagEditor.Write(trackPath, new TrackTagEdits("T", "A", null, "Al", null, null, 2001, 3, DiscNumber: 4));
+        var fileInfo = new FileInfo(trackPath);
+
+        var indexFilePath = LibraryIndexStore.IndexFilePath(settingsPath);
+        Directory.CreateDirectory(Path.GetDirectoryName(indexFilePath)!);
+        await using (var connection = new SqliteConnection($"Data Source={indexFilePath}"))
         {
-            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-            TrackTagEditor.Write(trackPath, new TrackTagEdits("T", "A", null, "Al", null, null, 2001, 3, DiscNumber: 4));
-            var fileInfo = new FileInfo(trackPath);
-
-            var indexFilePath = IndexFilePath(settingsPath);
-            Directory.CreateDirectory(Path.GetDirectoryName(indexFilePath)!);
-            await using (var connection = new SqliteConnection($"Data Source={indexFilePath}"))
-            {
-                await connection.OpenAsync();
-                var command = connection.CreateCommand();
-                // Mtime and size match the file, so only the migration can make Reconcile read the row again.
-                command.CommandText = """
-                    CREATE TABLE Tracks (
-                        FilePath TEXT NOT NULL PRIMARY KEY, FolderPath TEXT NOT NULL, DisplayName TEXT NOT NULL,
-                        TrackNumber INTEGER NULL, Title TEXT NULL, Artist TEXT NULL, Album TEXT NULL, AlbumArtist TEXT NULL,
-                        Year INTEGER NULL, DurationSeconds REAL NOT NULL, SampleRate INTEGER NOT NULL, BitDepth INTEGER NOT NULL,
-                        Bitrate INTEGER NOT NULL, FileType TEXT NULL, LastWriteTimeUtcTicks INTEGER NOT NULL,
-                        FileSizeBytes INTEGER NOT NULL, WaveformPeaks BLOB NULL, DateAddedUtc INTEGER NOT NULL DEFAULT 0,
-                        Genre TEXT NULL, Comment TEXT NULL
-                    );
-                    INSERT INTO Tracks (FilePath, FolderPath, DisplayName, DurationSeconds, SampleRate, BitDepth, Bitrate, LastWriteTimeUtcTicks, FileSizeBytes, DateAddedUtc)
-                    VALUES (@FilePath, @FolderPath, 'T', 0, 0, 0, 0, @Ticks, @Size, 1);
-                    """;
-                command.Parameters.AddWithValue("@FilePath", trackPath);
-                command.Parameters.AddWithValue("@FolderPath", root.FullName);
-                command.Parameters.AddWithValue("@Ticks", fileInfo.LastWriteTimeUtc.Ticks);
-                command.Parameters.AddWithValue("@Size", fileInfo.Length);
-                await command.ExecuteNonQueryAsync();
-            }
-
-            var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-
-            await Assert.That(result.Tracks[0].DiscNumber).IsEqualTo(4);
+            await connection.OpenAsync();
+            var command = connection.CreateCommand();
+            // Mtime and size match the file, so only the migration can make Reconcile read the row again.
+            command.CommandText = """
+                CREATE TABLE Tracks (
+                    FilePath TEXT NOT NULL PRIMARY KEY, FolderPath TEXT NOT NULL, DisplayName TEXT NOT NULL,
+                    TrackNumber INTEGER NULL, Title TEXT NULL, Artist TEXT NULL, Album TEXT NULL, AlbumArtist TEXT NULL,
+                    Year INTEGER NULL, DurationSeconds REAL NOT NULL, SampleRate INTEGER NOT NULL, BitDepth INTEGER NOT NULL,
+                    Bitrate INTEGER NOT NULL, FileType TEXT NULL, LastWriteTimeUtcTicks INTEGER NOT NULL,
+                    FileSizeBytes INTEGER NOT NULL, WaveformPeaks BLOB NULL, DateAddedUtc INTEGER NOT NULL DEFAULT 0,
+                    Genre TEXT NULL, Comment TEXT NULL
+                );
+                INSERT INTO Tracks (FilePath, FolderPath, DisplayName, DurationSeconds, SampleRate, BitDepth, Bitrate, LastWriteTimeUtcTicks, FileSizeBytes, DateAddedUtc)
+                VALUES (@FilePath, @FolderPath, 'T', 0, 0, 0, 0, @Ticks, @Size, 1);
+                """;
+            command.Parameters.AddWithValue("@FilePath", trackPath);
+            command.Parameters.AddWithValue("@FolderPath", root.FullName);
+            command.Parameters.AddWithValue("@Ticks", fileInfo.LastWriteTimeUtc.Ticks);
+            command.Parameters.AddWithValue("@Size", fileInfo.Length);
+            await command.ExecuteNonQueryAsync();
         }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+
+        var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+        await Assert.That(result.Tracks[0].DiscNumber).IsEqualTo(4);
     }
 
     [Test]
     public async Task CreatePlaylist_ThenListPlaylists_ReturnsItWithAGeneratedId()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
 
-            var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "Chill");
+        var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "Chill");
 
-            await Assert.That(playlistId).IsNotNull();
-            var playlists = LibraryIndexStore.ListPlaylists(settingsPath);
-            await Assert.That(playlists.Count).IsEqualTo(1);
-            await Assert.That(playlists[0].Id).IsEqualTo(playlistId);
-            await Assert.That(playlists[0].Name).IsEqualTo("Chill");
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+        await Assert.That(playlistId).IsNotNull();
+        var playlists = LibraryIndexStore.ListPlaylists(settingsPath);
+        await Assert.That(playlists.Count).IsEqualTo(1);
+        await Assert.That(playlists[0].Id).IsEqualTo(playlistId);
+        await Assert.That(playlists[0].Name).IsEqualTo("Chill");
     }
 
     [Test]
     public async Task ListPlaylists_OrdersByCreationTime()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
 
-            LibraryIndexStore.CreatePlaylist(settingsPath, "First");
-            LibraryIndexStore.CreatePlaylist(settingsPath, "Second");
+        LibraryIndexStore.CreatePlaylist(settingsPath, "First");
+        LibraryIndexStore.CreatePlaylist(settingsPath, "Second");
 
-            var playlists = LibraryIndexStore.ListPlaylists(settingsPath);
+        var playlists = LibraryIndexStore.ListPlaylists(settingsPath);
 
-            await Assert.That(playlists.Count).IsEqualTo(2);
-            await Assert.That(playlists[0].Name).IsEqualTo("First");
-            await Assert.That(playlists[1].Name).IsEqualTo("Second");
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+        await Assert.That(playlists.Count).IsEqualTo(2);
+        await Assert.That(playlists[0].Name).IsEqualTo("First");
+        await Assert.That(playlists[1].Name).IsEqualTo("Second");
     }
 
     [Test]
     public async Task RenamePlaylist_ChangesTheNameWithoutChangingTheId()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-            var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "Old Name");
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "Old Name");
 
-            LibraryIndexStore.RenamePlaylist(settingsPath, playlistId, "New Name");
+        LibraryIndexStore.RenamePlaylist(settingsPath, playlistId, "New Name");
 
-            var playlists = LibraryIndexStore.ListPlaylists(settingsPath);
-            await Assert.That(playlists[0].Id).IsEqualTo(playlistId);
-            await Assert.That(playlists[0].Name).IsEqualTo("New Name");
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+        var playlists = LibraryIndexStore.ListPlaylists(settingsPath);
+        await Assert.That(playlists[0].Id).IsEqualTo(playlistId);
+        await Assert.That(playlists[0].Name).IsEqualTo("New Name");
     }
 
     [Test]
     public async Task ReplaceFileInPlaylists_PointsEntriesAtTheNewFileKeepingTheirPosition()
     {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            LibraryIndexStore.Reconcile(settingsPath, []);
-            var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "P");
-            LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, ["/music/a.flac", "/music/b.flac"]);
+        var settingsPath = _temp.NewSettingsPath();
+        LibraryIndexStore.Reconcile(settingsPath, []);
+        var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "P");
+        LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, ["/music/a.flac", "/music/b.flac"]);
 
-            LibraryIndexStore.ReplaceFileInPlaylists(settingsPath, "/music/a.flac", "/music/a.m4a");
+        LibraryIndexStore.ReplaceFileInPlaylists(settingsPath, "/music/a.flac", "/music/a.m4a");
 
-            await Assert.That(LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId).Select(e => e.FilePath))
-                .IsEquivalentTo(["/music/a.m4a", "/music/b.flac"]);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-        }
+        await Assert.That(LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId).Select(e => e.FilePath))
+            .IsEquivalentTo(["/music/a.m4a", "/music/b.flac"]);
     }
 
     [Test]
     public async Task DeletePlaylist_RemovesItAndItsTracks()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
-            var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "Temp");
-            LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [trackPath]);
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+        var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "Temp");
+        LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [trackPath]);
 
-            LibraryIndexStore.DeletePlaylist(settingsPath, playlistId);
+        LibraryIndexStore.DeletePlaylist(settingsPath, playlistId);
 
-            await Assert.That(LibraryIndexStore.ListPlaylists(settingsPath)).IsEmpty();
-            await Assert.That(LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId)).IsEmpty();
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+        await Assert.That(LibraryIndexStore.ListPlaylists(settingsPath)).IsEmpty();
+        await Assert.That(LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId)).IsEmpty();
     }
 
     [Test]
     public async Task ReplacePlaylistTracks_ThenGetPlaylistTracks_RoundTripsOrderAndResolvesRealTracks()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            CopyFixtureInto(root.FullName, "a.mp3");
-            CopyFixtureInto(root.FullName, "b.mp3");
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-            var aPath = Path.Combine(root.FullName, "a.mp3");
-            var bPath = Path.Combine(root.FullName, "b.mp3");
-            var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "Order Test");
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        CopyFixtureInto(root.FullName, "a.mp3");
+        CopyFixtureInto(root.FullName, "b.mp3");
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var aPath = Path.Combine(root.FullName, "a.mp3");
+        var bPath = Path.Combine(root.FullName, "b.mp3");
+        var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "Order Test");
 
-            LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [bPath, aPath]);
+        LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [bPath, aPath]);
 
-            var entries = LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId);
-            await Assert.That(entries.Count).IsEqualTo(2);
-            await Assert.That(entries[0].Position).IsEqualTo(0);
-            await Assert.That(entries[0].FilePath).IsEqualTo(bPath);
-            await Assert.That(entries[0].Track).IsNotNull();
-            await Assert.That(entries[1].Position).IsEqualTo(1);
-            await Assert.That(entries[1].FilePath).IsEqualTo(aPath);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+        var entries = LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId);
+        await Assert.That(entries.Count).IsEqualTo(2);
+        await Assert.That(entries[0].Position).IsEqualTo(0);
+        await Assert.That(entries[0].FilePath).IsEqualTo(bPath);
+        await Assert.That(entries[0].Track).IsNotNull();
+        await Assert.That(entries[1].Position).IsEqualTo(1);
+        await Assert.That(entries[1].FilePath).IsEqualTo(aPath);
     }
 
     [Test]
     public async Task ReplacePlaylistTracks_CalledAgain_FullyReplacesThePreviousOrder()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            CopyFixtureInto(root.FullName, "a.mp3");
-            CopyFixtureInto(root.FullName, "b.mp3");
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-            var aPath = Path.Combine(root.FullName, "a.mp3");
-            var bPath = Path.Combine(root.FullName, "b.mp3");
-            var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "Order Test");
-            LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [aPath, bPath]);
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        CopyFixtureInto(root.FullName, "a.mp3");
+        CopyFixtureInto(root.FullName, "b.mp3");
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var aPath = Path.Combine(root.FullName, "a.mp3");
+        var bPath = Path.Combine(root.FullName, "b.mp3");
+        var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "Order Test");
+        LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [aPath, bPath]);
 
-            LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [bPath]);
+        LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [bPath]);
 
-            var entries = LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId);
-            await Assert.That(entries.Count).IsEqualTo(1);
-            await Assert.That(entries[0].FilePath).IsEqualTo(bPath);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+        var entries = LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId);
+        await Assert.That(entries.Count).IsEqualTo(1);
+        await Assert.That(entries[0].FilePath).IsEqualTo(bPath);
     }
 
     [Test]
     public async Task ReplacePlaylistTracks_AllowsTheSameTrackTwice()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
-            var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "Repeats");
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+        var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "Repeats");
 
-            LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [trackPath, trackPath]);
+        LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [trackPath, trackPath]);
 
-            var entries = LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId);
-            await Assert.That(entries.Count).IsEqualTo(2);
-            await Assert.That(entries[0].FilePath).IsEqualTo(trackPath);
-            await Assert.That(entries[1].FilePath).IsEqualTo(trackPath);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+        var entries = LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId);
+        await Assert.That(entries.Count).IsEqualTo(2);
+        await Assert.That(entries[0].FilePath).IsEqualTo(trackPath);
+        await Assert.That(entries[1].FilePath).IsEqualTo(trackPath);
     }
 
     [Test]
     public async Task GetPlaylistTracks_WhenAFileNoLongerHasAMatchingTracksRow_ReturnsNullTrackForThatEntry()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
-        try
-        {
-            CopyFixtureInto(root.FullName, "tagged-track.mp3");
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
-            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
-            var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "Will Go Missing");
-            LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [trackPath]);
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        CopyFixtureInto(root.FullName, "tagged-track.mp3");
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+        var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "Will Go Missing");
+        LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [trackPath]);
 
-            File.Delete(trackPath);
-            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        File.Delete(trackPath);
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
 
-            var entries = LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId);
-            await Assert.That(entries.Count).IsEqualTo(1);
-            await Assert.That(entries[0].FilePath).IsEqualTo(trackPath);
-            await Assert.That(entries[0].Track).IsNull();
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
-            root.Delete(recursive: true);
-        }
+        var entries = LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId);
+        await Assert.That(entries.Count).IsEqualTo(1);
+        await Assert.That(entries[0].FilePath).IsEqualTo(trackPath);
+        await Assert.That(entries[0].Track).IsNull();
     }
 }

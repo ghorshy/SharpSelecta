@@ -5,19 +5,20 @@ using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.Tests;
 
-public class EqualizerViewModelTests
+public class EqualizerViewModelTests : IDisposable
 {
-    private static string CreateTempSettingsPath() =>
-        Path.Combine(Path.GetTempPath(), $"sharpselecta-equalizer-vm-tests-{Guid.NewGuid():N}.json");
+    private readonly TempDirectory _temp = new();
+
+    public void Dispose() => _temp.Dispose();
 
     private static readonly int[] StandardFrequencies = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 
-    private static EqualizerViewModel CreateViewModel(out IAudioEngine audioEngine, string? settingsFilePath = null)
+    private EqualizerViewModel CreateViewModel(out IAudioEngine audioEngine, string? settingsFilePath = null)
     {
         audioEngine = Substitute.For<IAudioEngine>();
         audioEngine.EqualizerBandFrequenciesHz.Returns(StandardFrequencies);
         audioEngine.EqualizerBandGainsDb.Returns(new float[10]);
-        return new EqualizerViewModel(new SettingsStore(settingsFilePath ?? CreateTempSettingsPath()), audioEngine);
+        return new EqualizerViewModel(new SettingsStore(settingsFilePath ?? _temp.NewSettingsPath()), audioEngine);
     }
 
     [Test]
@@ -47,20 +48,13 @@ public class EqualizerViewModelTests
     [Test]
     public async Task EnabledChanged_PushesToEngineAndPersists()
     {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            var vm = CreateViewModel(out var audioEngine, settingsPath);
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = CreateViewModel(out var audioEngine, settingsPath);
 
-            vm.Enabled = true;
+        vm.Enabled = true;
 
-            audioEngine.Received(1).EqualizerEnabled = true;
-            await Assert.That(new SettingsStore(settingsPath).Current.EqualizerEnabled).IsTrue();
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
+        audioEngine.Received(1).EqualizerEnabled = true;
+        await Assert.That(new SettingsStore(settingsPath).Current.EqualizerEnabled).IsTrue();
     }
 
     [Test]
@@ -90,75 +84,54 @@ public class EqualizerViewModelTests
     [Test]
     public async Task PersistBandGains_SavesCurrentGainsAndPresetName()
     {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            var vm = CreateViewModel(out _, settingsPath);
-            vm.Bands[0].GainDb = 5;
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = CreateViewModel(out _, settingsPath);
+        vm.Bands[0].GainDb = 5;
 
-            vm.PersistBandGains();
+        vm.PersistBandGains();
 
-            var saved = new SettingsStore(settingsPath).Current.EqualizerBandGainsDb;
-            await Assert.That(saved![0]).IsEqualTo(5f);
-            await Assert.That(new SettingsStore(settingsPath).Current.EqualizerPresetName).IsEqualTo("Custom");
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
+        var saved = new SettingsStore(settingsPath).Current.EqualizerBandGainsDb;
+        await Assert.That(saved![0]).IsEqualTo(5f);
+        await Assert.That(new SettingsStore(settingsPath).Current.EqualizerPresetName).IsEqualTo("Custom");
     }
 
     [Test]
     public async Task ApplyPersistedState_RestoresGainsPresetAndEnabled()
     {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            new SettingsStore(settingsPath).Update(s => s with { EqualizerEnabled = true });
-            new SettingsStore(settingsPath).Update(s => s with { EqualizerPresetName = "Custom" });
-            new SettingsStore(settingsPath).Update(s => s with { EqualizerBandGainsDb = [1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f] });
+        var settingsPath = _temp.NewSettingsPath();
+        new SettingsStore(settingsPath).Update(s => s with { EqualizerEnabled = true });
+        new SettingsStore(settingsPath).Update(s => s with { EqualizerPresetName = "Custom" });
+        new SettingsStore(settingsPath).Update(s => s with { EqualizerBandGainsDb = [1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f] });
 
-            var vm = CreateViewModel(out var audioEngine, settingsPath);
+        var vm = CreateViewModel(out var audioEngine, settingsPath);
 
-            vm.ApplyPersistedState();
+        vm.ApplyPersistedState();
 
-            await Assert.That(vm.Enabled).IsTrue();
-            await Assert.That(vm.SelectedPreset.Preset).IsNull();
-            await Assert.That(vm.Bands[9].GainDb).IsEqualTo(10.0);
-            audioEngine.Received(1).SetEqualizerBandGain(9, 10f);
-            audioEngine.Received(1).EqualizerEnabled = true;
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
+        await Assert.That(vm.Enabled).IsTrue();
+        await Assert.That(vm.SelectedPreset.Preset).IsNull();
+        await Assert.That(vm.Bands[9].GainDb).IsEqualTo(10.0);
+        audioEngine.Received(1).SetEqualizerBandGain(9, 10f);
+        audioEngine.Received(1).EqualizerEnabled = true;
     }
 
     [Test]
     public async Task ApplyPersistedState_RestoresNamedPresetWithDivergingGainsWithoutReapplyingPreset()
     {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            new SettingsStore(settingsPath).Update(s => s with { EqualizerEnabled = false });
-            new SettingsStore(settingsPath).Update(s => s with { EqualizerPresetName = nameof(EqualizerPreset.Bass) });
-            new SettingsStore(settingsPath).Update(s => s with { EqualizerBandGainsDb = [1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f] });
+        var settingsPath = _temp.NewSettingsPath();
+        new SettingsStore(settingsPath).Update(s => s with { EqualizerEnabled = false });
+        new SettingsStore(settingsPath).Update(s => s with { EqualizerPresetName = nameof(EqualizerPreset.Bass) });
+        new SettingsStore(settingsPath).Update(s => s with { EqualizerBandGainsDb = [1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f] });
 
-            var vm = CreateViewModel(out var audioEngine, settingsPath);
-            // Stub the engine's Bass-preset gains to diverge from the saved gains, so a
-            // spurious re-apply of the preset would be detectable via the restored values.
-            audioEngine.EqualizerBandGainsDb.Returns([-1f, -1f, -1f, -1f, -1f, -1f, -1f, -1f, -1f, -1f]);
+        var vm = CreateViewModel(out var audioEngine, settingsPath);
+        // Stub the engine's Bass-preset gains to diverge from the saved gains, so a
+        // spurious re-apply of the preset would be detectable via the restored values.
+        audioEngine.EqualizerBandGainsDb.Returns([-1f, -1f, -1f, -1f, -1f, -1f, -1f, -1f, -1f, -1f]);
 
-            vm.ApplyPersistedState();
+        vm.ApplyPersistedState();
 
-            await Assert.That(vm.SelectedPreset.Preset).IsEqualTo(EqualizerPreset.Bass);
-            await Assert.That(vm.Bands[0].GainDb).IsEqualTo(1.0);
-            await Assert.That(vm.Bands[9].GainDb).IsEqualTo(10.0);
-            audioEngine.DidNotReceive().ApplyEqualizerPreset(Arg.Any<EqualizerPreset>());
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
+        await Assert.That(vm.SelectedPreset.Preset).IsEqualTo(EqualizerPreset.Bass);
+        await Assert.That(vm.Bands[0].GainDb).IsEqualTo(1.0);
+        await Assert.That(vm.Bands[9].GainDb).IsEqualTo(10.0);
+        audioEngine.DidNotReceive().ApplyEqualizerPreset(Arg.Any<EqualizerPreset>());
     }
 }

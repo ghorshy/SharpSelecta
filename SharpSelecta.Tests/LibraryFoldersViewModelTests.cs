@@ -9,7 +9,7 @@ public class LibraryFoldersViewModelTests
 {
     private sealed class Harness : IDisposable
     {
-        private readonly string _settingsPath = Path.Combine(Path.GetTempPath(), $"sharpselecta-folders-vm-tests-{Guid.NewGuid():N}.json");
+        private readonly TempDirectory _temp = new();
 
         public IFilePickerService FilePicker { get; } = Substitute.For<IFilePickerService>();
 
@@ -21,7 +21,7 @@ public class LibraryFoldersViewModelTests
 
         public Harness()
         {
-            Settings = new SettingsStore(_settingsPath);
+            Settings = new SettingsStore(_temp.NewSettingsPath());
             Folders = new LibraryFoldersViewModel(FilePicker, Settings, () =>
             {
                 RescanCount++;
@@ -29,7 +29,7 @@ public class LibraryFoldersViewModelTests
             });
         }
 
-        public void Dispose() => File.Delete(_settingsPath);
+        public void Dispose() => _temp.Dispose();
     }
 
     [Test]

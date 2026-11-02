@@ -31,16 +31,10 @@ public class Mp4CodecTests
     [Test]
     public async Task FileType_OfAnM4aThatIsNotAnMp4_FallsBackToM4a()
     {
-        var path = Path.Combine(Path.GetTempPath(), $"broken-{Guid.NewGuid():N}.m4a");
+        using var temp = new TempDirectory();
+        var path = temp.FilePath("broken.m4a");
         File.WriteAllBytes(path, [1, 2, 3]);
-        try
-        {
-            await Assert.That(MusicLibraryScanner.ReadTrackIfExists(path)!.FileType).IsEqualTo(AudioFileType.M4a);
-        }
-        finally
-        {
-            File.Delete(path);
-        }
+        await Assert.That(MusicLibraryScanner.ReadTrackIfExists(path)!.FileType).IsEqualTo(AudioFileType.M4a);
     }
 
     [Test]
@@ -95,15 +89,20 @@ public class Mp4CodecTests
 
     private sealed class M4aLibrary : IDisposable
     {
-        public string SettingsPath { get; } = Path.Combine(Path.GetTempPath(), $"sharpselecta-m4a-{Guid.NewGuid():N}.json");
+        private readonly TempDirectory _temp = new();
 
-        private readonly DirectoryInfo _root = Directory.CreateTempSubdirectory("sharpselecta-m4a-");
+        public M4aLibrary()
+        {
+            SettingsPath = _temp.NewSettingsPath();
+            Root = _temp.NewSubdirectory().FullName;
+            File.Copy(FixturePath("untagged-track-alac.m4a"), Path.Combine(Root, "a.m4a"));
+        }
 
-        public M4aLibrary() => File.Copy(FixturePath("untagged-track-alac.m4a"), Path.Combine(Root, "a.m4a"));
+        public string SettingsPath { get; }
 
-        public string Root => _root.FullName;
+        public string Root { get; }
 
-        private string IndexPath => Path.Combine(Path.GetDirectoryName(SettingsPath)!, $"{Path.GetFileNameWithoutExtension(SettingsPath)}.library-index.db");
+        private string IndexPath => LibraryIndexStore.IndexFilePath(SettingsPath);
 
         public async Task ExecuteAsync(string sql)
         {
@@ -114,12 +113,6 @@ public class Mp4CodecTests
             await command.ExecuteNonQueryAsync();
         }
 
-        public void Dispose()
-        {
-            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-            File.Delete(SettingsPath);
-            File.Delete(IndexPath);
-            _root.Delete(recursive: true);
-        }
+        public void Dispose() => _temp.Dispose();
     }
 }

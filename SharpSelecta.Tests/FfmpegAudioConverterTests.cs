@@ -3,16 +3,20 @@ using SharpSelecta.Integrations.Conversion;
 
 namespace SharpSelecta.Tests;
 
-public class FfmpegAudioConverterTests
+public class FfmpegAudioConverterTests : IDisposable
 {
+    private readonly TempDirectory _temp = new();
+
+    public void Dispose() => _temp.Dispose();
+
     private static readonly FfmpegAudioConverter Converter = new();
 
     private static string FixturePath(string name) => Path.Combine(AppContext.BaseDirectory, "Fixtures", name);
 
-    private static string TempTarget(string extension) => Path.Combine(Path.GetTempPath(), $"sharpselecta-convert-{Guid.NewGuid():N}{extension}");
+    private string TempTarget(string extension) => _temp.FilePath($"{Guid.NewGuid():N}{extension}");
 
     // The fixtures are 8 kHz mono, where LAME caps the bitrate - bitrate checks need a CD-quality source.
-    private static async Task<string> CreateStereoFlacAsync()
+    private async Task<string> CreateStereoFlacAsync()
     {
         var path = TempTarget(".flac");
         using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("ffmpeg",
@@ -51,20 +55,13 @@ public class FfmpegAudioConverterTests
         var probed = (await Converter.ProbeAsync(flac, CancellationToken.None))!;
         var target = TempTarget(".m4a");
 
-        try
-        {
-            await Converter.ConvertAsync(
-                new ConversionRequest(flac, target, ConversionTarget.AlacM4a, null, probed),
-                new Progress<double>(), CancellationToken.None);
+        await Converter.ConvertAsync(
+            new ConversionRequest(flac, target, ConversionTarget.AlacM4a, null, probed),
+            new Progress<double>(), CancellationToken.None);
 
-            var info = await Converter.ProbeAsync(target, CancellationToken.None);
-            await Assert.That(info!.Codec).IsEqualTo("alac");
-            await Assert.That(info.IsLossless).IsTrue();
-        }
-        finally
-        {
-            File.Delete(target);
-        }
+        var info = await Converter.ProbeAsync(target, CancellationToken.None);
+        await Assert.That(info!.Codec).IsEqualTo("alac");
+        await Assert.That(info.IsLossless).IsTrue();
     }
 
     [Test]
@@ -75,21 +72,13 @@ public class FfmpegAudioConverterTests
         var probed = (await Converter.ProbeAsync(source, CancellationToken.None))!;
         var target = TempTarget(".mp3");
 
-        try
-        {
-            await Converter.ConvertAsync(
-                new ConversionRequest(source, target, ConversionTarget.Mp3, 128, probed),
-                new Progress<double>(), CancellationToken.None);
+        await Converter.ConvertAsync(
+            new ConversionRequest(source, target, ConversionTarget.Mp3, 128, probed),
+            new Progress<double>(), CancellationToken.None);
 
-            var info = await Converter.ProbeAsync(target, CancellationToken.None);
-            await Assert.That(info!.Codec).IsEqualTo("mp3");
-            await Assert.That(info.BitrateKbps).IsEqualTo(128);
-        }
-        finally
-        {
-            File.Delete(source);
-            File.Delete(target);
-        }
+        var info = await Converter.ProbeAsync(target, CancellationToken.None);
+        await Assert.That(info!.Codec).IsEqualTo("mp3");
+        await Assert.That(info.BitrateKbps).IsEqualTo(128);
     }
 
     [Test]
@@ -101,18 +90,11 @@ public class FfmpegAudioConverterTests
         var probed = (await Converter.ProbeAsync(flac, CancellationToken.None))!;
         await Assert.That(probed.BitDepth).IsEqualTo(16);
 
-        try
-        {
-            await Converter.ConvertAsync(
-                new ConversionRequest(flac, target, ConversionTarget.Wav, null, probed with { BitDepth = 24 }),
-                new Progress<double>(), CancellationToken.None);
+        await Converter.ConvertAsync(
+            new ConversionRequest(flac, target, ConversionTarget.Wav, null, probed with { BitDepth = 24 }),
+            new Progress<double>(), CancellationToken.None);
 
-            var info = await Converter.ProbeAsync(target, CancellationToken.None);
-            await Assert.That(info!.Codec).IsEqualTo("pcm_s24le");
-        }
-        finally
-        {
-            File.Delete(target);
-        }
+        var info = await Converter.ProbeAsync(target, CancellationToken.None);
+        await Assert.That(info!.Codec).IsEqualTo("pcm_s24le");
     }
 }

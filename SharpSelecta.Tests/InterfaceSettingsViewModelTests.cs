@@ -6,26 +6,14 @@ using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.Tests;
 
-public class InterfaceSettingsViewModelTests
+public class InterfaceSettingsViewModelTests : IDisposable
 {
-    // Each test gets its own directory (not just its own file name) so its Themes subfolder - computed from the
-    // settings file's parent directory - never collides with another test's, whether run in parallel or not.
-    private static string CreateTempSettingsPath()
-    {
-        var directory = Path.Combine(Path.GetTempPath(), $"sharpselecta-interface-settings-vm-tests-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(directory);
-        return Path.Combine(directory, "library-settings.json");
-    }
+    private readonly TempDirectory _temp = new();
+
+    public void Dispose() => _temp.Dispose();
 
     private static string ThemesDirectoryFor(string settingsPath) =>
         Path.Combine(Path.GetDirectoryName(settingsPath)!, "Themes");
-
-    private static void DeleteTempSettingsDirectory(string settingsPath)
-    {
-        var directory = Path.GetDirectoryName(settingsPath)!;
-        if (Directory.Exists(directory))
-            Directory.Delete(directory, recursive: true);
-    }
 
     private static InterfaceSettingsViewModel CreateViewModel(string settingsPath, IFilePickerService? filePickerService = null) =>
         new(new SettingsStore(settingsPath), filePickerService ?? Substitute.For<IFilePickerService>());
@@ -33,7 +21,7 @@ public class InterfaceSettingsViewModelTests
     [Test]
     public async Task SelectedThemeDisplayName_DefaultsToDark()
     {
-        var vm = CreateViewModel(CreateTempSettingsPath());
+        var vm = CreateViewModel(_temp.NewSettingsPath());
 
         await Assert.That(vm.SelectedThemeDisplayName).IsEqualTo(Strings.ThemeDark);
     }
@@ -41,7 +29,7 @@ public class InterfaceSettingsViewModelTests
     [Test]
     public async Task ThemeDisplayNames_ContainsSystemLightAndDark()
     {
-        var vm = CreateViewModel(CreateTempSettingsPath());
+        var vm = CreateViewModel(_temp.NewSettingsPath());
 
         await Assert.That(vm.ThemeDisplayNames).IsEquivalentTo([Strings.ThemeSystem, Strings.ThemeLight, Strings.ThemeDark]);
     }
@@ -49,142 +37,97 @@ public class InterfaceSettingsViewModelTests
     [Test]
     public async Task SettingSelectedThemeDisplayName_Persists()
     {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            var vm = CreateViewModel(settingsPath);
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = CreateViewModel(settingsPath);
 
-            vm.SelectedThemeDisplayName = Strings.ThemeLight;
+        vm.SelectedThemeDisplayName = Strings.ThemeLight;
 
-            await Assert.That(new SettingsStore(settingsPath).Current.Theme).IsEqualTo(AppTheme.Light);
-        }
-        finally
-        {
-            DeleteTempSettingsDirectory(settingsPath);
-        }
+        await Assert.That(new SettingsStore(settingsPath).Current.Theme).IsEqualTo(AppTheme.Light);
     }
 
     [Test]
     public async Task Constructor_LoadsAPreviouslySavedTheme()
     {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            new SettingsStore(settingsPath).Update(s => s with { Theme = AppTheme.System });
+        var settingsPath = _temp.NewSettingsPath();
+        new SettingsStore(settingsPath).Update(s => s with { Theme = AppTheme.System });
 
-            var vm = CreateViewModel(settingsPath);
+        var vm = CreateViewModel(settingsPath);
 
-            await Assert.That(vm.SelectedThemeDisplayName).IsEqualTo(Strings.ThemeSystem);
-        }
-        finally
-        {
-            DeleteTempSettingsDirectory(settingsPath);
-        }
+        await Assert.That(vm.SelectedThemeDisplayName).IsEqualTo(Strings.ThemeSystem);
     }
 
     [Test]
     public async Task ImportTheme_WhenUserCancelsThePicker_DoesNothing()
     {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            var filePickerService = Substitute.For<IFilePickerService>();
-            filePickerService.PickThemeFileAsync().Returns((string?)null);
-            var vm = CreateViewModel(settingsPath, filePickerService);
+        var settingsPath = _temp.NewSettingsPath();
+        var filePickerService = Substitute.For<IFilePickerService>();
+        filePickerService.PickThemeFileAsync().Returns((string?)null);
+        var vm = CreateViewModel(settingsPath, filePickerService);
 
-            await vm.ImportThemeCommand.ExecuteAsync(null);
+        await vm.ImportThemeCommand.ExecuteAsync(null);
 
-            await Assert.That(vm.SelectedThemeDisplayName).IsEqualTo(Strings.ThemeDark);
-            await Assert.That(vm.ThemeDisplayNames).IsEquivalentTo([Strings.ThemeSystem, Strings.ThemeLight, Strings.ThemeDark]);
-        }
-        finally
-        {
-            DeleteTempSettingsDirectory(settingsPath);
-        }
+        await Assert.That(vm.SelectedThemeDisplayName).IsEqualTo(Strings.ThemeDark);
+        await Assert.That(vm.ThemeDisplayNames).IsEquivalentTo([Strings.ThemeSystem, Strings.ThemeLight, Strings.ThemeDark]);
     }
 
     [Test]
     public async Task ImportTheme_WhenTheFileIsNotValidXaml_SetsAStatusMessageAndDoesNotAddIt()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var invalidThemePath = Path.Combine(Path.GetTempPath(), $"sharpselecta-invalid-theme-{Guid.NewGuid():N}.axaml");
-        try
-        {
-            File.WriteAllText(invalidThemePath, "not valid xaml at all {{{");
-            var filePickerService = Substitute.For<IFilePickerService>();
-            filePickerService.PickThemeFileAsync().Returns(invalidThemePath);
-            var vm = CreateViewModel(settingsPath, filePickerService);
+        var settingsPath = _temp.NewSettingsPath();
+        var invalidThemePath = _temp.FilePath("invalid-theme.axaml");
+        File.WriteAllText(invalidThemePath, "not valid xaml at all {{{");
+        var filePickerService = Substitute.For<IFilePickerService>();
+        filePickerService.PickThemeFileAsync().Returns(invalidThemePath);
+        var vm = CreateViewModel(settingsPath, filePickerService);
 
-            await vm.ImportThemeCommand.ExecuteAsync(null);
+        await vm.ImportThemeCommand.ExecuteAsync(null);
 
-            await Assert.That(vm.StatusMessage).IsEqualTo(Strings.InvalidThemeFile);
-            await Assert.That(vm.ThemeDisplayNames).IsEquivalentTo([Strings.ThemeSystem, Strings.ThemeLight, Strings.ThemeDark]);
-        }
-        finally
-        {
-            DeleteTempSettingsDirectory(settingsPath);
-            File.Delete(invalidThemePath);
-        }
+        await Assert.That(vm.StatusMessage).IsEqualTo(Strings.InvalidThemeFile);
+        await Assert.That(vm.ThemeDisplayNames).IsEquivalentTo([Strings.ThemeSystem, Strings.ThemeLight, Strings.ThemeDark]);
     }
 
     [Test]
     public async Task ImportTheme_WithAValidResourceDictionary_AddsItAndSelectsIt()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var themePath = Path.Combine(Path.GetTempPath(), $"MyCustomTheme-{Guid.NewGuid():N}.axaml");
-        try
-        {
-            File.WriteAllText(themePath, ValidThemeXaml);
-            var filePickerService = Substitute.For<IFilePickerService>();
-            filePickerService.PickThemeFileAsync().Returns(themePath);
-            var vm = CreateViewModel(settingsPath, filePickerService);
+        var settingsPath = _temp.NewSettingsPath();
+        var themePath = _temp.FilePath("MyCustomTheme.axaml");
+        File.WriteAllText(themePath, ValidThemeXaml);
+        var filePickerService = Substitute.For<IFilePickerService>();
+        filePickerService.PickThemeFileAsync().Returns(themePath);
+        var vm = CreateViewModel(settingsPath, filePickerService);
 
-            await vm.ImportThemeCommand.ExecuteAsync(null);
+        await vm.ImportThemeCommand.ExecuteAsync(null);
 
-            var expectedDisplayName = Path.GetFileNameWithoutExtension(themePath);
-            await Assert.That(vm.SelectedThemeDisplayName).IsEqualTo(expectedDisplayName);
-            await Assert.That(vm.ThemeDisplayNames).Contains(expectedDisplayName);
-            await Assert.That(new SettingsStore(settingsPath).Current.Theme).IsEqualTo(AppTheme.Custom);
-            await Assert.That(File.Exists(Path.Combine(ThemesDirectoryFor(settingsPath), Path.GetFileName(themePath)))).IsTrue();
-        }
-        finally
-        {
-            DeleteTempSettingsDirectory(settingsPath);
-            File.Delete(themePath);
-        }
+        var expectedDisplayName = Path.GetFileNameWithoutExtension(themePath);
+        await Assert.That(vm.SelectedThemeDisplayName).IsEqualTo(expectedDisplayName);
+        await Assert.That(vm.ThemeDisplayNames).Contains(expectedDisplayName);
+        await Assert.That(new SettingsStore(settingsPath).Current.Theme).IsEqualTo(AppTheme.Custom);
+        await Assert.That(File.Exists(Path.Combine(ThemesDirectoryFor(settingsPath), Path.GetFileName(themePath)))).IsTrue();
     }
 
     [Test]
     public async Task RemoveCustomTheme_DeletesTheFileAndFallsBackToDark()
     {
-        var settingsPath = CreateTempSettingsPath();
-        var themePath = Path.Combine(Path.GetTempPath(), $"MyCustomTheme-{Guid.NewGuid():N}.axaml");
-        try
-        {
-            File.WriteAllText(themePath, ValidThemeXaml);
-            var filePickerService = Substitute.For<IFilePickerService>();
-            filePickerService.PickThemeFileAsync().Returns(themePath);
-            var vm = CreateViewModel(settingsPath, filePickerService);
-            await vm.ImportThemeCommand.ExecuteAsync(null);
-            var importedFileName = Path.GetFileName(themePath);
+        var settingsPath = _temp.NewSettingsPath();
+        var themePath = _temp.FilePath("MyCustomTheme.axaml");
+        File.WriteAllText(themePath, ValidThemeXaml);
+        var filePickerService = Substitute.For<IFilePickerService>();
+        filePickerService.PickThemeFileAsync().Returns(themePath);
+        var vm = CreateViewModel(settingsPath, filePickerService);
+        await vm.ImportThemeCommand.ExecuteAsync(null);
+        var importedFileName = Path.GetFileName(themePath);
 
-            vm.RemoveCustomThemeCommand.Execute(null);
+        vm.RemoveCustomThemeCommand.Execute(null);
 
-            await Assert.That(vm.SelectedThemeDisplayName).IsEqualTo(Strings.ThemeDark);
-            await Assert.That(File.Exists(Path.Combine(ThemesDirectoryFor(settingsPath), importedFileName))).IsFalse();
-            await Assert.That(new SettingsStore(settingsPath).Current.Theme).IsEqualTo(AppTheme.Dark);
-        }
-        finally
-        {
-            DeleteTempSettingsDirectory(settingsPath);
-            File.Delete(themePath);
-        }
+        await Assert.That(vm.SelectedThemeDisplayName).IsEqualTo(Strings.ThemeDark);
+        await Assert.That(File.Exists(Path.Combine(ThemesDirectoryFor(settingsPath), importedFileName))).IsFalse();
+        await Assert.That(new SettingsStore(settingsPath).Current.Theme).IsEqualTo(AppTheme.Dark);
     }
 
     [Test]
     public async Task RemoveCustomThemeCommand_WhenABuiltInThemeIsSelected_CannotExecute()
     {
-        var vm = CreateViewModel(CreateTempSettingsPath());
+        var vm = CreateViewModel(_temp.NewSettingsPath());
 
         await Assert.That(vm.RemoveCustomThemeCommand.CanExecute(null)).IsFalse();
     }
@@ -192,7 +135,7 @@ public class InterfaceSettingsViewModelTests
     [Test]
     public async Task RefreshThemesCommand_PreservesTheCurrentSelection()
     {
-        var vm = CreateViewModel(CreateTempSettingsPath());
+        var vm = CreateViewModel(_temp.NewSettingsPath());
         vm.SelectedThemeDisplayName = Strings.ThemeLight;
 
         vm.RefreshThemesCommand.Execute(null);
@@ -205,7 +148,7 @@ public class InterfaceSettingsViewModelTests
     [Test]
     public async Task SettingSelectedThemeDisplayName_ToNull_DoesNotThrow()
     {
-        var vm = CreateViewModel(CreateTempSettingsPath());
+        var vm = CreateViewModel(_temp.NewSettingsPath());
         vm.SelectedThemeDisplayName = Strings.ThemeLight;
 
         vm.SelectedThemeDisplayName = null!;
@@ -216,7 +159,7 @@ public class InterfaceSettingsViewModelTests
     [Test]
     public async Task RemoveCustomThemeCommand_WhenSelectionIsTransientlyNull_CanExecuteWithoutThrowing()
     {
-        var vm = CreateViewModel(CreateTempSettingsPath());
+        var vm = CreateViewModel(_temp.NewSettingsPath());
         vm.SelectedThemeDisplayName = null!;
 
         var canExecute = vm.RemoveCustomThemeCommand.CanExecute(null);
@@ -227,20 +170,13 @@ public class InterfaceSettingsViewModelTests
     [Test]
     public async Task Constructor_WhenTheSavedCustomThemeFileIsMissing_FallsBackToDark()
     {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            new SettingsStore(settingsPath).Update(s => s with { Theme = AppTheme.Custom });
-            new SettingsStore(settingsPath).Update(s => s with { CustomThemeFileName = "no-longer-there.axaml" });
+        var settingsPath = _temp.NewSettingsPath();
+        new SettingsStore(settingsPath).Update(s => s with { Theme = AppTheme.Custom });
+        new SettingsStore(settingsPath).Update(s => s with { CustomThemeFileName = "no-longer-there.axaml" });
 
-            var vm = CreateViewModel(settingsPath);
+        var vm = CreateViewModel(settingsPath);
 
-            await Assert.That(vm.SelectedThemeDisplayName).IsEqualTo(Strings.ThemeDark);
-        }
-        finally
-        {
-            DeleteTempSettingsDirectory(settingsPath);
-        }
+        await Assert.That(vm.SelectedThemeDisplayName).IsEqualTo(Strings.ThemeDark);
     }
 
     private const string ValidThemeXaml =

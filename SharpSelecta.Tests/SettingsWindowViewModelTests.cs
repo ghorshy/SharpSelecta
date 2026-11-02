@@ -9,42 +9,43 @@ using SharpSelecta.Core.Playback;
 
 namespace SharpSelecta.Tests;
 
-public class SettingsWindowViewModelTests
+public class SettingsWindowViewModelTests : IDisposable
 {
-    private static string CreateTempSettingsPath() =>
-        Path.Combine(Path.GetTempPath(), $"sharpselecta-settings-vm-tests-{Guid.NewGuid():N}.json");
+    private readonly TempDirectory _temp = new();
 
-    private static LibraryViewModel CreateLibraryViewModel()
+    public void Dispose() => _temp.Dispose();
+
+    private LibraryViewModel CreateLibraryViewModel()
     {
         var playbackControls = new PlaybackControlsViewModel(
-            Substitute.For<IAudioEngine>(), new PlaybackQueue(), new SettingsStore(CreateTempSettingsPath()), NullLogger<PlaybackControlsViewModel>.Instance);
+            Substitute.For<IAudioEngine>(), new PlaybackQueue(), new SettingsStore(_temp.NewSettingsPath()), NullLogger<PlaybackControlsViewModel>.Instance);
         return new LibraryViewModel(
             Substitute.For<IFilePickerService>(),
             playbackControls,
             Substitute.For<IFileManagerService>(),
-            new SettingsStore(CreateTempSettingsPath()),
+            new SettingsStore(_temp.NewSettingsPath()),
             TestThemeLayout.Default,
             NullLogger<LibraryViewModel>.Instance);
     }
 
-    private static PlaybackSettingsViewModel CreatePlaybackSettingsViewModel()
+    private PlaybackSettingsViewModel CreatePlaybackSettingsViewModel()
     {
         var playbackControls = new PlaybackControlsViewModel(
-            Substitute.For<IAudioEngine>(), new PlaybackQueue(), new SettingsStore(CreateTempSettingsPath()), NullLogger<PlaybackControlsViewModel>.Instance);
+            Substitute.For<IAudioEngine>(), new PlaybackQueue(), new SettingsStore(_temp.NewSettingsPath()), NullLogger<PlaybackControlsViewModel>.Instance);
         return new PlaybackSettingsViewModel(
-            new SettingsStore(CreateTempSettingsPath()),
+            new SettingsStore(_temp.NewSettingsPath()),
             Substitute.For<IOutputDeviceService>(),
             playbackControls);
     }
 
-    private static InterfaceSettingsViewModel CreateInterfaceSettingsViewModel() =>
-        new(new SettingsStore(CreateTempSettingsPath()), Substitute.For<IFilePickerService>());
+    private InterfaceSettingsViewModel CreateInterfaceSettingsViewModel() =>
+        new(new SettingsStore(_temp.NewSettingsPath()), Substitute.For<IFilePickerService>());
 
-    private static IntegrationsSettingsViewModel CreateIntegrationsSettingsViewModel() => new(new SettingsStore(CreateTempSettingsPath()));
+    private IntegrationsSettingsViewModel CreateIntegrationsSettingsViewModel() => new(new SettingsStore(_temp.NewSettingsPath()));
 
-    private static ShortcutSettingsService CreateShortcutSettingsService() => new(new SettingsStore(CreateTempSettingsPath()));
+    private ShortcutSettingsService CreateShortcutSettingsService() => new(new SettingsStore(_temp.NewSettingsPath()));
 
-    private static SettingsWindowViewModel CreateViewModel() =>
+    private SettingsWindowViewModel CreateViewModel() =>
         new(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel(), CreateInterfaceSettingsViewModel(), CreateIntegrationsSettingsViewModel(), CreateShortcutSettingsService());
 
     [Test]
@@ -153,7 +154,7 @@ public class SettingsWindowViewModelTests
     {
         var service = Substitute.For<SharpSelecta.Core.Updates.IUpdateService>();
         service.IsSupported.Returns(true);
-        var updates = new UpdatesViewModel(new SettingsStore(CreateTempSettingsPath()), service, NullLogger.Instance);
+        var updates = new UpdatesViewModel(new SettingsStore(_temp.NewSettingsPath()), service, NullLogger.Instance);
 
         var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel(), CreateInterfaceSettingsViewModel(),
             CreateIntegrationsSettingsViewModel(), CreateShortcutSettingsService(), updates);
@@ -163,7 +164,7 @@ public class SettingsWindowViewModelTests
         await Assert.That(vm.SelectedCategoryViewModel).IsEqualTo(updates);
 
         var unsupported = new SettingsWindowViewModel(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel(), CreateInterfaceSettingsViewModel(),
-            CreateIntegrationsSettingsViewModel(), CreateShortcutSettingsService(), new UpdatesViewModel(new SettingsStore(CreateTempSettingsPath()), null, NullLogger.Instance));
+            CreateIntegrationsSettingsViewModel(), CreateShortcutSettingsService(), new UpdatesViewModel(new SettingsStore(_temp.NewSettingsPath()), null, NullLogger.Instance));
 
         await Assert.That(unsupported.Categories).DoesNotContain(Strings.SettingsCategoryUpdates);
     }

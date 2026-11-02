@@ -5,13 +5,14 @@ using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.Tests;
 
-public class ShortcutRegistryTests
+public class ShortcutRegistryTests : IDisposable
 {
-    private static string CreateTempSettingsPath() =>
-        Path.Combine(Path.GetTempPath(), $"sharpselecta-shortcut-registry-tests-{Guid.NewGuid():N}.json");
+    private readonly TempDirectory _temp = new();
 
-    private static MainWindowViewModel CreateMainWindowViewModel() =>
-        TestMainWindowViewModel.Create(CreateTempSettingsPath(), out _);
+    public void Dispose() => _temp.Dispose();
+
+    private MainWindowViewModel CreateMainWindowViewModel() =>
+        TestMainWindowViewModel.Create(_temp.NewSettingsPath(), out _);
 
     [Test]
     public async Task All_HasNoDuplicateIds()
