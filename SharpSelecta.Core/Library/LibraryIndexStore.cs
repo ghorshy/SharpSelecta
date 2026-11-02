@@ -10,19 +10,24 @@ public static class LibraryIndexStore
 
     public sealed record PlaylistTrackEntry(int Position, string FilePath, Track? Track);
 
-    private const string ColumnList =
-        "FilePath, FolderPath, DisplayName, TrackNumber, Title, Artist, Album, AlbumArtist, Year, " +
-        "DurationSeconds, SampleRate, BitDepth, Bitrate, FileType, LastWriteTimeUtcTicks, FileSizeBytes, DateAddedUtc, Genre, Comment, DiscNumber";
+    private static readonly string[] Columns =
+    [
+        "FilePath", "FolderPath", "DisplayName", "TrackNumber", "Title", "Artist", "Album", "AlbumArtist", "Year",
+        "DurationSeconds", "SampleRate", "BitDepth", "Bitrate", "FileType", "LastWriteTimeUtcTicks", "FileSizeBytes", "DateAddedUtc", "Genre", "Comment", "DiscNumber",
+    ];
+
+    private static readonly string ColumnList = string.Join(", ", Columns);
+
+    private static readonly string TrackColumnList = string.Join(", ", Columns.Select(column => $"t.{column}"));
 
     public static IReadOnlyList<Track> LoadIndexed(string settingsFilePath, IReadOnlyList<string> folderPaths)
     {
-        var indexFilePath = IndexFilePath(settingsFilePath);
-        if (!File.Exists(indexFilePath))
+        using var connection = TryOpen(settingsFilePath);
+        if (connection is null)
         {
             return [];
         }
 
-        using var connection = OpenConnection(indexFilePath);
         EnsureSchema(connection);
 
         var tracks = new List<Track>();
@@ -105,7 +110,7 @@ public static class LibraryIndexStore
         {
             var changedEntries = current
                 .Where(c => c.Changed)
-                .Select(c => (c.FilePath, c.Track, c.LastWriteTimeUtc, c.FileSizeBytes))
+                .Select(c => (c.Track, c.LastWriteTimeUtc, c.FileSizeBytes))
                 .ToList();
             UpsertAll(connection, transaction, folderPath, changedEntries, dateAddedUtcTicks);
 
@@ -121,13 +126,12 @@ public static class LibraryIndexStore
 
     public static IReadOnlyList<float>? TryGetWaveformPeaks(string settingsFilePath, string filePath)
     {
-        var indexFilePath = IndexFilePath(settingsFilePath);
-        if (!File.Exists(indexFilePath))
+        using var connection = TryOpen(settingsFilePath);
+        if (connection is null)
         {
             return null;
         }
 
-        using var connection = OpenConnection(indexFilePath);
         using var command = connection.CreateCommand();
         command.CommandText = "SELECT WaveformPeaks FROM Tracks WHERE FilePath = @FilePath";
         command.Parameters.AddWithValue("@FilePath", filePath);
@@ -143,13 +147,12 @@ public static class LibraryIndexStore
 
     public static void SaveWaveformPeaks(string settingsFilePath, string filePath, IReadOnlyList<float> peaks)
     {
-        var indexFilePath = IndexFilePath(settingsFilePath);
-        if (!File.Exists(indexFilePath))
+        using var connection = TryOpen(settingsFilePath);
+        if (connection is null)
         {
             return;
         }
 
-        using var connection = OpenConnection(indexFilePath);
         using var command = connection.CreateCommand();
         command.CommandText = "UPDATE Tracks SET WaveformPeaks = @WaveformPeaks WHERE FilePath = @FilePath";
         command.Parameters.AddWithValue("@WaveformPeaks", FloatsToBytes(peaks));
@@ -160,14 +163,18 @@ public static class LibraryIndexStore
     // Updates mtime/size so Reconcile doesn't re-read the file; keeps DateAddedUtc and waveform peaks.
     public static void UpdateTrack(string settingsFilePath, Track track)
     {
-        var indexFilePath = IndexFilePath(settingsFilePath);
-        if (!File.Exists(indexFilePath) || !File.Exists(track.FilePath))
+        if (!File.Exists(track.FilePath))
+        {
+            return;
+        }
+
+        using var connection = TryOpen(settingsFilePath);
+        if (connection is null)
         {
             return;
         }
 
         var fileInfo = new FileInfo(track.FilePath);
-        using var connection = OpenConnection(indexFilePath);
         using var command = connection.CreateCommand();
         command.CommandText = """
             UPDATE Tracks SET
@@ -177,37 +184,19 @@ public static class LibraryIndexStore
                 FileType = @FileType, LastWriteTimeUtcTicks = @LastWriteTimeUtcTicks, FileSizeBytes = @FileSizeBytes
             WHERE FilePath = @FilePath
             """;
-        command.Parameters.AddWithValue("@FilePath", track.FilePath);
-        command.Parameters.AddWithValue("@DisplayName", track.DisplayName);
-        command.Parameters.AddWithValue("@TrackNumber", (object?)track.TrackNumber ?? DBNull.Value);
-        command.Parameters.AddWithValue("@Title", (object?)track.Title ?? DBNull.Value);
-        command.Parameters.AddWithValue("@Artist", (object?)track.Artist ?? DBNull.Value);
-        command.Parameters.AddWithValue("@Album", (object?)track.Album ?? DBNull.Value);
-        command.Parameters.AddWithValue("@AlbumArtist", (object?)track.AlbumArtist ?? DBNull.Value);
-        command.Parameters.AddWithValue("@Genre", (object?)track.Genre ?? DBNull.Value);
-        command.Parameters.AddWithValue("@Comment", (object?)track.Comment ?? DBNull.Value);
-        command.Parameters.AddWithValue("@DiscNumber", (object?)track.DiscNumber ?? DBNull.Value);
-        command.Parameters.AddWithValue("@Year", (object?)track.Year ?? DBNull.Value);
-        command.Parameters.AddWithValue("@DurationSeconds", track.Duration.TotalSeconds);
-        command.Parameters.AddWithValue("@SampleRate", track.SampleRate);
-        command.Parameters.AddWithValue("@BitDepth", track.BitDepth);
-        command.Parameters.AddWithValue("@Bitrate", track.Bitrate);
-        command.Parameters.AddWithValue("@FileType", (object?)track.FileType ?? DBNull.Value);
-        command.Parameters.AddWithValue("@LastWriteTimeUtcTicks", fileInfo.LastWriteTimeUtc.Ticks);
-        command.Parameters.AddWithValue("@FileSizeBytes", fileInfo.Length);
+        BindTrack(command, track, fileInfo.LastWriteTimeUtc, fileInfo.Length);
         command.ExecuteNonQuery();
     }
 
     public static string CreatePlaylist(string settingsFilePath, string name)
     {
-        var indexFilePath = IndexFilePath(settingsFilePath);
-        if (!File.Exists(indexFilePath))
+        using var connection = TryOpen(settingsFilePath);
+        if (connection is null)
         {
             return string.Empty;
         }
 
         var id = Guid.NewGuid().ToString("N");
-        using var connection = OpenConnection(indexFilePath);
         using var command = connection.CreateCommand();
         command.CommandText = "INSERT INTO Playlists (Id, Name, CreatedUtc) VALUES (@Id, @Name, @CreatedUtc)";
         command.Parameters.AddWithValue("@Id", id);
@@ -219,13 +208,12 @@ public static class LibraryIndexStore
 
     public static void RenamePlaylist(string settingsFilePath, string playlistId, string newName)
     {
-        var indexFilePath = IndexFilePath(settingsFilePath);
-        if (!File.Exists(indexFilePath))
+        using var connection = TryOpen(settingsFilePath);
+        if (connection is null)
         {
             return;
         }
 
-        using var connection = OpenConnection(indexFilePath);
         using var command = connection.CreateCommand();
         command.CommandText = "UPDATE Playlists SET Name = @Name WHERE Id = @Id";
         command.Parameters.AddWithValue("@Name", newName);
@@ -235,13 +223,12 @@ public static class LibraryIndexStore
 
     public static void DeletePlaylist(string settingsFilePath, string playlistId)
     {
-        var indexFilePath = IndexFilePath(settingsFilePath);
-        if (!File.Exists(indexFilePath))
+        using var connection = TryOpen(settingsFilePath);
+        if (connection is null)
         {
             return;
         }
 
-        using var connection = OpenConnection(indexFilePath);
         using var transaction = connection.BeginTransaction();
 
         using (var deleteTracks = connection.CreateCommand())
@@ -265,13 +252,12 @@ public static class LibraryIndexStore
 
     public static IReadOnlyList<PlaylistSummary> ListPlaylists(string settingsFilePath)
     {
-        var indexFilePath = IndexFilePath(settingsFilePath);
-        if (!File.Exists(indexFilePath))
+        using var connection = TryOpen(settingsFilePath);
+        if (connection is null)
         {
             return [];
         }
 
-        using var connection = OpenConnection(indexFilePath);
         using var command = connection.CreateCommand();
         command.CommandText = "SELECT Id, Name, CreatedUtc FROM Playlists ORDER BY CreatedUtc ASC";
 
@@ -287,16 +273,15 @@ public static class LibraryIndexStore
 
     public static IReadOnlyList<PlaylistTrackEntry> GetPlaylistTracks(string settingsFilePath, string playlistId)
     {
-        var indexFilePath = IndexFilePath(settingsFilePath);
-        if (!File.Exists(indexFilePath))
+        using var connection = TryOpen(settingsFilePath);
+        if (connection is null)
         {
             return [];
         }
 
-        using var connection = OpenConnection(indexFilePath);
         using var command = connection.CreateCommand();
         command.CommandText = $"""
-            SELECT p.Position, p.FilePath, t.FilePath, t.FolderPath, t.DisplayName, t.TrackNumber, t.Title, t.Artist, t.Album, t.AlbumArtist, t.Year, t.DurationSeconds, t.SampleRate, t.BitDepth, t.Bitrate, t.FileType, t.LastWriteTimeUtcTicks, t.FileSizeBytes, t.DateAddedUtc, t.Genre, t.Comment, t.DiscNumber
+            SELECT p.Position, p.FilePath, {TrackColumnList}
             FROM PlaylistTracks p
             LEFT JOIN Tracks t ON t.FilePath = p.FilePath
             WHERE p.PlaylistId = @PlaylistId
@@ -312,44 +297,22 @@ public static class LibraryIndexStore
             var filePath = reader.GetString(1);
             // Column 2 onward is ColumnList's own FilePath - null there means the LEFT JOIN found
             // no matching Tracks row (file removed from the library since it was added here).
-            var track = reader.IsDBNull(2) ? null : ReadTrackFromPlaylistJoin(reader);
+            var track = reader.IsDBNull(2) ? null : ReadIndexedTrack(reader, offset: 2);
             result.Add(new PlaylistTrackEntry(position, filePath, track));
         }
 
         return result;
     }
 
-    // Mirrors LoadFolderIndex's column mapping, offset by the 2 extra leading columns
-    // (Position, FilePath) this query selects before ColumnList.
-    private static Track ReadTrackFromPlaylistJoin(SqliteDataReader reader) => new(reader.GetString(2), reader.GetString(4))
-    {
-        TrackNumber = reader.IsDBNull(5) ? null : reader.GetInt32(5),
-        Title = reader.IsDBNull(6) ? null : reader.GetString(6),
-        Artist = reader.IsDBNull(7) ? null : reader.GetString(7),
-        Album = reader.IsDBNull(8) ? null : reader.GetString(8),
-        AlbumArtist = reader.IsDBNull(9) ? null : reader.GetString(9),
-        Year = reader.IsDBNull(10) ? null : reader.GetInt32(10),
-        Duration = TimeSpan.FromSeconds(reader.GetDouble(11)),
-        SampleRate = reader.GetInt32(12),
-        BitDepth = reader.GetInt32(13),
-        Bitrate = reader.GetInt32(14),
-        FileType = reader.IsDBNull(15) ? null : reader.GetString(15),
-        DateAddedUtc = new DateTime(reader.GetInt64(18), DateTimeKind.Utc),
-        Genre = reader.IsDBNull(19) ? null : reader.GetString(19),
-        Comment = reader.IsDBNull(20) ? null : reader.GetString(20),
-        DiscNumber = reader.IsDBNull(21) ? null : reader.GetInt32(21),
-    };
-
     // Points every playlist entry of a file at its replacement (e.g. the converted copy), keeping the position.
     public static void ReplaceFileInPlaylists(string settingsFilePath, string oldFilePath, string newFilePath)
     {
-        var indexFilePath = IndexFilePath(settingsFilePath);
-        if (!File.Exists(indexFilePath))
+        using var connection = TryOpen(settingsFilePath);
+        if (connection is null)
         {
             return;
         }
 
-        using var connection = OpenConnection(indexFilePath);
         using var command = connection.CreateCommand();
         command.CommandText = "UPDATE PlaylistTracks SET FilePath = @New WHERE FilePath = @Old";
         command.Parameters.AddWithValue("@New", newFilePath);
@@ -359,13 +322,12 @@ public static class LibraryIndexStore
 
     public static void ReplacePlaylistTracks(string settingsFilePath, string playlistId, IReadOnlyList<string> filePathsInOrder)
     {
-        var indexFilePath = IndexFilePath(settingsFilePath);
-        if (!File.Exists(indexFilePath))
+        using var connection = TryOpen(settingsFilePath);
+        if (connection is null)
         {
             return;
         }
 
-        using var connection = OpenConnection(indexFilePath);
         using var transaction = connection.BeginTransaction();
 
         using (var delete = connection.CreateCommand())
@@ -415,7 +377,7 @@ public static class LibraryIndexStore
         SqliteConnection connection,
         SqliteTransaction transaction,
         string folderPath,
-        List<(string FilePath, Track Track, DateTime LastWriteTimeUtc, long FileSizeBytes)> entries,
+        List<(Track Track, DateTime LastWriteTimeUtc, long FileSizeBytes)> entries,
         long dateAddedUtcTicks)
     {
         if (entries.Count == 0)
@@ -443,49 +405,11 @@ public static class LibraryIndexStore
                 -- DateAddedUtc is left out so a refresh never bumps a track in Recently Added.
             """;
 
-        var pFilePath = command.Parameters.Add("@FilePath", SqliteType.Text);
-        var pFolderPath = command.Parameters.Add("@FolderPath", SqliteType.Text);
-        var pDisplayName = command.Parameters.Add("@DisplayName", SqliteType.Text);
-        var pTrackNumber = command.Parameters.Add("@TrackNumber", SqliteType.Integer);
-        var pTitle = command.Parameters.Add("@Title", SqliteType.Text);
-        var pArtist = command.Parameters.Add("@Artist", SqliteType.Text);
-        var pAlbum = command.Parameters.Add("@Album", SqliteType.Text);
-        var pAlbumArtist = command.Parameters.Add("@AlbumArtist", SqliteType.Text);
-        var pGenre = command.Parameters.Add("@Genre", SqliteType.Text);
-        var pComment = command.Parameters.Add("@Comment", SqliteType.Text);
-        var pDiscNumber = command.Parameters.Add("@DiscNumber", SqliteType.Integer);
-        var pYear = command.Parameters.Add("@Year", SqliteType.Integer);
-        var pDurationSeconds = command.Parameters.Add("@DurationSeconds", SqliteType.Real);
-        var pSampleRate = command.Parameters.Add("@SampleRate", SqliteType.Integer);
-        var pBitDepth = command.Parameters.Add("@BitDepth", SqliteType.Integer);
-        var pBitrate = command.Parameters.Add("@Bitrate", SqliteType.Integer);
-        var pFileType = command.Parameters.Add("@FileType", SqliteType.Text);
-        var pLastWriteTimeUtcTicks = command.Parameters.Add("@LastWriteTimeUtcTicks", SqliteType.Integer);
-        var pFileSizeBytes = command.Parameters.Add("@FileSizeBytes", SqliteType.Integer);
-        var pDateAddedUtc = command.Parameters.Add("@DateAddedUtc", SqliteType.Integer);
-
-        foreach (var (filePath, track, lastWriteTimeUtc, fileSizeBytes) in entries)
+        foreach (var (track, lastWriteTimeUtc, fileSizeBytes) in entries)
         {
-            pFilePath.Value = filePath;
-            pFolderPath.Value = folderPath;
-            pDisplayName.Value = track.DisplayName;
-            pTrackNumber.Value = (object?)track.TrackNumber ?? DBNull.Value;
-            pTitle.Value = (object?)track.Title ?? DBNull.Value;
-            pArtist.Value = (object?)track.Artist ?? DBNull.Value;
-            pAlbum.Value = (object?)track.Album ?? DBNull.Value;
-            pAlbumArtist.Value = (object?)track.AlbumArtist ?? DBNull.Value;
-            pGenre.Value = (object?)track.Genre ?? DBNull.Value;
-            pComment.Value = (object?)track.Comment ?? DBNull.Value;
-            pDiscNumber.Value = (object?)track.DiscNumber ?? DBNull.Value;
-            pYear.Value = (object?)track.Year ?? DBNull.Value;
-            pDurationSeconds.Value = track.Duration.TotalSeconds;
-            pSampleRate.Value = track.SampleRate;
-            pBitDepth.Value = track.BitDepth;
-            pBitrate.Value = track.Bitrate;
-            pFileType.Value = (object?)track.FileType ?? DBNull.Value;
-            pLastWriteTimeUtcTicks.Value = lastWriteTimeUtc.Ticks;
-            pFileSizeBytes.Value = fileSizeBytes;
-            pDateAddedUtc.Value = dateAddedUtcTicks;
+            BindTrack(command, track, lastWriteTimeUtc, fileSizeBytes);
+            Bind(command, "@FolderPath", folderPath);
+            Bind(command, "@DateAddedUtc", dateAddedUtcTicks);
             command.ExecuteNonQuery();
         }
     }
@@ -537,31 +461,72 @@ public static class LibraryIndexStore
         using var reader = command.ExecuteReader();
         while (reader.Read())
         {
-            var filePath = reader.GetString(0);
-            var track = new Track(filePath, reader.GetString(2))
-            {
-                TrackNumber = reader.IsDBNull(3) ? null : reader.GetInt32(3),
-                Title = reader.IsDBNull(4) ? null : reader.GetString(4),
-                Artist = reader.IsDBNull(5) ? null : reader.GetString(5),
-                Album = reader.IsDBNull(6) ? null : reader.GetString(6),
-                AlbumArtist = reader.IsDBNull(7) ? null : reader.GetString(7),
-                Year = reader.IsDBNull(8) ? null : reader.GetInt32(8),
-                Duration = TimeSpan.FromSeconds(reader.GetDouble(9)),
-                SampleRate = reader.GetInt32(10),
-                BitDepth = reader.GetInt32(11),
-                Bitrate = reader.GetInt32(12),
-                FileType = reader.IsDBNull(13) ? null : reader.GetString(13),
-                DateAddedUtc = new DateTime(reader.GetInt64(16), DateTimeKind.Utc),
-                Genre = reader.IsDBNull(17) ? null : reader.GetString(17),
-                Comment = reader.IsDBNull(18) ? null : reader.GetString(18),
-                DiscNumber = reader.IsDBNull(19) ? null : reader.GetInt32(19),
-            };
+            var track = ReadIndexedTrack(reader, offset: 0);
             var lastWriteTimeUtc = new DateTime(reader.GetInt64(14), DateTimeKind.Utc);
             var fileSizeBytes = reader.GetInt64(15);
-            result[filePath] = (lastWriteTimeUtc, fileSizeBytes, track);
+            result[track.FilePath] = (lastWriteTimeUtc, fileSizeBytes, track);
         }
 
         return result;
+    }
+
+    private static Track ReadIndexedTrack(SqliteDataReader reader, int offset)
+    {
+        int? NullableInt(int column) => reader.IsDBNull(offset + column) ? null : reader.GetInt32(offset + column);
+        string? NullableString(int column) => reader.IsDBNull(offset + column) ? null : reader.GetString(offset + column);
+
+        return new Track(reader.GetString(offset), reader.GetString(offset + 2))
+        {
+            TrackNumber = NullableInt(3),
+            Title = NullableString(4),
+            Artist = NullableString(5),
+            Album = NullableString(6),
+            AlbumArtist = NullableString(7),
+            Year = NullableInt(8),
+            Duration = TimeSpan.FromSeconds(reader.GetDouble(offset + 9)),
+            SampleRate = reader.GetInt32(offset + 10),
+            BitDepth = reader.GetInt32(offset + 11),
+            Bitrate = reader.GetInt32(offset + 12),
+            FileType = NullableString(13),
+            DateAddedUtc = new DateTime(reader.GetInt64(offset + 16), DateTimeKind.Utc),
+            Genre = NullableString(17),
+            Comment = NullableString(18),
+            DiscNumber = NullableInt(19),
+        };
+    }
+
+    private static void BindTrack(SqliteCommand command, Track track, DateTime lastWriteTimeUtc, long fileSizeBytes)
+    {
+        Bind(command, "@FilePath", track.FilePath);
+        Bind(command, "@DisplayName", track.DisplayName);
+        Bind(command, "@TrackNumber", track.TrackNumber);
+        Bind(command, "@Title", track.Title);
+        Bind(command, "@Artist", track.Artist);
+        Bind(command, "@Album", track.Album);
+        Bind(command, "@AlbumArtist", track.AlbumArtist);
+        Bind(command, "@Genre", track.Genre);
+        Bind(command, "@Comment", track.Comment);
+        Bind(command, "@DiscNumber", track.DiscNumber);
+        Bind(command, "@Year", track.Year);
+        Bind(command, "@DurationSeconds", track.Duration.TotalSeconds);
+        Bind(command, "@SampleRate", track.SampleRate);
+        Bind(command, "@BitDepth", track.BitDepth);
+        Bind(command, "@Bitrate", track.Bitrate);
+        Bind(command, "@FileType", track.FileType);
+        Bind(command, "@LastWriteTimeUtcTicks", lastWriteTimeUtc.Ticks);
+        Bind(command, "@FileSizeBytes", fileSizeBytes);
+    }
+
+    private static void Bind(SqliteCommand command, string name, object? value)
+    {
+        if (command.Parameters.Contains(name))
+        {
+            command.Parameters[name].Value = value ?? DBNull.Value;
+        }
+        else
+        {
+            command.Parameters.AddWithValue(name, value ?? DBNull.Value);
+        }
     }
 
     private static void EnsureSchema(SqliteConnection connection)
@@ -699,6 +664,12 @@ public static class LibraryIndexStore
         return false;
     }
 
+    private static SqliteConnection? TryOpen(string settingsFilePath)
+    {
+        var indexFilePath = IndexFilePath(settingsFilePath);
+        return File.Exists(indexFilePath) ? OpenConnection(indexFilePath) : null;
+    }
+
     private static SqliteConnection OpenConnection(string indexFilePath)
     {
         var connection = new SqliteConnection($"Data Source={indexFilePath}");
@@ -711,10 +682,6 @@ public static class LibraryIndexStore
         return connection;
     }
 
-    private static string IndexFilePath(string settingsFilePath)
-    {
-        var directory = Path.GetDirectoryName(settingsFilePath);
-        var fileName = $"{Path.GetFileNameWithoutExtension(settingsFilePath)}.library-index.db";
-        return string.IsNullOrEmpty(directory) ? fileName : Path.Combine(directory, fileName);
-    }
+    private static string IndexFilePath(string settingsFilePath) =>
+        SettingsSiblingFile.PathFor(settingsFilePath, ".library-index.db");
 }

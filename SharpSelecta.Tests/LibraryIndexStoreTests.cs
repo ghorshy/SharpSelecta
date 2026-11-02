@@ -709,6 +709,32 @@ public class LibraryIndexStoreTests
     }
 
     [Test]
+    public async Task GetPlaylistTracks_ResolvesTheSameTrackAsLoadIndexed()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
+        try
+        {
+            var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
+            CopyFixtureInto(root.FullName, "tagged-track.mp3");
+            TrackTagEditor.Write(trackPath, new TrackTagEdits("T", "A", "AA", "Al", "G", "C", 2001, 3, DiscNumber: 2));
+
+            LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+            var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "P");
+            LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [trackPath]);
+
+            var indexed = LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName])[0];
+            await Assert.That(LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId)[0].Track).IsEqualTo(indexed);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
     public async Task Reconcile_OnAnIndexFileFromBeforeDiscNumberExisted_ReReadsEveryRowSoTheNewColumnGetsFilled()
     {
         var settingsPath = CreateTempSettingsPath();
