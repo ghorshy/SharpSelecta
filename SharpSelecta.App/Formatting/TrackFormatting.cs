@@ -1,4 +1,3 @@
-using System;
 using System.Globalization;
 using SharpSelecta.App.Resources;
 using SharpSelecta.Core.Library;

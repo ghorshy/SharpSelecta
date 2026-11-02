@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
 using SharpSelecta.App.ViewModels;
 using SharpSelecta.Core.Library;
 using Tmds.DBus;

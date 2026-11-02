@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using SharpSelecta.App.Resources;
 using SharpSelecta.Core.Library;

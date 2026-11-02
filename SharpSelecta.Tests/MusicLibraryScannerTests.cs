@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.Tests;
@@ -86,6 +87,7 @@ public class MusicLibraryScannerTests
     }
 
     [Test]
+    [SupportedOSPlatform("linux")]
     public async Task ReadTrack_OnAFileWithoutReadPermission_FallsBackToFilenameOnly()
     {
         Skip.When(!OperatingSystem.IsLinux() || Environment.UserName == "root", "Unix permissions, non-root");

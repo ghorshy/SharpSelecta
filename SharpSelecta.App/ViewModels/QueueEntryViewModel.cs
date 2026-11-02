@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using SharpSelecta.App.Formatting;
 using SharpSelecta.Core.Library;

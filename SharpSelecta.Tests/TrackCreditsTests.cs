@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using SharpSelecta.Core.Library;
 using AtlTrack = ATL.Track;
 
@@ -136,6 +137,7 @@ public class TrackCreditsTests
     }
 
     [Test]
+    [SupportedOSPlatform("linux")]
     public async Task Read_OnAFileWithoutReadPermission_ReturnsNoCredits()
     {
         Skip.When(!OperatingSystem.IsLinux() || Environment.UserName == "root", "Unix permissions, non-root");

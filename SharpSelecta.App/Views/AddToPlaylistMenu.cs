@@ -1,4 +1,3 @@
-using System;
 using Avalonia.Controls;
 using SharpSelecta.App.Resources;
 using SharpSelecta.App.ViewModels;

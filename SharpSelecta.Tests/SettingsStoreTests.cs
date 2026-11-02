@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using SharpSelecta.Core.Audio;
 using SharpSelecta.Core.Library;
 
@@ -152,6 +153,7 @@ public class SettingsStoreTests : IDisposable
     }
 
     [Test]
+    [UnsupportedOSPlatform("windows")]
     public async Task AnUnreadableFile_LoadsAsDefaults_AndIsNeverOverwritten()
     {
         if (OperatingSystem.IsWindows())
@@ -172,6 +174,7 @@ public class SettingsStoreTests : IDisposable
     }
 
     [Test]
+    [UnsupportedOSPlatform("windows")]
     public async Task AFileThatBecomesReadable_IsReadAgainBeforeTheNextUpdateWritesIt()
     {
         if (OperatingSystem.IsWindows())

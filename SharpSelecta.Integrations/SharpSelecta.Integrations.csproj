@@ -1,16 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-    </PropertyGroup>
-
     <ItemGroup>
-      <PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
-      <PackageReference Include="FFMpegCore" Version="5.5.0" />
-      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.14" />
-      <PackageReference Include="Velopack" Version="1.2.161" />
+      <PackageReference Include="DiscordRichPresence" />
+      <PackageReference Include="FFMpegCore" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+      <PackageReference Include="Velopack" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,4 +1,3 @@
-using System;
 using System.Windows.Input;
 using SharpSelecta.App.ViewModels;
 

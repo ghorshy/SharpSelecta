@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Threading.Tasks;
 using Avalonia.Threading;
 using SharpSelecta.App.ViewModels;
 using Tmds.DBus;

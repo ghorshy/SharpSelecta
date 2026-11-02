@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using Tmds.DBus;
 
 namespace SharpSelecta.App.Services;

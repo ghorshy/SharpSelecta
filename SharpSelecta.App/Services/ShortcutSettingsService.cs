@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using SharpSelecta.App.Shortcuts;
 using SharpSelecta.Core.Library;
 

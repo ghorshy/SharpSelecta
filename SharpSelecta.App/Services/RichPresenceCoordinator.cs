@@ -1,4 +1,3 @@
-using System;
 using System.ComponentModel;
 using SharpSelecta.App.Formatting;
 using SharpSelecta.App.ViewModels;

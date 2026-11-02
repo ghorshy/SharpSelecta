@@ -1,5 +1,3 @@
-using System;
-
 namespace SharpSelecta.App.Services;
 
 // Thunar and PCManFM are left out on purpose: their file selection doesn't work reliably.

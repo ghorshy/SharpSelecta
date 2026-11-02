@@ -1,5 +1,3 @@
-using System;
-
 namespace SharpSelecta.App.Services;
 
 // Parses the unlocalized Name= line out of a freedesktop.org .desktop file's [Desktop Entry] group.

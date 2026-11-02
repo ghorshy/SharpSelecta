@@ -1,6 +1,4 @@
 using Avalonia;
-using System;
-using System.IO;
 using Serilog;
 using Velopack;
 
