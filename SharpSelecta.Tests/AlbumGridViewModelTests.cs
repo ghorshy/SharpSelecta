@@ -36,7 +36,7 @@ public class AlbumGridViewModelTests : IDisposable
         var vm = CreateLibraryViewModel();
         for (var i = 0; i < 5; i++)
         {
-            AddTrack(vm, $"/music/{i}.mp3", $"Album {i}");
+            AddTrack(vm, TestPaths.Music($"{i}.mp3"), $"Album {i}");
         }
 
         vm.Grid.SetViewportWidth(400);
@@ -51,8 +51,8 @@ public class AlbumGridViewModelTests : IDisposable
     public async Task SetViewportWidth_WhenNarrowerThanOneTile_StillProducesOneColumn()
     {
         var vm = CreateLibraryViewModel();
-        AddTrack(vm, "/music/a.mp3", "Album A");
-        AddTrack(vm, "/music/b.mp3", "Album B");
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Album A");
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Album B");
 
         vm.Grid.SetViewportWidth(10);
 
@@ -64,8 +64,8 @@ public class AlbumGridViewModelTests : IDisposable
     public async Task ToggleExpand_SetsExpandedAlbumOnItsOwnRowOnly()
     {
         var vm = CreateLibraryViewModel();
-        AddTrack(vm, "/music/a.mp3", "Album A");
-        AddTrack(vm, "/music/b.mp3", "Album B");
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Album A");
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Album B");
         vm.Grid.SetViewportWidth(400);
 
         var albumB = vm.Grid.Albums[1];
@@ -79,7 +79,7 @@ public class AlbumGridViewModelTests : IDisposable
     public async Task ToggleExpand_CalledAgainOnTheSameAlbum_Collapses()
     {
         var vm = CreateLibraryViewModel();
-        AddTrack(vm, "/music/a.mp3", "Album A");
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Album A");
         vm.Grid.SetViewportWidth(400);
         var album = vm.Grid.Albums[0];
 
@@ -94,8 +94,8 @@ public class AlbumGridViewModelTests : IDisposable
     public async Task ToggleExpand_ThenExpandingADifferentAlbum_MovesExpansionWithoutRequiringCollapseFirst()
     {
         var vm = CreateLibraryViewModel();
-        AddTrack(vm, "/music/a.mp3", "Album A");
-        AddTrack(vm, "/music/b.mp3", "Album B");
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Album A");
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Album B");
         vm.Grid.SetViewportWidth(400);
 
         vm.Grid.ToggleExpandCommand.Execute(vm.Grid.Albums[0]);
@@ -109,8 +109,8 @@ public class AlbumGridViewModelTests : IDisposable
     public async Task ChangingTileSize_WhenItChangesTheColumnCount_CollapsesAnyExpandedAlbum()
     {
         var vm = CreateLibraryViewModel();
-        AddTrack(vm, "/music/a.mp3", "Album A");
-        AddTrack(vm, "/music/b.mp3", "Album B");
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Album A");
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Album B");
         vm.Grid.SetViewportWidth(400);
         vm.Grid.ToggleExpandCommand.Execute(vm.Grid.Albums[0]);
 
@@ -123,7 +123,7 @@ public class AlbumGridViewModelTests : IDisposable
     public async Task ChangingTileSize_WithoutChangingTheColumnCount_DoesNotCollapseAnyExpandedAlbum()
     {
         var vm = CreateLibraryViewModel();
-        AddTrack(vm, "/music/a.mp3", "Album A");
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Album A");
         vm.Grid.SetViewportWidth(2000);
         vm.Grid.ToggleExpandCommand.Execute(vm.Grid.Albums[0]);
 
@@ -156,7 +156,7 @@ public class AlbumGridViewModelTests : IDisposable
     public async Task Tile_ForATrackWithSeveralArtists_ShowsThemWithTheDisplaySeparator()
     {
         var vm = CreateLibraryViewModel();
-        AddTrack(vm, "/music/a.mp3", "Collab Album", "TRC;Trilla Jermaine Trilloski", null);
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Collab Album", "TRC;Trilla Jermaine Trilloski", null);
         vm.Grid.SetViewportWidth(2000);
 
         await Assert.That(vm.Grid.Rows[0].Tiles[0].Artist).IsEqualTo("TRC, Trilla Jermaine Trilloski");
@@ -166,8 +166,8 @@ public class AlbumGridViewModelTests : IDisposable
     public async Task SetSortMode_ToArtist_OrdersRowsByArtist()
     {
         var vm = CreateLibraryViewModel();
-        AddTrack(vm, "/music/a.mp3", "Zebra Album", "Beta Artist", null);
-        AddTrack(vm, "/music/b.mp3", "Apple Album", "Alpha Artist", null);
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Zebra Album", "Beta Artist", null);
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Apple Album", "Alpha Artist", null);
         vm.Grid.SetViewportWidth(2000);
 
         vm.Grid.SetSortModeCommand.Execute(AlbumSortMode.Artist);
@@ -180,9 +180,9 @@ public class AlbumGridViewModelTests : IDisposable
     public async Task SetSortMode_ToYear_OrdersRowsByYearWithUntaggedAlbumsLast()
     {
         var vm = CreateLibraryViewModel();
-        AddTrack(vm, "/music/a.mp3", "Album A", "Artist", 2010);
-        AddTrack(vm, "/music/b.mp3", "Album B", "Artist", null);
-        AddTrack(vm, "/music/c.mp3", "Album C", "Artist", 1999);
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Album A", "Artist", 2010);
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Album B", "Artist", null);
+        AddTrack(vm, TestPaths.Music("c.mp3"), "Album C", "Artist", 1999);
         vm.Grid.SetViewportWidth(2000);
 
         vm.Grid.SetSortModeCommand.Execute(AlbumSortMode.Year);
@@ -196,8 +196,8 @@ public class AlbumGridViewModelTests : IDisposable
     public async Task SetSortMode_ClickedAgainWithTheSameMode_TogglesDirectionInstead()
     {
         var vm = CreateLibraryViewModel();
-        AddTrack(vm, "/music/a.mp3", "Album A", "Artist", 2010);
-        AddTrack(vm, "/music/b.mp3", "Album B", "Artist", 1999);
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Album A", "Artist", 2010);
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Album B", "Artist", 1999);
         vm.Grid.SetViewportWidth(2000);
         vm.Grid.SetSortModeCommand.Execute(AlbumSortMode.Year);
         await Assert.That(vm.Grid.SortDescending).IsFalse();
@@ -232,8 +232,8 @@ public class AlbumGridViewModelTests : IDisposable
     public async Task ToggleSortDirection_ReversesTheOrder()
     {
         var vm = CreateLibraryViewModel();
-        AddTrack(vm, "/music/a.mp3", "Album A", "Artist", 2010);
-        AddTrack(vm, "/music/b.mp3", "Album B", "Artist", 1999);
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Album A", "Artist", 2010);
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Album B", "Artist", 1999);
         vm.Grid.SetViewportWidth(2000);
         vm.Grid.SetSortModeCommand.Execute(AlbumSortMode.Year);
 
@@ -247,8 +247,8 @@ public class AlbumGridViewModelTests : IDisposable
     public async Task ToggleSortDirection_WithYearSort_StillSortsUntaggedAlbumsLast()
     {
         var vm = CreateLibraryViewModel();
-        AddTrack(vm, "/music/a.mp3", "Album A", "Artist", 2010);
-        AddTrack(vm, "/music/b.mp3", "Album B", "Artist", null);
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Album A", "Artist", 2010);
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Album B", "Artist", null);
         vm.Grid.SetViewportWidth(2000);
         vm.Grid.SetSortModeCommand.Execute(AlbumSortMode.Year);
 
@@ -313,9 +313,9 @@ public class AlbumGridViewModelTests : IDisposable
     {
         var vm = CreateLibraryViewModel();
         vm.Tracks.Add(new LibraryTrackViewModel(
-            new Track("/music/a.mp3", "a.mp3") { Album = "Morning Glory", Artist = "Oasis", Title = "Wonderwall" }, vm));
+            new Track(TestPaths.Music("a.mp3"), "a.mp3") { Album = "Morning Glory", Artist = "Oasis", Title = "Wonderwall" }, vm));
         vm.Tracks.Add(new LibraryTrackViewModel(
-            new Track("/music/b.mp3", "b.mp3") { Album = "Legend", Artist = "Bob Marley", Title = "One Love" }, vm));
+            new Track(TestPaths.Music("b.mp3"), "b.mp3") { Album = "Legend", Artist = "Bob Marley", Title = "One Love" }, vm));
         vm.Grid.SetViewportWidth(2000);
 
         vm.Search.Query = "wonderwall";
@@ -335,9 +335,9 @@ public class AlbumGridViewModelTests : IDisposable
         // Sorted by artist, "Aardvark" would come first; the title match must win once a search is active.
         var vm = CreateLibraryViewModel();
         vm.Tracks.Add(new LibraryTrackViewModel(
-            new Track("/music/a.mp3", "a.mp3") { Album = "Aardvark", Artist = "Milli Vanilli", Title = "Aardvark" }, vm));
+            new Track(TestPaths.Music("a.mp3"), "a.mp3") { Album = "Aardvark", Artist = "Milli Vanilli", Title = "Aardvark" }, vm));
         vm.Tracks.Add(new LibraryTrackViewModel(
-            new Track("/music/b.mp3", "b.mp3") { Album = "Millitary Dance", Artist = "Thirtzy", Title = "Millitary Dance" }, vm));
+            new Track(TestPaths.Music("b.mp3"), "b.mp3") { Album = "Millitary Dance", Artist = "Thirtzy", Title = "Millitary Dance" }, vm));
         vm.Grid.SetViewportWidth(2000);
         vm.Grid.SetSortModeCommand.Execute(AlbumSortMode.Artist);
 
@@ -353,9 +353,9 @@ public class AlbumGridViewModelTests : IDisposable
     {
         var library = CreateLibraryViewModel();
         var now = DateTime.UtcNow;
-        library.Tracks.Add(new LibraryTrackViewModel(new Track("/music/old-album/a.mp3", "a.mp3") { Album = "Old Album", DateAddedUtc = now.AddDays(-10) }, library));
-        library.Tracks.Add(new LibraryTrackViewModel(new Track("/music/new-album/b.mp3", "b.mp3") { Album = "New Album", DateAddedUtc = now.AddDays(-1) }, library));
-        library.Tracks.Add(new LibraryTrackViewModel(new Track("/music/old-album/c.mp3", "c.mp3") { Album = "Old Album", DateAddedUtc = now }, library));
+        library.Tracks.Add(new LibraryTrackViewModel(new Track(TestPaths.Music("old-album", "a.mp3"), "a.mp3") { Album = "Old Album", DateAddedUtc = now.AddDays(-10) }, library));
+        library.Tracks.Add(new LibraryTrackViewModel(new Track(TestPaths.Music("new-album", "b.mp3"), "b.mp3") { Album = "New Album", DateAddedUtc = now.AddDays(-1) }, library));
+        library.Tracks.Add(new LibraryTrackViewModel(new Track(TestPaths.Music("old-album", "c.mp3"), "c.mp3") { Album = "Old Album", DateAddedUtc = now }, library));
 
         var grid = new AlbumGridViewModel(library, new SettingsStore(_temp.NewSettingsPath()), TestThemeLayout.Default, NullLogger.Instance, allowUserSort: false);
         grid.SetViewportWidth(2000);

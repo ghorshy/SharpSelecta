@@ -177,7 +177,7 @@ public class RichPresenceTests : IDisposable
         }
 
         public static Track Song(string title = "Song", string? artist = "A;B") =>
-            new($"/music/{title}.mp3", title) { Title = title, Artist = artist, Album = "The Album", Duration = TimeSpan.FromSeconds(200) };
+            new(TestPaths.Music($"{title}.mp3"), title) { Title = title, Artist = artist, Album = "The Album", Duration = TimeSpan.FromSeconds(200) };
     }
 
     [Test]

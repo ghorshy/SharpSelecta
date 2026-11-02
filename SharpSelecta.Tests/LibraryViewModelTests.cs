@@ -164,7 +164,7 @@ public class LibraryViewModelTests : IDisposable
     public async Task AddFolderCommand_WhenFolderDoesNotExist_SetsStatusMessage()
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);
-        filePickerService.PickLibraryFolderAsync().Returns("/no/such/folder");
+        filePickerService.PickLibraryFolderAsync().Returns(TestPaths.Rooted("no", "such", "folder"));
 
         await vm.Folders.AddFolderCommand.ExecuteAsync(null);
 
@@ -321,11 +321,11 @@ public class LibraryViewModelTests : IDisposable
     public async Task ISettingsCategoryViewModel_HasPendingChanges_NotifiesWhenTheFoldersChange()
     {
         var vm = CreateViewModel(out _, out _, out _);
-        vm.Folders.Restore(["/music"]);
+        vm.Folders.Restore([TestPaths.Music()]);
         var raised = new List<string?>();
         vm.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
 
-        vm.Folders.RemovePendingFolderCommand.Execute("/music");
+        vm.Folders.RemovePendingFolderCommand.Execute(TestPaths.Music());
 
         await Assert.That(raised).Contains(nameof(ISettingsCategoryViewModel.HasPendingChanges));
     }
@@ -334,11 +334,11 @@ public class LibraryViewModelTests : IDisposable
     public async Task PlayNowCommand_LoadsIntoEngineAndStartsPlaybackViaPlaybackControls()
     {
         var vm = CreateViewModel(out var audioEngine, out _, out var playbackControls);
-        var track = new Track("/music/song.mp3", "song.mp3");
+        var track = new Track(TestPaths.Music("song.mp3"), "song.mp3");
 
         await vm.PlayNowCommand.ExecuteAsync(track);
 
-        audioEngine.Received(1).Load("/music/song.mp3");
+        audioEngine.Received(1).Load(TestPaths.Music("song.mp3"));
         await Assert.That(playbackControls.LoadedFileName).IsEqualTo("song.mp3");
         await Assert.That(playbackControls.IsPlaying).IsTrue();
     }
@@ -347,8 +347,8 @@ public class LibraryViewModelTests : IDisposable
     public async Task PlayNextCommand_InsertsTrackAtFrontOfQueue()
     {
         var vm = CreateViewModel(out _, out _, out var playbackControls);
-        await playbackControls.AddToQueue(new Track("/music/existing.mp3", "existing.mp3"));
-        var track = new Track("/music/song.mp3", "song.mp3");
+        await playbackControls.AddToQueue(new Track(TestPaths.Music("existing.mp3"), "existing.mp3"));
+        var track = new Track(TestPaths.Music("song.mp3"), "song.mp3");
 
         vm.PlayNextCommand.Execute(track);
 
@@ -359,8 +359,8 @@ public class LibraryViewModelTests : IDisposable
     public async Task AddToQueueCommand_AppendsTrackToQueue()
     {
         var vm = CreateViewModel(out _, out _, out var playbackControls);
-        var first = new Track("/music/first.mp3", "first.mp3");
-        var second = new Track("/music/second.mp3", "second.mp3");
+        var first = new Track(TestPaths.Music("first.mp3"), "first.mp3");
+        var second = new Track(TestPaths.Music("second.mp3"), "second.mp3");
 
         vm.AddToQueueCommand.Execute(first);
         vm.AddToQueueCommand.Execute(second);
@@ -373,8 +373,8 @@ public class LibraryViewModelTests : IDisposable
     public async Task PlayNextCommand_WhenClickedTrackIsPartOfTheOrderedSelection_ActsOnTheWholeSelectionInSelectionOrder()
     {
         var vm = CreateViewModel(out _, out _, out var playbackControls);
-        var first = new Track("/music/first.mp3", "first.mp3");
-        var third = new Track("/music/third.mp3", "third.mp3");
+        var first = new Track(TestPaths.Music("first.mp3"), "first.mp3");
+        var third = new Track(TestPaths.Music("third.mp3"), "third.mp3");
 
         // Selected out of visual order: third, then first - the ordered list must preserve that.
         // A track that was never selected (e.g. one sitting between them in the grid) stays out.
@@ -391,8 +391,8 @@ public class LibraryViewModelTests : IDisposable
     public async Task AddToQueueCommand_WhenClickedTrackIsPartOfTheOrderedSelection_ActsOnTheWholeSelectionInSelectionOrder()
     {
         var vm = CreateViewModel(out _, out _, out var playbackControls);
-        var first = new Track("/music/first.mp3", "first.mp3");
-        var second = new Track("/music/second.mp3", "second.mp3");
+        var first = new Track(TestPaths.Music("first.mp3"), "first.mp3");
+        var second = new Track(TestPaths.Music("second.mp3"), "second.mp3");
 
         vm.SetSelectedTracksInOrder([second, first]);
 
@@ -406,8 +406,8 @@ public class LibraryViewModelTests : IDisposable
     public async Task PlayNextCommand_WhenClickedTrackIsOutsideTheOrderedSelection_ActsOnlyOnThatTrack()
     {
         var vm = CreateViewModel(out _, out _, out var playbackControls);
-        var selectedTrack = new Track("/music/selected.mp3", "selected.mp3");
-        var clickedTrack = new Track("/music/clicked.mp3", "clicked.mp3");
+        var selectedTrack = new Track(TestPaths.Music("selected.mp3"), "selected.mp3");
+        var clickedTrack = new Track(TestPaths.Music("clicked.mp3"), "clicked.mp3");
 
         vm.SetSelectedTracksInOrder([selectedTrack]);
 
@@ -424,8 +424,8 @@ public class LibraryViewModelTests : IDisposable
         var root = _temp.NewSubdirectory();
         LibraryIndexStore.Reconcile(settingsPath, [root.FullName]); // ensures the index db/schema exists
         var vm = CreateViewModel(out _, out _, out _, settingsPath);
-        var trackA = new Track("/music/a.mp3", "a.mp3");
-        var trackB = new Track("/music/b.mp3", "b.mp3");
+        var trackA = new Track(TestPaths.Music("a.mp3"), "a.mp3");
+        var trackB = new Track(TestPaths.Music("b.mp3"), "b.mp3");
         vm.Tracks.Add(new LibraryTrackViewModel(trackA, vm));
         vm.Tracks.Add(new LibraryTrackViewModel(trackB, vm));
         vm.SetSelectedTracksInOrder([trackB, trackA]);
@@ -434,7 +434,7 @@ public class LibraryViewModelTests : IDisposable
         vm.AddToPlaylistCommand.Execute((trackA, playlistId));
 
         var persistedOrder = vm.Playlists.Tracks.Select(t => t.Track.FilePath).ToList();
-        await Assert.That(persistedOrder).IsEquivalentTo(["/music/b.mp3", "/music/a.mp3"]);
+        await Assert.That(persistedOrder).IsEquivalentTo([TestPaths.Music("b.mp3"), TestPaths.Music("a.mp3")]);
     }
 
     [Test]
@@ -444,8 +444,8 @@ public class LibraryViewModelTests : IDisposable
         var root = _temp.NewSubdirectory();
         LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
         var vm = CreateViewModel(out _, out _, out _, settingsPath);
-        var existing = new Track("/music/existing.mp3", "existing.mp3");
-        var albumTracks = new[] { new Track("/music/01.mp3", "01.mp3"), new Track("/music/02.mp3", "02.mp3") }
+        var existing = new Track(TestPaths.Music("existing.mp3"), "existing.mp3");
+        var albumTracks = new[] { new Track(TestPaths.Music("01.mp3"), "01.mp3"), new Track(TestPaths.Music("02.mp3"), "02.mp3") }
             .Select(t => new LibraryTrackViewModel(t, vm)).ToList();
         var album = new AlbumViewModel("Album", "Artist", null, albumTracks, vm);
         var playlistId = vm.Playlists.CreatePlaylist("Target");
@@ -454,15 +454,15 @@ public class LibraryViewModelTests : IDisposable
         vm.AddAlbumToPlaylistCommand.Execute((album, playlistId));
 
         var persistedOrder = vm.Playlists.Tracks.Select(t => t.Track.FilePath).ToList();
-        await Assert.That(persistedOrder).IsEquivalentTo(["/music/existing.mp3", "/music/01.mp3", "/music/02.mp3"]);
+        await Assert.That(persistedOrder).IsEquivalentTo([TestPaths.Music("existing.mp3"), TestPaths.Music("01.mp3"), TestPaths.Music("02.mp3")]);
     }
 
     [Test]
     public async Task PlayNextCommand_InCoverArtView_IgnoresAStaleListSelection()
     {
         var vm = CreateViewModel(out _, out _, out var playbackControls);
-        var selectedTrack = new Track("/music/selected.mp3", "selected.mp3");
-        var clickedTrack = new Track("/music/clicked.mp3", "clicked.mp3");
+        var selectedTrack = new Track(TestPaths.Music("selected.mp3"), "selected.mp3");
+        var clickedTrack = new Track(TestPaths.Music("clicked.mp3"), "clicked.mp3");
         vm.Tracks.Add(new LibraryTrackViewModel(selectedTrack, vm));
         vm.Tracks.Add(new LibraryTrackViewModel(clickedTrack, vm));
         vm.SetSelectedTracksInOrder([selectedTrack, clickedTrack]);
@@ -526,7 +526,7 @@ public class LibraryViewModelTests : IDisposable
     public async Task PlayTrackItem_InAPlaylist_ReplacesTheQueueWithTheClickedTrackThroughTheEndOfThePlaylist()
     {
         var (vm, playback, tracks, _, _) = CreatePlaylistWithTracks(4);
-        await playback.PlayNowAsync(new Track("/music/something-else.mp3", "else.mp3"));
+        await playback.PlayNowAsync(new Track(TestPaths.Music("something-else.mp3"), "else.mp3"));
 
         await vm.PlayTrackItemCommand.ExecuteAsync(vm.Playlists.Tracks[1]);
 
@@ -629,7 +629,7 @@ public class LibraryViewModelTests : IDisposable
     {
         var (vm, playback, tracks, _, _) = CreatePlaylistWithTracks(3);
         vm.LibrarySection = LibrarySection.Library;
-        var existing = new Track("/music/existing.mp3", "existing.mp3");
+        var existing = new Track(TestPaths.Music("existing.mp3"), "existing.mp3");
         await playback.PlayNowAsync(existing);
 
         await vm.PlayTrackItemCommand.ExecuteAsync(new LibraryTrackViewModel(tracks[2], vm));
@@ -645,7 +645,7 @@ public class LibraryViewModelTests : IDisposable
         var root = _temp.NewSubdirectory();
         LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
         var vm = CreateViewModel(out _, out _, out _, settingsPath);
-        var trackA = new Track("/music/a.mp3", "a.mp3");
+        var trackA = new Track(TestPaths.Music("a.mp3"), "a.mp3");
         vm.Playlists.CreatePlaylist("Target");
         vm.Playlists.AddTracksToSelectedPlaylist([trackA]);
 
@@ -662,8 +662,8 @@ public class LibraryViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out _, out _, out _);
 
-        AddTrack(vm, "/music/a.mp3", "Compilation", "Artist One");
-        AddTrack(vm, "/music/b.mp3", "Compilation", "Artist Two");
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Compilation", "Artist One");
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Compilation", "Artist Two");
 
         await Assert.That(vm.Grid.Albums.Count).IsEqualTo(1);
         await Assert.That(vm.Grid.Albums[0].Tracks.Count).IsEqualTo(2);
@@ -675,8 +675,8 @@ public class LibraryViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out _, out _, out _);
 
-        AddTrack(vm, "/music/a.mp3", "Bassline", "Capital", albumArtist: "Capital");
-        AddTrack(vm, "/music/b.mp3", "Bassline", "K Dot", albumArtist: "K Dot & DJ Q");
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Bassline", "Capital", albumArtist: "Capital");
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Bassline", "K Dot", albumArtist: "K Dot & DJ Q");
 
         await Assert.That(vm.Grid.Albums.Count).IsEqualTo(2);
         await Assert.That(vm.Grid.Albums[0].Title).IsEqualTo("Bassline");
@@ -689,8 +689,8 @@ public class LibraryViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out _, out _, out _);
 
-        AddTrack(vm, "/music/a.mp3", "Discovery", "Daft Punk");
-        AddTrack(vm, "/music/b.mp3", "  discovery ", "Daft Punk");
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Discovery", "Daft Punk");
+        AddTrack(vm, TestPaths.Music("b.mp3"), "  discovery ", "Daft Punk");
 
         await Assert.That(vm.Grid.Albums.Count).IsEqualTo(1);
         await Assert.That(vm.Grid.Albums[0].Tracks.Count).IsEqualTo(2);
@@ -701,8 +701,8 @@ public class LibraryViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out _, out _, out _);
 
-        AddTrack(vm, "/music/a.mp3", album: null, artist: "Some Artist");
-        AddTrack(vm, "/music/b.mp3", album: null, artist: "Some Artist");
+        AddTrack(vm, TestPaths.Music("a.mp3"), album: null, artist: "Some Artist");
+        AddTrack(vm, TestPaths.Music("b.mp3"), album: null, artist: "Some Artist");
 
         await Assert.That(vm.Grid.Albums.Count).IsEqualTo(1);
         await Assert.That(vm.Grid.Albums[0].Title).IsEqualTo(Strings.UnknownAlbum);
@@ -713,11 +713,11 @@ public class LibraryViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out _, out _, out _);
 
-        AddTrack(vm, "/music/b.mp3", "Album", "Artist", trackNumber: 2);
-        AddTrack(vm, "/music/a.mp3", "Album", "Artist", trackNumber: 1);
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Album", "Artist", trackNumber: 2);
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Album", "Artist", trackNumber: 1);
 
-        await Assert.That(vm.Grid.Albums[0].Tracks[0].Track.FilePath).IsEqualTo("/music/a.mp3");
-        await Assert.That(vm.Grid.Albums[0].Tracks[1].Track.FilePath).IsEqualTo("/music/b.mp3");
+        await Assert.That(vm.Grid.Albums[0].Tracks[0].Track.FilePath).IsEqualTo(TestPaths.Music("a.mp3"));
+        await Assert.That(vm.Grid.Albums[0].Tracks[1].Track.FilePath).IsEqualTo(TestPaths.Music("b.mp3"));
     }
 
     [Test]
@@ -725,8 +725,8 @@ public class LibraryViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out _, out _, out _);
 
-        AddTrack(vm, "/music/a.mp3", "Album", "Artist", title: "Zebra");
-        AddTrack(vm, "/music/b.mp3", "Album", "Artist", title: "Apple");
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Album", "Artist", title: "Zebra");
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Album", "Artist", title: "Apple");
 
         await Assert.That(vm.Grid.Albums[0].Tracks[0].Track.Title).IsEqualTo("Apple");
         await Assert.That(vm.Grid.Albums[0].Tracks[1].Track.Title).IsEqualTo("Zebra");
@@ -737,8 +737,8 @@ public class LibraryViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out _, out _, out _);
 
-        AddTrack(vm, "/music/a.mp3", "Compilation", "Artist One");
-        AddTrack(vm, "/music/b.mp3", "Compilation", "Artist Two");
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Compilation", "Artist One");
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Compilation", "Artist Two");
 
         var rows = vm.Grid.Albums[0].TrackRows;
         await Assert.That(rows[0].ArtistSuffix).IsEqualTo("(Artist One)");
@@ -750,8 +750,8 @@ public class LibraryViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out _, out _, out _);
 
-        AddTrack(vm, "/music/a.mp3", "Album", "Only Artist");
-        AddTrack(vm, "/music/b.mp3", "Album", "Only Artist");
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Album", "Only Artist");
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Album", "Only Artist");
 
         await Assert.That(vm.Grid.Albums[0].TrackRows.Select(r => r.ArtistSuffix)).IsEquivalentTo(new string?[] { null, null });
     }
@@ -761,8 +761,8 @@ public class LibraryViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out _, out _, out _);
 
-        AddTrack(vm, "/music/a.mp3", "Actually", "Pet Shop Boys", trackNumber: 1);
-        AddTrack(vm, "/music/b.mp3", "Actually", "Pet Shop Boys;Dusty Springfield", trackNumber: 2);
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Actually", "Pet Shop Boys", trackNumber: 1);
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Actually", "Pet Shop Boys;Dusty Springfield", trackNumber: 2);
 
         await Assert.That(vm.Grid.Albums[0].Artist).IsEqualTo("Pet Shop Boys");
         // The shared artist is in the label already, so rows only name the guests.
@@ -775,8 +775,8 @@ public class LibraryViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out _, out _, out _);
 
-        AddTrack(vm, "/music/a.mp3", "Collab", "A;B;C", trackNumber: 1);
-        AddTrack(vm, "/music/b.mp3", "Collab", "A;B", trackNumber: 2);
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Collab", "A;B;C", trackNumber: 1);
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Collab", "A;B", trackNumber: 2);
 
         await Assert.That(vm.Grid.Albums[0].Artist).IsEqualTo("A, B");
         await Assert.That(vm.Grid.Albums[0].TrackRows.Select(r => r.ArtistSuffix)).IsEquivalentTo(new string?[] { "(C)", null });
@@ -787,8 +787,8 @@ public class LibraryViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out _, out _, out _);
 
-        AddTrack(vm, "/music/a.mp3", "Duo", "TRC;Trilla");
-        AddTrack(vm, "/music/b.mp3", "Duo", "TRC;Trilla");
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Duo", "TRC;Trilla");
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Duo", "TRC;Trilla");
 
         await Assert.That(vm.Grid.Albums[0].Artist).IsEqualTo("TRC, Trilla");
         await Assert.That(vm.Grid.Albums[0].TrackRows.Select(r => r.ArtistSuffix)).IsEquivalentTo(new string?[] { null, null });
@@ -799,8 +799,8 @@ public class LibraryViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out _, out _, out _);
 
-        AddTrack(vm, "/music/a.mp3", "Mixed", "A;B", trackNumber: 1);
-        AddTrack(vm, "/music/b.mp3", "Mixed", "C", trackNumber: 2);
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Mixed", "A;B", trackNumber: 1);
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Mixed", "C", trackNumber: 2);
 
         await Assert.That(vm.Grid.Albums[0].Artist).IsEqualTo(Strings.VariousArtists);
         await Assert.That(vm.Grid.Albums[0].TrackRows.Select(r => r.ArtistSuffix)).IsEquivalentTo(new string?[] { "(A, B)", "(C)" });
@@ -811,8 +811,8 @@ public class LibraryViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out _, out _, out _);
 
-        AddTrack(vm, "/music/a.mp3", "Album", "Only Artist");
-        AddTrack(vm, "/music/b.mp3", "Album", "Only Artist");
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Album", "Only Artist");
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Album", "Only Artist");
 
         await Assert.That(vm.Grid.Albums[0].Artist).IsEqualTo("Only Artist");
     }
@@ -822,7 +822,7 @@ public class LibraryViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out _, out _, out _);
 
-        AddTrack(vm, "/music/a.mp3", "Album", artist: null);
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Album", artist: null);
 
         await Assert.That(vm.Grid.Albums[0].Artist).IsEqualTo(string.Empty);
     }
@@ -842,7 +842,7 @@ public class LibraryViewModelTests : IDisposable
     public async Task ViewVisibility_WhileLibraryIsLoading_IsFalseEvenWithTracksAlreadyShown()
     {
         var vm = CreateViewModel(out _, out _, out _);
-        AddTrack(vm, "/music/a.mp3", "Album A", "Artist");
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Album A", "Artist");
         await Assert.That(vm.HasTracks).IsTrue();
 
         vm.IsLoadingLibrary = true;
@@ -863,7 +863,7 @@ public class LibraryViewModelTests : IDisposable
     public async Task SwitchingToRecentlyAdded_HidesLibraryViewsAndShowsRecentlyAddedViews()
     {
         var vm = CreateViewModel(out _, out _, out _);
-        AddTrack(vm, "/music/a.mp3", "Album", "Artist");
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Album", "Artist");
 
         vm.LibrarySection = LibrarySection.RecentlyAdded;
 
@@ -877,7 +877,7 @@ public class LibraryViewModelTests : IDisposable
     public async Task IsPlaylistViewVisible_TrueOnlyWhenPlaylistSectionIsActiveWithTracksLoaded()
     {
         var vm = CreateViewModel(out _, out _, out _);
-        AddTrack(vm, "/music/a.mp3", "Album", "Artist");
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Album", "Artist");
 
         await Assert.That(vm.IsPlaylistViewVisible).IsFalse();
 
@@ -895,11 +895,11 @@ public class LibraryViewModelTests : IDisposable
         var vm = CreateViewModel(out _, out _, out _);
         var now = DateTime.UtcNow;
         vm.Tracks.ReplaceAll(Enumerable.Range(0, LibraryViewModel.RecentlyAddedLimit + 20)
-            .Select(i => DatedTrack(vm, $"/music/{i:D3}.mp3", "Album", now.AddMinutes(-i))));
+            .Select(i => DatedTrack(vm, TestPaths.Music($"{i:D3}.mp3"), "Album", now.AddMinutes(-i))));
 
         await Assert.That(vm.RecentlyAddedTracks.Count).IsEqualTo(100);
-        await Assert.That(vm.RecentlyAddedTracks[0].Track.FilePath).IsEqualTo("/music/000.mp3");
-        await Assert.That(vm.RecentlyAddedTracks[99].Track.FilePath).IsEqualTo("/music/099.mp3");
+        await Assert.That(vm.RecentlyAddedTracks[0].Track.FilePath).IsEqualTo(TestPaths.Music("000.mp3"));
+        await Assert.That(vm.RecentlyAddedTracks[99].Track.FilePath).IsEqualTo(TestPaths.Music("099.mp3"));
     }
 
     [Test]
@@ -908,8 +908,8 @@ public class LibraryViewModelTests : IDisposable
         var vm = CreateViewModel(out _, out _, out _);
         var now = DateTime.UtcNow;
         var tracks = Enumerable.Range(0, LibraryViewModel.RecentlyAddedLimit)
-            .Select(i => DatedTrack(vm, $"/music/new{i:D3}.mp3", "Fresh", now.AddMinutes(-i)))
-            .Append(DatedTrack(vm, "/music/zxqvkj.mp3", "Ancient", now.AddDays(-900)))
+            .Select(i => DatedTrack(vm, TestPaths.Music($"new{i:D3}.mp3"), "Fresh", now.AddMinutes(-i)))
+            .Append(DatedTrack(vm, TestPaths.Music("zxqvkj.mp3"), "Ancient", now.AddDays(-900)))
             .ToList();
         vm.Tracks.ReplaceAll(tracks);
 
@@ -926,10 +926,10 @@ public class LibraryViewModelTests : IDisposable
         var vm = CreateViewModel(out _, out _, out _);
         var now = DateTime.UtcNow;
         var tracks = Enumerable.Range(1, LibraryViewModel.RecentlyAddedLimit - 1)
-            .Select(i => DatedTrack(vm, $"/music/fresh{i:D3}.mp3", "Fresh", now.AddMinutes(-i)))
-            .Append(DatedTrack(vm, "/music/straddle-new.mp3", "Straddle", now))
-            .Append(DatedTrack(vm, "/music/straddle-old.mp3", "Straddle", now.AddDays(-1000)))
-            .Append(DatedTrack(vm, "/music/ancient.mp3", "Ancient", now.AddDays(-2000)))
+            .Select(i => DatedTrack(vm, TestPaths.Music($"fresh{i:D3}.mp3"), "Fresh", now.AddMinutes(-i)))
+            .Append(DatedTrack(vm, TestPaths.Music("straddle-new.mp3"), "Straddle", now))
+            .Append(DatedTrack(vm, TestPaths.Music("straddle-old.mp3"), "Straddle", now.AddDays(-1000)))
+            .Append(DatedTrack(vm, TestPaths.Music("ancient.mp3"), "Ancient", now.AddDays(-2000)))
             .ToList();
         vm.Tracks.ReplaceAll(tracks);
 
@@ -943,11 +943,11 @@ public class LibraryViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out _, out _, out _);
         var now = DateTime.UtcNow;
-        vm.Tracks.Add(new LibraryTrackViewModel(new Track("/music/old.mp3", "old.mp3") { DateAddedUtc = now.AddDays(-1) }, vm));
-        vm.Tracks.Add(new LibraryTrackViewModel(new Track("/music/new.mp3", "new.mp3") { DateAddedUtc = now }, vm));
+        vm.Tracks.Add(new LibraryTrackViewModel(new Track(TestPaths.Music("old.mp3"), "old.mp3") { DateAddedUtc = now.AddDays(-1) }, vm));
+        vm.Tracks.Add(new LibraryTrackViewModel(new Track(TestPaths.Music("new.mp3"), "new.mp3") { DateAddedUtc = now }, vm));
 
-        await Assert.That(vm.RecentlyAddedTracks[0].Track.FilePath).IsEqualTo("/music/new.mp3");
-        await Assert.That(vm.RecentlyAddedTracks[1].Track.FilePath).IsEqualTo("/music/old.mp3");
+        await Assert.That(vm.RecentlyAddedTracks[0].Track.FilePath).IsEqualTo(TestPaths.Music("new.mp3"));
+        await Assert.That(vm.RecentlyAddedTracks[1].Track.FilePath).IsEqualTo(TestPaths.Music("old.mp3"));
     }
 
     [Test]
@@ -955,16 +955,16 @@ public class LibraryViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out _, out _, out _);
         var now = DateTime.UtcNow;
-        vm.Tracks.Add(new LibraryTrackViewModel(new Track("/music/a.mp3", "a.mp3") { Title = "Wonderwall", Artist = "Oasis", DateAddedUtc = now.AddDays(-2) }, vm));
-        vm.Tracks.Add(new LibraryTrackViewModel(new Track("/music/b.mp3", "b.mp3") { Title = "No Woman No Cry", Artist = "Bob Marley", DateAddedUtc = now.AddDays(-1) }, vm));
-        vm.Tracks.Add(new LibraryTrackViewModel(new Track("/music/c.mp3", "c.mp3") { Title = "Live Forever", Artist = "Oasis", DateAddedUtc = now }, vm));
+        vm.Tracks.Add(new LibraryTrackViewModel(new Track(TestPaths.Music("a.mp3"), "a.mp3") { Title = "Wonderwall", Artist = "Oasis", DateAddedUtc = now.AddDays(-2) }, vm));
+        vm.Tracks.Add(new LibraryTrackViewModel(new Track(TestPaths.Music("b.mp3"), "b.mp3") { Title = "No Woman No Cry", Artist = "Bob Marley", DateAddedUtc = now.AddDays(-1) }, vm));
+        vm.Tracks.Add(new LibraryTrackViewModel(new Track(TestPaths.Music("c.mp3"), "c.mp3") { Title = "Live Forever", Artist = "Oasis", DateAddedUtc = now }, vm));
 
         vm.Search.Query = "oasis";
         await vm.Search.DebounceTask;
 
         await Assert.That(vm.RecentlyAddedTracks.Count).IsEqualTo(2);
-        await Assert.That(vm.RecentlyAddedTracks[0].Track.FilePath).IsEqualTo("/music/c.mp3");
-        await Assert.That(vm.RecentlyAddedTracks[1].Track.FilePath).IsEqualTo("/music/a.mp3");
+        await Assert.That(vm.RecentlyAddedTracks[0].Track.FilePath).IsEqualTo(TestPaths.Music("c.mp3"));
+        await Assert.That(vm.RecentlyAddedTracks[1].Track.FilePath).IsEqualTo(TestPaths.Music("a.mp3"));
     }
 
     [Test]
@@ -1025,8 +1025,8 @@ public class LibraryViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out _, out _, out _);
 
-        AddTrack(vm, "/music/a.mp3", "Album A", "Artist A", title: "Song A");
-        AddTrack(vm, "/music/b.mp3", "Album B", "Artist B", title: "Song B");
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Album A", "Artist A", title: "Song A");
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Album B", "Artist B", title: "Song B");
 
         await Assert.That(vm.DisplayedTracks.Select(t => t.Track.FilePath)).IsEquivalentTo(vm.Tracks.Select(t => t.Track.FilePath));
     }
@@ -1035,27 +1035,27 @@ public class LibraryViewModelTests : IDisposable
     public async Task DisplayedTracks_WithASearchQuery_FiltersAndRanksByTitleArtistOrAlbum()
     {
         var vm = CreateViewModel(out _, out _, out _);
-        AddTrack(vm, "/music/a.mp3", "Morning Glory", "Oasis", title: "Wonderwall");
-        AddTrack(vm, "/music/b.mp3", "Legend", "Bob Marley", title: "No Woman No Cry");
-        AddTrack(vm, "/music/c.mp3", "Some Album", "Some Artist", title: "Unrelated Song");
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Morning Glory", "Oasis", title: "Wonderwall");
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Legend", "Bob Marley", title: "No Woman No Cry");
+        AddTrack(vm, TestPaths.Music("c.mp3"), "Some Album", "Some Artist", title: "Unrelated Song");
 
         vm.Search.Query = "oasis";
         await vm.Search.DebounceTask;
 
         await Assert.That(vm.DisplayedTracks.Count).IsEqualTo(1);
-        await Assert.That(vm.DisplayedTracks[0].Track.FilePath).IsEqualTo("/music/a.mp3");
+        await Assert.That(vm.DisplayedTracks[0].Track.FilePath).IsEqualTo(TestPaths.Music("a.mp3"));
     }
 
     [Test]
     public async Task DisplayedTracks_UpdatesWhenTracksChangeWhileAQueryIsActive()
     {
         var vm = CreateViewModel(out _, out _, out _);
-        AddTrack(vm, "/music/a.mp3", "Morning Glory", "Oasis", title: "Wonderwall");
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Morning Glory", "Oasis", title: "Wonderwall");
         vm.Search.Query = "oasis";
         await vm.Search.DebounceTask;
         await Assert.That(vm.DisplayedTracks.Count).IsEqualTo(1);
 
-        AddTrack(vm, "/music/b.mp3", "Definitely Maybe", "Oasis", title: "Live Forever");
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Definitely Maybe", "Oasis", title: "Live Forever");
 
         await Assert.That(vm.DisplayedTracks.Count).IsEqualTo(2);
     }
@@ -1064,8 +1064,8 @@ public class LibraryViewModelTests : IDisposable
     public async Task ClearingTheSearch_RestoresAllTracks()
     {
         var vm = CreateViewModel(out _, out _, out _);
-        AddTrack(vm, "/music/a.mp3", "Morning Glory", "Oasis", title: "Wonderwall");
-        AddTrack(vm, "/music/b.mp3", "Legend", "Bob Marley", title: "No Woman No Cry");
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Morning Glory", "Oasis", title: "Wonderwall");
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Legend", "Bob Marley", title: "No Woman No Cry");
         vm.Search.Query = "oasis";
 
         vm.Search.ClearCommand.Execute(null);
@@ -1087,22 +1087,22 @@ public class LibraryViewModelTests : IDisposable
     public async Task ShowInFileManagerCommand_RevealsTheTracksFile()
     {
         var vm = CreateViewModel(out _, out _, out _, out var fileManagerService);
-        var track = new Track("/music/song.mp3", "song.mp3");
+        var track = new Track(TestPaths.Music("song.mp3"), "song.mp3");
 
         await vm.ShowInFileManagerCommand.ExecuteAsync(track);
 
-        await fileManagerService.Received(1).RevealInFileManagerAsync("/music/song.mp3");
+        await fileManagerService.Received(1).RevealInFileManagerAsync(TestPaths.Music("song.mp3"));
     }
 
     [Test]
     public async Task ShowAlbumInFileManagerCommand_RevealsTheFirstTracksFile()
     {
         var vm = CreateViewModel(out _, out _, out _, out var fileManagerService);
-        AddTrack(vm, "/music/b.mp3", "Album", "Artist", trackNumber: 2);
-        AddTrack(vm, "/music/a.mp3", "Album", "Artist", trackNumber: 1);
+        AddTrack(vm, TestPaths.Music("b.mp3"), "Album", "Artist", trackNumber: 2);
+        AddTrack(vm, TestPaths.Music("a.mp3"), "Album", "Artist", trackNumber: 1);
 
         await vm.ShowAlbumInFileManagerCommand.ExecuteAsync(vm.Grid.Albums[0]);
 
-        await fileManagerService.Received(1).RevealInFileManagerAsync("/music/a.mp3");
+        await fileManagerService.Received(1).RevealInFileManagerAsync(TestPaths.Music("a.mp3"));
     }
 }

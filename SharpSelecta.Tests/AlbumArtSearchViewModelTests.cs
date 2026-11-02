@@ -223,7 +223,7 @@ public class AlbumArtSearchViewModelTests
         new(track, Substitute.For<IFilePickerService>(), Substitute.For<IFileManagerService>(), NullLogger.Instance, providers);
 
     private static Track TrackWith(string? artist, string? album, string? albumArtist = null) =>
-        new("/music/nonexistent.mp3", "nonexistent") { Artist = artist, Album = album, AlbumArtist = albumArtist };
+        new(TestPaths.Music("nonexistent.mp3"), "nonexistent") { Artist = artist, Album = album, AlbumArtist = albumArtist };
 
     [Test]
     public async Task CanSearchCoverOnline_NeedsProvidersAnAlbumAndAnArtist()

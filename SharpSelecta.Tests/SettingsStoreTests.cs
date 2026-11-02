@@ -1,4 +1,5 @@
 using System.Runtime.Versioning;
+using System.Text.Json;
 using SharpSelecta.Core.Audio;
 using SharpSelecta.Core.Library;
 
@@ -37,12 +38,12 @@ public class SettingsStoreTests : IDisposable
         var path = _temp.NewSettingsPath();
         var store = new SettingsStore(path);
 
-        store.Update(s => s with { Volume = 0.42, LibraryFolderPaths = ["/music"], Theme = AppTheme.Light, SeekStepSeconds = 15 });
+        store.Update(s => s with { Volume = 0.42, LibraryFolderPaths = [TestPaths.Music()], Theme = AppTheme.Light, SeekStepSeconds = 15 });
 
         await Assert.That(store.Current.Volume).IsEqualTo(0.42);
         var reloaded = new SettingsStore(path).Current;
         await Assert.That(reloaded.Volume).IsEqualTo(0.42);
-        await Assert.That(reloaded.LibraryFolderPaths).IsEquivalentTo(["/music"]);
+        await Assert.That(reloaded.LibraryFolderPaths).IsEquivalentTo([TestPaths.Music()]);
         await Assert.That(reloaded.Theme).IsEqualTo(AppTheme.Light);
         await Assert.That(reloaded.SeekStepSeconds).IsEqualTo(15);
         await Assert.That(reloaded.RestoreQueueOnStartup).IsTrue();
@@ -54,7 +55,7 @@ public class SettingsStoreTests : IDisposable
         var path = _temp.NewSettingsPath();
         new SettingsStore(path).Update(_ => new AppSettings
         {
-            LibraryFolderPaths = ["/music/a", "/music/b"],
+            LibraryFolderPaths = [TestPaths.Music("a"), TestPaths.Music("b")],
             Columns = new Dictionary<string, bool> { ["Artist"] = false },
             ColumnOrder = ["Title", "Artist"],
             RightColumnWidth = 321,
@@ -89,7 +90,7 @@ public class SettingsStoreTests : IDisposable
 
         var s = new SettingsStore(path).Current;
 
-        await Assert.That(s.LibraryFolderPaths).IsEquivalentTo(["/music/a", "/music/b"]);
+        await Assert.That(s.LibraryFolderPaths).IsEquivalentTo([TestPaths.Music("a"), TestPaths.Music("b")]);
         await Assert.That(s.Columns!["Artist"]).IsFalse();
         await Assert.That(s.ColumnOrder).IsEquivalentTo(["Title", "Artist"]);
         await Assert.That(s.RightColumnWidth).IsEqualTo(321);
@@ -126,11 +127,11 @@ public class SettingsStoreTests : IDisposable
     public async Task AFileWithExplicitNulls_LoadsWithTheDefaultsForThoseSettings()
     {
         var path = _temp.NewSettingsPath();
-        File.WriteAllText(path, """{"LibraryFolderPaths":["/music"],"RestoreQueueOnStartup":null,"SeekStepSeconds":null,"Theme":null,"Volume":0.7}""");
+        File.WriteAllText(path, $$"""{"LibraryFolderPaths":[{{JsonSerializer.Serialize(TestPaths.Music())}}],"RestoreQueueOnStartup":null,"SeekStepSeconds":null,"Theme":null,"Volume":0.7}""");
 
         var settings = new SettingsStore(path).Current;
 
-        await Assert.That(settings.LibraryFolderPaths).IsEquivalentTo(["/music"]);
+        await Assert.That(settings.LibraryFolderPaths).IsEquivalentTo([TestPaths.Music()]);
         await Assert.That(settings.Volume).IsEqualTo(0.7);
         await Assert.That(settings.RestoreQueueOnStartup).IsTrue();
         await Assert.That(settings.SeekStepSeconds).IsEqualTo(5);

@@ -75,7 +75,7 @@ public class FuzzySearchTests
     [Test]
     public async Task Score_Track_MatchesOnTitleArtistOrAlbum()
     {
-        var track = new Track("/music/wonderwall.mp3", "wonderwall.mp3")
+        var track = new Track(TestPaths.Music("wonderwall.mp3"), "wonderwall.mp3")
         {
             Title = "Wonderwall",
             Artist = "Oasis",
@@ -91,7 +91,7 @@ public class FuzzySearchTests
     [Test]
     public async Task Score_Track_WithNoTitle_FallsBackToDisplayName()
     {
-        var track = new Track("/music/untagged.mp3", "untagged.mp3");
+        var track = new Track(TestPaths.Music("untagged.mp3"), "untagged.mp3");
 
         await Assert.That(FuzzySearch.Score(track, "untagged")).IsNotNull();
     }
@@ -99,9 +99,9 @@ public class FuzzySearchTests
     [Test]
     public async Task Score_Track_PrefersATitleMatchOverAnEquallyStrongArtistOrAlbumMatch()
     {
-        var titleMatch = new Track("/music/a.mp3", "a.mp3") { Title = "Wonder", Artist = "Unrelated", Album = "Unrelated" };
-        var artistMatch = new Track("/music/b.mp3", "b.mp3") { Title = "Unrelated", Artist = "Wonder", Album = "Unrelated" };
-        var albumMatch = new Track("/music/c.mp3", "c.mp3") { Title = "Unrelated", Artist = "Unrelated", Album = "Wonder" };
+        var titleMatch = new Track(TestPaths.Music("a.mp3"), "a.mp3") { Title = "Wonder", Artist = "Unrelated", Album = "Unrelated" };
+        var artistMatch = new Track(TestPaths.Music("b.mp3"), "b.mp3") { Title = "Unrelated", Artist = "Wonder", Album = "Unrelated" };
+        var albumMatch = new Track(TestPaths.Music("c.mp3"), "c.mp3") { Title = "Unrelated", Artist = "Unrelated", Album = "Wonder" };
 
         var titleScore = FuzzySearch.Score(titleMatch, "wonder");
         var artistScore = FuzzySearch.Score(artistMatch, "wonder");
@@ -115,8 +115,8 @@ public class FuzzySearchTests
     public async Task Score_Track_TitleMatchOutranksAnArtistMatchThatWouldOtherwiseTie()
     {
         // Both fields score "milli" the same, so only field weighting breaks the tie.
-        var militaryDance = new Track("/music/a.mp3", "a.mp3") { Title = "Millitary Dance", Artist = "Some Artist" };
-        var milliVanilli = new Track("/music/b.mp3", "b.mp3") { Title = "Girl You Know It's True", Artist = "Milli Vanilli" };
+        var militaryDance = new Track(TestPaths.Music("a.mp3"), "a.mp3") { Title = "Millitary Dance", Artist = "Some Artist" };
+        var milliVanilli = new Track(TestPaths.Music("b.mp3"), "b.mp3") { Title = "Girl You Know It's True", Artist = "Milli Vanilli" };
 
         var militaryDanceScore = FuzzySearch.Score(militaryDance, "milli");
         var milliVanilliScore = FuzzySearch.Score(milliVanilli, "milli");

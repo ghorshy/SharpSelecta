@@ -5,7 +5,7 @@ namespace SharpSelecta.Tests;
 
 public class AutoDjTests
 {
-    private static Track T(string name) => new($"/music/{name}.mp3", name);
+    private static Track T(string name) => new(TestPaths.Music($"{name}.mp3"), name);
 
     private static IReadOnlyList<Track> Pool(params string[] names) => names.Select(T).ToList();
 

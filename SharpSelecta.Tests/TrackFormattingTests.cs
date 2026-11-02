@@ -64,7 +64,7 @@ public class TrackFormattingTests
     [Test]
     public async Task TechnicalSummary_CombinesFileTypeSampleRateBitrateAndLength()
     {
-        var track = new Track("/music/a.mp3", "a.mp3")
+        var track = new Track(TestPaths.Music("a.mp3"), "a.mp3")
         {
             FileType = AudioFileType.Mp3,
             SampleRate = 44100,

@@ -31,7 +31,7 @@ public class MprisMappingTests
     [Test]
     public async Task BuildMetadata_WithAFullyTaggedTrack_IncludesAllStandardKeys()
     {
-        var track = new Track("/music/song.mp3", "Song Title")
+        var track = new Track(TestPaths.Music("song.mp3"), "Song Title")
         {
             Title = "Song Title",
             Artist = "The Artist",
@@ -51,7 +51,7 @@ public class MprisMappingTests
     [Test]
     public async Task BuildMetadata_WithNoTitle_FallsBackToDisplayName()
     {
-        var track = new Track("/music/untagged.mp3", "untagged.mp3");
+        var track = new Track(TestPaths.Music("untagged.mp3"), "untagged.mp3");
 
         var metadata = MprisMapping.BuildMetadata(track);
 
@@ -61,7 +61,7 @@ public class MprisMappingTests
     [Test]
     public async Task BuildMetadata_WithNoArtistOrAlbum_OmitsThoseKeys()
     {
-        var track = new Track("/music/untagged.mp3", "untagged.mp3");
+        var track = new Track(TestPaths.Music("untagged.mp3"), "untagged.mp3");
 
         var metadata = MprisMapping.BuildMetadata(track);
 
@@ -72,7 +72,7 @@ public class MprisMappingTests
     [Test]
     public async Task BuildMetadata_WithoutAHeartbeatTick_OmitsTheHeartbeatKey()
     {
-        var track = new Track("/music/song.mp3", "song.mp3");
+        var track = new Track(TestPaths.Music("song.mp3"), "song.mp3");
 
         var metadata = MprisMapping.BuildMetadata(track);
 
@@ -82,7 +82,7 @@ public class MprisMappingTests
     [Test]
     public async Task BuildMetadata_WithAHeartbeatTick_IncludesIt()
     {
-        var track = new Track("/music/song.mp3", "song.mp3");
+        var track = new Track(TestPaths.Music("song.mp3"), "song.mp3");
 
         var metadata = MprisMapping.BuildMetadata(track, heartbeatTick: 42);
 
@@ -92,7 +92,7 @@ public class MprisMappingTests
     [Test]
     public async Task TrackId_IsStableForTheSameTrack()
     {
-        var track = new Track("/music/song.mp3", "song.mp3");
+        var track = new Track(TestPaths.Music("song.mp3"), "song.mp3");
 
         await Assert.That(MprisMapping.TrackId(track)).IsEqualTo(MprisMapping.TrackId(track));
     }
@@ -100,8 +100,8 @@ public class MprisMappingTests
     [Test]
     public async Task TrackId_DiffersForDifferentFilePaths()
     {
-        var a = new Track("/music/a.mp3", "a.mp3");
-        var b = new Track("/music/b.mp3", "b.mp3");
+        var a = new Track(TestPaths.Music("a.mp3"), "a.mp3");
+        var b = new Track(TestPaths.Music("b.mp3"), "b.mp3");
 
         await Assert.That(MprisMapping.TrackId(a)).IsNotEqualTo(MprisMapping.TrackId(b));
     }
@@ -109,7 +109,7 @@ public class MprisMappingTests
     [Test]
     public async Task TrackId_IsAValidObjectPath()
     {
-        var track = new Track("/music/song.mp3", "song.mp3");
+        var track = new Track(TestPaths.Music("song.mp3"), "song.mp3");
 
         var trackId = MprisMapping.TrackId(track);
 
@@ -143,7 +143,7 @@ public class MprisMappingTests
     [Test]
     public async Task BuildMetadata_PutsEveryArtistOfTheTrackInTheArtistList()
     {
-        var track = new Track("/music/a.mp3", "a.mp3") { Artist = "TRC;Trilla Jermaine Trilloski" };
+        var track = new Track(TestPaths.Music("a.mp3"), "a.mp3") { Artist = "TRC;Trilla Jermaine Trilloski" };
 
         var metadata = MprisMapping.BuildMetadata(track);
 

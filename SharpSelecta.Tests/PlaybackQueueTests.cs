@@ -5,9 +5,9 @@ namespace SharpSelecta.Tests;
 
 public class PlaybackQueueTests
 {
-    private static readonly Track TrackA = new("/music/a.mp3", "a.mp3");
-    private static readonly Track TrackB = new("/music/b.mp3", "b.mp3");
-    private static readonly Track TrackC = new("/music/c.mp3", "c.mp3");
+    private static readonly Track TrackA = new(TestPaths.Music("a.mp3"), "a.mp3");
+    private static readonly Track TrackB = new(TestPaths.Music("b.mp3"), "b.mp3");
+    private static readonly Track TrackC = new(TestPaths.Music("c.mp3"), "c.mp3");
 
     [Test]
     public async Task PlayNow_InsertsRightAfterCurrentAndBecomesCurrent()

@@ -9,7 +9,7 @@ namespace SharpSelecta.Tests;
 
 public class FileManagerServiceTests
 {
-    private const string FilePath = "/music/album/track.mp3";
+    private static readonly string FilePath = TestPaths.Music("album", "track.mp3");
 
     private static FileManagerService CreateService(IFileManagerShell shell) =>
         new(NullLogger<FileManagerService>.Instance, shell);
@@ -37,11 +37,11 @@ public class FileManagerServiceTests
         var started = CaptureStarts(shell);
         var service = CreateService(shell);
 
-        await service.RevealInFileManagerAsync(@"C:\Music\track.mp3");
+        await service.RevealInFileManagerAsync(FilePath);
 
         await Assert.That(service.ActionLabel).IsEqualTo(Strings.ShowInFileManager("Explorer"));
         await Assert.That(started.Single().FileName).IsEqualTo("explorer.exe");
-        await Assert.That(started.Single().Arguments).IsEqualTo(@"/select,""C:\Music\track.mp3""");
+        await Assert.That(started.Single().Arguments).IsEqualTo($"/select,\"{FilePath}\"");
     }
 
     [Test]
@@ -114,7 +114,7 @@ public class FileManagerServiceTests
         await CreateService(shell).RevealInFileManagerAsync(FilePath);
 
         await Assert.That(started.Single().FileName).IsEqualTo("xdg-open");
-        await Assert.That(string.Join(" ", started.Single().ArgumentList)).IsEqualTo("/music/album");
+        await Assert.That(string.Join(" ", started.Single().ArgumentList)).IsEqualTo(TestPaths.Music("album"));
     }
 
     [Test]

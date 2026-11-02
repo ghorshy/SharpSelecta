@@ -4,14 +4,17 @@ namespace SharpSelecta.Tests;
 
 public class M3uPlaylistFileTests
 {
+    private static readonly string A = TestPaths.Music("a.mp3");
+    private static readonly string B = TestPaths.Music("b.mp3");
+
     [Test]
     public async Task ParsePaths_SkipsCommentsAndBlankLines()
     {
-        const string content = "#EXTM3U\n#EXTINF:200,Artist - Title\n/music/a.mp3\n\n/music/b.mp3\n";
+        var content = $"#EXTM3U\n#EXTINF:200,Artist - Title\n{A}\n\n{B}\n";
 
-        var paths = M3uPlaylistFile.ParsePaths(content, "/music");
+        var paths = M3uPlaylistFile.ParsePaths(content, TestPaths.Music());
 
-        await Assert.That(paths).IsEquivalentTo(["/music/a.mp3", "/music/b.mp3"]);
+        await Assert.That(paths).IsEquivalentTo([A, B]);
     }
 
     [Test]
@@ -19,7 +22,7 @@ public class M3uPlaylistFileTests
     [Arguments(@"songs\track.mp3")]
     public async Task ParsePaths_ResolvesRelativePathsAgainstTheBaseDirectory(string content)
     {
-        var baseDirectory = Path.Combine("home", "user", "Music");
+        var baseDirectory = TestPaths.Music();
 
         var paths = M3uPlaylistFile.ParsePaths(content, baseDirectory);
 
@@ -29,21 +32,21 @@ public class M3uPlaylistFileTests
     [Test]
     public async Task ParsePaths_LeavesAbsolutePathsUnchanged()
     {
-        const string content = "/absolute/path/track.mp3";
+        var content = TestPaths.Rooted("absolute", "path", "track.mp3");
 
-        var paths = M3uPlaylistFile.ParsePaths(content, "/home/user/Music");
+        var paths = M3uPlaylistFile.ParsePaths(content, TestPaths.Music());
 
-        await Assert.That(paths).IsEquivalentTo(["/absolute/path/track.mp3"]);
+        await Assert.That(paths).IsEquivalentTo([content]);
     }
 
     [Test]
     public async Task ParsePaths_HandlesCrlfLineEndings()
     {
-        const string content = "/music/a.mp3\r\n/music/b.mp3\r\n";
+        var content = $"{A}\r\n{B}\r\n";
 
-        var paths = M3uPlaylistFile.ParsePaths(content, "/music");
+        var paths = M3uPlaylistFile.ParsePaths(content, TestPaths.Music());
 
-        await Assert.That(paths).IsEquivalentTo(["/music/a.mp3", "/music/b.mp3"]);
+        await Assert.That(paths).IsEquivalentTo([A, B]);
     }
 
     [Test]
@@ -51,8 +54,8 @@ public class M3uPlaylistFileTests
     {
         var tracks = new[]
         {
-            ("/music/a.mp3", TimeSpan.FromSeconds(125), "Artist One", "Title One"),
-            ("/music/b.mp3", TimeSpan.FromSeconds(200), "Artist Two", "Title Two"),
+            (A, TimeSpan.FromSeconds(125), "Artist One", "Title One"),
+            (B, TimeSpan.FromSeconds(200), "Artist Two", "Title Two"),
         };
 
         var content = M3uPlaylistFile.Write(tracks);
@@ -60,8 +63,8 @@ public class M3uPlaylistFileTests
 
         await Assert.That(lines[0]).IsEqualTo("#EXTM3U");
         await Assert.That(lines[1]).IsEqualTo("#EXTINF:125,Artist One - Title One");
-        await Assert.That(lines[2]).IsEqualTo("/music/a.mp3");
+        await Assert.That(lines[2]).IsEqualTo(A);
         await Assert.That(lines[3]).IsEqualTo("#EXTINF:200,Artist Two - Title Two");
-        await Assert.That(lines[4]).IsEqualTo("/music/b.mp3");
+        await Assert.That(lines[4]).IsEqualTo(B);
     }
 }

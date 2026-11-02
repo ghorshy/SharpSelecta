@@ -16,7 +16,7 @@ public class TrackConversionViewModelTests
     {
         var converter = Substitute.For<IAudioConverter>();
         converter.IsAvailable.Returns(available);
-        var tracks = sources.Select((_, i) => new Track($"/music/{i}.x", $"{i}")).ToList();
+        var tracks = sources.Select((_, i) => new Track(TestPaths.Music($"{i}.x"), $"{i}")).ToList();
         for (var i = 0; i < sources.Length; i++)
         {
             converter.ProbeAsync(tracks[i].FilePath, Arg.Any<CancellationToken>()).Returns(sources[i]);

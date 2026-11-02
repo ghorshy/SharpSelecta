@@ -26,13 +26,13 @@ public class QueueViewModelTests : IDisposable
     public async Task PlayEntryCommand_JumpsToTheDoubleClickedEntryAndLoadsIntoEngine()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
-        queue.AddToQueue(new Track("/music/b.mp3", "b.mp3"));
-        queue.AddToQueue(new Track("/music/c.mp3", "c.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
+        queue.AddToQueue(new Track(TestPaths.Music("b.mp3"), "b.mp3"));
+        queue.AddToQueue(new Track(TestPaths.Music("c.mp3"), "c.mp3"));
 
         await vm.PlayEntryCommand.ExecuteAsync(vm.Entries[2]);
 
-        audioEngine.Received(1).Load("/music/c.mp3");
+        audioEngine.Received(1).Load(TestPaths.Music("c.mp3"));
         await Assert.That(vm.CurrentIndex).IsEqualTo(2);
     }
 
@@ -40,9 +40,9 @@ public class QueueViewModelTests : IDisposable
     public async Task PlayEntryCommand_DoesNotDropAnyOtherQueueEntries()
     {
         var vm = CreateViewModel(out _, out var queue);
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
-        queue.AddToQueue(new Track("/music/b.mp3", "b.mp3"));
-        queue.AddToQueue(new Track("/music/c.mp3", "c.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
+        queue.AddToQueue(new Track(TestPaths.Music("b.mp3"), "b.mp3"));
+        queue.AddToQueue(new Track(TestPaths.Music("c.mp3"), "c.mp3"));
 
         await vm.PlayEntryCommand.ExecuteAsync(vm.Entries[0]);
 
@@ -53,9 +53,9 @@ public class QueueViewModelTests : IDisposable
     public async Task ClearQueueCommand_RemovesEveryEntryButTheCurrentOne()
     {
         var vm = CreateViewModel(out _, out var queue);
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
-        queue.AddToQueue(new Track("/music/b.mp3", "b.mp3"));
-        queue.AddToQueue(new Track("/music/c.mp3", "c.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
+        queue.AddToQueue(new Track(TestPaths.Music("b.mp3"), "b.mp3"));
+        queue.AddToQueue(new Track(TestPaths.Music("c.mp3"), "c.mp3"));
 
         vm.ClearQueueCommand.Execute(null);
 
@@ -67,7 +67,7 @@ public class QueueViewModelTests : IDisposable
     public async Task ClearQueueCommand_WithOnlyTheCurrentEntryQueued_CannotExecute()
     {
         var vm = CreateViewModel(out _, out var queue);
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
 
         await Assert.That(vm.ClearQueueCommand.CanExecute(null)).IsFalse();
     }
@@ -76,8 +76,8 @@ public class QueueViewModelTests : IDisposable
     public async Task ClearQueueCommand_WithMoreThanTheCurrentEntryQueued_CanExecute()
     {
         var vm = CreateViewModel(out _, out var queue);
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
-        queue.AddToQueue(new Track("/music/b.mp3", "b.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
+        queue.AddToQueue(new Track(TestPaths.Music("b.mp3"), "b.mp3"));
 
         await Assert.That(vm.ClearQueueCommand.CanExecute(null)).IsTrue();
     }
@@ -94,7 +94,7 @@ public class QueueViewModelTests : IDisposable
     public async Task EntryArtist_ShowsSeveralArtistsWithTheDisplaySeparator()
     {
         var vm = CreateViewModel(out _, out var queue);
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3") { Artist = "TRC;Trilla Jermaine Trilloski" });
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3") { Artist = "TRC;Trilla Jermaine Trilloski" });
 
         await Assert.That(vm.Entries[0].Artist).IsEqualTo("TRC, Trilla Jermaine Trilloski");
     }
@@ -103,8 +103,8 @@ public class QueueViewModelTests : IDisposable
     public async Task EntryIsAutoDj_ReflectsWhoQueuedIt()
     {
         var vm = CreateViewModel(out _, out var queue);
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
-        queue.AddAutoDjEntry(new Track("/music/b.mp3", "b.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
+        queue.AddAutoDjEntry(new Track(TestPaths.Music("b.mp3"), "b.mp3"));
 
         await Assert.That(vm.Entries[0].IsAutoDj).IsFalse();
         await Assert.That(vm.Entries[1].IsAutoDj).IsTrue();
@@ -127,9 +127,9 @@ public class QueueViewModelTests : IDisposable
     public async Task Clear_WithAutoDjOff_StillEmptiesEverythingButTheCurrentTrack()
     {
         var vm = CreateViewModel(out _, out var queue);
-        queue.PlayNow(new Track("/music/current.mp3", "current.mp3"));
-        queue.AddToQueue(new Track("/music/manual.mp3", "manual.mp3"));
-        queue.AddAutoDjEntry(new Track("/music/auto.mp3", "auto.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("current.mp3"), "current.mp3"));
+        queue.AddToQueue(new Track(TestPaths.Music("manual.mp3"), "manual.mp3"));
+        queue.AddAutoDjEntry(new Track(TestPaths.Music("auto.mp3"), "auto.mp3"));
 
         vm.ClearQueueCommand.Execute(null);
 
@@ -142,7 +142,7 @@ public class QueueViewModelTests : IDisposable
     {
         var playback = new PlaybackControlsViewModel(Substitute.For<IAudioEngine>(), new PlaybackQueue(), new SettingsStore(_temp.NewSettingsPath()), NullLogger<PlaybackControlsViewModel>.Instance);
         var queue = new QueueViewModel(playback, NullLogger<QueueViewModel>.Instance);
-        IReadOnlyList<Track> pool = Enumerable.Range(0, 30).Select(i => new Track($"/music/{i:D2}.mp3", $"{i:D2}")).ToList();
+        IReadOnlyList<Track> pool = Enumerable.Range(0, 30).Select(i => new Track(TestPaths.Music($"{i:D2}.mp3"), $"{i:D2}")).ToList();
         playback.AutoDjPool = () => pool;
         playback.IsAutoDjEnabled = true;
         return (queue, playback, pool);

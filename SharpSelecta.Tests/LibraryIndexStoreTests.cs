@@ -19,7 +19,7 @@ public class LibraryIndexStoreTests : IDisposable
     {
         var settingsPath = _temp.NewSettingsPath();
 
-        var loaded = LibraryIndexStore.LoadIndexed(settingsPath, ["/music/library"]);
+        var loaded = LibraryIndexStore.LoadIndexed(settingsPath, [TestPaths.Music("library")]);
 
         await Assert.That(loaded).IsEmpty();
     }
@@ -141,7 +141,7 @@ public class LibraryIndexStoreTests : IDisposable
     {
         var settingsPath = _temp.NewSettingsPath();
 
-        var peaks = LibraryIndexStore.TryGetWaveformPeaks(settingsPath, "/music/a.mp3");
+        var peaks = LibraryIndexStore.TryGetWaveformPeaks(settingsPath, TestPaths.Music("a.mp3"));
 
         await Assert.That(peaks).IsNull();
     }
@@ -525,7 +525,7 @@ public class LibraryIndexStoreTests : IDisposable
     {
         var settingsPath = _temp.NewSettingsPath();
 
-        LibraryIndexStore.UpdateTrack(settingsPath, new Track("/music/a.mp3", "a.mp3"));
+        LibraryIndexStore.UpdateTrack(settingsPath, new Track(TestPaths.Music("a.mp3"), "a.mp3"));
 
         await Assert.That(File.Exists(LibraryIndexStore.IndexFilePath(settingsPath))).IsFalse();
     }
@@ -666,12 +666,12 @@ public class LibraryIndexStoreTests : IDisposable
         var settingsPath = _temp.NewSettingsPath();
         LibraryIndexStore.Reconcile(settingsPath, []);
         var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "P");
-        LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, ["/music/a.flac", "/music/b.flac"]);
+        LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [TestPaths.Music("a.flac"), TestPaths.Music("b.flac")]);
 
-        LibraryIndexStore.ReplaceFileInPlaylists(settingsPath, "/music/a.flac", "/music/a.m4a");
+        LibraryIndexStore.ReplaceFileInPlaylists(settingsPath, TestPaths.Music("a.flac"), TestPaths.Music("a.m4a"));
 
         await Assert.That(LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId).Select(e => e.FilePath))
-            .IsEquivalentTo(["/music/a.m4a", "/music/b.flac"]);
+            .IsEquivalentTo([TestPaths.Music("a.m4a"), TestPaths.Music("b.flac")]);
     }
 
     [Test]

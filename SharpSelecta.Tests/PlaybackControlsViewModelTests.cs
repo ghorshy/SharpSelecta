@@ -31,7 +31,7 @@ public class PlaybackControlsViewModelTests : IDisposable
         var vm = CreateViewModel(out _, out _);
         await Assert.That(vm.PlayPauseCommand.CanExecute(null)).IsFalse();
 
-        await vm.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
+        await vm.PlayNowAsync(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
 
         await Assert.That(vm.PlayPauseCommand.CanExecute(null)).IsTrue();
     }
@@ -91,8 +91,8 @@ public class PlaybackControlsViewModelTests : IDisposable
         var vm = CreateViewModel(out _, out var queue);
         await Assert.That(vm.NextTrackCommand.CanExecute(null)).IsFalse();
 
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
-        queue.AddToQueue(new Track("/music/b.mp3", "b.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
+        queue.AddToQueue(new Track(TestPaths.Music("b.mp3"), "b.mp3"));
 
         await Assert.That(vm.NextTrackCommand.CanExecute(null)).IsTrue();
     }
@@ -101,15 +101,15 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task NextTrackCommand_FromAQueueThatWasOnlyAddedToAndNeverPlayed_LoadsAndPlaysTheFirstTrack()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
-        var a = new Track("/music/a.mp3", "a.mp3");
-        var b = new Track("/music/b.mp3", "b.mp3");
+        var a = new Track(TestPaths.Music("a.mp3"), "a.mp3");
+        var b = new Track(TestPaths.Music("b.mp3"), "b.mp3");
         queue.AddToQueue(a);
         queue.AddToQueue(b);
         await Assert.That(vm.CurrentTrack).IsNull();
 
         await vm.NextTrackCommand.ExecuteAsync(null);
 
-        audioEngine.Received(1).Load("/music/a.mp3");
+        audioEngine.Received(1).Load(TestPaths.Music("a.mp3"));
         await Assert.That(vm.CurrentTrack).IsEqualTo(a);
         await Assert.That(vm.IsPlaying).IsTrue();
     }
@@ -118,12 +118,12 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task NextTrackCommand_AdvancesQueueAndLoadsIntoEngine_WithoutDroppingHistory()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
-        queue.AddToQueue(new Track("/music/b.mp3", "b.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
+        queue.AddToQueue(new Track(TestPaths.Music("b.mp3"), "b.mp3"));
 
         await vm.NextTrackCommand.ExecuteAsync(null);
 
-        audioEngine.Received(1).Load("/music/b.mp3");
+        audioEngine.Received(1).Load(TestPaths.Music("b.mp3"));
         await Assert.That(vm.LoadedFileName).IsEqualTo("b.mp3");
         await Assert.That(vm.IsPlaying).IsTrue();
         await Assert.That(queue.Entries.Count).IsEqualTo(2);
@@ -136,7 +136,7 @@ public class PlaybackControlsViewModelTests : IDisposable
         var vm = CreateViewModel(out _, out var queue);
         await Assert.That(vm.PreviousTrackCommand.CanExecute(null)).IsFalse();
 
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
 
         await Assert.That(vm.PreviousTrackCommand.CanExecute(null)).IsTrue();
     }
@@ -145,15 +145,15 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task PreviousTrackCommand_WithinThreshold_GoesBackAndReloadsThePriorTrack()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
-        queue.AddToQueue(new Track("/music/b.mp3", "b.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
+        queue.AddToQueue(new Track(TestPaths.Music("b.mp3"), "b.mp3"));
         await vm.NextTrackCommand.ExecuteAsync(null);
         vm.PositionSeconds = 1.0;
         audioEngine.ClearReceivedCalls();
 
         await vm.PreviousTrackCommand.ExecuteAsync(null);
 
-        audioEngine.Received(1).Load("/music/a.mp3");
+        audioEngine.Received(1).Load(TestPaths.Music("a.mp3"));
         await Assert.That(vm.LoadedFileName).IsEqualTo("a.mp3");
         await Assert.That(queue.Entries.Count).IsEqualTo(2);
         await Assert.That(vm.NextTrackCommand.CanExecute(null)).IsTrue();
@@ -163,8 +163,8 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task PreviousTrackCommand_PastThreshold_RestartsCurrentTrackInsteadOfGoingBack()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
-        queue.AddToQueue(new Track("/music/b.mp3", "b.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
+        queue.AddToQueue(new Track(TestPaths.Music("b.mp3"), "b.mp3"));
         await vm.NextTrackCommand.ExecuteAsync(null);
         vm.PositionSeconds = 10.0;
         audioEngine.ClearReceivedCalls();
@@ -181,7 +181,7 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task PreviousTrackCommand_AtStartOfHistory_RestartsEvenWithinThreshold()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
         vm.PositionSeconds = 1.0;
         audioEngine.ClearReceivedCalls();
 
@@ -196,7 +196,7 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task PreviousTrackCommand_AfterQueueFinished_ReEnablesPlayPause()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
         audioEngine.Duration.Returns(180.0);
         audioEngine.Position.Returns(200.0);
         await vm.RefreshPositionAsync();
@@ -211,18 +211,18 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task PlayNext_AfterQueueFinished_StartsPlayingTheQueuedTrack()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
         audioEngine.Duration.Returns(180.0);
         audioEngine.Position.Returns(200.0);
         await vm.RefreshPositionAsync();
         audioEngine.ClearReceivedCalls();
         audioEngine.Position.Returns(0.0);
         audioEngine.Duration.Returns(0.0);
-        var next = new Track("/music/b.mp3", "b.mp3");
+        var next = new Track(TestPaths.Music("b.mp3"), "b.mp3");
 
         await vm.PlayNext(next);
 
-        audioEngine.Received(1).Load("/music/b.mp3");
+        audioEngine.Received(1).Load(TestPaths.Music("b.mp3"));
         await Assert.That(vm.IsPlaying).IsTrue();
         await Assert.That(vm.PlayPauseCommand.CanExecute(null)).IsTrue();
     }
@@ -231,18 +231,18 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task AddToQueue_AfterQueueFinished_StartsPlayingTheQueuedTrack()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
         audioEngine.Duration.Returns(180.0);
         audioEngine.Position.Returns(200.0);
         await vm.RefreshPositionAsync();
         audioEngine.ClearReceivedCalls();
         audioEngine.Position.Returns(0.0);
         audioEngine.Duration.Returns(0.0);
-        var next = new Track("/music/b.mp3", "b.mp3");
+        var next = new Track(TestPaths.Music("b.mp3"), "b.mp3");
 
         await vm.AddToQueue(next);
 
-        audioEngine.Received(1).Load("/music/b.mp3");
+        audioEngine.Received(1).Load(TestPaths.Music("b.mp3"));
         await Assert.That(vm.IsPlaying).IsTrue();
         await Assert.That(vm.PlayPauseCommand.CanExecute(null)).IsTrue();
     }
@@ -251,9 +251,9 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task PlayNext_WhileAlreadyPlaying_JustQueuesWithoutInterruptingPlayback()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
-        await vm.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
+        await vm.PlayNowAsync(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
         audioEngine.ClearReceivedCalls();
-        var next = new Track("/music/b.mp3", "b.mp3");
+        var next = new Track(TestPaths.Music("b.mp3"), "b.mp3");
 
         await vm.PlayNext(next);
 
@@ -265,11 +265,11 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task PlayNowAsync_JoinsQueueAndLoadsIntoEngine()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
-        var track = new Track("/music/song.mp3", "song.mp3");
+        var track = new Track(TestPaths.Music("song.mp3"), "song.mp3");
 
         await vm.PlayNowAsync(track);
 
-        audioEngine.Received(1).Load("/music/song.mp3");
+        audioEngine.Received(1).Load(TestPaths.Music("song.mp3"));
         await Assert.That(vm.LoadedFileName).IsEqualTo("song.mp3");
         await Assert.That(vm.IsPlaying).IsTrue();
         await Assert.That(queue.Entries.Count).IsEqualTo(1);
@@ -279,7 +279,7 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task PlayNowAsync_SetsCurrentTrack()
     {
         var vm = CreateViewModel(out _, out _);
-        var track = new Track("/music/song.mp3", "song.mp3");
+        var track = new Track(TestPaths.Music("song.mp3"), "song.mp3");
 
         await vm.PlayNowAsync(track);
 
@@ -314,8 +314,8 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task PlayNowAsync_WhenEngineThrows_SetsStatusMessageInsteadOfCrashing()
     {
         var vm = CreateViewModel(out var audioEngine, out _);
-        var track = new Track("/music/broken.mp4", "broken.mp4");
-        audioEngine.When(e => e.Load("/music/broken.mp4"))
+        var track = new Track(TestPaths.Music("broken.mp4"), "broken.mp4");
+        audioEngine.When(e => e.Load(TestPaths.Music("broken.mp4")))
             .Throw(new InvalidOperationException("no audio stream found"));
 
         await vm.PlayNowAsync(track);
@@ -344,7 +344,7 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task RefreshPositionAsync_WhenTrackEndsWithRepeatOne_RestartsTheSameTrack()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
         audioEngine.ClearReceivedCalls();
         vm.ToggleRepeatModeCommand.Execute(null);
         vm.ToggleRepeatModeCommand.Execute(null);
@@ -363,7 +363,7 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task RefreshPositionAsync_WithRepeatOne_KeepsLoopingPastTheFirstRestart()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
         vm.ToggleRepeatModeCommand.Execute(null);
         vm.ToggleRepeatModeCommand.Execute(null);
         audioEngine.Duration.Returns(180.0);
@@ -385,8 +385,8 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task RefreshPositionAsync_WhenTrackEndsWithRepeatAllAtEndOfQueue_WrapsToStart()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
-        queue.AddToQueue(new Track("/music/b.mp3", "b.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
+        queue.AddToQueue(new Track(TestPaths.Music("b.mp3"), "b.mp3"));
         await vm.NextTrackCommand.ExecuteAsync(null);
         vm.ToggleRepeatModeCommand.Execute(null);
         audioEngine.Duration.Returns(180.0);
@@ -394,7 +394,7 @@ public class PlaybackControlsViewModelTests : IDisposable
 
         await vm.RefreshPositionAsync();
 
-        audioEngine.Received(1).Load("/music/a.mp3");
+        audioEngine.Received(1).Load(TestPaths.Music("a.mp3"));
         await Assert.That(vm.LoadedFileName).IsEqualTo("a.mp3");
         await Assert.That(queue.CurrentIndex).IsEqualTo(0);
     }
@@ -403,14 +403,14 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task RefreshPositionAsync_WhenTrackEndsWithRepeatOff_AdvancesToNextQueuedTrack()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
-        queue.AddToQueue(new Track("/music/b.mp3", "b.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
+        queue.AddToQueue(new Track(TestPaths.Music("b.mp3"), "b.mp3"));
         audioEngine.Duration.Returns(180.0);
         audioEngine.Position.Returns(200.0, 0.0);
 
         await vm.RefreshPositionAsync();
 
-        audioEngine.Received(1).Load("/music/b.mp3");
+        audioEngine.Received(1).Load(TestPaths.Music("b.mp3"));
         await Assert.That(vm.LoadedFileName).IsEqualTo("b.mp3");
     }
 
@@ -418,7 +418,7 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task RefreshPositionAsync_WhenTrackEndsWithRepeatOffAndNothingQueued_StopsPlaying()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
         vm.PlayPauseCommand.Execute(null);
         audioEngine.Duration.Returns(180.0);
         audioEngine.Position.Returns(200.0);
@@ -435,8 +435,8 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task RefreshPositionAsync_OnlyReactsOnceToEndOfStreamUntilNextTrackLoads()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
-        queue.PlayNow(new Track("/music/a.mp3", "a.mp3"));
-        queue.AddToQueue(new Track("/music/b.mp3", "b.mp3"));
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
+        queue.AddToQueue(new Track(TestPaths.Music("b.mp3"), "b.mp3"));
         audioEngine.Duration.Returns(180.0);
         audioEngine.Position.Returns(200.0, 0.0, 0.0);
 
@@ -499,9 +499,9 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task MoveQueueEntry_ReordersTheUnderlyingQueue()
     {
         var vm = CreateViewModel(out _, out var queue);
-        var a = new Track("/music/a.mp3", "a.mp3");
-        var b = new Track("/music/b.mp3", "b.mp3");
-        var c = new Track("/music/c.mp3", "c.mp3");
+        var a = new Track(TestPaths.Music("a.mp3"), "a.mp3");
+        var b = new Track(TestPaths.Music("b.mp3"), "b.mp3");
+        var c = new Track(TestPaths.Music("c.mp3"), "c.mp3");
         queue.PlayNow(a);
         queue.AddToQueue(b);
         queue.AddToQueue(c);
@@ -517,8 +517,8 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task MoveQueueEntry_WithNoTarget_MovesToTheEndOfTheQueue()
     {
         var vm = CreateViewModel(out _, out var queue);
-        var a = new Track("/music/a.mp3", "a.mp3");
-        var b = new Track("/music/b.mp3", "b.mp3");
+        var a = new Track(TestPaths.Music("a.mp3"), "a.mp3");
+        var b = new Track(TestPaths.Music("b.mp3"), "b.mp3");
         queue.PlayNow(a);
         queue.AddToQueue(b);
 
@@ -532,9 +532,9 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task MoveQueueEntry_DownwardDrag_LandsImmediatelyBeforeTheTargetEntry()
     {
         var vm = CreateViewModel(out _, out var queue);
-        var a = new Track("/music/a.mp3", "a.mp3");
-        var b = new Track("/music/b.mp3", "b.mp3");
-        var c = new Track("/music/c.mp3", "c.mp3");
+        var a = new Track(TestPaths.Music("a.mp3"), "a.mp3");
+        var b = new Track(TestPaths.Music("b.mp3"), "b.mp3");
+        var c = new Track(TestPaths.Music("c.mp3"), "c.mp3");
         queue.PlayNow(a);
         queue.AddToQueue(b);
         queue.AddToQueue(c);
@@ -550,8 +550,8 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task MoveQueueEntry_WithTheSameTrackQueuedTwice_ActsOnTheExactEntryInstance()
     {
         var vm = CreateViewModel(out _, out var queue);
-        var a = new Track("/music/a.mp3", "a.mp3");
-        var b = new Track("/music/b.mp3", "b.mp3");
+        var a = new Track(TestPaths.Music("a.mp3"), "a.mp3");
+        var b = new Track(TestPaths.Music("b.mp3"), "b.mp3");
         queue.PlayNow(a);
         queue.AddToQueue(b);
         queue.AddToQueue(a);
@@ -571,8 +571,8 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task RemoveFromQueue_RemovesTheGivenEntry()
     {
         var vm = CreateViewModel(out _, out var queue);
-        var a = new Track("/music/a.mp3", "a.mp3");
-        var b = new Track("/music/b.mp3", "b.mp3");
+        var a = new Track(TestPaths.Music("a.mp3"), "a.mp3");
+        var b = new Track(TestPaths.Music("b.mp3"), "b.mp3");
         queue.PlayNow(a);
         queue.AddToQueue(b);
 
@@ -586,8 +586,8 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task RemoveFromQueue_WithTheSameTrackQueuedTwice_RemovesTheExactEntryInstance()
     {
         var vm = CreateViewModel(out _, out var queue);
-        var a = new Track("/music/a.mp3", "a.mp3");
-        var b = new Track("/music/b.mp3", "b.mp3");
+        var a = new Track(TestPaths.Music("a.mp3"), "a.mp3");
+        var b = new Track(TestPaths.Music("b.mp3"), "b.mp3");
         queue.PlayNow(a);
         queue.AddToQueue(b);
         queue.AddToQueue(a);
@@ -606,8 +606,8 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task PlayQueueEntryAsync_WithTheSameTrackQueuedTwice_JumpsToTheExactEntryInstance()
     {
         var vm = CreateViewModel(out _, out var queue);
-        var a = new Track("/music/a.mp3", "a.mp3");
-        var b = new Track("/music/b.mp3", "b.mp3");
+        var a = new Track(TestPaths.Music("a.mp3"), "a.mp3");
+        var b = new Track(TestPaths.Music("b.mp3"), "b.mp3");
         queue.PlayNow(a);
         queue.AddToQueue(b);
         queue.AddToQueue(a);
@@ -621,8 +621,8 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task RemoveFromQueue_TheCurrentlyPlayingEntry_IsANoOp()
     {
         var vm = CreateViewModel(out _, out var queue);
-        var a = new Track("/music/a.mp3", "a.mp3");
-        var b = new Track("/music/b.mp3", "b.mp3");
+        var a = new Track(TestPaths.Music("a.mp3"), "a.mp3");
+        var b = new Track(TestPaths.Music("b.mp3"), "b.mp3");
         queue.PlayNow(a);
         queue.AddToQueue(b);
 
@@ -635,13 +635,13 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task RestoreQueueAsync_LoadsTheCurrentEntryWithoutAutoPlaying()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
-        var a = new Track("/music/a.mp3", "a.mp3");
-        var b = new Track("/music/b.mp3", "b.mp3");
+        var a = new Track(TestPaths.Music("a.mp3"), "a.mp3");
+        var b = new Track(TestPaths.Music("b.mp3"), "b.mp3");
         QueueEntry[] entries = [new(a, QueueEntrySource.Manual), new(b, QueueEntrySource.Manual)];
 
         await vm.RestoreQueueAsync(entries, 1, 0);
 
-        audioEngine.Received(1).Load("/music/b.mp3");
+        audioEngine.Received(1).Load(TestPaths.Music("b.mp3"));
         await Assert.That(vm.LoadedFileName).IsEqualTo("b.mp3");
         await Assert.That(vm.IsPlaying).IsFalse();
         await Assert.That(queue.Entries.Select(e => e.Track)).IsEquivalentTo([a, b]);
@@ -652,7 +652,7 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task RestoreQueueAsync_SeeksToTheSavedPosition()
     {
         var vm = CreateViewModel(out var audioEngine, out _);
-        var a = new Track("/music/a.mp3", "a.mp3");
+        var a = new Track(TestPaths.Music("a.mp3"), "a.mp3");
 
         await vm.RestoreQueueAsync([new QueueEntry(a, QueueEntrySource.Manual)], 0, 37.5);
 
@@ -663,7 +663,7 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task RestoreQueueAsync_WithNoSavedPosition_DoesNotSeek()
     {
         var vm = CreateViewModel(out var audioEngine, out _);
-        var a = new Track("/music/a.mp3", "a.mp3");
+        var a = new Track(TestPaths.Music("a.mp3"), "a.mp3");
 
         await vm.RestoreQueueAsync([new QueueEntry(a, QueueEntrySource.Manual)], 0, 0);
 
@@ -685,8 +685,8 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task PlayNowAsync_WithATrackList_QueuesAllAndLoadsTheFirst()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
-        var a = new Track("/music/a.mp3", "a.mp3");
-        var b = new Track("/music/b.mp3", "b.mp3");
+        var a = new Track(TestPaths.Music("a.mp3"), "a.mp3");
+        var b = new Track(TestPaths.Music("b.mp3"), "b.mp3");
 
         await vm.PlayNowAsync(new[] { a, b });
 
@@ -785,7 +785,7 @@ public class PlaybackControlsViewModelTests : IDisposable
         var vm = CreateViewModel(out var audioEngine, out _);
         audioEngine.GetWaveformPeaks(2000).Returns(new float[] { 0.1f, -0.5f, 0.9f });
 
-        await vm.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
+        await vm.PlayNowAsync(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
         await vm.Waveform.LoadTask;
 
         await Assert.That(vm.Waveform.Peaks).IsEquivalentTo([0.1f, -0.5f, 0.9f]);
@@ -841,7 +841,7 @@ public class PlaybackControlsViewModelTests : IDisposable
             return new float[] { 0.2f };
         });
 
-        await vm.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
+        await vm.PlayNowAsync(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
 
         await Assert.That(vm.IsPlaying).IsTrue();
         await Assert.That(vm.Waveform.Peaks).IsEmpty();
@@ -864,11 +864,11 @@ public class PlaybackControlsViewModelTests : IDisposable
             _ => { firstCallStarted.Set(); releaseFirst.Wait(TimeSpan.FromSeconds(5)); return new float[] { 0.1f }; },
             _ => new float[] { 0.7f });
 
-        await vm.PlayNowAsync(new Track("/music/first.mp3", "first.mp3"));
+        await vm.PlayNowAsync(new Track(TestPaths.Music("first.mp3"), "first.mp3"));
         var firstLoadTask = vm.Waveform.LoadTask;
         await Assert.That(firstCallStarted.Wait(TimeSpan.FromSeconds(5))).IsTrue();
 
-        await vm.PlayNowAsync(new Track("/music/second.mp3", "second.mp3"));
+        await vm.PlayNowAsync(new Track(TestPaths.Music("second.mp3"), "second.mp3"));
         await vm.Waveform.LoadTask;
 
         releaseFirst.Set();
@@ -881,7 +881,7 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task RefreshTrackMetadataAsync_UpdatesTheCurrentTrackAndDisplayLabel()
     {
         var vm = CreateViewModel(out _, out var queue);
-        var track = new Track("/music/a.mp3", "a.mp3");
+        var track = new Track(TestPaths.Music("a.mp3"), "a.mp3");
         await vm.PlayNowAsync(track);
 
         var updated = track with { DisplayName = "Renamed", Title = "Renamed", Artist = "Someone" };
@@ -897,8 +897,8 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task RefreshTrackMetadataAsync_ForAQueuedButNotCurrentTrack_OnlyUpdatesTheQueue()
     {
         var vm = CreateViewModel(out _, out var queue);
-        var current = new Track("/music/a.mp3", "a.mp3");
-        var other = new Track("/music/b.mp3", "b.mp3");
+        var current = new Track(TestPaths.Music("a.mp3"), "a.mp3");
+        var other = new Track(TestPaths.Music("b.mp3"), "b.mp3");
         await vm.PlayNowAsync(current);
         await vm.AddToQueue(other);
 
@@ -913,13 +913,13 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task ReplaceQueueAndPlayAsync_DiscardsTheOldQueueAndPlaysTheNewTracksFromTheFirst()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
-        var oldCurrent = new Track("/music/old1.mp3", "old1.mp3");
-        var oldNext = new Track("/music/old2.mp3", "old2.mp3");
+        var oldCurrent = new Track(TestPaths.Music("old1.mp3"), "old1.mp3");
+        var oldNext = new Track(TestPaths.Music("old2.mp3"), "old2.mp3");
         await vm.PlayNowAsync(oldCurrent);
         await vm.AddToQueue(oldNext);
-        var a = new Track("/music/a.mp3", "a.mp3");
-        var b = new Track("/music/b.mp3", "b.mp3");
-        var c = new Track("/music/c.mp3", "c.mp3");
+        var a = new Track(TestPaths.Music("a.mp3"), "a.mp3");
+        var b = new Track(TestPaths.Music("b.mp3"), "b.mp3");
+        var c = new Track(TestPaths.Music("c.mp3"), "c.mp3");
 
         await vm.ReplaceQueueAndPlayAsync([b, c]);
 
@@ -934,7 +934,7 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task ReplaceQueueAndPlayAsync_WithNoTracks_LeavesTheQueueAlone()
     {
         var vm = CreateViewModel(out _, out var queue);
-        var track = new Track("/music/a.mp3", "a.mp3");
+        var track = new Track(TestPaths.Music("a.mp3"), "a.mp3");
         await vm.PlayNowAsync(track);
 
         await vm.ReplaceQueueAndPlayAsync([]);
@@ -946,7 +946,7 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task DisplayTrackLabel_UsesTheAlbumArtistRatherThanEveryArtistOfTheTrack()
     {
         var vm = CreateViewModel(out _, out _);
-        await vm.PlayNowAsync(new Track("/music/a.mp3", "Song")
+        await vm.PlayNowAsync(new Track(TestPaths.Music("a.mp3"), "Song")
         {
             Title = "Song", Artist = "Pet Shop Boys;Dusty Springfield;Someone Else", AlbumArtist = "Pet Shop Boys",
         });
@@ -958,7 +958,7 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task DisplayTrackLabel_WithoutAnAlbumArtist_FallsBackToTheTracksArtists()
     {
         var vm = CreateViewModel(out _, out _);
-        await vm.PlayNowAsync(new Track("/music/a.mp3", "Song") { Title = "Song", Artist = "A;B" });
+        await vm.PlayNowAsync(new Track(TestPaths.Music("a.mp3"), "Song") { Title = "Song", Artist = "A;B" });
 
         await Assert.That(vm.DisplayTrackLabel).IsEqualTo("A, B - Song");
     }
@@ -966,7 +966,7 @@ public class PlaybackControlsViewModelTests : IDisposable
     // --- Auto DJ ---
 
     private static IReadOnlyList<Track> Library(int count) =>
-        Enumerable.Range(0, count).Select(i => new Track($"/music/lib{i:D2}.mp3", $"lib{i:D2}.mp3")).ToList();
+        Enumerable.Range(0, count).Select(i => new Track(TestPaths.Music($"lib{i:D2}.mp3"), $"lib{i:D2}.mp3")).ToList();
 
     [Test]
     public async Task AutoDj_KeepsTheQueueFilledAheadOfThePlayingTrack_WithRandomPoolTracks()
@@ -975,7 +975,7 @@ public class PlaybackControlsViewModelTests : IDisposable
         vm.AutoDjPool = () => Library(20);
         vm.IsAutoDjEnabled = true;
 
-        await vm.PlayNowAsync(new Track("/music/start.mp3", "start.mp3"));
+        await vm.PlayNowAsync(new Track(TestPaths.Music("start.mp3"), "start.mp3"));
 
         await Assert.That(queue.Entries.Count).IsEqualTo(1 + AutoDj.Lookahead);
         await Assert.That(queue.Entries.Skip(1).All(e => e.Source == QueueEntrySource.AutoDj)).IsTrue();
@@ -988,7 +988,7 @@ public class PlaybackControlsViewModelTests : IDisposable
         var vm = CreateViewModel(out _, out var queue);
         vm.AutoDjPool = () => Library(30);
         vm.IsAutoDjEnabled = true;
-        await vm.PlayNowAsync(new Track("/music/start.mp3", "start.mp3"));
+        await vm.PlayNowAsync(new Track(TestPaths.Music("start.mp3"), "start.mp3"));
 
         await vm.NextTrackCommand.ExecuteAsync(null);
         await vm.NextTrackCommand.ExecuteAsync(null);
@@ -1003,12 +1003,12 @@ public class PlaybackControlsViewModelTests : IDisposable
     {
         var disabled = CreateViewModel(out _, out var disabledQueue);
         disabled.AutoDjPool = () => Library(20);
-        await disabled.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
+        await disabled.PlayNowAsync(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
         await Assert.That(disabledQueue.Entries.Count).IsEqualTo(1);
 
         var noPool = CreateViewModel(out _, out var noPoolQueue);
         noPool.IsAutoDjEnabled = true;
-        await noPool.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
+        await noPool.PlayNowAsync(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
         await Assert.That(noPoolQueue.Entries.Count).IsEqualTo(1);
 
         var idle = CreateViewModel(out _, out var idleQueue);
@@ -1022,7 +1022,7 @@ public class PlaybackControlsViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out _, out var queue);
         vm.AutoDjPool = () => Library(20);
-        await vm.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
+        await vm.PlayNowAsync(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
 
         vm.ToggleAutoDjCommand.Execute(null);
         await Assert.That(queue.Entries.Count).IsEqualTo(1 + AutoDj.Lookahead);
@@ -1036,7 +1036,7 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task AutoDj_NeverQueuesTheTrackThatIsPlaying_AndAddsOnlyWhatThePoolHas()
     {
         var vm = CreateViewModel(out _, out var queue);
-        var playing = new Track("/music/lib00.mp3", "lib00.mp3");
+        var playing = new Track(TestPaths.Music("lib00.mp3"), "lib00.mp3");
         vm.AutoDjPool = () => Library(3); // lib00, lib01, lib02
         vm.IsAutoDjEnabled = true;
 
@@ -1052,9 +1052,9 @@ public class PlaybackControlsViewModelTests : IDisposable
         var vm = CreateViewModel(out _, out var queue);
         vm.AutoDjPool = () => Library(20);
         vm.IsAutoDjEnabled = true;
-        await vm.PlayNowAsync(new Track("/music/start.mp3", "start.mp3"));
+        await vm.PlayNowAsync(new Track(TestPaths.Music("start.mp3"), "start.mp3"));
 
-        var manual = new Track("/music/manual.mp3", "manual.mp3");
+        var manual = new Track(TestPaths.Music("manual.mp3"), "manual.mp3");
         await vm.AddToQueue(manual);
 
         await Assert.That(queue.Entries[1].Track).IsEqualTo(manual);
