@@ -878,10 +878,11 @@ public class PlaybackControlsViewModelTests
     public async Task PlayNowAsync_StartsPlaybackWithoutWaitingForWaveformPeaks()
     {
         var vm = CreateViewModel(out var audioEngine, out _);
-        // A bounded sleep, not a blocking TaskCompletionSource wait, which can starve the thread pool in parallel runs.
+        // The timeout keeps a failing test from parking a pool thread forever.
+        using var release = new ManualResetEventSlim();
         audioEngine.GetWaveformPeaks(2000).Returns(_ =>
         {
-            Thread.Sleep(50);
+            release.Wait(TimeSpan.FromSeconds(5));
             return new float[] { 0.2f };
         });
 
@@ -891,6 +892,7 @@ public class PlaybackControlsViewModelTests
         await Assert.That(vm.WaveformPeaks).IsEmpty();
         await Assert.That(vm.IsWaveformLoading).IsTrue();
 
+        release.Set();
         await vm.WaveformLoadTask;
 
         await Assert.That(vm.IsWaveformLoading).IsFalse();
@@ -902,17 +904,19 @@ public class PlaybackControlsViewModelTests
         var vm = CreateViewModel(out var audioEngine, out _);
         // Returns(a, b) follows invocation order, so the second load starts only after the first call has.
         using var firstCallStarted = new ManualResetEventSlim();
+        using var releaseFirst = new ManualResetEventSlim();
         audioEngine.GetWaveformPeaks(2000).Returns(
-            _ => { firstCallStarted.Set(); Thread.Sleep(100); return new float[] { 0.1f }; },
+            _ => { firstCallStarted.Set(); releaseFirst.Wait(TimeSpan.FromSeconds(5)); return new float[] { 0.1f }; },
             _ => new float[] { 0.7f });
 
         await vm.PlayNowAsync(new Track("/music/first.mp3", "first.mp3"));
         var firstLoadTask = vm.WaveformLoadTask;
-        firstCallStarted.Wait(TimeSpan.FromSeconds(5));
+        await Assert.That(firstCallStarted.Wait(TimeSpan.FromSeconds(5))).IsTrue();
 
         await vm.PlayNowAsync(new Track("/music/second.mp3", "second.mp3"));
         await vm.WaveformLoadTask;
 
+        releaseFirst.Set();
         await firstLoadTask;
 
         await Assert.That(vm.WaveformPeaks).IsEquivalentTo([0.7f]);

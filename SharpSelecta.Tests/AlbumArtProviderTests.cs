@@ -306,13 +306,21 @@ public class AlbumArtProviderTests
     public async Task MusicBrainz_SpacesItsRequestsApart()
     {
         var handler = new StubHandler().Json("https://musicbrainz.org/ws/2/release-group/", MusicBrainzHits);
-        var musicBrainz = new MusicBrainzClient(Client(handler), TimeSpan.FromMilliseconds(300));
+        var time = new ManualTimeProvider();
+        var musicBrainz = new MusicBrainzClient(Client(handler), TimeSpan.FromMilliseconds(300), time);
 
-        var started = DateTime.UtcNow;
         await musicBrainz.FindReleaseGroupAsync(new AlbumArtQuery("A", "One"), CancellationToken.None);
-        await musicBrainz.FindReleaseGroupAsync(new AlbumArtQuery("B", "Two"), CancellationToken.None);
+        var second = musicBrainz.FindReleaseGroupAsync(new AlbumArtQuery("B", "Two"), CancellationToken.None);
+        await Assert.That(time.PendingTimers).IsEqualTo(1);
 
-        await Assert.That(DateTime.UtcNow - started).IsGreaterThanOrEqualTo(TimeSpan.FromMilliseconds(280));
+        time.Advance(TimeSpan.FromMilliseconds(299));
+        await Assert.That(second.IsCompleted).IsFalse();
+        await Assert.That(handler.Requests.Count).IsEqualTo(1);
+
+        time.Advance(TimeSpan.FromMilliseconds(1));
+        await second.WaitAsync(TimeSpan.FromSeconds(5));
+
+        await Assert.That(handler.Requests.Count).IsEqualTo(2);
     }
 
     // --- fanart.tv ---

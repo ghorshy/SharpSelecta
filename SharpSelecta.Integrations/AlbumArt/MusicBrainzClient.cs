@@ -5,14 +5,15 @@ namespace SharpSelecta.Integrations.AlbumArt;
 public sealed record MusicBrainzReleaseGroup(string Id, string Title);
 
 // MusicBrainz allows one request per second; the same query from both providers is answered once.
-public sealed class MusicBrainzClient(HttpClient http, TimeSpan? minimumRequestInterval = null)
+public sealed class MusicBrainzClient(HttpClient http, TimeSpan? minimumRequestInterval = null, TimeProvider? time = null)
 {
     private static readonly TimeSpan DefaultInterval = TimeSpan.FromMilliseconds(1100);
 
     private readonly TimeSpan _interval = minimumRequestInterval ?? DefaultInterval;
+    private readonly TimeProvider _time = time ?? TimeProvider.System;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly Lock _lock = new();
-    private DateTime _lastRequestUtc = DateTime.MinValue;
+    private DateTimeOffset _lastRequestUtc = DateTimeOffset.MinValue;
     private (AlbumArtQuery Query, Task<MusicBrainzReleaseGroup?> Lookup)? _latest;
 
     public Task<MusicBrainzReleaseGroup?> FindReleaseGroupAsync(AlbumArtQuery query, CancellationToken cancellationToken)
@@ -40,13 +41,13 @@ public sealed class MusicBrainzClient(HttpClient http, TimeSpan? minimumRequestI
         await _gate.WaitAsync();
         try
         {
-            var wait = _interval - (DateTime.UtcNow - _lastRequestUtc);
+            var wait = _interval - (_time.GetUtcNow() - _lastRequestUtc);
             if (wait > TimeSpan.Zero)
             {
-                await Task.Delay(wait);
+                await Task.Delay(wait, _time);
             }
 
-            _lastRequestUtc = DateTime.UtcNow;
+            _lastRequestUtc = _time.GetUtcNow();
 
             var search = $"releasegroup:\"{Escape(query.Album)}\" AND artist:\"{Escape(query.Artist)}\"";
             var url = $"https://musicbrainz.org/ws/2/release-group/?query={Uri.EscapeDataString(search)}&fmt=json&limit=10";
