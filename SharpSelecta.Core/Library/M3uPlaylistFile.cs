@@ -15,7 +15,9 @@ public static class M3uPlaylistFile
                 continue;
             }
 
-            paths.Add(Path.IsPathRooted(line) ? line : Path.Combine(baseDirectoryForRelativePaths, line));
+            paths.Add(Path.IsPathRooted(line)
+                ? line
+                : Path.Combine(baseDirectoryForRelativePaths, line.Replace('/', Path.DirectorySeparatorChar)));
         }
 
         return paths;
