@@ -35,7 +35,7 @@ public sealed class FanartTvArtProvider(
             return null;
 
         var best = covers.EnumerateArray()
-            .Select(c => (Url: c.TryGetProperty("url", out var u) ? u.GetString() : null, Likes: Likes(c)))
+            .Select(c => (Url: c.StringOf("url"), Likes: Likes(c)))
             .Where(c => !string.IsNullOrEmpty(c.Url))
             .OrderByDescending(c => c.Likes)
             .FirstOrDefault();

@@ -400,7 +400,7 @@ public class PlaybackQueueTests
     }
 
     [Test]
-    public async Task ReplaceTrack_SwapsEveryEntryOfThatFile_KeepingSourceAndCurrentIndex()
+    public async Task ReplaceFile_WithAReReadTrack_SwapsEveryEntryOfThatFile_KeepingSourceAndCurrentIndex()
     {
         var queue = new PlaybackQueue();
         queue.PlayNow(TrackA);
@@ -409,7 +409,7 @@ public class PlaybackQueueTests
         queue.AddAutoDjEntry(TrackA);
         var updated = TrackA with { Title = "Renamed" };
 
-        queue.ReplaceTrack(updated);
+        queue.ReplaceFile(TrackA.FilePath, updated);
 
         await Assert.That(queue.Entries.Select(e => e.Track)).IsEquivalentTo([updated, TrackB, updated, updated]);
         await Assert.That(queue.Entries[3].Source).IsEqualTo(QueueEntrySource.AutoDj);
@@ -417,12 +417,12 @@ public class PlaybackQueueTests
     }
 
     [Test]
-    public async Task ReplaceTrack_ForAFileNotInTheQueue_ChangesNothing()
+    public async Task ReplaceFile_ForAFileNotInTheQueue_ChangesNothing()
     {
         var queue = new PlaybackQueue();
         queue.PlayNow(TrackA);
 
-        queue.ReplaceTrack(TrackB with { Title = "Other" });
+        queue.ReplaceFile(TrackB.FilePath, TrackB with { Title = "Other" });
 
         await Assert.That(queue.Entries.Select(e => e.Track)).IsEquivalentTo([TrackA]);
     }

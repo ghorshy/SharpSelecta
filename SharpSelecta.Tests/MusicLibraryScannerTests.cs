@@ -5,7 +5,7 @@ namespace SharpSelecta.Tests;
 public class MusicLibraryScannerTests
 {
     [Test]
-    public async Task Scan_FindsSupportedFilesRecursivelyAndIgnoresOthers()
+    public async Task FindAudioFiles_FindsSupportedFilesRecursivelyAndIgnoresOthers()
     {
         var root = Directory.CreateTempSubdirectory("sharpselecta-library-tests-");
         try
@@ -15,11 +15,11 @@ public class MusicLibraryScannerTests
             File.WriteAllBytes(Path.Combine(albumDir.FullName, "01 - track.flac"), []);
             File.WriteAllBytes(Path.Combine(albumDir.FullName, "cover.jpg"), []);
 
-            var tracks = MusicLibraryScanner.Scan(root.FullName);
+            var files = MusicLibraryScanner.FindAudioFiles(root.FullName).ToList();
 
-            await Assert.That(tracks.Count).IsEqualTo(2);
-            await Assert.That(tracks.Select(t => t.FilePath)).Contains(Path.Combine(root.FullName, "top-level.mp3"));
-            await Assert.That(tracks.Select(t => t.FilePath)).Contains(Path.Combine(albumDir.FullName, "01 - track.flac"));
+            await Assert.That(files.Count).IsEqualTo(2);
+            await Assert.That(files).Contains(Path.Combine(root.FullName, "top-level.mp3"));
+            await Assert.That(files).Contains(Path.Combine(albumDir.FullName, "01 - track.flac"));
         }
         finally
         {
@@ -28,7 +28,7 @@ public class MusicLibraryScannerTests
     }
 
     [Test]
-    public async Task Scan_ReturnsFilesOrderedByPathDespiteParallelReads()
+    public async Task FindAudioFiles_ReturnsFilesOrderedByPath()
     {
         var root = Directory.CreateTempSubdirectory("sharpselecta-library-tests-");
         try
@@ -39,12 +39,12 @@ public class MusicLibraryScannerTests
                 File.WriteAllBytes(Path.Combine(root.FullName, name), []);
             }
 
-            var tracks = MusicLibraryScanner.Scan(root.FullName);
+            var files = MusicLibraryScanner.FindAudioFiles(root.FullName);
 
             var expectedOrder = names
                 .Select(name => Path.Combine(root.FullName, name))
                 .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
-            await Assert.That(tracks.Select(t => t.FilePath)).IsEquivalentTo(expectedOrder);
+            await Assert.That(files).IsEquivalentTo(expectedOrder);
         }
         finally
         {
@@ -53,14 +53,12 @@ public class MusicLibraryScannerTests
     }
 
     [Test]
-    public async Task Scan_OnEmptyFolder_ReturnsEmptyList()
+    public async Task FindAudioFiles_OnEmptyFolder_ReturnsNothing()
     {
         var root = Directory.CreateTempSubdirectory("sharpselecta-library-tests-");
         try
         {
-            var tracks = MusicLibraryScanner.Scan(root.FullName);
-
-            await Assert.That(tracks).IsEmpty();
+            await Assert.That(MusicLibraryScanner.FindAudioFiles(root.FullName)).IsEmpty();
         }
         finally
         {
@@ -69,17 +67,17 @@ public class MusicLibraryScannerTests
     }
 
     [Test]
-    public async Task Scan_OnAnUnreadableFile_FallsBackToFilenameOnlyInsteadOfThrowing()
+    public async Task ReadTrack_OnAnUnreadableFile_FallsBackToFilenameOnlyInsteadOfThrowing()
     {
         var root = Directory.CreateTempSubdirectory("sharpselecta-library-tests-");
         try
         {
-            File.WriteAllBytes(Path.Combine(root.FullName, "not-really-audio.wav"), [1, 2, 3]);
+            var path = Path.Combine(root.FullName, "not-really-audio.wav");
+            File.WriteAllBytes(path, [1, 2, 3]);
 
-            var tracks = MusicLibraryScanner.Scan(root.FullName);
+            var track = MusicLibraryScanner.ReadTrackIfExists(path)!;
 
-            await Assert.That(tracks.Count).IsEqualTo(1);
-            await Assert.That(tracks[0].FileType).IsEqualTo("WAV");
+            await Assert.That(track.FileType).IsEqualTo("WAV");
         }
         finally
         {
@@ -111,6 +109,29 @@ public class MusicLibraryScannerTests
     }
 
     [Test]
+    public async Task ReadTrack_TrimsWhitespaceAroundTagValues()
+    {
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-tests-");
+        try
+        {
+            var trackPath = Path.Combine(root.FullName, "padded.mp3");
+            File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), trackPath);
+            TrackTagEditor.Write(trackPath, new TrackTagEdits("  Padded Title ", " Padded Artist", null, "Album  ", null, null, null, null));
+
+            var track = MusicLibraryScanner.ReadTrackIfExists(trackPath)!;
+
+            await Assert.That(track.Title).IsEqualTo("Padded Title");
+            await Assert.That(track.DisplayName).IsEqualTo("Padded Title");
+            await Assert.That(track.Artist).IsEqualTo("Padded Artist");
+            await Assert.That(track.Album).IsEqualTo("Album");
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
     public async Task AtlConfiguration_DisablesFileNameAsTitleAndConsoleStackTraces()
     {
         AtlConfiguration.Ensure();
@@ -120,7 +141,7 @@ public class MusicLibraryScannerTests
     }
 
     [Test]
-    public async Task Scan_ReadsTagsAndAudioPropertiesFromARealFile()
+    public async Task ReadTrack_ReadsTagsAndAudioPropertiesFromARealFile()
     {
         var root = Directory.CreateTempSubdirectory("sharpselecta-library-tests-");
         try
@@ -129,10 +150,8 @@ public class MusicLibraryScannerTests
             var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
             File.Copy(fixturePath, trackPath);
 
-            var tracks = MusicLibraryScanner.Scan(root.FullName);
+            var track = MusicLibraryScanner.ReadTrackIfExists(trackPath)!;
 
-            await Assert.That(tracks.Count).IsEqualTo(1);
-            var track = tracks[0];
             await Assert.That(track.Title).IsEqualTo("Test Song");
             await Assert.That(track.Artist).IsEqualTo("Test Artist");
             await Assert.That(track.Album).IsEqualTo("Test Album");
@@ -150,7 +169,7 @@ public class MusicLibraryScannerTests
     }
 
     [Test]
-    public async Task Scan_WithNoYearTag_LeavesYearNullInsteadOfZero()
+    public async Task ReadTrack_WithNoYearTag_LeavesYearNullInsteadOfZero()
     {
         var root = Directory.CreateTempSubdirectory("sharpselecta-library-tests-");
         try
@@ -159,11 +178,10 @@ public class MusicLibraryScannerTests
             var trackPath = Path.Combine(root.FullName, "tagged-track-no-year.mp3");
             File.Copy(fixturePath, trackPath);
 
-            var tracks = MusicLibraryScanner.Scan(root.FullName);
+            var track = MusicLibraryScanner.ReadTrackIfExists(trackPath)!;
 
-            await Assert.That(tracks.Count).IsEqualTo(1);
-            await Assert.That(tracks[0].Title).IsEqualTo("No Year Song");
-            await Assert.That(tracks[0].Year).IsNull();
+            await Assert.That(track.Title).IsEqualTo("No Year Song");
+            await Assert.That(track.Year).IsNull();
         }
         finally
         {
@@ -172,7 +190,7 @@ public class MusicLibraryScannerTests
     }
 
     [Test]
-    public async Task Scan_WithNoTrackNumberTag_LeavesTrackNumberNullInsteadOfZero()
+    public async Task ReadTrack_WithNoTrackNumberTag_LeavesTrackNumberNullInsteadOfZero()
     {
         var root = Directory.CreateTempSubdirectory("sharpselecta-library-tests-");
         try
@@ -181,11 +199,10 @@ public class MusicLibraryScannerTests
             var trackPath = Path.Combine(root.FullName, "tagged-track-no-tracknumber.mp3");
             File.Copy(fixturePath, trackPath);
 
-            var tracks = MusicLibraryScanner.Scan(root.FullName);
+            var track = MusicLibraryScanner.ReadTrackIfExists(trackPath)!;
 
-            await Assert.That(tracks.Count).IsEqualTo(1);
-            await Assert.That(tracks[0].Title).IsEqualTo("No Track Number Song");
-            await Assert.That(tracks[0].TrackNumber).IsNull();
+            await Assert.That(track.Title).IsEqualTo("No Track Number Song");
+            await Assert.That(track.TrackNumber).IsNull();
         }
         finally
         {

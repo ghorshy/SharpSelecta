@@ -34,9 +34,7 @@ public static class TrackTagEditor
     // Null credits leave the file's credits as they are.
     public static void Write(string filePath, TrackTagEdits edits, CoverArtEdit? cover = null, TrackCredits? credits = null)
     {
-        var tempPath = Path.Combine(
-            Path.GetDirectoryName(filePath) ?? "",
-            $".{Path.GetFileNameWithoutExtension(filePath)}.{Guid.NewGuid():N}.tmp{Path.GetExtension(filePath)}");
+        var tempPath = HiddenTempFile.PathNextTo(filePath, Path.GetExtension(filePath));
 
         AtlConfiguration.Ensure();
 

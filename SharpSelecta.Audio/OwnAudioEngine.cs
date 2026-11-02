@@ -58,12 +58,7 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
 
         if (_currentTrack is not null)
         {
-            _currentTrack.Stop();
-            _currentTrack.DetachFromClock();
-            _mixer.RemoveSource(_currentTrack);
-            _currentTrack.Dispose();
-            _currentTrack = null;
-
+            UnloadCurrentTrack();
             _mixer.MasterClock.Reset();
         }
 
@@ -260,14 +255,7 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
         _limiter?.Dispose();
         _limiter = null;
 
-        if (_currentTrack is not null)
-        {
-            _currentTrack.Stop();
-            _currentTrack.DetachFromClock();
-            _mixer?.RemoveSource(_currentTrack);
-            _currentTrack.Dispose();
-            _currentTrack = null;
-        }
+        UnloadCurrentTrack();
 
         if (_mixer is not null)
         {
@@ -278,5 +266,19 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
         }
 
         logger.LogInformation("OwnAudioSharp engine disposed");
+    }
+
+    private void UnloadCurrentTrack()
+    {
+        if (_currentTrack is null)
+        {
+            return;
+        }
+
+        _currentTrack.Stop();
+        _currentTrack.DetachFromClock();
+        _mixer?.RemoveSource(_currentTrack);
+        _currentTrack.Dispose();
+        _currentTrack = null;
     }
 }

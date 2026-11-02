@@ -4,18 +4,12 @@ namespace SharpSelecta.Core.Library;
 
 public static class MusicLibraryScanner
 {
-    internal static readonly string[] SupportedExtensions = [".mp3", ".flac", ".wav", ".m4a", ".ogg", ".aiff", ".aif"];
+    private static readonly string[] SupportedExtensions = [".mp3", ".flac", ".wav", ".m4a", ".ogg", ".aiff", ".aif"];
 
-    public static IReadOnlyList<Track> Scan(string folderPath)
-    {
-        return Directory.EnumerateFiles(folderPath, "*.*", SearchOption.AllDirectories)
+    public static IEnumerable<string> FindAudioFiles(string folderPath) =>
+        Directory.EnumerateFiles(folderPath, "*.*", SearchOption.AllDirectories)
             .Where(path => SupportedExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
-            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
-            .AsParallel()
-            .AsOrdered()
-            .Select(ReadTrack)
-            .ToList();
-    }
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
 
     internal static Track ReadTrack(string path)
     {
@@ -26,7 +20,7 @@ public static class MusicLibraryScanner
         try
         {
             var atlTrack = new AtlTrack(path);
-            var title = NullIfEmpty(atlTrack.Title);
+            var title = TagText.NullIfBlank(atlTrack.Title);
             var displayName = title ?? Path.GetFileNameWithoutExtension(path);
 
             return new Track(path, displayName)
@@ -35,11 +29,11 @@ public static class MusicLibraryScanner
                 TrackNumber = atlTrack.TrackNumber is > 0 ? atlTrack.TrackNumber : null,
                 DiscNumber = atlTrack.DiscNumber is > 0 ? atlTrack.DiscNumber : null,
                 Title = title,
-                Artist = NullIfEmpty(atlTrack.Artist),
-                Album = NullIfEmpty(atlTrack.Album),
-                AlbumArtist = NullIfEmpty(atlTrack.AlbumArtist),
-                Genre = NullIfEmpty(atlTrack.Genre),
-                Comment = NullIfEmpty(atlTrack.Comment),
+                Artist = TagText.NullIfBlank(atlTrack.Artist),
+                Album = TagText.NullIfBlank(atlTrack.Album),
+                AlbumArtist = TagText.NullIfBlank(atlTrack.AlbumArtist),
+                Genre = TagText.NullIfBlank(atlTrack.Genre),
+                Comment = TagText.NullIfBlank(atlTrack.Comment),
                 Year = atlTrack.Year is > 0 ? atlTrack.Year : null,
                 Duration = TimeSpan.FromSeconds(atlTrack.Duration),
                 SampleRate = (int)atlTrack.SampleRate,
@@ -67,8 +61,6 @@ public static class MusicLibraryScanner
             }
             : type;
     }
-
-    private static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
     public static Track? ReadTrackIfExists(string filePath) => File.Exists(filePath) ? ReadTrack(filePath) : null;
 

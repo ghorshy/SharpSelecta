@@ -26,14 +26,13 @@ internal static class AlbumMatcher
         return string.Join(' ', builder.ToString().Split(' ', StringSplitOptions.RemoveEmptyEntries));
     }
 
-    public static T? PickBest<T>(IEnumerable<T> hits, AlbumArtQuery query, Func<T, string?> title, Func<T, string?> artist)
-        where T : class
+    public static AlbumHit? PickBest(IEnumerable<AlbumHit> hits, AlbumArtQuery query)
     {
         var wantedAlbum = Normalize(query.Album);
         var wantedArtist = Normalize(query.Artist);
 
         return hits
-            .Select((hit, index) => (Hit: hit, Index: index, Score: Score(Normalize(title(hit)), Normalize(artist(hit)), wantedAlbum, wantedArtist), TitleLength: Normalize(title(hit)).Length))
+            .Select((hit, index) => (Hit: hit, Index: index, Score: Score(Normalize(hit.Album), Normalize(hit.Artist), wantedAlbum, wantedArtist), TitleLength: Normalize(hit.Album).Length))
             .Where(x => x.Score > 0)
             .OrderByDescending(x => x.Score)
             .ThenBy(x => x.TitleLength) // among editions, the plainest title

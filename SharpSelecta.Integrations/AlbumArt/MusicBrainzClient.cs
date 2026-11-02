@@ -56,14 +56,12 @@ public sealed class MusicBrainzClient(HttpClient http, TimeSpan? minimumRequestI
                 return null;
 
             var hits = groups.EnumerateArray()
-                .Select(group => new Hit(
-                    group.GetProperty("id").GetString() ?? "",
-                    group.TryGetProperty("title", out var title) ? title.GetString() : null,
-                    ArtistOf(group)))
+                .Select(group => new AlbumHit(group.StringOf("title"), ArtistOf(group), group.StringOf("id")))
+                .Where(hit => hit.Reference.Length > 0)
                 .ToList();
 
-            var best = AlbumMatcher.PickBest(hits, query, hit => hit.Title, hit => hit.Artist);
-            return best is null ? null : new MusicBrainzReleaseGroup(best.Id, best.Title ?? query.Album);
+            var best = AlbumMatcher.PickBest(hits, query);
+            return best is null ? null : new MusicBrainzReleaseGroup(best.Reference, best.Album.Length > 0 ? best.Album : query.Album);
         }
         finally
         {
@@ -71,12 +69,10 @@ public sealed class MusicBrainzClient(HttpClient http, TimeSpan? minimumRequestI
         }
     }
 
-    private sealed record Hit(string Id, string? Title, string? Artist);
-
-    private static string? ArtistOf(System.Text.Json.JsonElement group) =>
-        group.TryGetProperty("artist-credit", out var credit) && credit.GetArrayLength() > 0
-            ? string.Concat(credit.EnumerateArray().Select(c => (c.TryGetProperty("name", out var n) ? n.GetString() : "") + (c.TryGetProperty("joinphrase", out var j) ? j.GetString() : "")))
-            : null;
+    private static string ArtistOf(System.Text.Json.JsonElement group) =>
+        group.TryGetProperty("artist-credit", out var credit)
+            ? string.Concat(credit.EnumerateArray().Select(c => c.StringOf("name") + c.StringOf("joinphrase")))
+            : "";
 
     // Lucene special characters inside a quoted phrase.
     private static string Escape(string value) => value.Replace("\\", " ").Replace("\"", " ");

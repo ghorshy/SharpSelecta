@@ -15,29 +15,27 @@ public sealed class DeezerArtProvider(HttpClient http) : IAlbumArtProvider
             return null;
 
         var hits = data.EnumerateArray()
-            .Select(a => new Hit(
-                a.TryGetProperty("title", out var title) ? title.GetString() ?? "" : "",
-                a.TryGetProperty("artist", out var artist) && artist.TryGetProperty("name", out var name) ? name.GetString() ?? "" : "",
-                a.TryGetProperty("cover_xl", out var cover) ? cover.GetString() ?? "" : ""))
-            .Where(hit => hit.CoverUrl.Length > 0)
+            .Select(a => new AlbumHit(
+                a.StringOf("title"),
+                a.TryGetProperty("artist", out var artist) ? artist.StringOf("name") : "",
+                a.StringOf("cover_xl")))
+            .Where(hit => hit.Reference.Length > 0)
             .ToList();
 
-        var best = AlbumMatcher.PickBest(hits, query, hit => hit.Album, hit => hit.Artist);
+        var best = AlbumMatcher.PickBest(hits, query);
         if (best is null)
             return null;
 
         // cover_xl is 1000x1000; the same CDN path serves larger sizes when the source has them.
-        if (best.CoverUrl.Contains("1000x1000", StringComparison.Ordinal))
+        if (best.Reference.Contains("1000x1000", StringComparison.Ordinal))
         {
-            var larger = await TryDownloadAsync(best.CoverUrl.Replace("1000x1000", "1400x1400"), best.Album, cancellationToken);
+            var larger = await TryDownloadAsync(best.Reference.Replace("1000x1000", "1400x1400"), best.Album, cancellationToken);
             if (larger is not null && larger.Width >= 1400)
                 return larger;
         }
 
-        return await AlbumArtHttp.DownloadImageAsync(http, best.CoverUrl, best.Album, cancellationToken);
+        return await AlbumArtHttp.DownloadImageAsync(http, best.Reference, best.Album, cancellationToken);
     }
-
-    private sealed record Hit(string Album, string Artist, string CoverUrl);
 
     private async Task<AlbumArtCandidate?> TryDownloadAsync(string url, string title, CancellationToken cancellationToken)
     {

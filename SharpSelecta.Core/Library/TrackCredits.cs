@@ -27,9 +27,9 @@ public sealed record TrackCredits(string? Remixer, string? Composer, string? Con
             var atlTrack = new AtlTrack(filePath);
             return new TrackCredits(
                 CreditFields.ReadRemixer(atlTrack, filePath),
-                CreditFields.NullIfBlank(atlTrack.Composer),
-                CreditFields.NullIfBlank(atlTrack.Conductor),
-                CreditFields.NullIfBlank(atlTrack.Lyricist));
+                TagText.NullIfBlank(atlTrack.Composer),
+                TagText.NullIfBlank(atlTrack.Conductor),
+                TagText.NullIfBlank(atlTrack.Lyricist));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -42,8 +42,6 @@ internal static class CreditFields
 {
     private const string Id3RemixerFrame = "TPE4";
     private const string FreeFormRemixerField = "REMIXER";
-
-    public static string? NullIfBlank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     // MP3/WAV carry ID3v2, whose own "remixed by" frame is TPE4; FLAC (Vorbis comments) and M4A use a
     // REMIXER field. The other name is also checked when reading, for files tagged by other tools.
@@ -58,7 +56,7 @@ internal static class CreditFields
         foreach (var key in new[] { preferred, alternate })
         {
             var match = atlTrack.AdditionalFields.FirstOrDefault(f => string.Equals(f.Key, key, StringComparison.OrdinalIgnoreCase));
-            if (NullIfBlank(match.Value) is { } value)
+            if (TagText.NullIfBlank(match.Value) is { } value)
             {
                 return value;
             }
@@ -84,7 +82,7 @@ internal static class CreditFields
             atlTrack.AdditionalFields.Remove(existing);
         }
 
-        if (NullIfBlank(credits.Remixer) is { } remixer)
+        if (TagText.NullIfBlank(credits.Remixer) is { } remixer)
         {
             atlTrack.AdditionalFields[preferred] = remixer;
         }

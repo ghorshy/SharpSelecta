@@ -238,7 +238,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     // the Track they were handed, so they need the re-read one.
     public async Task RefreshTrackMetadataAsync(Track updated)
     {
-        _queue.ReplaceTrack(updated);
+        _queue.ReplaceFile(updated.FilePath, updated);
 
         if (CurrentTrack?.FilePath != updated.FilePath)
             return;

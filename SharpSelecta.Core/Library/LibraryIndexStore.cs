@@ -76,9 +76,7 @@ public static class LibraryIndexStore
         List<(string FilePath, Track Track, DateTime LastWriteTimeUtc, long FileSizeBytes, bool Changed)> current;
         try
         {
-            current = Directory.EnumerateFiles(folderPath, "*.*", SearchOption.AllDirectories)
-                .Where(path => MusicLibraryScanner.SupportedExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
-                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+            current = MusicLibraryScanner.FindAudioFiles(folderPath)
                 .AsParallel()
                 .AsOrdered()
                 .Select(path =>

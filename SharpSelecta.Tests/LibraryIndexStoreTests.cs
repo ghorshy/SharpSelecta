@@ -56,6 +56,34 @@ public class LibraryIndexStoreTests
     }
 
     [Test]
+    public async Task Reconcile_ReturnsTracksOrderedByPathDespiteParallelReads()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-index-tests-");
+        try
+        {
+            string[] names = ["charlie.mp3", "alpha.mp3", "echo.mp3", "bravo.mp3", "delta.mp3"];
+            foreach (var name in names)
+            {
+                CopyFixtureInto(root.FullName, name);
+            }
+
+            var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+            var expectedOrder = names
+                .Select(name => Path.Combine(root.FullName, name))
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
+            await Assert.That(result.Tracks.Select(t => t.FilePath)).IsEquivalentTo(expectedOrder);
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+            File.Delete(IndexFilePath(settingsPath));
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
     public async Task Reconcile_WhenMtimeAndSizeUnchanged_ReusesIndexedTagsWithoutReReadingTheFile()
     {
         var settingsPath = CreateTempSettingsPath();

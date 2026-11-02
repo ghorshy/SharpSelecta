@@ -106,20 +106,8 @@ public sealed class PlaybackQueue
         }
     }
 
-    // Swaps in a re-read Track (e.g. after a tag edit) for every entry of that file, keeping each
-    // entry's source and the current position.
-    public void ReplaceTrack(Track updated)
-    {
-        for (var i = 0; i < _entries.Count; i++)
-        {
-            if (_entries[i].Track.FilePath == updated.FilePath)
-            {
-                _entries[i] = _entries[i] with { Track = updated };
-            }
-        }
-    }
-
-    // Like ReplaceTrack, for a different file taking over (the original was converted and removed).
+    // Swaps in a re-read Track (after a tag edit, or a converted file taking over) for every entry of
+    // the old file, keeping each entry's source and the current position.
     public void ReplaceFile(string oldFilePath, Track replacement)
     {
         for (var i = 0; i < _entries.Count; i++)
