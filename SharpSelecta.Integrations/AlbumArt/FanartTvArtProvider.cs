@@ -6,11 +6,9 @@ namespace SharpSelecta.Integrations.AlbumArt;
 
 // fanart.tv's album covers (1000x1000, user-curated). Needs an API key; keyed by the MusicBrainz release-group id.
 public sealed class FanartTvArtProvider(
-    HttpClient http, MusicBrainzClient musicBrainz, Func<string?> loadApiKey, Action<string> saveApiKey) : IAlbumArtProvider
+    HttpClient http, MusicBrainzClient musicBrainz, Func<string?> loadApiKey, Action<string> saveApiKey) : IConfigurableAlbumArtProvider
 {
     public string Name => "fanart.tv";
-
-    public bool CanBeConfigured => true;
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(loadApiKey());
 

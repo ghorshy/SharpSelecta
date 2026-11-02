@@ -48,7 +48,7 @@ public sealed partial class AlbumArtTileViewModel(IAlbumArtProvider provider) : 
 
     // The "Enter key..." button: while a key is missing, and again after a failed search if the key can be
     // changed (a rejected key makes the search fail).
-    public bool ShowEnterKey => NeedsSetup || (State == AlbumArtTileState.Failed && Provider.CanBeConfigured);
+    public bool ShowEnterKey => NeedsSetup || (State == AlbumArtTileState.Failed && Provider is IConfigurableAlbumArtProvider);
 
     // Shown instead of an image: why there isn't one (null once found - the size is shown then).
     public string? StatusText => State switch
@@ -108,13 +108,13 @@ public sealed partial class AlbumArtSearchViewModel : ViewModelBase, IDisposable
     // Used by a tile that needs an API key: store it and search that service again.
     public async Task ConfigureAsync(AlbumArtTileViewModel tile, string value)
     {
-        tile.Provider.Configure(value);
+        ((IConfigurableAlbumArtProvider)tile.Provider).Configure(value);
         await SearchTileAsync(tile);
     }
 
     private async Task SearchTileAsync(AlbumArtTileViewModel tile)
     {
-        if (!tile.Provider.IsConfigured)
+        if (tile.Provider is IConfigurableAlbumArtProvider { IsConfigured: false })
         {
             tile.State = AlbumArtTileState.NeedsSetup;
             return;

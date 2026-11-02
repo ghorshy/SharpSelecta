@@ -341,10 +341,11 @@ public class AlbumArtProviderTests
     }
 
     [Test]
-    public async Task Fanart_CanBeConfigured_ButAPlainProviderCannot()
+    public async Task Fanart_IsConfigurable()
     {
-        await Assert.That(Fanart(new StubHandler(), null).CanBeConfigured).IsTrue();
-        await Assert.That(((IAlbumArtProvider)new DeezerArtProvider(Client(new StubHandler()))).CanBeConfigured).IsFalse();
+        IAlbumArtProvider provider = Fanart(new StubHandler(), null);
+
+        await Assert.That(provider is IConfigurableAlbumArtProvider).IsTrue();
     }
 
     [Test]

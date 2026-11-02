@@ -13,27 +13,30 @@ public class AlbumArtSearchViewModelTests
     private static readonly byte[] Png16 = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "cover-blue.png"));
     private static readonly AlbumArtQuery Query = new("Daft Punk", "Random Access Memories");
 
-    private sealed class FakeProvider(
-        string name, Func<AlbumArtQuery, CancellationToken, Task<AlbumArtCandidate?>> find, bool configured = true) : IAlbumArtProvider
+    private class FakeProvider(string name, Func<AlbumArtQuery, CancellationToken, Task<AlbumArtCandidate?>> find) : IAlbumArtProvider
     {
         public string Name => name;
 
-        public bool IsConfigured { get; private set; } = configured;
-
-        public List<string> ConfiguredWith { get; } = [];
-
         public int Calls { get; private set; }
-
-        public void Configure(string value)
-        {
-            ConfiguredWith.Add(value);
-            IsConfigured = true;
-        }
 
         public Task<AlbumArtCandidate?> FindAsync(AlbumArtQuery query, CancellationToken cancellationToken)
         {
             Calls++;
             return find(query, cancellationToken);
+        }
+    }
+
+    private sealed class KeyedFakeProvider(string name, Func<AlbumArtQuery, CancellationToken, Task<AlbumArtCandidate?>> find)
+        : FakeProvider(name, find), IConfigurableAlbumArtProvider
+    {
+        public bool IsConfigured { get; private set; }
+
+        public List<string> ConfiguredWith { get; } = [];
+
+        public void Configure(string value)
+        {
+            ConfiguredWith.Add(value);
+            IsConfigured = true;
         }
     }
 
@@ -75,7 +78,7 @@ public class AlbumArtSearchViewModelTests
     [Test]
     public async Task Search_AProviderThatStillNeedsConfiguring_IsNotCalled_AndAsksForSetup()
     {
-        var needsKey = new FakeProvider("Keyed", (_, _) => Task.FromResult<AlbumArtCandidate?>(null), configured: false);
+        var needsKey = new KeyedFakeProvider("Keyed", (_, _) => Task.FromResult<AlbumArtCandidate?>(null));
         var vm = new AlbumArtSearchViewModel(Query, [needsKey]);
 
         await vm.SearchAsync();
@@ -85,11 +88,11 @@ public class AlbumArtSearchViewModelTests
         await Assert.That(needsKey.Calls).IsEqualTo(0);
     }
 
-    private sealed class ConfigurableFailingProvider : IAlbumArtProvider
+    private sealed class ConfigurableFailingProvider : IConfigurableAlbumArtProvider
     {
         public string Name => "Keyed";
 
-        public bool CanBeConfigured => true;
+        public bool IsConfigured => true;
 
         public bool KeyIsGood { get; private set; }
 
@@ -121,7 +124,7 @@ public class AlbumArtSearchViewModelTests
     [Test]
     public async Task Configure_StoresTheKeyAndSearchesThatServiceAgain()
     {
-        var keyed = new FakeProvider("Keyed", (_, _) => Task.FromResult<AlbumArtCandidate?>(new AlbumArtCandidate(Jpeg16, 16, 16, "T")), configured: false);
+        var keyed = new KeyedFakeProvider("Keyed", (_, _) => Task.FromResult<AlbumArtCandidate?>(new AlbumArtCandidate(Jpeg16, 16, 16, "T")));
         var vm = new AlbumArtSearchViewModel(Query, [keyed]);
         await vm.SearchAsync();
 
