@@ -4,6 +4,8 @@ namespace SharpSelecta.Core.Library;
 
 public static class M3uPlaylistFile
 {
+    private static readonly char[] EntrySeparators = ['/', '\\'];
+
     public static IReadOnlyList<string> ParsePaths(string content, string baseDirectoryForRelativePaths)
     {
         var paths = new List<string>();
@@ -17,7 +19,7 @@ public static class M3uPlaylistFile
 
             paths.Add(Path.IsPathRooted(line)
                 ? line
-                : Path.Combine(baseDirectoryForRelativePaths, line.Replace('/', Path.DirectorySeparatorChar)));
+                : Path.Combine([baseDirectoryForRelativePaths, .. line.Split(EntrySeparators, StringSplitOptions.RemoveEmptyEntries)]));
         }
 
         return paths;

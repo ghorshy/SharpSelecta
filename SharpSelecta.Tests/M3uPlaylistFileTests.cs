@@ -15,13 +15,15 @@ public class M3uPlaylistFileTests
     }
 
     [Test]
-    public async Task ParsePaths_ResolvesRelativePathsAgainstTheBaseDirectory()
+    [Arguments("songs/track.mp3")]
+    [Arguments(@"songs\track.mp3")]
+    public async Task ParsePaths_ResolvesRelativePathsAgainstTheBaseDirectory(string content)
     {
-        const string content = "songs/track.mp3";
+        var baseDirectory = Path.Combine("home", "user", "Music");
 
-        var paths = M3uPlaylistFile.ParsePaths(content, "/home/user/Music");
+        var paths = M3uPlaylistFile.ParsePaths(content, baseDirectory);
 
-        await Assert.That(paths).IsEquivalentTo([Path.Combine("/home/user/Music", "songs", "track.mp3")]);
+        await Assert.That(paths).IsEquivalentTo([Path.Combine(baseDirectory, "songs", "track.mp3")]);
     }
 
     [Test]
