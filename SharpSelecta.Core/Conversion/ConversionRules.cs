@@ -6,7 +6,22 @@ public static class ConversionRules
 {
     private static readonly int[] LossyBitrates = [320, 256, 224, 192, 160, 128, 96, 64];
 
-    public static bool IsLossy(ConversionTarget target) => target is ConversionTarget.Mp3 or ConversionTarget.AacM4a or ConversionTarget.OggVorbis;
+    // WAV tagging is poor and inconsistent between players, so a WAV only gets title, artist and album -
+    // no other fields, credits or cover art.
+    private static readonly Dictionary<ConversionTarget, ConversionFormat> Formats = new()
+    {
+        [ConversionTarget.Mp3] = new(".mp3", IsLossy: true, KeepsAllTags: true, _ => false),
+        [ConversionTarget.Flac] = new(".flac", IsLossy: false, KeepsAllTags: true, codec => codec == "flac"),
+        [ConversionTarget.AlacM4a] = new(".m4a", IsLossy: false, KeepsAllTags: true, codec => codec == "alac"),
+        [ConversionTarget.AacM4a] = new(".m4a", IsLossy: true, KeepsAllTags: true, _ => false),
+        [ConversionTarget.OggVorbis] = new(".ogg", IsLossy: true, KeepsAllTags: true, codec => codec == "vorbis"),
+        [ConversionTarget.Wav] = new(".wav", IsLossy: false, KeepsAllTags: false, codec => IsPcm(codec) && !IsBigEndian(codec)),
+        [ConversionTarget.Aiff] = new(".aiff", IsLossy: false, KeepsAllTags: true, IsBigEndian),
+    };
+
+    private static ConversionFormat Format(ConversionTarget target) => Formats[target];
+
+    public static bool IsLossy(ConversionTarget target) => Format(target).IsLossy;
 
     // The reason a conversion isn't allowed, or null when it is.
     public static ConversionBlock? Check(SourceInfo source, ConversionTarget target)
@@ -14,7 +29,7 @@ public static class ConversionRules
         if (!source.IsLossless && !IsLossy(target))
             return ConversionBlock.LossyToLossless;
 
-        if (source.IsLossless && IsSameCodec(source, target))
+        if (source.IsLossless && Format(target).IsSameCodec(source.Codec))
             return ConversionBlock.SameFormat;
 
         if (!source.IsLossless && AllowedBitrates(source, target).Count == 0)
@@ -36,35 +51,16 @@ public static class ConversionRules
         return source.BitrateKbps is { } ceiling ? LossyBitrates.Where(bitrate => bitrate <= ceiling).ToList() : [];
     }
 
-    private static bool IsSameCodec(SourceInfo source, ConversionTarget target) => target switch
-    {
-        ConversionTarget.Flac => source.Codec == "flac",
-        ConversionTarget.AlacM4a => source.Codec == "alac",
-        ConversionTarget.Wav => IsPcm(source.Codec) && !IsBigEndian(source.Codec),
-        ConversionTarget.Aiff => IsPcm(source.Codec) && IsBigEndian(source.Codec),
-        ConversionTarget.OggVorbis => source.Codec == "vorbis",
-        _ => false,
-    };
-
     // WAV holds little-endian PCM and AIFF big-endian, which is how a probed codec name tells them apart.
     public static bool IsPcm(string codec) => codec.StartsWith("pcm_", StringComparison.Ordinal);
 
     public static bool IsBigEndian(string codec) => IsPcm(codec) && codec.Contains("be", StringComparison.Ordinal);
 
-    public static string Extension(ConversionTarget target) => target switch
-    {
-        ConversionTarget.Mp3 => ".mp3",
-        ConversionTarget.Flac => ".flac",
-        ConversionTarget.AlacM4a or ConversionTarget.AacM4a => ".m4a",
-        ConversionTarget.OggVorbis => ".ogg",
-        ConversionTarget.Wav => ".wav",
-        ConversionTarget.Aiff => ".aiff",
-        _ => throw new ArgumentOutOfRangeException(nameof(target), target, null),
-    };
+    public static string Extension(ConversionTarget target) => Format(target).Extension;
 
-    // WAV tagging is poor and inconsistent between players, so a WAV only gets title, artist and album -
-    // no other fields, credits or cover art.
-    public static bool KeepsAllTags(ConversionTarget target) => target != ConversionTarget.Wav;
+    public static bool KeepsAllTags(ConversionTarget target) => Format(target).KeepsAllTags;
+
+    private sealed record ConversionFormat(string Extension, bool IsLossy, bool KeepsAllTags, Func<string, bool> IsSameCodec);
 }
 
 public enum ConversionBlock

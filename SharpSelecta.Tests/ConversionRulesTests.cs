@@ -89,4 +89,11 @@ public class ConversionRulesTests
         await Assert.That(ConversionRules.Extension(ConversionTarget.OggVorbis)).IsEqualTo(".ogg");
         await Assert.That(ConversionRules.Extension(ConversionTarget.Aiff)).IsEqualTo(".aiff");
     }
+
+    [Test]
+    public async Task Format_EveryTargetHasOne()
+    {
+        foreach (var target in Enum.GetValues<ConversionTarget>())
+            await Assert.That(ConversionRules.Extension(target)).StartsWith(".");
+    }
 }
