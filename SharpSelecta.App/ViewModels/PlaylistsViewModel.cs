@@ -10,7 +10,7 @@ namespace SharpSelecta.App.ViewModels;
 public partial class PlaylistsViewModel : ObservableObject
 {
     private readonly LibraryViewModel _library;
-    private readonly string _settingsFilePath;
+    private readonly SettingsStore _settings;
 
     public BulkObservableCollection<PlaylistSummaryViewModel> Playlists { get; } = [];
 
@@ -19,16 +19,16 @@ public partial class PlaylistsViewModel : ObservableObject
     [ObservableProperty]
     private string? selectedPlaylistId;
 
-    public PlaylistsViewModel(LibraryViewModel library, string settingsFilePath)
+    public PlaylistsViewModel(LibraryViewModel library, SettingsStore settings)
     {
         _library = library;
-        _settingsFilePath = settingsFilePath;
+        _settings = settings;
         RefreshPlaylists();
     }
 
     public void RefreshPlaylists()
     {
-        var summaries = LibraryIndexStore.ListPlaylists(_settingsFilePath);
+        var summaries = LibraryIndexStore.ListPlaylists(_settings.FilePath);
         Playlists.ReplaceAll(summaries.Select(s => new PlaylistSummaryViewModel(s.Id, s.Name)));
     }
 
@@ -40,7 +40,7 @@ public partial class PlaylistsViewModel : ObservableObject
 
     // Keeps the current selection restorable across restarts - see LibraryViewModel.InitializeAsync.
     partial void OnSelectedPlaylistIdChanged(string? value) =>
-        SettingsStore.SaveSelectedPlaylistId(_settingsFilePath, value);
+        _settings.Update(s => s with { SelectedPlaylistId = value });
 
     public void RefreshTracks()
     {
@@ -50,7 +50,7 @@ public partial class PlaylistsViewModel : ObservableObject
             return;
         }
 
-        var entries = LibraryIndexStore.GetPlaylistTracks(_settingsFilePath, playlistId);
+        var entries = LibraryIndexStore.GetPlaylistTracks(_settings.FilePath, playlistId);
         Tracks.ReplaceAll(entries.Select(e => e.Track is { } track
             ? new LibraryTrackViewModel(track, _library)
             : new LibraryTrackViewModel(MissingTrackPlaceholder(e.FilePath), _library, isMissing: true)));
@@ -64,7 +64,7 @@ public partial class PlaylistsViewModel : ObservableObject
 
     public string CreatePlaylist(string name)
     {
-        var id = LibraryIndexStore.CreatePlaylist(_settingsFilePath, name);
+        var id = LibraryIndexStore.CreatePlaylist(_settings.FilePath, name);
         RefreshPlaylists();
         SelectPlaylist(id);
         return id;
@@ -72,13 +72,13 @@ public partial class PlaylistsViewModel : ObservableObject
 
     public void RenamePlaylist(string playlistId, string newName)
     {
-        LibraryIndexStore.RenamePlaylist(_settingsFilePath, playlistId, newName);
+        LibraryIndexStore.RenamePlaylist(_settings.FilePath, playlistId, newName);
         RefreshPlaylists();
     }
 
     public void DeletePlaylist(string playlistId)
     {
-        LibraryIndexStore.DeletePlaylist(_settingsFilePath, playlistId);
+        LibraryIndexStore.DeletePlaylist(_settings.FilePath, playlistId);
         RefreshPlaylists();
         if (SelectedPlaylistId == playlistId)
         {
@@ -91,9 +91,9 @@ public partial class PlaylistsViewModel : ObservableObject
         if (SelectedPlaylistId is not { } playlistId)
             return;
 
-        var currentPaths = LibraryIndexStore.GetPlaylistTracks(_settingsFilePath, playlistId).Select(e => e.FilePath).ToList();
+        var currentPaths = LibraryIndexStore.GetPlaylistTracks(_settings.FilePath, playlistId).Select(e => e.FilePath).ToList();
         currentPaths.AddRange(tracks.Select(t => t.FilePath));
-        LibraryIndexStore.ReplacePlaylistTracks(_settingsFilePath, playlistId, currentPaths);
+        LibraryIndexStore.ReplacePlaylistTracks(_settings.FilePath, playlistId, currentPaths);
         RefreshTracks();
     }
 
@@ -102,13 +102,13 @@ public partial class PlaylistsViewModel : ObservableObject
         if (SelectedPlaylistId is not { } playlistId)
             return;
 
-        var currentPaths = LibraryIndexStore.GetPlaylistTracks(_settingsFilePath, playlistId).Select(e => e.FilePath).ToList();
+        var currentPaths = LibraryIndexStore.GetPlaylistTracks(_settings.FilePath, playlistId).Select(e => e.FilePath).ToList();
         var index = currentPaths.IndexOf(track.FilePath);
         if (index < 0)
             return;
 
         currentPaths.RemoveAt(index);
-        LibraryIndexStore.ReplacePlaylistTracks(_settingsFilePath, playlistId, currentPaths);
+        LibraryIndexStore.ReplacePlaylistTracks(_settings.FilePath, playlistId, currentPaths);
         RefreshTracks();
     }
 
@@ -117,7 +117,7 @@ public partial class PlaylistsViewModel : ObservableObject
         if (SelectedPlaylistId is not { } playlistId)
             return;
 
-        LibraryIndexStore.ReplacePlaylistTracks(_settingsFilePath, playlistId, filePathsInOrder);
+        LibraryIndexStore.ReplacePlaylistTracks(_settings.FilePath, playlistId, filePathsInOrder);
         RefreshTracks();
     }
 
@@ -141,7 +141,7 @@ public partial class PlaylistsViewModel : ObservableObject
     // nonexistent file is useless, and the entry carries no duration/artist/title to write.
     public string ExportPlaylistToM3u(string playlistId)
     {
-        var entries = LibraryIndexStore.GetPlaylistTracks(_settingsFilePath, playlistId);
+        var entries = LibraryIndexStore.GetPlaylistTracks(_settings.FilePath, playlistId);
         var tracks = entries
             .Where(entry => entry.Track is not null)
             .Select(entry => (entry.FilePath, entry.Track!.Duration, entry.Track.Artist ?? "", entry.Track.Title ?? ""))

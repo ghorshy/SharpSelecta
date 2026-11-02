@@ -149,9 +149,9 @@ public class RichPresenceTests
 
         public Fixture(bool enabled = true)
         {
-            var settingsPath = Path.Combine(Path.GetTempPath(), $"sharpselecta-presence-tests-{Guid.NewGuid():N}.json");
-            Playback = new PlaybackControlsViewModel(Engine, new PlaybackQueue(), settingsPath, NullLogger<PlaybackControlsViewModel>.Instance);
-            Settings = new IntegrationsSettingsViewModel(settingsPath);
+            var settings = new SettingsStore(Path.Combine(Path.GetTempPath(), $"sharpselecta-presence-tests-{Guid.NewGuid():N}.json"));
+            Playback = new PlaybackControlsViewModel(Engine, new PlaybackQueue(), settings, NullLogger<PlaybackControlsViewModel>.Instance);
+            Settings = new IntegrationsSettingsViewModel(settings);
             Coordinator = new RichPresenceCoordinator(Playback, Presence, Settings, Time);
             if (enabled)
             {
@@ -276,7 +276,7 @@ public class RichPresenceTests
     [Test]
     public async Task Integrations_DiscordPresenceIsOffByDefault()
     {
-        var vm = new IntegrationsSettingsViewModel(TempSettings());
+        var vm = new IntegrationsSettingsViewModel(new SettingsStore(TempSettings()));
 
         await Assert.That(vm.DiscordPresenceEnabled).IsFalse();
         await Assert.That(vm.IsDiscordPresenceEnabled).IsFalse();
@@ -287,7 +287,7 @@ public class RichPresenceTests
     public async Task Integrations_AnEditOnlyTakesEffectOnApply_WhichPersistsItAndRaisesTheEvent()
     {
         var path = TempSettings();
-        var vm = new IntegrationsSettingsViewModel(path);
+        var vm = new IntegrationsSettingsViewModel(new SettingsStore(path));
         var raised = 0;
         vm.DiscordPresenceEnabledChanged += (_, _) => raised++;
 
@@ -301,13 +301,13 @@ public class RichPresenceTests
         await Assert.That(vm.IsDiscordPresenceEnabled).IsTrue();
         await Assert.That(vm.HasPendingChanges).IsFalse();
         await Assert.That(raised).IsEqualTo(1);
-        await Assert.That(new IntegrationsSettingsViewModel(path).DiscordPresenceEnabled).IsTrue();
+        await Assert.That(new IntegrationsSettingsViewModel(new SettingsStore(path)).DiscordPresenceEnabled).IsTrue();
     }
 
     [Test]
     public async Task Integrations_CancelRevertsAnUnappliedEdit()
     {
-        var vm = new IntegrationsSettingsViewModel(TempSettings());
+        var vm = new IntegrationsSettingsViewModel(new SettingsStore(TempSettings()));
         vm.DiscordPresenceEnabled = true;
 
         ((SharpSelecta.App.ViewModels.ISettingsCategoryViewModel)vm).CancelCommand.Execute(null);
@@ -319,7 +319,7 @@ public class RichPresenceTests
     [Test]
     public async Task Integrations_ApplyingWithoutAChange_DoesNotRaiseTheEvent()
     {
-        var vm = new IntegrationsSettingsViewModel(TempSettings());
+        var vm = new IntegrationsSettingsViewModel(new SettingsStore(TempSettings()));
         var raised = 0;
         vm.DiscordPresenceEnabledChanged += (_, _) => raised++;
 

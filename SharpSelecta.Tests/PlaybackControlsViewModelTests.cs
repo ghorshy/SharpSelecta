@@ -24,7 +24,7 @@ public class PlaybackControlsViewModelTests
         queue = new PlaybackQueue();
         // No index db exists at this settings path unless the caller reconciled one first, so
         // waveform-cache lookups miss by default - matches the pre-caching test behavior.
-        return new PlaybackControlsViewModel(audioEngine, queue, settingsFilePath ?? CreateTempSettingsPath(), NullLogger<PlaybackControlsViewModel>.Instance);
+        return new PlaybackControlsViewModel(audioEngine, queue, new SettingsStore(settingsFilePath ?? CreateTempSettingsPath()), NullLogger<PlaybackControlsViewModel>.Instance);
     }
 
     [Test]

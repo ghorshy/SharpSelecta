@@ -1,6 +1,7 @@
 using SharpSelecta.App.Services;
 using SharpSelecta.App.Shortcuts;
 using SharpSelecta.App.ViewModels;
+using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.Tests;
 
@@ -11,7 +12,7 @@ public class KeyboardShortcutsViewModelTests
 
     private static KeyboardShortcutsViewModel CreateViewModel(out ShortcutSettingsService settings)
     {
-        settings = new ShortcutSettingsService(CreateTempSettingsPath());
+        settings = new ShortcutSettingsService(new SettingsStore(CreateTempSettingsPath()));
         return new KeyboardShortcutsViewModel(settings);
     }
 

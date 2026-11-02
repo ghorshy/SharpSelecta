@@ -6,18 +6,17 @@ using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.Services;
 
-// Fast, deterministic JSON-file wrapper (SettingsStore) - no interface needed for testing, per the mock-vs-real rule.
 public sealed class ShortcutSettingsService
 {
-    private readonly string _settingsFilePath;
+    private readonly SettingsStore _settings;
     private readonly Dictionary<string, string> _overrides;
 
     public event EventHandler? ShortcutsChanged;
 
-    public ShortcutSettingsService(string settingsFilePath)
+    public ShortcutSettingsService(SettingsStore settings)
     {
-        _settingsFilePath = settingsFilePath;
-        _overrides = new Dictionary<string, string>(SettingsStore.LoadShortcutOverrides(settingsFilePath) ?? new Dictionary<string, string>());
+        _settings = settings;
+        _overrides = new Dictionary<string, string>(settings.Current.ShortcutOverrides ?? new Dictionary<string, string>());
     }
 
     public string GetEffectiveGesture(string shortcutId) =>
@@ -39,7 +38,8 @@ public sealed class ShortcutSettingsService
 
     private void Persist()
     {
-        SettingsStore.SaveShortcutOverrides(_settingsFilePath, _overrides);
+        var snapshot = new Dictionary<string, string>(_overrides);
+        _settings.Update(s => s with { ShortcutOverrides = snapshot });
         ShortcutsChanged?.Invoke(this, EventArgs.Empty);
     }
 }

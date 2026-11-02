@@ -19,7 +19,7 @@ public sealed record EqualizerPresetOption(EqualizerPreset? Preset, string Label
 
 public partial class EqualizerViewModel : ObservableObject
 {
-    private readonly string _settingsFilePath;
+    private readonly SettingsStore _settings;
     private readonly IAudioEngine _audioEngine;
 
     // MVVMTK0034: backing-field writes are only allowed inside the constructor.
@@ -50,9 +50,9 @@ public partial class EqualizerViewModel : ObservableObject
     [ObservableProperty]
     public partial EqualizerPresetOption SelectedPreset { get; set; }
 
-    public EqualizerViewModel(string settingsFilePath, IAudioEngine audioEngine)
+    public EqualizerViewModel(SettingsStore settings, IAudioEngine audioEngine)
     {
-        _settingsFilePath = settingsFilePath;
+        _settings = settings;
         _audioEngine = audioEngine;
         _suppressPresetChangeSideEffects = true;
         SelectedPreset = DefaultOption;
@@ -76,7 +76,7 @@ public partial class EqualizerViewModel : ObservableObject
     partial void OnEnabledChanged(bool value)
     {
         _audioEngine.EqualizerEnabled = value;
-        SettingsStore.SaveEqualizerEnabled(_settingsFilePath, value);
+        _settings.Update(s => s with { EqualizerEnabled = value });
     }
 
     partial void OnSelectedPresetChanged(EqualizerPresetOption value)
@@ -115,15 +115,15 @@ public partial class EqualizerViewModel : ObservableObject
         _suppressPresetChangeSideEffects = false;
     }
 
-    public void PersistBandGains()
+    public void PersistBandGains() => _settings.Update(s => s with
     {
-        SettingsStore.SaveEqualizerBandGainsDb(_settingsFilePath, Bands.Select(b => (float)b.GainDb).ToList());
-        SettingsStore.SaveEqualizerPresetName(_settingsFilePath, SelectedPreset.SettingsKey);
-    }
+        EqualizerBandGainsDb = Bands.Select(b => (float)b.GainDb).ToList(),
+        EqualizerPresetName = SelectedPreset.SettingsKey,
+    });
 
     public void ApplyPersistedState()
     {
-        var savedGains = SettingsStore.LoadEqualizerBandGainsDb(_settingsFilePath);
+        var savedGains = _settings.Current.EqualizerBandGainsDb;
         if (savedGains is { Count: 10 })
         {
             _suppressBandGainSideEffects = true;
@@ -141,12 +141,12 @@ public partial class EqualizerViewModel : ObservableObject
             }
         }
 
-        var savedPresetName = SettingsStore.LoadEqualizerPresetName(_settingsFilePath);
+        var savedPresetName = _settings.Current.EqualizerPresetName;
         _suppressPresetChangeSideEffects = true;
         SelectedPreset = PresetOptions.FirstOrDefault(o => o.SettingsKey == savedPresetName) ?? DefaultOption;
         _suppressPresetChangeSideEffects = false;
 
-        var savedEnabled = SettingsStore.LoadEqualizerEnabled(_settingsFilePath);
+        var savedEnabled = _settings.Current.EqualizerEnabled;
         var previouslyEnabled = Enabled;
         Enabled = savedEnabled;
         if (previouslyEnabled == savedEnabled)

@@ -15,17 +15,17 @@ namespace SharpSelecta.App.ViewModels;
 // that supports this install (Linux, portable zip) everything here stays inert and the category is hidden.
 public sealed partial class UpdatesViewModel : ViewModelBase, ISettingsCategoryViewModel
 {
-    private readonly string _settingsFilePath;
+    private readonly SettingsStore _settings;
     private readonly IUpdateService? _updateService;
     private readonly ILogger _logger;
     private bool _appliedCheckAutomatically;
 
-    public UpdatesViewModel(string settingsFilePath, IUpdateService? updateService, ILogger logger)
+    public UpdatesViewModel(SettingsStore settings, IUpdateService? updateService, ILogger logger)
     {
-        _settingsFilePath = settingsFilePath;
+        _settings = settings;
         _updateService = updateService;
         _logger = logger;
-        _appliedCheckAutomatically = SettingsStore.LoadCheckForUpdatesAutomatically(settingsFilePath);
+        _appliedCheckAutomatically = settings.Current.CheckForUpdatesAutomatically;
         CheckAutomatically = _appliedCheckAutomatically;
     }
 
@@ -120,7 +120,7 @@ public sealed partial class UpdatesViewModel : ViewModelBase, ISettingsCategoryV
     [RelayCommand]
     private void ApplyUpdatesSettings()
     {
-        SettingsStore.SaveCheckForUpdatesAutomatically(_settingsFilePath, CheckAutomatically);
+        _settings.Update(s => s with { CheckForUpdatesAutomatically = CheckAutomatically });
         _appliedCheckAutomatically = CheckAutomatically;
         OnPropertyChanged(nameof(HasPendingChanges));
     }

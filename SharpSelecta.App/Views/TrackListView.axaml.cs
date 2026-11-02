@@ -121,14 +121,14 @@ public sealed partial class TrackListView : UserControl
 
     private void ApplyColumnLayout(LibraryViewModel vm)
     {
-        var order = SettingsStore.LoadColumnOrder(vm.SettingsFilePath);
+        var order = vm.Settings.Current.ColumnOrder;
         if (order is not null)
         {
             var displayIndexByKey = order.Select((key, index) => (key, index)).ToDictionary(x => x.key, x => x.index);
             ApplyToTaggedColumns(displayIndexByKey, (column, index) => column.DisplayIndex = index);
         }
 
-        var widths = SettingsStore.LoadColumnWidths(vm.SettingsFilePath);
+        var widths = vm.Settings.Current.ColumnWidths;
         if (widths is not null)
         {
             ApplyToTaggedColumns(widths, (column, width) => column.Width = new DataGridLength(width));
@@ -151,13 +151,13 @@ public sealed partial class TrackListView : UserControl
         if (!AllowReorderAndSort)
             return;
 
-        var sort = SettingsStore.LoadSort(vm.SettingsFilePath);
-        if (sort is not { } savedSort || TracksGrid.CollectionView is not { } collectionView)
+        var saved = vm.Settings.Current;
+        if (saved.SortPropertyPath is not { } propertyPath || TracksGrid.CollectionView is not { } collectionView)
             return;
 
-        var direction = savedSort.Descending ? ListSortDirection.Descending : ListSortDirection.Ascending;
+        var direction = saved.SortDescending ? ListSortDirection.Descending : ListSortDirection.Ascending;
         collectionView.SortDescriptions.Clear();
-        collectionView.SortDescriptions.Add(DataGridSortDescription.FromPath(savedSort.PropertyPath, direction));
+        collectionView.SortDescriptions.Add(DataGridSortDescription.FromPath(propertyPath, direction));
     }
 
     private void OnColumnReordered(object? sender, DataGridColumnEventArgs e)
@@ -171,7 +171,7 @@ public sealed partial class TrackListView : UserControl
             .OfType<string>()
             .ToList();
 
-        SettingsStore.SaveColumnOrder(vm.SettingsFilePath, orderedKeys);
+        vm.Settings.Update(s => s with { ColumnOrder = orderedKeys });
         vm.NotifyColumnLayoutChanged();
     }
 
@@ -196,7 +196,7 @@ public sealed partial class TrackListView : UserControl
                 .Where(c => c.Tag is string)
                 .ToDictionary(c => (string)c.Tag!, c => c.Width.Value);
 
-            SettingsStore.SaveColumnWidths(vm.SettingsFilePath, widths);
+            vm.Settings.Update(s => s with { ColumnWidths = widths });
             vm.NotifyColumnLayoutChanged();
         }
     }
@@ -206,8 +206,11 @@ public sealed partial class TrackListView : UserControl
         if (!AllowReorderAndSort || DataContext is not LibraryViewModel vm || TracksGrid.CollectionView?.SortDescriptions.FirstOrDefault() is not { } sortDescription)
             return;
 
-        SettingsStore.SaveSort(
-            vm.SettingsFilePath, sortDescription.PropertyPath, sortDescription.Direction == ListSortDirection.Descending);
+        vm.Settings.Update(s => s with
+        {
+            SortPropertyPath = sortDescription.PropertyPath,
+            SortDescending = sortDescription.Direction == ListSortDirection.Descending,
+        });
     }
 
     private void OnTrackDoubleTapped(object? sender, TappedEventArgs e)

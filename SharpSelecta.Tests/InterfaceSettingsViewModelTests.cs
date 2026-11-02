@@ -28,7 +28,7 @@ public class InterfaceSettingsViewModelTests
     }
 
     private static InterfaceSettingsViewModel CreateViewModel(string settingsPath, IFilePickerService? filePickerService = null) =>
-        new(settingsPath, filePickerService ?? Substitute.For<IFilePickerService>());
+        new(new SettingsStore(settingsPath), filePickerService ?? Substitute.For<IFilePickerService>());
 
     [Test]
     public async Task SelectedThemeDisplayName_DefaultsToDark()
@@ -56,7 +56,7 @@ public class InterfaceSettingsViewModelTests
 
             vm.SelectedThemeDisplayName = Strings.ThemeLight;
 
-            await Assert.That(SettingsStore.LoadTheme(settingsPath)).IsEqualTo(AppTheme.Light);
+            await Assert.That(new SettingsStore(settingsPath).Current.Theme).IsEqualTo(AppTheme.Light);
         }
         finally
         {
@@ -70,7 +70,7 @@ public class InterfaceSettingsViewModelTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            SettingsStore.SaveTheme(settingsPath, AppTheme.System);
+            new SettingsStore(settingsPath).Update(s => s with { Theme = AppTheme.System });
 
             var vm = CreateViewModel(settingsPath);
 
@@ -144,7 +144,7 @@ public class InterfaceSettingsViewModelTests
             var expectedDisplayName = Path.GetFileNameWithoutExtension(themePath);
             await Assert.That(vm.SelectedThemeDisplayName).IsEqualTo(expectedDisplayName);
             await Assert.That(vm.ThemeDisplayNames).Contains(expectedDisplayName);
-            await Assert.That(SettingsStore.LoadTheme(settingsPath)).IsEqualTo(AppTheme.Custom);
+            await Assert.That(new SettingsStore(settingsPath).Current.Theme).IsEqualTo(AppTheme.Custom);
             await Assert.That(File.Exists(Path.Combine(ThemesDirectoryFor(settingsPath), Path.GetFileName(themePath)))).IsTrue();
         }
         finally
@@ -172,7 +172,7 @@ public class InterfaceSettingsViewModelTests
 
             await Assert.That(vm.SelectedThemeDisplayName).IsEqualTo(Strings.ThemeDark);
             await Assert.That(File.Exists(Path.Combine(ThemesDirectoryFor(settingsPath), importedFileName))).IsFalse();
-            await Assert.That(SettingsStore.LoadTheme(settingsPath)).IsEqualTo(AppTheme.Dark);
+            await Assert.That(new SettingsStore(settingsPath).Current.Theme).IsEqualTo(AppTheme.Dark);
         }
         finally
         {
@@ -230,8 +230,8 @@ public class InterfaceSettingsViewModelTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            SettingsStore.SaveTheme(settingsPath, AppTheme.Custom);
-            SettingsStore.SaveCustomThemeFileName(settingsPath, "no-longer-there.axaml");
+            new SettingsStore(settingsPath).Update(s => s with { Theme = AppTheme.Custom });
+            new SettingsStore(settingsPath).Update(s => s with { CustomThemeFileName = "no-longer-there.axaml" });
 
             var vm = CreateViewModel(settingsPath);
 

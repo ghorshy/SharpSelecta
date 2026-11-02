@@ -72,16 +72,16 @@ public class QueueStateStoreTests
         var queueStatePath = QueueStateFilePath(settingsPath);
         try
         {
-            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
-            SettingsStore.SaveRestoreQueueOnStartup(settingsPath, false);
+            new SettingsStore(settingsPath).Update(s => s with { LibraryFolderPaths = ["/music/library"] });
+            new SettingsStore(settingsPath).Update(s => s with { RestoreQueueOnStartup = false });
             var settingsContentBeforeQueueSave = File.ReadAllText(settingsPath);
 
             QueueStateStore.Save(settingsPath, [new QueueStateStore.QueueEntryData("/music/a.mp3", QueueEntrySource.Manual)], 0, 10);
 
             await Assert.That(File.Exists(queueStatePath)).IsTrue();
             await Assert.That(File.ReadAllText(settingsPath)).IsEqualTo(settingsContentBeforeQueueSave);
-            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
-            await Assert.That(SettingsStore.LoadRestoreQueueOnStartup(settingsPath)).IsFalse();
+            await Assert.That(new SettingsStore(settingsPath).Current.LibraryFolderPaths).IsEquivalentTo(["/music/library"]);
+            await Assert.That(new SettingsStore(settingsPath).Current.RestoreQueueOnStartup).IsFalse();
         }
         finally
         {

@@ -12,7 +12,7 @@ namespace SharpSelecta.App.ViewModels;
 
 public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategoryViewModel
 {
-    private readonly string _settingsFilePath;
+    private readonly SettingsStore _settings;
     private readonly IOutputDeviceService _outputDeviceService;
     private readonly PlaybackControlsViewModel _playbackControls;
 
@@ -52,34 +52,35 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
     ICommand ISettingsCategoryViewModel.CancelCommand => CancelPlaybackSettingsCommand;
 
-    public PlaybackSettingsViewModel(string settingsFilePath, IOutputDeviceService outputDeviceService, PlaybackControlsViewModel playbackControls)
+    public PlaybackSettingsViewModel(SettingsStore settings, IOutputDeviceService outputDeviceService, PlaybackControlsViewModel playbackControls)
     {
-        _settingsFilePath = settingsFilePath;
+        _settings = settings;
+        var saved = settings.Current;
         _outputDeviceService = outputDeviceService;
         _playbackControls = playbackControls;
 
-        RestoreQueueOnStartup = SettingsStore.LoadRestoreQueueOnStartup(settingsFilePath);
+        RestoreQueueOnStartup = saved.RestoreQueueOnStartup;
         _appliedRestoreQueueOnStartup = RestoreQueueOnStartup;
 
-        useWaveformSlider = SettingsStore.LoadUseWaveformSlider(settingsFilePath);
+        useWaveformSlider = saved.UseWaveformSlider;
         _playbackControls.UseWaveformSlider = useWaveformSlider;
         _appliedUseWaveformSlider = useWaveformSlider;
 
-        if (SettingsStore.LoadOutputDeviceName(settingsFilePath) is { } savedDeviceName)
+        if (saved.OutputDeviceName is { } savedDeviceName)
         {
             selectedOutputDeviceDisplayName = savedDeviceName;
         }
 
         _appliedSelectedOutputDeviceDisplayName = selectedOutputDeviceDisplayName;
 
-        var savedVolumeCurve = SettingsStore.LoadVolumeCurve(settingsFilePath);
+        var savedVolumeCurve = saved.VolumeCurve;
         useLogarithmicVolumeScale = savedVolumeCurve == VolumeCurve.Logarithmic;
         _playbackControls.VolumeCurve = savedVolumeCurve;
         _appliedUseLogarithmicVolumeScale = useLogarithmicVolumeScale;
 
-        _playbackControls.Volume = SettingsStore.LoadVolume(settingsFilePath) ?? _playbackControls.Volume;
+        _playbackControls.Volume = saved.Volume ?? _playbackControls.Volume;
 
-        seekStepSeconds = SettingsStore.LoadSeekStepSeconds(settingsFilePath);
+        seekStepSeconds = saved.SeekStepSeconds;
         _playbackControls.SeekStepSeconds = seekStepSeconds;
         _appliedSeekStepSeconds = seekStepSeconds;
     }
@@ -99,24 +100,28 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     [RelayCommand]
     private void ApplyPlaybackSettings()
     {
-        SettingsStore.SaveRestoreQueueOnStartup(_settingsFilePath, RestoreQueueOnStartup);
+        var curve = UseLogarithmicVolumeScale ? VolumeCurve.Logarithmic : VolumeCurve.Linear;
+        var deviceName = SelectedOutputDeviceDisplayName == Strings.SystemDefaultAudioDevice ? null : SelectedOutputDeviceDisplayName;
+        _settings.Update(s => s with
+        {
+            RestoreQueueOnStartup = RestoreQueueOnStartup,
+            UseWaveformSlider = UseWaveformSlider,
+            VolumeCurve = curve,
+            SeekStepSeconds = SeekStepSeconds,
+            OutputDeviceName = deviceName,
+        });
+
         _appliedRestoreQueueOnStartup = RestoreQueueOnStartup;
 
-        SettingsStore.SaveUseWaveformSlider(_settingsFilePath, UseWaveformSlider);
         _playbackControls.UseWaveformSlider = UseWaveformSlider;
         _appliedUseWaveformSlider = UseWaveformSlider;
 
-        var curve = UseLogarithmicVolumeScale ? VolumeCurve.Logarithmic : VolumeCurve.Linear;
-        SettingsStore.SaveVolumeCurve(_settingsFilePath, curve);
         _playbackControls.VolumeCurve = curve;
         _appliedUseLogarithmicVolumeScale = UseLogarithmicVolumeScale;
 
-        SettingsStore.SaveSeekStepSeconds(_settingsFilePath, SeekStepSeconds);
         _playbackControls.SeekStepSeconds = SeekStepSeconds;
         _appliedSeekStepSeconds = SeekStepSeconds;
 
-        var deviceName = SelectedOutputDeviceDisplayName == Strings.SystemDefaultAudioDevice ? null : SelectedOutputDeviceDisplayName;
-        SettingsStore.SaveOutputDeviceName(_settingsFilePath, deviceName);
         OutputDeviceSwitchTask = _outputDeviceService.SetOutputDeviceAsync(deviceName);
         _appliedSelectedOutputDeviceDisplayName = SelectedOutputDeviceDisplayName;
 

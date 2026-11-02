@@ -9,977 +9,43 @@ public class SettingsStoreTests
         Path.Combine(Path.GetTempPath(), $"sharpselecta-settings-tests-{Guid.NewGuid():N}.json");
 
     [Test]
-    public async Task SaveAndLoad_RoundTripsTheFolderPaths()
+    public async Task WhenFileDoesNotExist_CurrentHoldsTheDefaults()
     {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library", "/music/other"]);
+        var settings = new SettingsStore(CreateTempSettingsPath()).Current;
 
-            var loaded = SettingsStore.LoadLibraryFolderPaths(settingsPath);
-
-            await Assert.That(loaded).IsEquivalentTo(["/music/library", "/music/other"]);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
+        await Assert.That(settings.RestoreQueueOnStartup).IsTrue();
+        await Assert.That(settings.SeekStepSeconds).IsEqualTo(5);
+        await Assert.That(settings.Theme).IsEqualTo(AppTheme.Dark);
+        await Assert.That(settings.VolumeCurve).IsEqualTo(VolumeCurve.Linear);
+        await Assert.That(settings.CheckForUpdatesAutomatically).IsTrue();
+        await Assert.That(settings.AutoDjEnabled).IsFalse();
+        await Assert.That(settings.DiscordPresenceEnabled).IsFalse();
+        await Assert.That(settings.EqualizerEnabled).IsFalse();
+        await Assert.That(settings.UseWaveformSlider).IsFalse();
+        await Assert.That(settings.ViewMode).IsEqualTo(LibraryViewMode.TrackList);
+        await Assert.That(settings.LibrarySection).IsEqualTo(LibrarySection.Library);
+        await Assert.That(settings.AlbumSortMode).IsEqualTo(AlbumSortMode.Title);
+        await Assert.That(settings.Volume).IsNull();
+        await Assert.That(settings.LibraryFolderPaths).IsNull();
     }
 
     [Test]
-    public async Task Load_WhenFileDoesNotExist_ReturnsNull()
-    {
-        var settingsPath = CreateTempSettingsPath();
-
-        var loaded = SettingsStore.LoadLibraryFolderPaths(settingsPath);
-
-        await Assert.That(loaded).IsNull();
-    }
-
-    [Test]
-    public async Task Load_WhenFileIsCorrupted_ReturnsNullInsteadOfThrowing()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            File.WriteAllText(settingsPath, "{ not valid json");
-
-            var loaded = SettingsStore.LoadLibraryFolderPaths(settingsPath);
-
-            await Assert.That(loaded).IsNull();
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task Save_OverwritesThePreviousFolderPaths()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/old"]);
-            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/new"]);
-
-            var loaded = SettingsStore.LoadLibraryFolderPaths(settingsPath);
-
-            await Assert.That(loaded).IsEquivalentTo(["/music/new"]);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsColumnVisibility()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            var columns = new Dictionary<string, bool>
-            {
-                ["TrackNumber"] = true, ["Title"] = true, ["Artist"] = false, ["Album"] = false,
-                ["Length"] = true, ["SampleRate"] = false, ["BitDepth"] = false, ["Bitrate"] = true,
-                ["FileType"] = false, ["Year"] = true,
-            };
-
-            SettingsStore.SaveColumnVisibility(settingsPath, columns);
-
-            var loaded = SettingsStore.LoadColumnVisibility(settingsPath);
-
-            await Assert.That(loaded).IsEquivalentTo(columns);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task SavingColumnVisibility_DoesNotClobberAnAlreadySavedFolderPaths()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
-
-            SettingsStore.SaveColumnVisibility(settingsPath, new Dictionary<string, bool> { ["TrackNumber"] = true });
-
-            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task SavingFolderPaths_DoesNotClobberAnAlreadySavedColumnVisibility()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            var columns = new Dictionary<string, bool> { ["TrackNumber"] = true, ["Title"] = false };
-            SettingsStore.SaveColumnVisibility(settingsPath, columns);
-
-            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
-
-            await Assert.That(SettingsStore.LoadColumnVisibility(settingsPath)).IsEquivalentTo(columns);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task LoadColumnVisibility_WhenFileDoesNotExist_ReturnsNull()
-    {
-        var settingsPath = CreateTempSettingsPath();
-
-        var loaded = SettingsStore.LoadColumnVisibility(settingsPath);
-
-        await Assert.That(loaded).IsNull();
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsColumnOrder()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            string[] order = ["Artist", "Title", "TrackNumber", "Year"];
-
-            SettingsStore.SaveColumnOrder(settingsPath, order);
-
-            var loaded = SettingsStore.LoadColumnOrder(settingsPath);
-
-            await Assert.That(loaded).IsEquivalentTo(order);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task SavingColumnOrder_DoesNotClobberAnAlreadySavedFolderPathsOrColumnVisibility()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
-            var columns = new Dictionary<string, bool> { ["TrackNumber"] = true, ["Title"] = false };
-            SettingsStore.SaveColumnVisibility(settingsPath, columns);
-
-            SettingsStore.SaveColumnOrder(settingsPath, ["Title", "Artist"]);
-
-            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
-            await Assert.That(SettingsStore.LoadColumnVisibility(settingsPath)).IsEquivalentTo(columns);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task LoadColumnOrder_WhenFileDoesNotExist_ReturnsNull()
-    {
-        var settingsPath = CreateTempSettingsPath();
-
-        var loaded = SettingsStore.LoadColumnOrder(settingsPath);
-
-        await Assert.That(loaded).IsNull();
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsRightColumnWidth()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveRightColumnWidth(settingsPath, 275.5);
-
-            var loaded = SettingsStore.LoadRightColumnWidth(settingsPath);
-
-            await Assert.That(loaded).IsEqualTo(275.5);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsColumnWidths()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            var widths = new Dictionary<string, double> { ["Title"] = 250, ["Artist"] = 180 };
-
-            SettingsStore.SaveColumnWidths(settingsPath, widths);
-
-            var loaded = SettingsStore.LoadColumnWidths(settingsPath);
-
-            await Assert.That(loaded!["Title"]).IsEqualTo(250);
-            await Assert.That(loaded!["Artist"]).IsEqualTo(180);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task SavingRightColumnWidth_DoesNotClobberOtherSettings()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
-            SettingsStore.SaveColumnOrder(settingsPath, ["Title", "Artist"]);
-
-            SettingsStore.SaveRightColumnWidth(settingsPath, 300);
-
-            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
-            await Assert.That(SettingsStore.LoadColumnOrder(settingsPath)).IsEquivalentTo(["Title", "Artist"]);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsSort()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveSort(settingsPath, "Track.Bitrate", true);
-
-            var loaded = SettingsStore.LoadSort(settingsPath);
-
-            await Assert.That(loaded).IsEqualTo(("Track.Bitrate", true));
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task LoadSort_WhenFileDoesNotExist_ReturnsNull()
-    {
-        var settingsPath = CreateTempSettingsPath();
-
-        var loaded = SettingsStore.LoadSort(settingsPath);
-
-        await Assert.That(loaded).IsNull();
-    }
-
-    [Test]
-    public async Task SavingSort_DoesNotClobberOtherSettings()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
-            SettingsStore.SaveColumnOrder(settingsPath, ["Title", "Artist"]);
-
-            SettingsStore.SaveSort(settingsPath, "Track.Title", false);
-
-            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
-            await Assert.That(SettingsStore.LoadColumnOrder(settingsPath)).IsEquivalentTo(["Title", "Artist"]);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsTileSize()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveTileSize(settingsPath, 220);
-
-            var loaded = SettingsStore.LoadTileSize(settingsPath);
-
-            await Assert.That(loaded).IsEqualTo(220);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task LoadTileSize_WhenFileDoesNotExist_ReturnsNull()
-    {
-        var settingsPath = CreateTempSettingsPath();
-
-        var loaded = SettingsStore.LoadTileSize(settingsPath);
-
-        await Assert.That(loaded).IsNull();
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsViewMode()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveViewMode(settingsPath, LibraryViewMode.AlbumGrid);
-
-            var loaded = SettingsStore.LoadViewMode(settingsPath);
-
-            await Assert.That(loaded).IsEqualTo(LibraryViewMode.AlbumGrid);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task LoadViewMode_WhenFileDoesNotExist_ReturnsNull()
-    {
-        var settingsPath = CreateTempSettingsPath();
-
-        var loaded = SettingsStore.LoadViewMode(settingsPath);
-
-        await Assert.That(loaded).IsNull();
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsLibrarySection()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveLibrarySection(settingsPath, LibrarySection.RecentlyAdded);
-
-            var loaded = SettingsStore.LoadLibrarySection(settingsPath);
-
-            await Assert.That(loaded).IsEqualTo(LibrarySection.RecentlyAdded);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task LoadLibrarySection_WhenFileDoesNotExist_ReturnsNull()
-    {
-        var settingsPath = CreateTempSettingsPath();
-
-        var loaded = SettingsStore.LoadLibrarySection(settingsPath);
-
-        await Assert.That(loaded).IsNull();
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsRecentlyAddedViewMode()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveRecentlyAddedViewMode(settingsPath, LibraryViewMode.AlbumGrid);
-
-            var loaded = SettingsStore.LoadRecentlyAddedViewMode(settingsPath);
-
-            await Assert.That(loaded).IsEqualTo(LibraryViewMode.AlbumGrid);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task LoadRecentlyAddedViewMode_WhenFileDoesNotExist_ReturnsNull()
-    {
-        var settingsPath = CreateTempSettingsPath();
-
-        var loaded = SettingsStore.LoadRecentlyAddedViewMode(settingsPath);
-
-        await Assert.That(loaded).IsNull();
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsAlbumSortMode()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveAlbumSortMode(settingsPath, AlbumSortMode.Year);
-
-            var loaded = SettingsStore.LoadAlbumSortMode(settingsPath);
-
-            await Assert.That(loaded).IsEqualTo(AlbumSortMode.Year);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task LoadAlbumSortMode_WhenFileDoesNotExist_ReturnsNull()
-    {
-        var settingsPath = CreateTempSettingsPath();
-
-        var loaded = SettingsStore.LoadAlbumSortMode(settingsPath);
-
-        await Assert.That(loaded).IsNull();
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsAlbumSortDescending()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveAlbumSortDescending(settingsPath, true);
-
-            var loaded = SettingsStore.LoadAlbumSortDescending(settingsPath);
-
-            await Assert.That(loaded).IsTrue();
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task LoadAlbumSortDescending_WhenFileDoesNotExist_ReturnsNull()
-    {
-        var settingsPath = CreateTempSettingsPath();
-
-        var loaded = SettingsStore.LoadAlbumSortDescending(settingsPath);
-
-        await Assert.That(loaded).IsNull();
-    }
-
-    [Test]
-    public async Task SavingAlbumSortMode_DoesNotClobberOtherSettings()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
-            SettingsStore.SaveTileSize(settingsPath, 200);
-
-            SettingsStore.SaveAlbumSortMode(settingsPath, AlbumSortMode.Artist);
-            SettingsStore.SaveAlbumSortDescending(settingsPath, true);
-
-            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
-            await Assert.That(SettingsStore.LoadTileSize(settingsPath)).IsEqualTo(200);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task SavingTileSizeAndViewMode_DoesNotClobberOtherSettings()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
-            SettingsStore.SaveSort(settingsPath, "Track.Title", false);
-
-            SettingsStore.SaveTileSize(settingsPath, 180);
-            SettingsStore.SaveViewMode(settingsPath, LibraryViewMode.AlbumGrid);
-
-            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
-            await Assert.That(SettingsStore.LoadSort(settingsPath)).IsEqualTo(("Track.Title", false));
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task LoadRestoreQueueOnStartup_WhenFileDoesNotExist_DefaultsToTrue()
-    {
-        var settingsPath = CreateTempSettingsPath();
-
-        var loaded = SettingsStore.LoadRestoreQueueOnStartup(settingsPath);
-
-        await Assert.That(loaded).IsTrue();
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsRestoreQueueOnStartup()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveRestoreQueueOnStartup(settingsPath, false);
-
-            var loaded = SettingsStore.LoadRestoreQueueOnStartup(settingsPath);
-
-            await Assert.That(loaded).IsFalse();
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task LoadSeekStepSeconds_WhenFileDoesNotExist_DefaultsToFive()
-    {
-        var settingsPath = CreateTempSettingsPath();
-
-        var loaded = SettingsStore.LoadSeekStepSeconds(settingsPath);
-
-        await Assert.That(loaded).IsEqualTo(5);
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsSeekStepSeconds()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveSeekStepSeconds(settingsPath, 8);
-
-            var loaded = SettingsStore.LoadSeekStepSeconds(settingsPath);
-
-            await Assert.That(loaded).IsEqualTo(8);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task LoadOutputDeviceName_WhenFileDoesNotExist_ReturnsNull()
-    {
-        var settingsPath = CreateTempSettingsPath();
-
-        var loaded = SettingsStore.LoadOutputDeviceName(settingsPath);
-
-        await Assert.That(loaded).IsNull();
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsOutputDeviceName()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveOutputDeviceName(settingsPath, "Focusrite Scarlett 2i2");
-
-            var loaded = SettingsStore.LoadOutputDeviceName(settingsPath);
-
-            await Assert.That(loaded).IsEqualTo("Focusrite Scarlett 2i2");
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task SaveOutputDeviceName_WithNull_RoundTripsBackToNull()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveOutputDeviceName(settingsPath, "Focusrite Scarlett 2i2");
-
-            SettingsStore.SaveOutputDeviceName(settingsPath, null);
-
-            await Assert.That(SettingsStore.LoadOutputDeviceName(settingsPath)).IsNull();
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task SavingOutputDeviceName_DoesNotClobberOtherSettings()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
-
-            SettingsStore.SaveOutputDeviceName(settingsPath, "Focusrite Scarlett 2i2");
-
-            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task LoadVolume_WhenFileDoesNotExist_ReturnsNull()
-    {
-        var settingsPath = CreateTempSettingsPath();
-
-        var loaded = SettingsStore.LoadVolume(settingsPath);
-
-        await Assert.That(loaded).IsNull();
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsVolume()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveVolume(settingsPath, 0.35);
-
-            var loaded = SettingsStore.LoadVolume(settingsPath);
-
-            await Assert.That(loaded).IsEqualTo(0.35);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task LoadVolumeCurve_WhenFileDoesNotExist_DefaultsToLinear()
-    {
-        var settingsPath = CreateTempSettingsPath();
-
-        var loaded = SettingsStore.LoadVolumeCurve(settingsPath);
-
-        await Assert.That(loaded).IsEqualTo(VolumeCurve.Linear);
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsVolumeCurve()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveVolumeCurve(settingsPath, VolumeCurve.Logarithmic);
-
-            var loaded = SettingsStore.LoadVolumeCurve(settingsPath);
-
-            await Assert.That(loaded).IsEqualTo(VolumeCurve.Logarithmic);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task SavingVolumeAndVolumeCurve_DoesNotClobberOtherSettings()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
-
-            SettingsStore.SaveVolume(settingsPath, 0.7);
-            SettingsStore.SaveVolumeCurve(settingsPath, VolumeCurve.Logarithmic);
-
-            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task LoadShortcutOverrides_WhenFileDoesNotExist_ReturnsNull()
-    {
-        var settingsPath = CreateTempSettingsPath();
-
-        var loaded = SettingsStore.LoadShortcutOverrides(settingsPath);
-
-        await Assert.That(loaded).IsNull();
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsShortcutOverrides()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            var overrides = new Dictionary<string, string>
-            {
-                ["Library.FocusSearch"] = "Ctrl+Shift+Alt+F",
-                ["Playback.SeekBackward"] = "J",
-            };
-
-            SettingsStore.SaveShortcutOverrides(settingsPath, overrides);
-
-            var loaded = SettingsStore.LoadShortcutOverrides(settingsPath);
-
-            await Assert.That(loaded).IsEquivalentTo(overrides);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task SavingShortcutOverrides_DoesNotClobberOtherSettings()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
-
-            SettingsStore.SaveShortcutOverrides(settingsPath, new Dictionary<string, string> { ["Library.FocusSearch"] = "Ctrl+K" });
-
-            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task LoadTheme_WhenFileDoesNotExist_DefaultsToDark()
-    {
-        var settingsPath = CreateTempSettingsPath();
-
-        var loaded = SettingsStore.LoadTheme(settingsPath);
-
-        await Assert.That(loaded).IsEqualTo(AppTheme.Dark);
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsTheme()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveTheme(settingsPath, AppTheme.Light);
-
-            var loaded = SettingsStore.LoadTheme(settingsPath);
-
-            await Assert.That(loaded).IsEqualTo(AppTheme.Light);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task SavingTheme_DoesNotClobberOtherSettings()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveLibraryFolderPaths(settingsPath, ["/music/library"]);
-
-            SettingsStore.SaveTheme(settingsPath, AppTheme.Light);
-
-            await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo(["/music/library"]);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsEqualizerState()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveEqualizerEnabled(settingsPath, true);
-            SettingsStore.SaveEqualizerPresetName(settingsPath, "Bass");
-            SettingsStore.SaveEqualizerBandGainsDb(settingsPath, [1.5f, -2f, 0f, 0f, 0f, 0f, 0f, 0f, 3f, 4.5f]);
-
-            await Assert.That(SettingsStore.LoadEqualizerEnabled(settingsPath)).IsTrue();
-            await Assert.That(SettingsStore.LoadEqualizerPresetName(settingsPath)).IsEqualTo("Bass");
-            await Assert.That(SettingsStore.LoadEqualizerBandGainsDb(settingsPath))
-                .IsEquivalentTo([1.5f, -2f, 0f, 0f, 0f, 0f, 0f, 0f, 3f, 4.5f]);
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task LoadEqualizerEnabled_WhenFileDoesNotExist_ReturnsFalse()
-    {
-        var settingsPath = CreateTempSettingsPath();
-
-        await Assert.That(SettingsStore.LoadEqualizerEnabled(settingsPath)).IsFalse();
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsUseWaveformSlider()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveUseWaveformSlider(settingsPath, true);
-
-            await Assert.That(SettingsStore.LoadUseWaveformSlider(settingsPath)).IsTrue();
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task LoadUseWaveformSlider_WhenFileDoesNotExist_ReturnsFalse()
-    {
-        var settingsPath = CreateTempSettingsPath();
-
-        await Assert.That(SettingsStore.LoadUseWaveformSlider(settingsPath)).IsFalse();
-    }
-
-    [Test]
-    public async Task SaveAndLoad_RoundTripsSelectedPlaylistId()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveSelectedPlaylistId(settingsPath, "playlist-123");
-
-            var loaded = SettingsStore.LoadSelectedPlaylistId(settingsPath);
-
-            await Assert.That(loaded).IsEqualTo("playlist-123");
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task LoadSelectedPlaylistId_WhenFileDoesNotExist_ReturnsNull()
-    {
-        var settingsPath = CreateTempSettingsPath();
-
-        var loaded = SettingsStore.LoadSelectedPlaylistId(settingsPath);
-
-        await Assert.That(loaded).IsNull();
-    }
-
-    [Test]
-    public async Task SaveSelectedPlaylistId_WithNull_RoundTripsBackToNull()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            SettingsStore.SaveSelectedPlaylistId(settingsPath, "playlist-123");
-
-            SettingsStore.SaveSelectedPlaylistId(settingsPath, null);
-
-            await Assert.That(SettingsStore.LoadSelectedPlaylistId(settingsPath)).IsNull();
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
-    public async Task FanartApiKey_IsSavedTrimmed_AndClearedByABlankValue()
-    {
-        var path = Path.Combine(Path.GetTempPath(), $"sharpselecta-settings-tests-{Guid.NewGuid():N}.json");
-        try
-        {
-            await Assert.That(SettingsStore.LoadFanartApiKey(path)).IsNull();
-
-            SettingsStore.SaveFanartApiKey(path, "  abc123  ");
-            await Assert.That(SettingsStore.LoadFanartApiKey(path)).IsEqualTo("abc123");
-
-            SettingsStore.SaveFanartApiKey(path, "   ");
-            await Assert.That(SettingsStore.LoadFanartApiKey(path)).IsNull();
-        }
-        finally
-        {
-            File.Delete(path);
-        }
-    }
-
-    [Test]
-    public async Task AutoDjSettings_AreOffAndLibraryWideByDefault_AndRoundTrip()
-    {
-        var path = Path.Combine(Path.GetTempPath(), $"sharpselecta-settings-tests-{Guid.NewGuid():N}.json");
-        try
-        {
-            await Assert.That(SettingsStore.LoadAutoDjEnabled(path)).IsFalse();
-            await Assert.That(SettingsStore.LoadAutoDjSourcePlaylistId(path)).IsNull();
-
-            SettingsStore.SaveAutoDjEnabled(path, true);
-            SettingsStore.SaveAutoDjSourcePlaylistId(path, "playlist-1");
-            await Assert.That(SettingsStore.LoadAutoDjEnabled(path)).IsTrue();
-            await Assert.That(SettingsStore.LoadAutoDjSourcePlaylistId(path)).IsEqualTo("playlist-1");
-
-            SettingsStore.SaveAutoDjSourcePlaylistId(path, null);
-            await Assert.That(SettingsStore.LoadAutoDjSourcePlaylistId(path)).IsNull();
-        }
-        finally
-        {
-            File.Delete(path);
-        }
-    }
-
-    [Test]
-    public async Task ConcurrentSavesOfDifferentSettings_AllSurvive()
+    public async Task Update_IsVisibleImmediately_AndSurvivesANewInstance()
     {
         var path = CreateTempSettingsPath();
         try
         {
-            var saves = new Action[]
-            {
-                () => SettingsStore.SaveVolume(path, 0.42),
-                () => SettingsStore.SaveTileSize(path, 180),
-                () => SettingsStore.SaveSeekStepSeconds(path, 15),
-                () => SettingsStore.SaveAutoDjEnabled(path, true),
-                () => SettingsStore.SaveDiscordPresenceEnabled(path, true),
-                () => SettingsStore.SaveUseWaveformSlider(path, true),
-                () => SettingsStore.SaveEqualizerEnabled(path, true),
-                () => SettingsStore.SaveTheme(path, AppTheme.Light),
-            };
+            var store = new SettingsStore(path);
 
-            for (var round = 0; round < 20; round++)
-            {
-                File.Delete(path);
-                await Task.WhenAll(saves.Select(Task.Run));
-            }
+            store.Update(s => s with { Volume = 0.42, LibraryFolderPaths = ["/music"], Theme = AppTheme.Light, SeekStepSeconds = 15 });
 
-            await Assert.That(SettingsStore.LoadVolume(path)).IsEqualTo(0.42);
-            await Assert.That(SettingsStore.LoadTileSize(path)).IsEqualTo(180);
-            await Assert.That(SettingsStore.LoadSeekStepSeconds(path)).IsEqualTo(15);
-            await Assert.That(SettingsStore.LoadAutoDjEnabled(path)).IsTrue();
-            await Assert.That(SettingsStore.LoadDiscordPresenceEnabled(path)).IsTrue();
-            await Assert.That(SettingsStore.LoadUseWaveformSlider(path)).IsTrue();
-            await Assert.That(SettingsStore.LoadEqualizerEnabled(path)).IsTrue();
-            await Assert.That(SettingsStore.LoadTheme(path)).IsEqualTo(AppTheme.Light);
+            await Assert.That(store.Current.Volume).IsEqualTo(0.42);
+            var reloaded = new SettingsStore(path).Current;
+            await Assert.That(reloaded.Volume).IsEqualTo(0.42);
+            await Assert.That(reloaded.LibraryFolderPaths).IsEquivalentTo(["/music"]);
+            await Assert.That(reloaded.Theme).IsEqualTo(AppTheme.Light);
+            await Assert.That(reloaded.SeekStepSeconds).IsEqualTo(15);
+            await Assert.That(reloaded.RestoreQueueOnStartup).IsTrue();
         }
         finally
         {
@@ -988,16 +54,122 @@ public class SettingsStoreTests
     }
 
     [Test]
-    public async Task Save_WhenFileIsCorrupted_KeepsTheCorruptedFileAside()
+    public async Task EverySetting_RoundTripsThroughTheFile()
+    {
+        var path = CreateTempSettingsPath();
+        try
+        {
+            new SettingsStore(path).Update(_ => new AppSettings
+            {
+                LibraryFolderPaths = ["/music/a", "/music/b"],
+                Columns = new Dictionary<string, bool> { ["Artist"] = false },
+                ColumnOrder = ["Title", "Artist"],
+                RightColumnWidth = 321,
+                ColumnWidths = new Dictionary<string, double> { ["Title"] = 250 },
+                SortPropertyPath = "Album",
+                SortDescending = true,
+                TileSize = 180,
+                ViewMode = LibraryViewMode.AlbumGrid,
+                LibrarySection = LibrarySection.Playlist,
+                RecentlyAddedViewMode = LibraryViewMode.AlbumGrid,
+                SelectedPlaylistId = "playlist-1",
+                AlbumSortMode = AlbumSortMode.Artist,
+                AlbumSortDescending = true,
+                RestoreQueueOnStartup = false,
+                OutputDeviceName = "Speakers",
+                Volume = 0.3,
+                VolumeCurve = VolumeCurve.Logarithmic,
+                SeekStepSeconds = 10,
+                ShortcutOverrides = new Dictionary<string, string> { ["PlayPause"] = "Ctrl+P" },
+                Theme = AppTheme.Custom,
+                CustomThemeFileName = "mine.axaml",
+                EqualizerEnabled = true,
+                EqualizerPresetName = "Rock",
+                EqualizerBandGainsDb = [1.5f, -2f],
+                UseWaveformSlider = true,
+                AutoDjEnabled = true,
+                AutoDjSourcePlaylistId = "playlist-2",
+                DiscordPresenceEnabled = true,
+                CheckForUpdatesAutomatically = false,
+                FanartApiKey = "key",
+            });
+
+            var s = new SettingsStore(path).Current;
+
+            await Assert.That(s.LibraryFolderPaths).IsEquivalentTo(["/music/a", "/music/b"]);
+            await Assert.That(s.Columns!["Artist"]).IsFalse();
+            await Assert.That(s.ColumnOrder).IsEquivalentTo(["Title", "Artist"]);
+            await Assert.That(s.RightColumnWidth).IsEqualTo(321);
+            await Assert.That(s.ColumnWidths!["Title"]).IsEqualTo(250);
+            await Assert.That(s.SortPropertyPath).IsEqualTo("Album");
+            await Assert.That(s.SortDescending).IsTrue();
+            await Assert.That(s.TileSize).IsEqualTo(180);
+            await Assert.That(s.ViewMode).IsEqualTo(LibraryViewMode.AlbumGrid);
+            await Assert.That(s.LibrarySection).IsEqualTo(LibrarySection.Playlist);
+            await Assert.That(s.RecentlyAddedViewMode).IsEqualTo(LibraryViewMode.AlbumGrid);
+            await Assert.That(s.SelectedPlaylistId).IsEqualTo("playlist-1");
+            await Assert.That(s.AlbumSortMode).IsEqualTo(AlbumSortMode.Artist);
+            await Assert.That(s.AlbumSortDescending).IsTrue();
+            await Assert.That(s.RestoreQueueOnStartup).IsFalse();
+            await Assert.That(s.OutputDeviceName).IsEqualTo("Speakers");
+            await Assert.That(s.Volume).IsEqualTo(0.3);
+            await Assert.That(s.VolumeCurve).IsEqualTo(VolumeCurve.Logarithmic);
+            await Assert.That(s.SeekStepSeconds).IsEqualTo(10);
+            await Assert.That(s.ShortcutOverrides!["PlayPause"]).IsEqualTo("Ctrl+P");
+            await Assert.That(s.Theme).IsEqualTo(AppTheme.Custom);
+            await Assert.That(s.CustomThemeFileName).IsEqualTo("mine.axaml");
+            await Assert.That(s.EqualizerEnabled).IsTrue();
+            await Assert.That(s.EqualizerPresetName).IsEqualTo("Rock");
+            await Assert.That(s.EqualizerBandGainsDb).IsEquivalentTo([1.5f, -2f]);
+            await Assert.That(s.UseWaveformSlider).IsTrue();
+            await Assert.That(s.AutoDjEnabled).IsTrue();
+            await Assert.That(s.AutoDjSourcePlaylistId).IsEqualTo("playlist-2");
+            await Assert.That(s.DiscordPresenceEnabled).IsTrue();
+            await Assert.That(s.CheckForUpdatesAutomatically).IsFalse();
+            await Assert.That(s.FanartApiKey).IsEqualTo("key");
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Test]
+    public async Task AFileWithExplicitNulls_LoadsWithTheDefaultsForThoseSettings()
+    {
+        var path = CreateTempSettingsPath();
+        try
+        {
+            File.WriteAllText(path, """{"LibraryFolderPaths":["/music"],"RestoreQueueOnStartup":null,"SeekStepSeconds":null,"Theme":null,"Volume":0.7}""");
+
+            var settings = new SettingsStore(path).Current;
+
+            await Assert.That(settings.LibraryFolderPaths).IsEquivalentTo(["/music"]);
+            await Assert.That(settings.Volume).IsEqualTo(0.7);
+            await Assert.That(settings.RestoreQueueOnStartup).IsTrue();
+            await Assert.That(settings.SeekStepSeconds).IsEqualTo(5);
+            await Assert.That(settings.Theme).IsEqualTo(AppTheme.Dark);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Test]
+    public async Task ACorruptFile_LoadsAsDefaults_AndIsKeptAsideOnTheFirstUpdate()
     {
         var path = CreateTempSettingsPath();
         try
         {
             File.WriteAllText(path, "{ not valid json");
 
-            SettingsStore.SaveVolume(path, 0.5);
+            var store = new SettingsStore(path);
+            await Assert.That(store.Current.Volume).IsNull();
 
-            await Assert.That(SettingsStore.LoadVolume(path)).IsEqualTo(0.5);
+            store.Update(s => s with { Volume = 0.5 });
+
+            await Assert.That(new SettingsStore(path).Current.Volume).IsEqualTo(0.5);
             await Assert.That(File.ReadAllText(path + ".corrupt")).IsEqualTo("{ not valid json");
         }
         finally
@@ -1005,5 +177,104 @@ public class SettingsStoreTests
             File.Delete(path);
             File.Delete(path + ".corrupt");
         }
+    }
+
+    [Test]
+    public async Task AnUnreadableFile_LoadsAsDefaults_AndIsNeverOverwritten()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Skip.Test("Unix file modes only");
+        }
+
+        var path = CreateTempSettingsPath();
+        try
+        {
+            File.WriteAllText(path, """{"Volume":0.7}""");
+            File.SetUnixFileMode(path, UnixFileMode.None);
+
+            var store = new SettingsStore(path);
+            store.Update(s => s with { Volume = 0.1 });
+
+            await Assert.That(store.Current.Volume).IsEqualTo(0.1);
+            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            await Assert.That(File.ReadAllText(path)).IsEqualTo("""{"Volume":0.7}""");
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Test]
+    public async Task AFileThatBecomesReadable_IsReadAgainBeforeTheNextUpdateWritesIt()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Skip.Test("Unix file modes only");
+        }
+
+        var path = CreateTempSettingsPath();
+        try
+        {
+            File.WriteAllText(path, """{"Volume":0.7,"SeekStepSeconds":12}""");
+            File.SetUnixFileMode(path, UnixFileMode.None);
+            var store = new SettingsStore(path);
+            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+
+            store.Update(s => s with { Volume = 0.1 });
+
+            var reloaded = new SettingsStore(path).Current;
+            await Assert.That(reloaded.Volume).IsEqualTo(0.1);
+            await Assert.That(reloaded.SeekStepSeconds).IsEqualTo(12);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Test]
+    public async Task ConcurrentUpdatesOfDifferentSettings_AllSurvive()
+    {
+        var path = CreateTempSettingsPath();
+        try
+        {
+            var store = new SettingsStore(path);
+            var updates = new Func<AppSettings, AppSettings>[]
+            {
+                s => s with { Volume = 0.42 },
+                s => s with { TileSize = 180 },
+                s => s with { SeekStepSeconds = 15 },
+                s => s with { AutoDjEnabled = true },
+                s => s with { DiscordPresenceEnabled = true },
+                s => s with { UseWaveformSlider = true },
+                s => s with { EqualizerEnabled = true },
+                s => s with { Theme = AppTheme.Light },
+            };
+
+            await Task.WhenAll(updates.Select(u => Task.Run(() => store.Update(u))));
+
+            var s = new SettingsStore(path).Current;
+            await Assert.That(s.Volume).IsEqualTo(0.42);
+            await Assert.That(s.TileSize).IsEqualTo(180);
+            await Assert.That(s.SeekStepSeconds).IsEqualTo(15);
+            await Assert.That(s.AutoDjEnabled).IsTrue();
+            await Assert.That(s.DiscordPresenceEnabled).IsTrue();
+            await Assert.That(s.UseWaveformSlider).IsTrue();
+            await Assert.That(s.EqualizerEnabled).IsTrue();
+            await Assert.That(s.Theme).IsEqualTo(AppTheme.Light);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Test]
+    public async Task FanartApiKey_IsStoredTrimmed_AndABlankValueClearsIt()
+    {
+        await Assert.That(new AppSettings { FanartApiKey = "  abc  " }.FanartApiKey).IsEqualTo("abc");
+        await Assert.That(new AppSettings { FanartApiKey = "   " }.FanartApiKey).IsNull();
     }
 }

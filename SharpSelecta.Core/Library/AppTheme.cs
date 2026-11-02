@@ -6,6 +6,6 @@ public enum AppTheme
     Light,
     Dark,
 
-    /// <summary>A user-supplied theme file (see <see cref="SettingsStore.LoadCustomThemeFileName(string)"/>).</summary>
+    /// <summary>A user-supplied theme file (see <see cref="AppSettings.CustomThemeFileName"/>).</summary>
     Custom,
 }

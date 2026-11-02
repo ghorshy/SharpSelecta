@@ -13,7 +13,7 @@ namespace SharpSelecta.App.ViewModels;
 
 public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCategoryViewModel
 {
-    private readonly string _settingsFilePath;
+    private readonly SettingsStore _settings;
     private readonly string _themesDirectory;
     private readonly IFilePickerService _filePickerService;
 
@@ -47,17 +47,17 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
 
     public ICommand RefreshThemesCommand { get; }
 
-    public InterfaceSettingsViewModel(string settingsFilePath, IFilePickerService filePickerService)
+    public InterfaceSettingsViewModel(SettingsStore settings, IFilePickerService filePickerService)
     {
-        _settingsFilePath = settingsFilePath;
+        _settings = settings;
         _filePickerService = filePickerService;
-        _themesDirectory = ThemeService.GetThemesDirectory(settingsFilePath);
+        _themesDirectory = ThemeService.GetThemesDirectory(settings.FilePath);
 
         RefreshThemeDisplayNames();
 
-        var theme = SettingsStore.LoadTheme(settingsFilePath);
+        var theme = settings.Current.Theme;
         _selectedThemeDisplayName = theme == AppTheme.Custom
-            ? DisplayNameForCustomFileOrFallback(SettingsStore.LoadCustomThemeFileName(settingsFilePath))
+            ? DisplayNameForCustomFileOrFallback(settings.Current.CustomThemeFileName)
             : DisplayNameFor(theme);
 
         ImportThemeCommand = new AsyncRelayCommand(ImportThemeAsync);
@@ -76,14 +76,13 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
 
         if (_customThemeFileNamesByDisplayName.TryGetValue(value, out var fileName))
         {
-            SettingsStore.SaveTheme(_settingsFilePath, AppTheme.Custom);
-            SettingsStore.SaveCustomThemeFileName(_settingsFilePath, fileName);
+            _settings.Update(s => s with { Theme = AppTheme.Custom, CustomThemeFileName = fileName });
             ThemeService.Apply(AppTheme.Custom, fileName, _themesDirectory);
             return;
         }
 
         var theme = ThemeFor(value);
-        SettingsStore.SaveTheme(_settingsFilePath, theme);
+        _settings.Update(s => s with { Theme = theme });
         ThemeService.Apply(theme, null, _themesDirectory);
     }
 

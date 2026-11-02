@@ -27,7 +27,7 @@ public partial class AlbumGridViewModel : ViewModelBase
     private static readonly TimeSpan SearchDebounceDelay = TimeSpan.FromMilliseconds(150);
 
     private readonly LibraryViewModel _library;
-    private readonly string _settingsFilePath;
+    private readonly SettingsStore _settings;
     private readonly ILogger _logger;
     private double _viewportWidth;
     private int _columnCount = -1;
@@ -53,20 +53,20 @@ public partial class AlbumGridViewModel : ViewModelBase
 
     public bool AllowUserSort { get; }
 
-    public AlbumGridViewModel(LibraryViewModel library, string settingsFilePath, ThemeLayout layout, ILogger logger, bool allowUserSort = true, bool limitToRecentlyAdded = false)
+    public AlbumGridViewModel(LibraryViewModel library, SettingsStore settings, ThemeLayout layout, ILogger logger, bool allowUserSort = true, bool limitToRecentlyAdded = false)
     {
         _limitToRecentlyAdded = limitToRecentlyAdded;
         _library = library;
         _layout = layout;
-        _settingsFilePath = settingsFilePath;
+        _settings = settings;
         _logger = logger;
         AllowUserSort = allowUserSort;
-        TileSize = Math.Clamp(SettingsStore.LoadTileSize(settingsFilePath) ?? layout.TileSizeDefault, layout.TileSizeMin, layout.TileSizeMax);
+        TileSize = Math.Clamp(settings.Current.TileSize ?? layout.TileSizeDefault, layout.TileSizeMin, layout.TileSizeMax);
 
         if (allowUserSort)
         {
-            SortMode = SettingsStore.LoadAlbumSortMode(settingsFilePath) ?? AlbumSortMode.Title;
-            SortDescending = SettingsStore.LoadAlbumSortDescending(settingsFilePath) ?? false;
+            SortMode = settings.Current.AlbumSortMode;
+            SortDescending = settings.Current.AlbumSortDescending;
         }
         else
         {
@@ -134,7 +134,7 @@ public partial class AlbumGridViewModel : ViewModelBase
 
     partial void OnTileSizeChanged(double value)
     {
-        SettingsStore.SaveTileSize(_settingsFilePath, value);
+        _settings.Update(s => s with { TileSize = value });
         RebuildRows(force: false);
     }
 
@@ -143,7 +143,7 @@ public partial class AlbumGridViewModel : ViewModelBase
         if (!AllowUserSort)
             return;
 
-        SettingsStore.SaveAlbumSortMode(_settingsFilePath, value);
+        _settings.Update(s => s with { AlbumSortMode = value });
         OnPropertyChanged(nameof(SortModeLabel));
         RebuildRows(force: true);
     }
@@ -153,7 +153,7 @@ public partial class AlbumGridViewModel : ViewModelBase
         if (!AllowUserSort)
             return;
 
-        SettingsStore.SaveAlbumSortDescending(_settingsFilePath, value);
+        _settings.Update(s => s with { AlbumSortDescending = value });
         OnPropertyChanged(nameof(SortDirectionSymbol));
         RebuildRows(force: true);
     }
@@ -237,7 +237,7 @@ public partial class AlbumGridViewModel : ViewModelBase
         _ = LoadAlbumArtworkAsync(groups);
     }
 
-    private string ArtworkCacheDirectory => ArtworkCacheDirectoryFor(_settingsFilePath);
+    private string ArtworkCacheDirectory => ArtworkCacheDirectoryFor(_settings.FilePath);
 
     public static string ArtworkCacheDirectoryFor(string settingsFilePath) =>
         Path.Combine(Path.GetDirectoryName(settingsFilePath)!, "artwork-cache");

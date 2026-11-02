@@ -36,13 +36,13 @@ public class LibraryViewModelTests
         filePickerService = Substitute.For<IFilePickerService>();
         fileManagerService = Substitute.For<IFileManagerService>();
         var queue = new PlaybackQueue();
-        var resolvedSettingsFilePath = settingsFilePath ?? CreateTempSettingsPath();
-        playbackControls = new PlaybackControlsViewModel(audioEngine, queue, resolvedSettingsFilePath, NullLogger<PlaybackControlsViewModel>.Instance);
+        var settings = new SettingsStore(settingsFilePath ?? CreateTempSettingsPath());
+        playbackControls = new PlaybackControlsViewModel(audioEngine, queue, settings, NullLogger<PlaybackControlsViewModel>.Instance);
         return new LibraryViewModel(
             filePickerService,
             playbackControls,
             fileManagerService,
-            resolvedSettingsFilePath,
+            settings,
             TestThemeLayout.Default,
             NullLogger<LibraryViewModel>.Instance);
     }
@@ -348,7 +348,7 @@ public class LibraryViewModelTests
 
                 await vm.AddFolderCommand.ExecuteAsync(null);
 
-                await Assert.That(SettingsStore.LoadLibraryFolderPaths(settingsPath)).IsEquivalentTo([root.FullName]);
+                await Assert.That(new SettingsStore(settingsPath).Current.LibraryFolderPaths).IsEquivalentTo([root.FullName]);
             }
             finally
             {
@@ -370,7 +370,7 @@ public class LibraryViewModelTests
         try
         {
             File.WriteAllBytes(Path.Combine(root.FullName, "song.mp3"), []);
-            SettingsStore.SaveLibraryFolderPaths(settingsPath, [root.FullName]);
+            new SettingsStore(settingsPath).Update(s => s with { LibraryFolderPaths = [root.FullName] });
             var vm = CreateViewModel(out _, out _, out _, settingsPath);
 
             await vm.InitializeAsync();
@@ -405,7 +405,7 @@ public class LibraryViewModelTests
         {
             var trackPath = Path.Combine(root.FullName, "tagged-track.mp3");
             File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), trackPath);
-            SettingsStore.SaveLibraryFolderPaths(settingsPath, [root.FullName]);
+            new SettingsStore(settingsPath).Update(s => s with { LibraryFolderPaths = [root.FullName] });
             LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
 
             var vm = CreateViewModel(out _, out _, out _, settingsPath);
@@ -432,7 +432,7 @@ public class LibraryViewModelTests
         {
             var trackPath = Path.Combine(root.FullName, "song.mp3");
             File.WriteAllBytes(trackPath, []);
-            SettingsStore.SaveLibraryFolderPaths(settingsPath, [root.FullName]);
+            new SettingsStore(settingsPath).Update(s => s with { LibraryFolderPaths = [root.FullName] });
 
             var vm = CreateViewModel(out _, out _, out _, settingsPath);
             await vm.InitializeAsync();
@@ -463,8 +463,7 @@ public class LibraryViewModelTests
         try
         {
             LibraryIndexStore.Reconcile(settingsPath, [root.FullName]); // ensures the index db/schema exists
-            SettingsStore.SaveLibrarySection(settingsPath, LibrarySection.Playlist);
-            SettingsStore.SaveSelectedPlaylistId(settingsPath, "does-not-exist");
+            new SettingsStore(settingsPath).Update(s => s with { LibrarySection = LibrarySection.Playlist, SelectedPlaylistId = "does-not-exist" });
 
             var vm = CreateViewModel(out _, out _, out _, settingsPath);
             await vm.InitializeAsync();
@@ -815,7 +814,7 @@ public class LibraryViewModelTests
             await Assert.That(playback.QueueEntries.Skip(1).All(e => e.Source == QueueEntrySource.AutoDj)).IsTrue();
             await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath).Distinct().Count()).IsEqualTo(playback.QueueEntries.Count);
             await Assert.That(playback.QueueEntries.All(e => tracks.Any(t => t.FilePath == e.Track.FilePath))).IsTrue();
-            await Assert.That(SettingsStore.LoadAutoDjSourcePlaylistId(settingsPath)).IsEqualTo(playlistId);
+            await Assert.That(new SettingsStore(settingsPath).Current.AutoDjSourcePlaylistId).IsEqualTo(playlistId);
         }
         finally
         {
@@ -832,7 +831,7 @@ public class LibraryViewModelTests
             await vm.PlayTrackItemCommand.ExecuteAsync(vm.Playlists.Tracks[1]);
 
             await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath)).IsEquivalentTo(tracks.Skip(1).Select(t => t.FilePath));
-            await Assert.That(SettingsStore.LoadAutoDjSourcePlaylistId(settingsPath)).IsEqualTo(vm.Playlists.SelectedPlaylistId);
+            await Assert.That(new SettingsStore(settingsPath).Current.AutoDjSourcePlaylistId).IsEqualTo(vm.Playlists.SelectedPlaylistId);
 
             playback.ToggleAutoDjCommand.Execute(null); // turning it on later uses that playlist
             await Assert.That(playback.AutoDjPool!().Count).IsEqualTo(4);
@@ -855,7 +854,7 @@ public class LibraryViewModelTests
 
             await vm.PlayTrackItemCommand.ExecuteAsync(vm.Tracks[1]);
 
-            await Assert.That(SettingsStore.LoadAutoDjSourcePlaylistId(settingsPath)).IsNull();
+            await Assert.That(new SettingsStore(settingsPath).Current.AutoDjSourcePlaylistId).IsNull();
             await Assert.That(playback.AutoDjPool!().Select(t => t.FilePath)).IsEquivalentTo(tracks.Select(t => t.FilePath));
         }
         finally
@@ -872,7 +871,7 @@ public class LibraryViewModelTests
         {
             vm.Tracks.ReplaceAll(tracks.Select(t => new LibraryTrackViewModel(t, vm)));
             var playlistId = vm.Playlists.SelectedPlaylistId!;
-            SettingsStore.SaveAutoDjSourcePlaylistId(settingsPath, playlistId);
+            new SettingsStore(settingsPath).Update(s => s with { AutoDjSourcePlaylistId = playlistId });
 
             var restored = CreateViewModel(out _, out _, out var restoredPlayback, settingsPath);
             restored.Tracks.ReplaceAll(tracks.Select(t => new LibraryTrackViewModel(t, restored)));
@@ -1358,7 +1357,7 @@ public class LibraryViewModelTests
             vm.IsAlbumArtistColumnVisible = true;
             vm.IsDiscNumberColumnVisible = true;
 
-            var saved = SettingsStore.LoadColumnVisibility(settingsPath)!;
+            var saved = new SettingsStore(settingsPath).Current.Columns!;
             await Assert.That(saved["Genre"]).IsTrue();
             await Assert.That(saved["AlbumArtist"]).IsTrue();
             await Assert.That(saved["DiscNumber"]).IsTrue();

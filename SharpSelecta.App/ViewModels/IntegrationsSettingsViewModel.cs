@@ -9,13 +9,13 @@ namespace SharpSelecta.App.ViewModels;
 // Settings for talking to other programs. Like the other categories, edits only take effect on Apply.
 public sealed partial class IntegrationsSettingsViewModel : ViewModelBase, ISettingsCategoryViewModel
 {
-    private readonly string _settingsFilePath;
+    private readonly SettingsStore _settings;
     private bool _appliedDiscordPresenceEnabled;
 
-    public IntegrationsSettingsViewModel(string settingsFilePath)
+    public IntegrationsSettingsViewModel(SettingsStore settings)
     {
-        _settingsFilePath = settingsFilePath;
-        _appliedDiscordPresenceEnabled = SettingsStore.LoadDiscordPresenceEnabled(settingsFilePath);
+        _settings = settings;
+        _appliedDiscordPresenceEnabled = settings.Current.DiscordPresenceEnabled;
         DiscordPresenceEnabled = _appliedDiscordPresenceEnabled;
     }
 
@@ -40,7 +40,7 @@ public sealed partial class IntegrationsSettingsViewModel : ViewModelBase, ISett
     private void ApplyIntegrations()
     {
         var changed = DiscordPresenceEnabled != _appliedDiscordPresenceEnabled;
-        SettingsStore.SaveDiscordPresenceEnabled(_settingsFilePath, DiscordPresenceEnabled);
+        _settings.Update(s => s with { DiscordPresenceEnabled = DiscordPresenceEnabled });
         _appliedDiscordPresenceEnabled = DiscordPresenceEnabled;
         OnPropertyChanged(nameof(HasPendingChanges));
 

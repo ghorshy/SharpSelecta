@@ -17,11 +17,12 @@ public class PlaylistsViewModelTests
 
     private static PlaylistsViewModel CreateViewModel(string settingsFilePath, out LibraryViewModel library)
     {
+        var settings = new SettingsStore(settingsFilePath);
         var playbackControls = new PlaybackControlsViewModel(
-            Substitute.For<IAudioEngine>(), new PlaybackQueue(), settingsFilePath, NullLogger<PlaybackControlsViewModel>.Instance);
+            Substitute.For<IAudioEngine>(), new PlaybackQueue(), settings, NullLogger<PlaybackControlsViewModel>.Instance);
         library = new LibraryViewModel(
             Substitute.For<IFilePickerService>(), playbackControls, Substitute.For<IFileManagerService>(),
-            settingsFilePath, TestThemeLayout.Default, NullLogger<LibraryViewModel>.Instance);
+            settings, TestThemeLayout.Default, NullLogger<LibraryViewModel>.Instance);
         return library.Playlists;
     }
 

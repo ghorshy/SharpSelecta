@@ -15,7 +15,7 @@ public class QueueViewModelTests
         audioEngine = Substitute.For<IAudioEngine>();
         queue = new PlaybackQueue();
         var settingsFilePath = Path.Combine(Path.GetTempPath(), $"sharpselecta-queue-vm-tests-{Guid.NewGuid():N}.json");
-        var playbackControls = new PlaybackControlsViewModel(audioEngine, queue, settingsFilePath, NullLogger<PlaybackControlsViewModel>.Instance);
+        var playbackControls = new PlaybackControlsViewModel(audioEngine, queue, new SettingsStore(settingsFilePath), NullLogger<PlaybackControlsViewModel>.Instance);
         return new QueueViewModel(playbackControls, NullLogger<QueueViewModel>.Instance);
     }
 
@@ -138,7 +138,7 @@ public class QueueViewModelTests
     private static (QueueViewModel Queue, PlaybackControlsViewModel Playback, IReadOnlyList<Track> Pool) CreateAutoDjQueue()
     {
         var path = Path.Combine(Path.GetTempPath(), $"sharpselecta-queue-sync-{Guid.NewGuid():N}.json");
-        var playback = new PlaybackControlsViewModel(Substitute.For<IAudioEngine>(), new PlaybackQueue(), path, NullLogger<PlaybackControlsViewModel>.Instance);
+        var playback = new PlaybackControlsViewModel(Substitute.For<IAudioEngine>(), new PlaybackQueue(), new SettingsStore(path), NullLogger<PlaybackControlsViewModel>.Instance);
         var queue = new QueueViewModel(playback, NullLogger<QueueViewModel>.Instance);
         IReadOnlyList<Track> pool = Enumerable.Range(0, 30).Select(i => new Track($"/music/{i:D2}.mp3", $"{i:D2}")).ToList();
         playback.AutoDjPool = () => pool;

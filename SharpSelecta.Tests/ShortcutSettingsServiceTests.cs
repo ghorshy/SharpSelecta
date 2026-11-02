@@ -1,5 +1,6 @@
 using SharpSelecta.App.Services;
 using SharpSelecta.App.Shortcuts;
+using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.Tests;
 
@@ -11,7 +12,7 @@ public class ShortcutSettingsServiceTests
     [Test]
     public async Task GetEffectiveGesture_WithNoOverride_ReturnsTheRegistryDefault()
     {
-        var service = new ShortcutSettingsService(CreateTempSettingsPath());
+        var service = new ShortcutSettingsService(new SettingsStore(CreateTempSettingsPath()));
         var shortcut = ShortcutRegistry.All[0];
 
         await Assert.That(service.GetEffectiveGesture(shortcut.Id)).IsEqualTo(shortcut.DefaultGesture);
@@ -20,7 +21,7 @@ public class ShortcutSettingsServiceTests
     [Test]
     public async Task SetOverride_ChangesTheEffectiveGesture()
     {
-        var service = new ShortcutSettingsService(CreateTempSettingsPath());
+        var service = new ShortcutSettingsService(new SettingsStore(CreateTempSettingsPath()));
         var shortcut = ShortcutRegistry.All[0];
 
         service.SetOverride(shortcut.Id, "Ctrl+Shift+Alt+F");
@@ -33,9 +34,9 @@ public class ShortcutSettingsServiceTests
     {
         var settingsPath = CreateTempSettingsPath();
         var shortcut = ShortcutRegistry.All[0];
-        new ShortcutSettingsService(settingsPath).SetOverride(shortcut.Id, "Ctrl+Shift+Alt+F");
+        new ShortcutSettingsService(new SettingsStore(settingsPath)).SetOverride(shortcut.Id, "Ctrl+Shift+Alt+F");
 
-        var reloaded = new ShortcutSettingsService(settingsPath);
+        var reloaded = new ShortcutSettingsService(new SettingsStore(settingsPath));
 
         await Assert.That(reloaded.GetEffectiveGesture(shortcut.Id)).IsEqualTo("Ctrl+Shift+Alt+F");
     }
@@ -43,7 +44,7 @@ public class ShortcutSettingsServiceTests
     [Test]
     public async Task ResetOverride_RevertsToTheRegistryDefault()
     {
-        var service = new ShortcutSettingsService(CreateTempSettingsPath());
+        var service = new ShortcutSettingsService(new SettingsStore(CreateTempSettingsPath()));
         var shortcut = ShortcutRegistry.All[0];
         service.SetOverride(shortcut.Id, "Ctrl+Shift+Alt+F");
 
@@ -55,7 +56,7 @@ public class ShortcutSettingsServiceTests
     [Test]
     public async Task SetOverride_RaisesShortcutsChanged()
     {
-        var service = new ShortcutSettingsService(CreateTempSettingsPath());
+        var service = new ShortcutSettingsService(new SettingsStore(CreateTempSettingsPath()));
         var raised = false;
         service.ShortcutsChanged += (_, _) => raised = true;
 
@@ -67,7 +68,7 @@ public class ShortcutSettingsServiceTests
     [Test]
     public async Task ResetOverride_WithNoExistingOverride_DoesNotRaiseShortcutsChanged()
     {
-        var service = new ShortcutSettingsService(CreateTempSettingsPath());
+        var service = new ShortcutSettingsService(new SettingsStore(CreateTempSettingsPath()));
         var raised = false;
         service.ShortcutsChanged += (_, _) => raised = true;
 

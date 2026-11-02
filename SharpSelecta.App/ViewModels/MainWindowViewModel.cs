@@ -19,7 +19,7 @@ namespace SharpSelecta.App.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    private readonly string _settingsFilePath;
+    private readonly SettingsStore _settings;
 
     public PlaybackControlsViewModel PlaybackControls { get; }
 
@@ -47,7 +47,7 @@ public partial class MainWindowViewModel : ViewModelBase
         IOutputDeviceService outputDeviceService,
         IFilePickerService filePickerService,
         IFileManagerService fileManagerService,
-        string settingsFilePath,
+        SettingsStore settings,
         ThemeLayout layout,
         ILogger<PlaybackControlsViewModel> playbackControlsLogger,
         ILogger<LibraryViewModel> libraryLogger,
@@ -56,19 +56,19 @@ public partial class MainWindowViewModel : ViewModelBase
         TrackConversionService? conversionService = null,
         UpdatesViewModel? updates = null)
     {
-        _settingsFilePath = settingsFilePath;
+        _settings = settings;
 
         var queue = new PlaybackQueue();
-        PlaybackControls = new PlaybackControlsViewModel(audioEngine, queue, settingsFilePath, playbackControlsLogger);
-        Library = new LibraryViewModel(filePickerService, PlaybackControls, fileManagerService, settingsFilePath, layout, libraryLogger, albumArtProviders, conversionService);
+        PlaybackControls = new PlaybackControlsViewModel(audioEngine, queue, settings, playbackControlsLogger);
+        Library = new LibraryViewModel(filePickerService, PlaybackControls, fileManagerService, settings, layout, libraryLogger, albumArtProviders, conversionService);
         Queue = new QueueViewModel(PlaybackControls, queueLogger);
-        PlaybackSettings = new PlaybackSettingsViewModel(settingsFilePath, outputDeviceService, PlaybackControls);
-        InterfaceSettings = new InterfaceSettingsViewModel(settingsFilePath, filePickerService);
-        Integrations = new IntegrationsSettingsViewModel(settingsFilePath);
-        Updates = updates ?? new UpdatesViewModel(settingsFilePath, null, NullLogger.Instance);
-        ShortcutSettings = new ShortcutSettingsService(settingsFilePath);
-        Equalizer = new EqualizerViewModel(settingsFilePath, audioEngine);
-        RightColumnWidth = new GridLength(SettingsStore.LoadRightColumnWidth(_settingsFilePath) ?? layout.RightColumnWidth);
+        PlaybackSettings = new PlaybackSettingsViewModel(settings, outputDeviceService, PlaybackControls);
+        InterfaceSettings = new InterfaceSettingsViewModel(settings, filePickerService);
+        Integrations = new IntegrationsSettingsViewModel(settings);
+        Updates = updates ?? new UpdatesViewModel(settings, null, NullLogger.Instance);
+        ShortcutSettings = new ShortcutSettingsService(settings);
+        Equalizer = new EqualizerViewModel(settings, audioEngine);
+        RightColumnWidth = new GridLength(settings.Current.RightColumnWidth ?? layout.RightColumnWidth);
     }
 
     // Which track "the selected one" is depends on what has focus (a grid, an expanded album, the
@@ -79,17 +79,17 @@ public partial class MainWindowViewModel : ViewModelBase
     private void OpenProperties() => OpenPropertiesRequested?.Invoke(this, EventArgs.Empty);
 
     public void PersistRightColumnWidth() =>
-        SettingsStore.SaveRightColumnWidth(_settingsFilePath, RightColumnWidth.Value);
+        _settings.Update(s => s with { RightColumnWidth = RightColumnWidth.Value });
 
     public void PersistVolume() =>
-        SettingsStore.SaveVolume(_settingsFilePath, PlaybackControls.Volume);
+        _settings.Update(s => s with { Volume = PlaybackControls.Volume });
 
     public async Task RestoreQueueIfEnabledAsync()
     {
         if (!PlaybackSettings.RestoreQueueOnStartup)
             return;
 
-        var state = QueueStateStore.Load(_settingsFilePath);
+        var state = QueueStateStore.Load(_settings.FilePath);
         if (state is null)
             return;
 
@@ -128,6 +128,6 @@ public partial class MainWindowViewModel : ViewModelBase
             .Select(e => new QueueStateStore.QueueEntryData(e.Track.FilePath, e.Source))
             .ToList();
 
-        QueueStateStore.Save(_settingsFilePath, entries, PlaybackControls.QueueCurrentIndex, PlaybackControls.PositionSeconds);
+        QueueStateStore.Save(_settings.FilePath, entries, PlaybackControls.QueueCurrentIndex, PlaybackControls.PositionSeconds);
     }
 }

@@ -40,14 +40,14 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var settingsFilePath = Path.Combine(
+            var settings = new SettingsStore(Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "SharpSelecta", "library-settings.json");
+                "SharpSelecta", "library-settings.json"));
 
             ThemeService.Apply(
-                SettingsStore.LoadTheme(settingsFilePath),
-                SettingsStore.LoadCustomThemeFileName(settingsFilePath),
-                ThemeService.GetThemesDirectory(settingsFilePath));
+                settings.Current.Theme,
+                settings.Current.CustomThemeFileName,
+                ThemeService.GetThemesDirectory(settings.FilePath));
 
             var mainWindow = new MainWindow();
 
@@ -60,8 +60,8 @@ public partial class App : Application
             services.AddSingleton<ITrashService, FileTrashService>();
             services.AddSingleton<TrackConversionService>();
             services.AddAlbumArtProviders(
-                () => SettingsStore.LoadFanartApiKey(settingsFilePath),
-                key => SettingsStore.SaveFanartApiKey(settingsFilePath, key));
+                () => settings.Current.FanartApiKey,
+                key => settings.Update(s => s with { FanartApiKey = key }));
             services.AddSingleton<IFilePickerService>(new AvaloniaFilePickerService(mainWindow));
             services.AddSingleton<IFileManagerShell, SystemFileManagerShell>();
             services.AddSingleton<IFileManagerService, FileManagerService>();
@@ -74,14 +74,14 @@ public partial class App : Application
                 provider.GetRequiredService<IOutputDeviceService>(),
                 provider.GetRequiredService<IFilePickerService>(),
                 provider.GetRequiredService<IFileManagerService>(),
-                settingsFilePath,
+                settings,
                 ThemeLayout.From(this),
                 provider.GetRequiredService<ILogger<PlaybackControlsViewModel>>(),
                 provider.GetRequiredService<ILogger<LibraryViewModel>>(),
                 provider.GetRequiredService<ILogger<QueueViewModel>>(),
                 provider.GetServices<IAlbumArtProvider>().ToList(),
                 provider.GetRequiredService<TrackConversionService>(),
-                new UpdatesViewModel(settingsFilePath, provider.GetRequiredService<IUpdateService>(), provider.GetRequiredService<ILogger<UpdatesViewModel>>()));
+                new UpdatesViewModel(settings, provider.GetRequiredService<IUpdateService>(), provider.GetRequiredService<ILogger<UpdatesViewModel>>()));
             mainWindow.DataContext = mainWindowViewModel;
             desktop.MainWindow = mainWindow;
 

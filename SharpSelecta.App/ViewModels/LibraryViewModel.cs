@@ -24,7 +24,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     private readonly IFilePickerService _filePickerService;
     private readonly PlaybackControlsViewModel _playbackControls;
     private readonly IFileManagerService _fileManagerService;
-    private readonly string _settingsFilePath;
+    private readonly SettingsStore _settings;
     private readonly ILogger<LibraryViewModel> _logger;
     private readonly IReadOnlyList<IAlbumArtProvider> _albumArtProviders;
     private readonly TrackConversionService? _conversionService;
@@ -138,12 +138,12 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     partial void OnIsYearColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsYearColumnVisible = v);
 
-    private void SaveColumnVisibility() => SettingsStore.SaveColumnVisibility(
-        _settingsFilePath, ColumnVisibilityBindings().ToDictionary(c => c.Key, c => c.Get()));
+    private void SaveColumnVisibility() =>
+        _settings.Update(s => s with { Columns = ColumnVisibilityBindings().ToDictionary(c => c.Key, c => c.Get()) });
 
     private void ApplySavedColumnVisibility()
     {
-        var columns = SettingsStore.LoadColumnVisibility(_settingsFilePath);
+        var columns = _settings.Current.Columns;
         if (columns is null)
             return;
 
@@ -290,19 +290,19 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     partial void OnViewModeChanged(LibraryViewMode value)
     {
-        SettingsStore.SaveViewMode(_settingsFilePath, value);
+        _settings.Update(s => s with { ViewMode = value });
         NotifyViewVisibilityChanged();
     }
 
     partial void OnLibrarySectionChanged(LibrarySection value)
     {
-        SettingsStore.SaveLibrarySection(_settingsFilePath, value);
+        _settings.Update(s => s with { LibrarySection = value });
         NotifyViewVisibilityChanged();
     }
 
     partial void OnRecentlyAddedViewModeChanged(LibraryViewMode value)
     {
-        SettingsStore.SaveRecentlyAddedViewMode(_settingsFilePath, value);
+        _settings.Update(s => s with { RecentlyAddedViewMode = value });
         NotifyViewVisibilityChanged();
     }
 
@@ -339,13 +339,13 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     public PlaylistsViewModel Playlists { get; }
 
-    public string SettingsFilePath => _settingsFilePath;
+    public SettingsStore Settings => _settings;
 
     public LibraryViewModel(
         IFilePickerService filePickerService,
         PlaybackControlsViewModel playbackControls,
         IFileManagerService fileManagerService,
-        string settingsFilePath,
+        SettingsStore settings,
         ThemeLayout layout,
         ILogger<LibraryViewModel> logger,
         IReadOnlyList<IAlbumArtProvider>? albumArtProviders = null,
@@ -356,13 +356,13 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         _filePickerService = filePickerService;
         _playbackControls = playbackControls;
         _fileManagerService = fileManagerService;
-        _settingsFilePath = settingsFilePath;
+        _settings = settings;
         _logger = logger;
 
-        Grid = new AlbumGridViewModel(this, settingsFilePath, layout, _logger);
-        RecentlyAddedGrid = new AlbumGridViewModel(this, settingsFilePath, layout, _logger, allowUserSort: false, limitToRecentlyAdded: true);
-        Playlists = new PlaylistsViewModel(this, settingsFilePath);
-        ApplyAutoDjSource(SettingsStore.LoadAutoDjSourcePlaylistId(settingsFilePath));
+        Grid = new AlbumGridViewModel(this, settings, layout, _logger);
+        RecentlyAddedGrid = new AlbumGridViewModel(this, settings, layout, _logger, allowUserSort: false, limitToRecentlyAdded: true);
+        Playlists = new PlaylistsViewModel(this, settings);
+        ApplyAutoDjSource(settings.Current.AutoDjSourcePlaylistId);
 
         Tracks.CollectionChanged += (_, _) =>
         {
@@ -400,16 +400,17 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     public async Task InitializeAsync()
     {
         ApplySavedColumnVisibility();
-        ViewMode = SettingsStore.LoadViewMode(_settingsFilePath) ?? LibraryViewMode.TrackList;
-        LibrarySection = SettingsStore.LoadLibrarySection(_settingsFilePath) ?? LibrarySection.Library;
-        RecentlyAddedViewMode = SettingsStore.LoadRecentlyAddedViewMode(_settingsFilePath) ?? LibraryViewMode.TrackList;
+        var saved = _settings.Current;
+        ViewMode = saved.ViewMode;
+        LibrarySection = saved.LibrarySection;
+        RecentlyAddedViewMode = saved.RecentlyAddedViewMode;
 
         if (LibrarySection == LibrarySection.Playlist)
         {
             RestoreSelectedPlaylist();
         }
 
-        var folderPaths = SettingsStore.LoadLibraryFolderPaths(_settingsFilePath);
+        var folderPaths = saved.LibraryFolderPaths;
         if (folderPaths is not null)
         {
             foreach (var folderPath in folderPaths)
@@ -418,7 +419,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             }
 
             var hydrateStopwatch = Stopwatch.StartNew();
-            var hydrated = await Task.Run(() => LibraryIndexStore.LoadIndexed(_settingsFilePath, folderPaths));
+            var hydrated = await Task.Run(() => LibraryIndexStore.LoadIndexed(_settings.FilePath, folderPaths));
             if (hydrated.Count > 0)
             {
                 _logger.LogInformation("Hydrated {TrackCount} tracks from index in {ElapsedMs} ms", hydrated.Count, hydrateStopwatch.ElapsedMilliseconds);
@@ -433,7 +434,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     // since deleted, falls back to Library instead of leaving the user on an empty dead Playlist view.
     private void RestoreSelectedPlaylist()
     {
-        var savedPlaylistId = SettingsStore.LoadSelectedPlaylistId(_settingsFilePath);
+        var savedPlaylistId = _settings.Current.SelectedPlaylistId;
         Playlists.RefreshPlaylists();
 
         if (savedPlaylistId is not null && Playlists.Playlists.Any(p => p.Id == savedPlaylistId))
@@ -454,7 +455,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             return;
 
         LibraryFolderPaths.Add(folderPath);
-        SettingsStore.SaveLibraryFolderPaths(_settingsFilePath, LibraryFolderPaths);
+        SaveLibraryFolderPaths();
         await ReconcileFoldersAsync();
     }
 
@@ -486,9 +487,12 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             LibraryFolderPaths.Add(folderPath);
         }
 
-        SettingsStore.SaveLibraryFolderPaths(_settingsFilePath, LibraryFolderPaths);
+        SaveLibraryFolderPaths();
         await ReconcileFoldersAsync();
     }
+
+    private void SaveLibraryFolderPaths() =>
+        _settings.Update(s => s with { LibraryFolderPaths = LibraryFolderPaths.ToList() });
 
     [RelayCommand]
     private void CancelPendingFolderChanges() => SyncPendingLibraryFolderPaths();
@@ -515,7 +519,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         try
         {
             var stopwatch = Stopwatch.StartNew();
-            var result = await Task.Run(() => LibraryIndexStore.Reconcile(_settingsFilePath, folderPaths));
+            var result = await Task.Run(() => LibraryIndexStore.Reconcile(_settings.FilePath, folderPaths));
 
             _logger.LogInformation("Reconciled {TrackCount} tracks in {ElapsedMs} ms", result.Tracks.Count, stopwatch.ElapsedMilliseconds);
             Tracks.ReplaceAll(result.Tracks.Select(track => new LibraryTrackViewModel(track, this)));
@@ -598,9 +602,9 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     // was started anywhere else. Remembered across restarts.
     private void SetAutoDjSource(string? playlistId)
     {
-        if (playlistId != SettingsStore.LoadAutoDjSourcePlaylistId(_settingsFilePath))
+        if (playlistId != _settings.Current.AutoDjSourcePlaylistId)
         {
-            SettingsStore.SaveAutoDjSourcePlaylistId(_settingsFilePath, playlistId);
+            _settings.Update(s => s with { AutoDjSourcePlaylistId = playlistId });
         }
 
         ApplyAutoDjSource(playlistId);
@@ -613,8 +617,8 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     // A playlist that has since been deleted falls back to the library rather than silently ending Auto DJ.
     private IReadOnlyList<Track> PlaylistTracks(string playlistId) =>
-        LibraryIndexStore.ListPlaylists(_settingsFilePath).Any(p => p.Id == playlistId)
-            ? LibraryIndexStore.GetPlaylistTracks(_settingsFilePath, playlistId).Where(e => e.Track is not null).Select(e => e.Track!).ToList()
+        LibraryIndexStore.ListPlaylists(_settings.FilePath).Any(p => p.Id == playlistId)
+            ? LibraryIndexStore.GetPlaylistTracks(_settings.FilePath, playlistId).Where(e => e.Track is not null).Select(e => e.Track!).ToList()
             : LibraryTracks();
 
     public TrackPropertiesViewModel CreateTrackProperties(Track track) => CreateTrackProperties([track]);
@@ -641,7 +645,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     {
         foreach (var outcome in outcomes.Where(o => o.OriginalRemoved && o.Converted is not null))
         {
-            LibraryIndexStore.ReplaceFileInPlaylists(_settingsFilePath, outcome.Source.FilePath, outcome.Converted!.FilePath);
+            LibraryIndexStore.ReplaceFileInPlaylists(_settings.FilePath, outcome.Source.FilePath, outcome.Converted!.FilePath);
             await _playbackControls.ReplaceTrackFileAsync(outcome.Source.FilePath, outcome.Converted);
         }
 
@@ -653,11 +657,11 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     private void OnTracksTagsSaved(IReadOnlyList<Track> updatedTracks)
     {
         var updatedByPath = updatedTracks.ToDictionary(t => t.FilePath);
-        var cacheDirectory = AlbumGridViewModel.ArtworkCacheDirectoryFor(_settingsFilePath);
+        var cacheDirectory = AlbumGridViewModel.ArtworkCacheDirectoryFor(_settings.FilePath);
 
         foreach (var updated in updatedTracks)
         {
-            LibraryIndexStore.UpdateTrack(_settingsFilePath, updated);
+            LibraryIndexStore.UpdateTrack(_settings.FilePath, updated);
 
             // The album's cached thumbnail may show the old cover (or sit under the old album name).
             var old = Tracks.FirstOrDefault(item => item.Track.FilePath == updated.FilePath)?.Track;

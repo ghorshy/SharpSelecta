@@ -3,6 +3,7 @@ using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using SharpSelecta.App.Resources;
 using SharpSelecta.App.ViewModels;
+using SharpSelecta.Core.Library;
 using SharpSelecta.Core.Updates;
 
 namespace SharpSelecta.Tests;
@@ -22,7 +23,7 @@ public class UpdatesViewModelTests
     }
 
     private static UpdatesViewModel Create(IUpdateService? service, string? settingsPath = null) =>
-        new(settingsPath ?? CreateTempSettingsPath(), service, NullLogger.Instance);
+        new(new SettingsStore(settingsPath ?? CreateTempSettingsPath()), service, NullLogger.Instance);
 
     [Test]
     public async Task CheckAutomatically_DefaultsToTrue()

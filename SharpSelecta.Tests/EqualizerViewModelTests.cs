@@ -17,7 +17,7 @@ public class EqualizerViewModelTests
         audioEngine = Substitute.For<IAudioEngine>();
         audioEngine.EqualizerBandFrequenciesHz.Returns(StandardFrequencies);
         audioEngine.EqualizerBandGainsDb.Returns(new float[10]);
-        return new EqualizerViewModel(settingsFilePath ?? CreateTempSettingsPath(), audioEngine);
+        return new EqualizerViewModel(new SettingsStore(settingsFilePath ?? CreateTempSettingsPath()), audioEngine);
     }
 
     [Test]
@@ -55,7 +55,7 @@ public class EqualizerViewModelTests
             vm.Enabled = true;
 
             audioEngine.Received(1).EqualizerEnabled = true;
-            await Assert.That(SettingsStore.LoadEqualizerEnabled(settingsPath)).IsTrue();
+            await Assert.That(new SettingsStore(settingsPath).Current.EqualizerEnabled).IsTrue();
         }
         finally
         {
@@ -98,9 +98,9 @@ public class EqualizerViewModelTests
 
             vm.PersistBandGains();
 
-            var saved = SettingsStore.LoadEqualizerBandGainsDb(settingsPath);
+            var saved = new SettingsStore(settingsPath).Current.EqualizerBandGainsDb;
             await Assert.That(saved![0]).IsEqualTo(5f);
-            await Assert.That(SettingsStore.LoadEqualizerPresetName(settingsPath)).IsEqualTo("Custom");
+            await Assert.That(new SettingsStore(settingsPath).Current.EqualizerPresetName).IsEqualTo("Custom");
         }
         finally
         {
@@ -114,9 +114,9 @@ public class EqualizerViewModelTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            SettingsStore.SaveEqualizerEnabled(settingsPath, true);
-            SettingsStore.SaveEqualizerPresetName(settingsPath, "Custom");
-            SettingsStore.SaveEqualizerBandGainsDb(settingsPath, [1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f]);
+            new SettingsStore(settingsPath).Update(s => s with { EqualizerEnabled = true });
+            new SettingsStore(settingsPath).Update(s => s with { EqualizerPresetName = "Custom" });
+            new SettingsStore(settingsPath).Update(s => s with { EqualizerBandGainsDb = [1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f] });
 
             var vm = CreateViewModel(out var audioEngine, settingsPath);
 
@@ -140,9 +140,9 @@ public class EqualizerViewModelTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            SettingsStore.SaveEqualizerEnabled(settingsPath, false);
-            SettingsStore.SaveEqualizerPresetName(settingsPath, nameof(EqualizerPreset.Bass));
-            SettingsStore.SaveEqualizerBandGainsDb(settingsPath, [1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f]);
+            new SettingsStore(settingsPath).Update(s => s with { EqualizerEnabled = false });
+            new SettingsStore(settingsPath).Update(s => s with { EqualizerPresetName = nameof(EqualizerPreset.Bass) });
+            new SettingsStore(settingsPath).Update(s => s with { EqualizerBandGainsDb = [1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f] });
 
             var vm = CreateViewModel(out var audioEngine, settingsPath);
             // Stub the engine's Bass-preset gains to diverge from the saved gains, so a

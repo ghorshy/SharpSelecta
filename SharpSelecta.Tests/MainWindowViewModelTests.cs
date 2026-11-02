@@ -29,7 +29,7 @@ public class MainWindowViewModelTests
             Substitute.For<IOutputDeviceService>(),
             filePickerService,
             Substitute.For<IFileManagerService>(),
-            settingsFilePath ?? CreateTempSettingsPath(),
+            new SettingsStore(settingsFilePath ?? CreateTempSettingsPath()),
             TestThemeLayout.Default,
             NullLogger<PlaybackControlsViewModel>.Instance,
             NullLogger<LibraryViewModel>.Instance,
@@ -127,7 +127,7 @@ public class MainWindowViewModelTests
         var settingsPath = CreateTempSettingsPath();
         try
         {
-            SettingsStore.SaveVolumeCurve(settingsPath, VolumeCurve.Logarithmic);
+            new SettingsStore(settingsPath).Update(s => s with { VolumeCurve = VolumeCurve.Logarithmic });
 
             var vm = CreateViewModel(out _, settingsPath);
 

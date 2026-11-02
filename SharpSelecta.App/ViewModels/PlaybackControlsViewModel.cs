@@ -26,7 +26,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     private readonly IAudioEngine _audioEngine;
     private readonly PlaybackQueue _queue;
     private readonly ILogger<PlaybackControlsViewModel> _logger;
-    private readonly string _settingsFilePath;
+    private readonly SettingsStore _settings;
     private bool _isSyncingFromEngine;
     private bool _hasHandledEndOfStream;
     private int _waveformLoadGeneration;
@@ -103,11 +103,11 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     [ObservableProperty]
     public partial bool UseWaveformSlider { get; set; }
 
-    public PlaybackControlsViewModel(IAudioEngine audioEngine, PlaybackQueue queue, string settingsFilePath, ILogger<PlaybackControlsViewModel> logger)
+    public PlaybackControlsViewModel(IAudioEngine audioEngine, PlaybackQueue queue, SettingsStore settings, ILogger<PlaybackControlsViewModel> logger)
     {
         _audioEngine = audioEngine;
         _queue = queue;
-        _settingsFilePath = settingsFilePath;
+        _settings = settings;
         _logger = logger;
 
         // Auto DJ must not top the queue up from in here: adding entries while a change to the queue is still
@@ -121,7 +121,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
             TopUpAutoDj();
         };
 
-        IsAutoDjEnabled = SettingsStore.LoadAutoDjEnabled(settingsFilePath);
+        IsAutoDjEnabled = settings.Current.AutoDjEnabled;
         _autoDjSettingLoaded = true;
     }
 
@@ -140,7 +140,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         if (!_autoDjSettingLoaded)
             return;
 
-        SettingsStore.SaveAutoDjEnabled(_settingsFilePath, value);
+        _settings.Update(s => s with { AutoDjEnabled = value });
         TopUpAutoDj();
     }
 
@@ -479,14 +479,14 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         {
             var peaks = await Task.Run(() =>
             {
-                var cached = LibraryIndexStore.TryGetWaveformPeaks(_settingsFilePath, track.FilePath);
+                var cached = LibraryIndexStore.TryGetWaveformPeaks(_settings.FilePath, track.FilePath);
                 if (cached is not null)
                 {
                     return cached;
                 }
 
                 var extracted = _audioEngine.GetWaveformPeaks(WaveformMasterPointCount);
-                LibraryIndexStore.SaveWaveformPeaks(_settingsFilePath, track.FilePath, extracted);
+                LibraryIndexStore.SaveWaveformPeaks(_settings.FilePath, track.FilePath, extracted);
                 return extracted;
             });
 

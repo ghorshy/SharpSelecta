@@ -26,7 +26,7 @@ public class ShortcutRegistryTests
             Substitute.For<IOutputDeviceService>(),
             Substitute.For<IFilePickerService>(),
             Substitute.For<IFileManagerService>(),
-            CreateTempSettingsPath(),
+            new SettingsStore(CreateTempSettingsPath()),
             TestThemeLayout.Default,
             NullLogger<PlaybackControlsViewModel>.Instance,
             NullLogger<LibraryViewModel>.Instance,

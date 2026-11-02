@@ -17,10 +17,10 @@ public class AlbumGridViewModelTests
     {
         var audioEngine = Substitute.For<IAudioEngine>();
         var filePickerService = Substitute.For<IFilePickerService>();
-        var playbackControls = new PlaybackControlsViewModel(audioEngine, new PlaybackQueue(), CreateTempSettingsPath(), NullLogger<PlaybackControlsViewModel>.Instance);
+        var playbackControls = new PlaybackControlsViewModel(audioEngine, new PlaybackQueue(), new SettingsStore(CreateTempSettingsPath()), NullLogger<PlaybackControlsViewModel>.Instance);
         return new LibraryViewModel(
             filePickerService, playbackControls, Substitute.For<IFileManagerService>(),
-            settingsFilePath ?? CreateTempSettingsPath(), TestThemeLayout.Default, NullLogger<LibraryViewModel>.Instance);
+            new SettingsStore(settingsFilePath ?? CreateTempSettingsPath()), TestThemeLayout.Default, NullLogger<LibraryViewModel>.Instance);
     }
 
     private static void AddTrack(LibraryViewModel vm, string filePath, string album) =>
@@ -370,7 +370,7 @@ public class AlbumGridViewModelTests
         library.Tracks.Add(new LibraryTrackViewModel(new Track("/music/new-album/b.mp3", "b.mp3") { Album = "New Album", DateAddedUtc = now.AddDays(-1) }, library));
         library.Tracks.Add(new LibraryTrackViewModel(new Track("/music/old-album/c.mp3", "c.mp3") { Album = "Old Album", DateAddedUtc = now }, library));
 
-        var grid = new AlbumGridViewModel(library, CreateTempSettingsPath(), TestThemeLayout.Default, NullLogger.Instance, allowUserSort: false);
+        var grid = new AlbumGridViewModel(library, new SettingsStore(CreateTempSettingsPath()), TestThemeLayout.Default, NullLogger.Instance, allowUserSort: false);
         grid.SetViewportWidth(2000);
 
         // "Old Album" has the most recently added track, so the whole album sorts first.
@@ -384,16 +384,17 @@ public class AlbumGridViewModelTests
         var settingsPath = CreateTempSettingsPath();
         var library = CreateLibraryViewModel();
 
-        _ = new AlbumGridViewModel(library, settingsPath, TestThemeLayout.Default, NullLogger.Instance, allowUserSort: false);
+        _ = new AlbumGridViewModel(library, new SettingsStore(settingsPath), TestThemeLayout.Default, NullLogger.Instance, allowUserSort: false);
 
-        await Assert.That(SettingsStore.LoadAlbumSortMode(settingsPath)).IsNull();
-        await Assert.That(SettingsStore.LoadAlbumSortDescending(settingsPath)).IsNull();
+        var saved = new SettingsStore(settingsPath).Current;
+        await Assert.That(saved.AlbumSortMode).IsEqualTo(AlbumSortMode.Title);
+        await Assert.That(saved.AlbumSortDescending).IsFalse();
     }
 
     [Test]
     public async Task AllowUserSort_DefaultsToTrue_PreservingExistingBehavior()
     {
-        var grid = new AlbumGridViewModel(CreateLibraryViewModel(), CreateTempSettingsPath(), TestThemeLayout.Default, NullLogger.Instance);
+        var grid = new AlbumGridViewModel(CreateLibraryViewModel(), new SettingsStore(CreateTempSettingsPath()), TestThemeLayout.Default, NullLogger.Instance);
 
         await Assert.That(grid.AllowUserSort).IsTrue();
     }
