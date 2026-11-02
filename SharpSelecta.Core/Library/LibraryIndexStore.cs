@@ -641,10 +641,16 @@ public static class LibraryIndexStore
             alter.ExecuteNonQuery();
         }
 
-        // M4A rows indexed before the type told ALAC from AAC are re-read; once they are, none is left to match.
-        using (var m4aCommand = connection.CreateCommand())
+        // Re-read M4A rows indexed before the type told ALAC from AAC, once.
+        if (SchemaVersion(connection) < 1)
         {
-            m4aCommand.CommandText = "UPDATE Tracks SET LastWriteTimeUtcTicks = 0 WHERE FileType = 'M4A'";
+            using var m4aCommand = connection.CreateCommand();
+            m4aCommand.CommandText = """
+                BEGIN;
+                UPDATE Tracks SET LastWriteTimeUtcTicks = 0 WHERE FileType = 'M4A';
+                PRAGMA user_version = 1;
+                COMMIT;
+                """;
             m4aCommand.ExecuteNonQuery();
         }
 
@@ -668,6 +674,13 @@ public static class LibraryIndexStore
                 """;
             playlistCommand.ExecuteNonQuery();
         }
+    }
+
+    private static long SchemaVersion(SqliteConnection connection)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = "PRAGMA user_version";
+        return (long)command.ExecuteScalar()!;
     }
 
     private static bool HasColumn(SqliteConnection connection, string table, string column)
