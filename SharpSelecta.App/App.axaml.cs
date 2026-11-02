@@ -1,8 +1,10 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
@@ -13,6 +15,7 @@ using SharpSelecta.Integrations.Updates;
 using SharpSelecta.App.Services;
 using SharpSelecta.App.Styles;
 using SharpSelecta.App.Services.Mpris;
+using SharpSelecta.App.Services.SingleInstance;
 using SharpSelecta.App.ViewModels;
 using SharpSelecta.App.Views;
 using SharpSelecta.Audio;
@@ -25,6 +28,8 @@ namespace SharpSelecta.App;
 
 public partial class App : Application
 {
+    public ISingleInstanceGuard? SingleInstance { get; init; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -75,6 +80,11 @@ public partial class App : Application
 
             mainWindow.Activated += (_, _) => Mpris()?.NudgePriority();
 
+            if (SingleInstance is not null)
+            {
+                SingleInstance.ActivationRequested += (_, _) => Dispatcher.UIThread.Post(() => BringToFront(mainWindow));
+            }
+
             var richPresence = new RichPresenceCoordinator(
                 mainWindowViewModel.PlaybackControls, provider.GetRequiredService<IRichPresence>(), mainWindowViewModel.Integrations);
 
@@ -105,6 +115,17 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private static void BringToFront(Window window)
+    {
+        if (window.WindowState == WindowState.Minimized)
+        {
+            window.WindowState = WindowState.Normal;
+        }
+
+        window.Show();
+        window.Activate();
     }
 
     private static async Task InitializeAudioEngineAndRestoreStateAsync(IAudioEngine audioEngine, MainWindowViewModel mainWindowViewModel)

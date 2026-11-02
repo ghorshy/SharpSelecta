@@ -1,5 +1,7 @@
 using Avalonia;
 using Serilog;
+using Serilog.Extensions.Logging;
+using SharpSelecta.App.Services.SingleInstance;
 using Velopack;
 
 namespace SharpSelecta.App;
@@ -28,9 +30,19 @@ sealed class Program
                 retainedFileCountLimit: 14)
             .CreateLogger();
 
+        var loggerFactory = new SerilogLoggerFactory(Log.Logger);
+        var singleInstance = SingleInstanceGuard.CreateForCurrentPlatform(loggerFactory);
+
         try
         {
-            BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+            // No dispatcher or synchronization context exists yet, so blocking here can't deadlock.
+            if (singleInstance.StartAsync([]).GetAwaiter().GetResult() == SingleInstanceRole.Secondary)
+            {
+                Log.Information("SharpSelecta is already running - asked it to come to the front, exiting");
+                return;
+            }
+
+            BuildAvaloniaApp(() => new App { SingleInstance = singleInstance }).StartWithClassicDesktopLifetime(args);
         }
         catch (Exception ex)
         {
@@ -39,14 +51,18 @@ sealed class Program
         }
         finally
         {
+            singleInstance.Dispose();
+            loggerFactory.Dispose();
             Log.CloseAndFlush();
         }
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
-    public static AppBuilder BuildAvaloniaApp()
+    public static AppBuilder BuildAvaloniaApp() => BuildAvaloniaApp(() => new App());
+
+    private static AppBuilder BuildAvaloniaApp(Func<App> createApp)
     {
-        var builder = AppBuilder.Configure<App>()
+        var builder = AppBuilder.Configure(createApp)
             .UsePlatformDetect()
 #if DEBUG
             .WithDeveloperTools()
