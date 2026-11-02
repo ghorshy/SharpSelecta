@@ -8,23 +8,18 @@ public partial class ThemeTokenTests
 {
     private static readonly string[] TokenFileNames = ["ThemeColors.axaml", "ThemeMetrics.axaml", "Spacing.axaml", "Icons.axaml"];
 
-    // Vector artwork coordinates (not style values): the shapes of the placeholder disc, same as
-    // the path data inside an icon SVG. Its colors and stroke thickness are still tokens.
-    private static readonly Dictionary<string, string[]> GeometryExemptions = new()
+    // Call sites that build a shape from values already read from the theme or the user's settings (whitespace ignored).
+    private static readonly Dictionary<string, string[]> CodeExemptions = new()
     {
-        ["AlbumCoverPlaceholderIcon.axaml"] = ["Width", "Height"],
+        ["SpacingExtension.cs"] = ["new Thickness(Resolve(Left,"],
+        ["MainWindowViewModel.cs"] = ["new GridLength(settings.Current.RightColumnWidth ?? layout.RightColumnWidth)"],
     };
 
-    private static readonly string[] ColorAttributes =
-        ["Foreground", "Background", "BorderBrush", "Fill", "Stroke", "Color", "CurrentColor", "SelectionBrush", "CaretBrush"];
+    private static bool IsExemptCallSite(string path, string text, int index) =>
+        CodeExemptions.GetValueOrDefault(Path.GetFileName(path), []).Any(callSite =>
+            WithoutWhitespace(text[index..]).StartsWith(WithoutWhitespace(callSite), StringComparison.Ordinal));
 
-    private static readonly string[] MetricAttributes =
-    [
-        "Opacity", "FontSize", "FontWeight", "FontStyle", "FontFamily", "CornerRadius", "BorderThickness", "StrokeThickness",
-        "Width", "Height", "MinWidth", "MinHeight", "MaxWidth", "MaxHeight", "Padding", "Margin", "Spacing", "RowSpacing", "ColumnSpacing",
-    ];
-
-    private static readonly string[] StructuralValues = ["0", "Auto", "*", "NaN", "Transparent"];
+    private static string WithoutWhitespace(string text) => string.Concat(text.Where(c => !char.IsWhiteSpace(c)));
 
     private static string RepoRoot()
     {
@@ -47,42 +42,17 @@ public partial class ThemeTokenTests
     private static IEnumerable<string> NonTokenAxamlFiles() =>
         SourceFiles("*.axaml").Where(path => !TokenFileNames.Contains(Path.GetFileName(path)));
 
-    private static string ReadWithoutComments(string path) => CommentRegex().Replace(File.ReadAllText(path), match =>
-        new string(match.Value.Select(c => c == '\n' ? '\n' : ' ').ToArray()));
+    private static string Describe(string path, ThemeTokenViolation violation) =>
+        $"{Path.GetRelativePath(RepoRoot(), path)}:{violation.Line} {violation.Description}";
 
     private static string Where(string path, string text, int index) =>
-        $"{Path.GetRelativePath(RepoRoot(), path)}:{text.AsSpan(0, index).Count('\n') + 1}";
-
-    [GeneratedRegex(@"<!--.*?-->", RegexOptions.Singleline)]
-    private static partial Regex CommentRegex();
-
-    [GeneratedRegex("""(?<=["'>])#[0-9A-Fa-f]{6,8}\b""")]
-    private static partial Regex HexColorRegex();
-
-    [GeneratedRegex(@"\s([A-Za-z][\w.]*)=""([^""]*)""")]
-    private static partial Regex AttributeRegex();
-
-    [GeneratedRegex(@"<Setter\s+Property=""([\w.:]+)""\s+Value=""([^""]*)""")]
-    private static partial Regex SetterRegex();
-
-    [GeneratedRegex(@"\b(?:Column|Row)Definitions=""([^""]*)""")]
-    private static partial Regex DefinitionsRegex();
+        $"{Path.GetRelativePath(RepoRoot(), path)}:{ThemeTokenScanner.Line(text, index)}";
 
     [GeneratedRegex(@"\{(?:DynamicResource|StaticResource)\s+([^\s}]+)\}")]
     private static partial Regex ResourceReferenceRegex();
 
     [GeneratedRegex(@"TryFindResource\(\s*""([^""]+)""")]
     private static partial Regex CodeResourceReferenceRegex();
-
-    private static bool IsAllowed(string attribute, string value, string file)
-    {
-        if (value.StartsWith('{') || StructuralValues.Contains(value))
-            return true;
-
-        return GeometryExemptions.TryGetValue(Path.GetFileName(file), out var exempt) && exempt.Contains(attribute);
-    }
-
-    private static string LastSegment(string name) => name[(name.LastIndexOfAny(['.', ':']) + 1)..];
 
     private static HashSet<string> DefinedTokens()
     {
@@ -106,26 +76,9 @@ public partial class ThemeTokenTests
     [Test]
     public async Task Axaml_ContainsNoLiteralColors()
     {
-        var violations = new List<string>();
-        foreach (var path in NonTokenAxamlFiles())
-        {
-            var text = ReadWithoutComments(path);
-            violations.AddRange(HexColorRegex().Matches(text).Select(m => $"{Where(path, text, m.Index)} hex color {m.Value}"));
-
-            foreach (Match match in AttributeRegex().Matches(text))
-            {
-                var (name, value) = (match.Groups[1].Value, match.Groups[2].Value);
-                if (ColorAttributes.Contains(name) && !IsAllowed(name, value, path))
-                    violations.Add($"{Where(path, text, match.Index)} {name}=\"{value}\"");
-            }
-
-            foreach (Match match in SetterRegex().Matches(text))
-            {
-                var (name, value) = (LastSegment(match.Groups[1].Value), match.Groups[2].Value);
-                if (ColorAttributes.Contains(name) && !IsAllowed(name, value, path))
-                    violations.Add($"{Where(path, text, match.Index)} Setter {name} = \"{value}\"");
-            }
-        }
+        var violations = NonTokenAxamlFiles()
+            .SelectMany(path => ThemeTokenScanner.LiteralColors(File.ReadAllText(path), Path.GetFileName(path)).Select(v => Describe(path, v)))
+            .ToList();
 
         await Assert.That(violations).IsEmpty();
     }
@@ -133,47 +86,22 @@ public partial class ThemeTokenTests
     [Test]
     public async Task Axaml_ContainsNoLiteralOpacitiesFontsShapesOrSizes()
     {
-        var violations = new List<string>();
-        foreach (var path in NonTokenAxamlFiles())
-        {
-            var text = ReadWithoutComments(path);
-
-            foreach (Match match in AttributeRegex().Matches(text))
-            {
-                var (name, value) = (match.Groups[1].Value, match.Groups[2].Value);
-                if (MetricAttributes.Contains(name) && !IsAllowed(name, value, path))
-                    violations.Add($"{Where(path, text, match.Index)} {name}=\"{value}\"");
-            }
-
-            foreach (Match match in SetterRegex().Matches(text))
-            {
-                var (name, value) = (LastSegment(match.Groups[1].Value), match.Groups[2].Value);
-                if (MetricAttributes.Contains(name) && !IsAllowed(name, value, path))
-                    violations.Add($"{Where(path, text, match.Index)} Setter {name} = \"{value}\"");
-            }
-
-            foreach (Match match in DefinitionsRegex().Matches(text))
-            {
-                foreach (var part in match.Groups[1].Value.Split(',').Select(p => p.Trim()))
-                {
-                    if (!Regex.IsMatch(part, @"^(Auto|\d*\*)$"))
-                        violations.Add($"{Where(path, text, match.Index)} grid definition \"{part}\"");
-                }
-            }
-        }
+        var violations = NonTokenAxamlFiles()
+            .SelectMany(path => ThemeTokenScanner.LiteralMetrics(File.ReadAllText(path), Path.GetFileName(path)).Select(v => Describe(path, v)))
+            .ToList();
 
         await Assert.That(violations).IsEmpty();
     }
 
     [Test]
-    public async Task Code_DoesNotCreateColorsBrushesOrShapesFromLiterals()
+    public async Task Code_DoesNotCreateColorsBrushesFontsOrShapesFromLiterals()
     {
-        var forbidden = new Regex(@"Color\.From|Color\.Parse|Colors\.(?!Transparent)|Brushes\.(?!Transparent)|new SolidColorBrush\(|new Thickness\(|new CornerRadius\(");
+        var forbidden = new Regex(@"Color\.From|Color\.Parse|Colors\.(?!Transparent)|Brushes\.(?!Transparent)|new SolidColorBrush\(|new Thickness\(|new CornerRadius\(|new GridLength\(|new FontFamily\(");
         var violations = new List<string>();
-        foreach (var path in SourceFiles("*.cs").Where(p => !p.Contains($"{Path.DirectorySeparatorChar}Styles{Path.DirectorySeparatorChar}")))
+        foreach (var path in SourceFiles("*.cs"))
         {
             var text = File.ReadAllText(path);
-            violations.AddRange(forbidden.Matches(text).Select(m => $"{Where(path, text, m.Index)} {m.Value}"));
+            violations.AddRange(forbidden.Matches(text).Where(m => !IsExemptCallSite(path, text, m.Index)).Select(m => $"{Where(path, text, m.Index)} {m.Value}"));
         }
 
         await Assert.That(violations).IsEmpty();
@@ -187,7 +115,7 @@ public partial class ThemeTokenTests
 
         foreach (var path in NonTokenAxamlFiles())
         {
-            var text = ReadWithoutComments(path);
+            var text = ThemeTokenScanner.WithoutComments(File.ReadAllText(path));
             foreach (Match match in ResourceReferenceRegex().Matches(text))
             {
                 if (!defined.Contains(match.Groups[1].Value))
