@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text;
+using Microsoft.Extensions.DependencyInjection;
 using SharpSelecta.Integrations.AlbumArt;
 using SharpSelecta.Core.AlbumArt;
 
@@ -402,5 +403,17 @@ public class AlbumArtProviderTests
             .Status("https://webservice.fanart.tv/", HttpStatusCode.NotFound);
 
         await Assert.That(await Fanart(handler, "key").FindAsync(Ram, CancellationToken.None)).IsNull();
+    }
+
+    // --- Registration ---
+
+    [Test]
+    public async Task Registration_ResolvesEveryProvider_WithoutExposingItsHttpClient()
+    {
+        using var services = new ServiceCollection().AddAlbumArtProviders(() => null, _ => { }).BuildServiceProvider();
+
+        await Assert.That(services.GetServices<IAlbumArtProvider>().Select(p => p.Name))
+            .IsEquivalentTo(["Apple Music", "Deezer", "Cover Art Archive", "fanart.tv"], TUnit.Assertions.Enums.CollectionOrdering.Matching);
+        await Assert.That(services.GetService<HttpClient>()).IsNull();
     }
 }
