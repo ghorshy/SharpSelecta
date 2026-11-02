@@ -52,11 +52,11 @@
                 <Grid ColumnDefinitions="Auto,Auto,Auto" VerticalAlignment="Center">
                     <svg:Svg Grid.Column="0" Classes="toolbar-icon" Width="{DynamicResource Size.Icon.S}" Height="{DynamicResource Size.Icon.S}"
                              Path="{DynamicResource Icon.Search}" Margin="{styles:Spacing Right=XXS}" />
-                    <TextBox Grid.Column="1" x:Name="SearchBox" Text="{Binding SearchQuery, Mode=TwoWay}"
+                    <TextBox Grid.Column="1" x:Name="SearchBox" Text="{Binding Search.Query, Mode=TwoWay}"
                              PlaceholderText="{x:Static res:Strings.Search}" BorderThickness="0" Background="Transparent"
                              MinWidth="{DynamicResource Size.Library.SearchMinWidth}" VerticalAlignment="Center" />
-                    <Button Grid.Column="2" Classes="toolbar-button toolbar-button-hover" Command="{Binding ClearSearchCommand}"
-                            IsVisible="{Binding SearchQuery, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}">
+                    <Button Grid.Column="2" Classes="toolbar-button toolbar-button-hover" Command="{Binding Search.ClearCommand}"
+                            IsVisible="{Binding Search.Query, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}">
                         <svg:Svg Classes="toolbar-icon" Width="{DynamicResource Size.Icon.XS}" Height="{DynamicResource Size.Icon.XS}" Path="{DynamicResource Icon.X}" />
                     </Button>
                 </Grid>
@@ -69,7 +69,7 @@
              Gated on ShowEmptyState (NoTracks AND NOT loading), not NoTracks alone, so this
              doesn't flash up misleadingly while a remembered folder is still being (re)scanned. -->
         <StackPanel IsVisible="{Binding ShowEmptyState}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{styles:SpacingValue M}">
-            <Button Content="{x:Static res:Strings.ChooseLibraryFolder}" Command="{Binding AddFolderCommand}" HorizontalAlignment="Center" />
+            <Button Content="{x:Static res:Strings.ChooseLibraryFolder}" Command="{Binding Folders.AddFolderCommand}" HorizontalAlignment="Center" />
             <TextBlock Text="{Binding StatusMessage}" Classes="error" TextWrapping="Wrap" HorizontalAlignment="Center" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
         </StackPanel>
 

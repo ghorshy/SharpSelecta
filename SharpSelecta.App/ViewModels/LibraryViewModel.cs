@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -33,200 +31,31 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     [ObservableProperty]
     public partial string? StatusMessage { get; set; }
-    public ObservableCollection<string> LibraryFolderPaths { get; } = [];
 
-    public bool HasLibraryFolders => LibraryFolderPaths.Count > 0;
+    public LibraryFoldersViewModel Folders { get; }
 
-    public ObservableCollection<string> PendingLibraryFolderPaths { get; } = [];
+    public bool HasPendingChanges => Folders.HasPendingChanges;
 
-    public bool HasPendingLibraryFolders => PendingLibraryFolderPaths.Count > 0;
+    ICommand ISettingsCategoryViewModel.ApplyCommand => Folders.ApplyPendingChangesCommand;
 
-    public bool HasPendingChanges => !PendingLibraryFolderPaths.SequenceEqual(LibraryFolderPaths);
-
-    ICommand ISettingsCategoryViewModel.ApplyCommand => ApplyPendingFolderChangesCommand;
-
-    ICommand ISettingsCategoryViewModel.CancelCommand => CancelPendingFolderChangesCommand;
-
-    [ObservableProperty]
-    public partial bool IsTrackNumberColumnVisible { get; set; } = true;
-
-    // Columns added later are hidden until switched on (right-click the header), so an existing layout doesn't change.
-    [ObservableProperty]
-    public partial bool IsDiscNumberColumnVisible { get; set; }
-
-    [ObservableProperty]
-    public partial bool IsTitleColumnVisible { get; set; } = true;
-
-    [ObservableProperty]
-    public partial bool IsArtistColumnVisible { get; set; } = true;
-
-    [ObservableProperty]
-    public partial bool IsAlbumArtistColumnVisible { get; set; }
-
-    [ObservableProperty]
-    public partial bool IsAlbumColumnVisible { get; set; } = true;
-
-    [ObservableProperty]
-    public partial bool IsGenreColumnVisible { get; set; }
-
-    [ObservableProperty]
-    public partial bool IsLengthColumnVisible { get; set; } = true;
-
-    [ObservableProperty]
-    public partial bool IsSampleRateColumnVisible { get; set; } = true;
-
-    [ObservableProperty]
-    public partial bool IsBitDepthColumnVisible { get; set; } = true;
-
-    [ObservableProperty]
-    public partial bool IsBitrateColumnVisible { get; set; } = true;
-
-    [ObservableProperty]
-    public partial bool IsFileTypeColumnVisible { get; set; } = true;
-
-    [ObservableProperty]
-    public partial bool IsYearColumnVisible { get; set; } = true;
-
-    private IEnumerable<(string Key, Func<bool> Get, Action<bool> Set)> ColumnVisibilityBindings() =>
-    [
-        ("TrackNumber", () => IsTrackNumberColumnVisible, v => IsTrackNumberColumnVisible = v),
-        ("DiscNumber", () => IsDiscNumberColumnVisible, v => IsDiscNumberColumnVisible = v),
-        ("Title", () => IsTitleColumnVisible, v => IsTitleColumnVisible = v),
-        ("Artist", () => IsArtistColumnVisible, v => IsArtistColumnVisible = v),
-        ("AlbumArtist", () => IsAlbumArtistColumnVisible, v => IsAlbumArtistColumnVisible = v),
-        ("Album", () => IsAlbumColumnVisible, v => IsAlbumColumnVisible = v),
-        ("Genre", () => IsGenreColumnVisible, v => IsGenreColumnVisible = v),
-        ("Length", () => IsLengthColumnVisible, v => IsLengthColumnVisible = v),
-        ("SampleRate", () => IsSampleRateColumnVisible, v => IsSampleRateColumnVisible = v),
-        ("BitDepth", () => IsBitDepthColumnVisible, v => IsBitDepthColumnVisible = v),
-        ("Bitrate", () => IsBitrateColumnVisible, v => IsBitrateColumnVisible = v),
-        ("FileType", () => IsFileTypeColumnVisible, v => IsFileTypeColumnVisible = v),
-        ("Year", () => IsYearColumnVisible, v => IsYearColumnVisible = v),
-    ];
-
-    private bool AnyColumnVisible() => ColumnVisibilityBindings().Any(c => c.Get());
-
-    private void OnColumnVisibilityChanged(bool value, Action<bool> revert)
-    {
-        if (!value && !AnyColumnVisible()) { revert(true); return; }
-        SaveColumnVisibility();
-    }
-
-    partial void OnIsTrackNumberColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsTrackNumberColumnVisible = v);
-
-    partial void OnIsDiscNumberColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsDiscNumberColumnVisible = v);
-
-    partial void OnIsAlbumArtistColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsAlbumArtistColumnVisible = v);
-
-    partial void OnIsGenreColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsGenreColumnVisible = v);
-
-    partial void OnIsTitleColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsTitleColumnVisible = v);
-
-    partial void OnIsArtistColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsArtistColumnVisible = v);
-
-    partial void OnIsAlbumColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsAlbumColumnVisible = v);
-
-    partial void OnIsLengthColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsLengthColumnVisible = v);
-
-    partial void OnIsSampleRateColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsSampleRateColumnVisible = v);
-
-    partial void OnIsBitDepthColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsBitDepthColumnVisible = v);
-
-    partial void OnIsBitrateColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsBitrateColumnVisible = v);
-
-    partial void OnIsFileTypeColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsFileTypeColumnVisible = v);
-
-    partial void OnIsYearColumnVisibleChanged(bool value) => OnColumnVisibilityChanged(value, v => IsYearColumnVisible = v);
-
-    private void SaveColumnVisibility() =>
-        _settings.Update(s => s with { Columns = ColumnVisibilityBindings().ToDictionary(c => c.Key, c => c.Get()) });
-
-    private void ApplySavedColumnVisibility()
-    {
-        var columns = _settings.Current.Columns;
-        if (columns is null)
-            return;
-
-        foreach (var (key, _, set) in ColumnVisibilityBindings())
-        {
-            if (columns.TryGetValue(key, out var visible))
-            {
-                set(visible);
-            }
-        }
-    }
+    ICommand ISettingsCategoryViewModel.CancelCommand => Folders.CancelPendingChangesCommand;
 
     public BulkObservableCollection<LibraryTrackViewModel> Tracks { get; } = [];
 
     public BulkObservableCollection<LibraryTrackViewModel> DisplayedTracks { get; } = [];
 
-    private static readonly TimeSpan SearchDebounceDelay = TimeSpan.FromMilliseconds(150);
-
-    private CancellationTokenSource? _searchDebounceCts;
-
-    /// <summary>Completes once a pending debounced search rescan (see OnSearchQueryChanged) has run - for tests.</summary>
-    public Task SearchDebounceTask { get; private set; } = Task.CompletedTask;
-
-    [ObservableProperty]
-    public partial string SearchQuery { get; set; } = "";
-
-    // Debounce so fast typing doesn't rescan/rescore every track on every keystroke.
-    // Clearing is exempt - "" needs no scoring and should feel instant.
-    partial void OnSearchQueryChanged(string value)
-    {
-        _searchDebounceCts?.Cancel();
-
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            RefreshDisplayedTracks();
-            RefreshRecentlyAddedTracks();
-            SearchDebounceTask = Task.CompletedTask;
-            return;
-        }
-
-        var cts = new CancellationTokenSource();
-        _searchDebounceCts = cts;
-        SearchDebounceTask = DebounceRefreshDisplayedTracksAsync(cts.Token);
-    }
-
-    private async Task DebounceRefreshDisplayedTracksAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            await Task.Delay(SearchDebounceDelay, cancellationToken);
-        }
-        catch (TaskCanceledException)
-        {
-            return;
-        }
-
-        RefreshDisplayedTracks();
-        RefreshRecentlyAddedTracks();
-    }
-
-    [RelayCommand]
-    private void ClearSearch() => SearchQuery = "";
-
-    public event EventHandler? SearchFocusRequested;
-
-    [RelayCommand]
-    private void FocusSearch() => SearchFocusRequested?.Invoke(this, EventArgs.Empty);
-
-    // Lets the Library and Recently Added grids pick up each other's column layout changes live.
-    public event EventHandler? ColumnLayoutChanged;
-
-    public void NotifyColumnLayoutChanged() => ColumnLayoutChanged?.Invoke(this, EventArgs.Empty);
+    public LibrarySearchViewModel Search { get; } = new();
 
     private void RefreshDisplayedTracks()
     {
-        if (string.IsNullOrWhiteSpace(SearchQuery))
+        if (!Search.IsActive)
         {
             DisplayedTracks.ReplaceAll(Tracks);
             return;
         }
 
         var ranked = Tracks
-            .Select(t => (Vm: t, Score: FuzzySearch.Score(t.Track, SearchQuery)))
+            .Select(t => (Vm: t, Score: FuzzySearch.Score(t.Track, Search.Query)))
             .Where(x => x.Score is not null)
             .OrderByDescending(x => x.Score)
             .Select(x => x.Vm);
@@ -328,9 +157,9 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     private void RefreshRecentlyAddedTracks()
     {
         var newest = NewestTracks();
-        RecentlyAddedTracks.ReplaceAll(string.IsNullOrWhiteSpace(SearchQuery)
-            ? newest
-            : newest.Where(t => FuzzySearch.Score(t.Track, SearchQuery) is not null));
+        RecentlyAddedTracks.ReplaceAll(Search.IsActive
+            ? newest.Where(t => FuzzySearch.Score(t.Track, Search.Query) is not null)
+            : newest);
     }
 
     public AlbumGridViewModel Grid { get; }
@@ -338,6 +167,8 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     public AlbumGridViewModel RecentlyAddedGrid { get; }
 
     public PlaylistsViewModel Playlists { get; }
+
+    public LibraryColumnsViewModel Columns { get; }
 
     public SettingsStore Settings => _settings;
 
@@ -362,7 +193,15 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         Grid = new AlbumGridViewModel(this, settings, layout, _logger);
         RecentlyAddedGrid = new AlbumGridViewModel(this, settings, layout, _logger, allowUserSort: false, limitToRecentlyAdded: true);
         Playlists = new PlaylistsViewModel(this, settings);
+        Columns = new LibraryColumnsViewModel(settings);
+        Folders = new LibraryFoldersViewModel(filePickerService, settings, ReconcileFoldersAsync);
         ApplyAutoDjSource(settings.Current.AutoDjSourcePlaylistId);
+
+        Search.Applied += (_, _) =>
+        {
+            RefreshDisplayedTracks();
+            RefreshRecentlyAddedTracks();
+        };
 
         Tracks.CollectionChanged += (_, _) =>
         {
@@ -374,32 +213,17 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             RefreshRecentlyAddedTracks();
         };
 
-        LibraryFolderPaths.CollectionChanged += (_, _) =>
+        Folders.PropertyChanged += (_, e) =>
         {
-            OnPropertyChanged(nameof(HasLibraryFolders));
-            OnPropertyChanged(nameof(HasPendingChanges));
-            SyncPendingLibraryFolderPaths();
+            if (e.PropertyName == nameof(LibraryFoldersViewModel.HasPendingChanges))
+            {
+                OnPropertyChanged(nameof(HasPendingChanges));
+            }
         };
-
-        PendingLibraryFolderPaths.CollectionChanged += (_, _) =>
-        {
-            OnPropertyChanged(nameof(HasPendingLibraryFolders));
-            OnPropertyChanged(nameof(HasPendingChanges));
-        };
-    }
-
-    private void SyncPendingLibraryFolderPaths()
-    {
-        PendingLibraryFolderPaths.Clear();
-        foreach (var folderPath in LibraryFolderPaths)
-        {
-            PendingLibraryFolderPaths.Add(folderPath);
-        }
     }
 
     public async Task InitializeAsync()
     {
-        ApplySavedColumnVisibility();
         var saved = _settings.Current;
         ViewMode = saved.ViewMode;
         LibrarySection = saved.LibrarySection;
@@ -413,10 +237,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         var folderPaths = saved.LibraryFolderPaths;
         if (folderPaths is not null)
         {
-            foreach (var folderPath in folderPaths)
-            {
-                LibraryFolderPaths.Add(folderPath);
-            }
+            Folders.Restore(folderPaths);
 
             var hydrateStopwatch = Stopwatch.StartNew();
             var hydrated = await Task.Run(() => LibraryIndexStore.LoadIndexed(_settings.FilePath, folderPaths));
@@ -448,68 +269,18 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     }
 
     [RelayCommand]
-    private async Task AddFolderAsync()
-    {
-        var folderPath = await _filePickerService.PickLibraryFolderAsync();
-        if (folderPath is null || LibraryFolderPaths.Contains(folderPath))
-            return;
-
-        LibraryFolderPaths.Add(folderPath);
-        SaveLibraryFolderPaths();
-        await ReconcileFoldersAsync();
-    }
-
-    [RelayCommand]
-    private async Task AddPendingFolderAsync()
-    {
-        var folderPath = await _filePickerService.PickLibraryFolderAsync();
-        if (folderPath is null || PendingLibraryFolderPaths.Contains(folderPath))
-            return;
-
-        PendingLibraryFolderPaths.Add(folderPath);
-    }
-
-    [RelayCommand]
-    private void RemovePendingFolder(string folderPath) => PendingLibraryFolderPaths.Remove(folderPath);
-
-    [RelayCommand]
-    private async Task ApplyPendingFolderChangesAsync()
-    {
-        if (!HasPendingChanges)
-            return;
-
-        // ToList() snapshots before Clear() re-syncs PendingLibraryFolderPaths as a side effect.
-        var folderPaths = PendingLibraryFolderPaths.ToList();
-
-        LibraryFolderPaths.Clear();
-        foreach (var folderPath in folderPaths)
-        {
-            LibraryFolderPaths.Add(folderPath);
-        }
-
-        SaveLibraryFolderPaths();
-        await ReconcileFoldersAsync();
-    }
-
-    private void SaveLibraryFolderPaths() =>
-        _settings.Update(s => s with { LibraryFolderPaths = LibraryFolderPaths.ToList() });
-
-    [RelayCommand]
-    private void CancelPendingFolderChanges() => SyncPendingLibraryFolderPaths();
-
-    [RelayCommand]
     private Task RescanAsync() => ReconcileFoldersAsync();
 
     private async Task ReconcileFoldersAsync()
     {
-        if (LibraryFolderPaths.Count == 0)
+        if (!Folders.HasFolders)
         {
             Tracks.ReplaceAll([]);
             StatusMessage = null;
             return;
         }
 
-        var folderPaths = LibraryFolderPaths.ToList();
+        var folderPaths = Folders.Paths.ToList();
         var showSpinner = Tracks.Count == 0;
         if (showSpinner)
         {

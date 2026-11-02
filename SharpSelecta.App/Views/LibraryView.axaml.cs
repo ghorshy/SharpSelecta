@@ -27,7 +27,7 @@ public partial class LibraryView : UserControl
         if (DataContext is not LibraryViewModel vm)
             return;
 
-        vm.SearchFocusRequested += (_, _) =>
+        vm.Search.FocusRequested += (_, _) =>
         {
             SearchBox.Focus();
             SearchBox.SelectAll();

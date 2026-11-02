@@ -16,6 +16,6 @@ public partial class LibrarySettingsView : UserControl
         if (!RowClickHelper.TryGetRowContext<string, LibraryViewModel>(sender, DataContext, out var folderPath, out var vm))
             return;
 
-        vm.RemovePendingFolderCommand.Execute(folderPath);
+        vm.Folders.RemovePendingFolderCommand.Execute(folderPath);
     }
 }

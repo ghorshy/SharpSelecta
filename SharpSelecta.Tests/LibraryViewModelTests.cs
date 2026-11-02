@@ -57,59 +57,10 @@ public class LibraryViewModelTests
             File.WriteAllBytes(Path.Combine(root.FullName, "song.mp3"), []);
             filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
 
-            await vm.AddFolderCommand.ExecuteAsync(null);
+            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
 
             await Assert.That(vm.Tracks.Count).IsEqualTo(1);
             await Assert.That(vm.Tracks[0].Track.FilePath).IsEqualTo(Path.Combine(root.FullName, "song.mp3"));
-        }
-        finally
-        {
-            root.Delete(recursive: true);
-        }
-    }
-
-    [Test]
-    public async Task HasLibraryFolders_WhenNothingAdded_IsFalse()
-    {
-        var vm = CreateViewModel(out _, out _, out _);
-
-        await Assert.That(vm.LibraryFolderPaths).IsEmpty();
-        await Assert.That(vm.HasLibraryFolders).IsFalse();
-    }
-
-    [Test]
-    public async Task AddFolderCommand_WhenFolderSelected_AddsToLibraryFolderPaths()
-    {
-        var vm = CreateViewModel(out _, out var filePickerService, out _);
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
-        try
-        {
-            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
-
-            await vm.AddFolderCommand.ExecuteAsync(null);
-
-            await Assert.That(vm.LibraryFolderPaths).IsEquivalentTo([root.FullName]);
-            await Assert.That(vm.HasLibraryFolders).IsTrue();
-        }
-        finally
-        {
-            root.Delete(recursive: true);
-        }
-    }
-
-    [Test]
-    public async Task AddFolderCommand_WhenFolderAlreadyAdded_DoesNotAddDuplicate()
-    {
-        var vm = CreateViewModel(out _, out var filePickerService, out _);
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
-        try
-        {
-            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
-
-            await vm.AddFolderCommand.ExecuteAsync(null);
-            await vm.AddFolderCommand.ExecuteAsync(null);
-
-            await Assert.That(vm.LibraryFolderPaths).IsEquivalentTo([root.FullName]);
         }
         finally
         {
@@ -129,9 +80,9 @@ public class LibraryViewModelTests
             File.WriteAllBytes(Path.Combine(rootB.FullName, "songB.mp3"), []);
 
             filePickerService.PickLibraryFolderAsync().Returns(rootA.FullName);
-            await vm.AddFolderCommand.ExecuteAsync(null);
+            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
             filePickerService.PickLibraryFolderAsync().Returns(rootB.FullName);
-            await vm.AddFolderCommand.ExecuteAsync(null);
+            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
 
             await Assert.That(vm.Tracks.Count).IsEqualTo(2);
             await Assert.That(vm.Tracks.Select(t => t.Track.FilePath)).Contains(Path.Combine(rootA.FullName, "songA.mp3"));
@@ -153,7 +104,7 @@ public class LibraryViewModelTests
         {
             File.WriteAllBytes(Path.Combine(root.FullName, "songA.mp3"), []);
             filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
-            await vm.AddFolderCommand.ExecuteAsync(null);
+            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
             await Assert.That(vm.Tracks.Count).IsEqualTo(1);
 
             File.WriteAllBytes(Path.Combine(root.FullName, "songB.mp3"), []);
@@ -179,14 +130,14 @@ public class LibraryViewModelTests
             File.WriteAllBytes(Path.Combine(rootB.FullName, "songB.mp3"), []);
 
             filePickerService.PickLibraryFolderAsync().Returns(rootA.FullName);
-            await vm.AddFolderCommand.ExecuteAsync(null);
+            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
             filePickerService.PickLibraryFolderAsync().Returns(rootB.FullName);
-            await vm.AddFolderCommand.ExecuteAsync(null);
+            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
 
-            vm.RemovePendingFolderCommand.Execute(rootA.FullName);
-            await vm.ApplyPendingFolderChangesCommand.ExecuteAsync(null);
+            vm.Folders.RemovePendingFolderCommand.Execute(rootA.FullName);
+            await vm.Folders.ApplyPendingChangesCommand.ExecuteAsync(null);
 
-            await Assert.That(vm.LibraryFolderPaths).IsEquivalentTo([rootB.FullName]);
+            await Assert.That(vm.Folders.Paths).IsEquivalentTo([rootB.FullName]);
             await Assert.That(vm.Tracks.Count).IsEqualTo(1);
             await Assert.That(vm.Tracks[0].Track.FilePath).IsEqualTo(Path.Combine(rootB.FullName, "songB.mp3"));
         }
@@ -206,11 +157,11 @@ public class LibraryViewModelTests
         {
             File.WriteAllBytes(Path.Combine(root.FullName, "songA.mp3"), []);
             filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
-            await vm.AddFolderCommand.ExecuteAsync(null);
+            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
             await Assert.That(vm.Tracks.Count).IsEqualTo(1);
 
             File.WriteAllBytes(Path.Combine(root.FullName, "songB.mp3"), []);
-            await vm.ApplyPendingFolderChangesCommand.ExecuteAsync(null);
+            await vm.Folders.ApplyPendingChangesCommand.ExecuteAsync(null);
 
             await Assert.That(vm.Tracks.Count).IsEqualTo(1);
         }
@@ -229,58 +180,14 @@ public class LibraryViewModelTests
         {
             File.WriteAllBytes(Path.Combine(root.FullName, "song.mp3"), []);
             filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
-            await vm.AddFolderCommand.ExecuteAsync(null);
+            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
 
-            vm.RemovePendingFolderCommand.Execute(root.FullName);
-            await vm.ApplyPendingFolderChangesCommand.ExecuteAsync(null);
+            vm.Folders.RemovePendingFolderCommand.Execute(root.FullName);
+            await vm.Folders.ApplyPendingChangesCommand.ExecuteAsync(null);
 
-            await Assert.That(vm.LibraryFolderPaths).IsEmpty();
+            await Assert.That(vm.Folders.Paths).IsEmpty();
             await Assert.That(vm.Tracks).IsEmpty();
-            await Assert.That(vm.HasLibraryFolders).IsFalse();
-        }
-        finally
-        {
-            root.Delete(recursive: true);
-        }
-    }
-
-    [Test]
-    public async Task RemovePendingFolderCommand_BeforeApply_DoesNotChangeLibraryFolderPaths()
-    {
-        var vm = CreateViewModel(out _, out var filePickerService, out _);
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
-        try
-        {
-            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
-            await vm.AddFolderCommand.ExecuteAsync(null);
-
-            vm.RemovePendingFolderCommand.Execute(root.FullName);
-
-            await Assert.That(vm.LibraryFolderPaths).IsEquivalentTo([root.FullName]);
-            await Assert.That(vm.PendingLibraryFolderPaths).IsEmpty();
-            await Assert.That(vm.HasPendingChanges).IsTrue();
-        }
-        finally
-        {
-            root.Delete(recursive: true);
-        }
-    }
-
-    [Test]
-    public async Task CancelPendingFolderChangesCommand_DiscardsPendingRemoval()
-    {
-        var vm = CreateViewModel(out _, out var filePickerService, out _);
-        var root = Directory.CreateTempSubdirectory("sharpselecta-library-vm-tests-");
-        try
-        {
-            filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
-            await vm.AddFolderCommand.ExecuteAsync(null);
-
-            vm.RemovePendingFolderCommand.Execute(root.FullName);
-            vm.CancelPendingFolderChangesCommand.Execute(null);
-
-            await Assert.That(vm.PendingLibraryFolderPaths).IsEquivalentTo([root.FullName]);
-            await Assert.That(vm.HasPendingChanges).IsFalse();
+            await Assert.That(vm.Folders.HasFolders).IsFalse();
         }
         finally
         {
@@ -294,7 +201,7 @@ public class LibraryViewModelTests
         var vm = CreateViewModel(out _, out var filePickerService, out _);
         filePickerService.PickLibraryFolderAsync().Returns((string?)null);
 
-        await vm.AddFolderCommand.ExecuteAsync(null);
+        await vm.Folders.AddFolderCommand.ExecuteAsync(null);
 
         await Assert.That(vm.Tracks).IsEmpty();
     }
@@ -305,7 +212,7 @@ public class LibraryViewModelTests
         var vm = CreateViewModel(out _, out var filePickerService, out _);
         filePickerService.PickLibraryFolderAsync().Returns("/no/such/folder");
 
-        await vm.AddFolderCommand.ExecuteAsync(null);
+        await vm.Folders.AddFolderCommand.ExecuteAsync(null);
 
         await Assert.That(vm.StatusMessage).IsNotNull();
     }
@@ -323,7 +230,7 @@ public class LibraryViewModelTests
             File.WriteAllBytes(Path.Combine(root.FullName, "song.mp3"), []);
             filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
 
-            await vm.AddFolderCommand.ExecuteAsync(null);
+            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
 
             await Assert.That(vm.HasTracks).IsTrue();
             await Assert.That(vm.NoTracks).IsFalse();
@@ -346,7 +253,7 @@ public class LibraryViewModelTests
             {
                 filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
 
-                await vm.AddFolderCommand.ExecuteAsync(null);
+                await vm.Folders.AddFolderCommand.ExecuteAsync(null);
 
                 await Assert.That(new SettingsStore(settingsPath).Current.LibraryFolderPaths).IsEquivalentTo([root.FullName]);
             }
@@ -489,14 +396,14 @@ public class LibraryViewModelTests
         try
         {
             filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
-            await vm.AddFolderCommand.ExecuteAsync(null);
-            vm.RemovePendingFolderCommand.Execute(root.FullName);
+            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
+            vm.Folders.RemovePendingFolderCommand.Execute(root.FullName);
 
             await Assert.That(category.HasPendingChanges).IsTrue();
 
             await ((IAsyncRelayCommand)category.ApplyCommand).ExecuteAsync(null);
 
-            await Assert.That(vm.LibraryFolderPaths).IsEmpty();
+            await Assert.That(vm.Folders.Paths).IsEmpty();
             await Assert.That(category.HasPendingChanges).IsFalse();
         }
         finally
@@ -514,18 +421,31 @@ public class LibraryViewModelTests
         try
         {
             filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
-            await vm.AddFolderCommand.ExecuteAsync(null);
-            vm.RemovePendingFolderCommand.Execute(root.FullName);
+            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
+            vm.Folders.RemovePendingFolderCommand.Execute(root.FullName);
 
             category.CancelCommand.Execute(null);
 
-            await Assert.That(vm.PendingLibraryFolderPaths).IsEquivalentTo([root.FullName]);
+            await Assert.That(vm.Folders.PendingPaths).IsEquivalentTo([root.FullName]);
             await Assert.That(category.HasPendingChanges).IsFalse();
         }
         finally
         {
             root.Delete(recursive: true);
         }
+    }
+
+    [Test]
+    public async Task ISettingsCategoryViewModel_HasPendingChanges_NotifiesWhenTheFoldersChange()
+    {
+        var vm = CreateViewModel(out _, out _, out _);
+        vm.Folders.Restore(["/music"]);
+        var raised = new List<string?>();
+        vm.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        vm.Folders.RemovePendingFolderCommand.Execute("/music");
+
+        await Assert.That(raised).Contains(nameof(ISettingsCategoryViewModel.HasPendingChanges));
     }
 
     [Test]
@@ -779,7 +699,7 @@ public class LibraryViewModelTests
         var (vm, _, tracks, settingsPath, root) = CreatePlaylistWithTracks(3);
         try
         {
-            vm.LibraryFolderPaths.Add(root.FullName);
+            vm.Folders.Paths.Add(root.FullName);
             await vm.RescanCommand.ExecuteAsync(null);
             await Assert.That(vm.Tracks.Count).IsEqualTo(3);
             await Assert.That(vm.Playlists.Tracks.Count(t => t.IsMissing)).IsEqualTo(0);
@@ -945,60 +865,6 @@ public class LibraryViewModelTests
         {
             File.Delete(settingsPath);
             root.Delete(recursive: true);
-        }
-    }
-
-    [Test]
-    public async Task HidingEveryColumn_LeavesTheLastOneVisible()
-    {
-        var vm = CreateViewModel(out _, out _, out _);
-
-        vm.IsTrackNumberColumnVisible = false;
-        vm.IsTitleColumnVisible = false;
-        vm.IsArtistColumnVisible = false;
-        vm.IsAlbumColumnVisible = false;
-        vm.IsLengthColumnVisible = false;
-        vm.IsSampleRateColumnVisible = false;
-        vm.IsBitDepthColumnVisible = false;
-        vm.IsBitrateColumnVisible = false;
-        vm.IsFileTypeColumnVisible = false;
-        vm.IsYearColumnVisible = false;
-
-        await Assert.That(vm.IsYearColumnVisible).IsTrue();
-    }
-
-    [Test]
-    public async Task HidingAColumn_WhileAnotherIsStillVisible_Succeeds()
-    {
-        var vm = CreateViewModel(out _, out _, out _);
-
-        vm.IsTrackNumberColumnVisible = false;
-
-        await Assert.That(vm.IsTrackNumberColumnVisible).IsFalse();
-        await Assert.That(vm.IsTitleColumnVisible).IsTrue();
-    }
-
-    [Test]
-    public async Task ColumnVisibility_PersistsAcrossInstancesForTheSameSettingsFile()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            var vm = CreateViewModel(out _, out _, out _, settingsPath);
-            vm.IsArtistColumnVisible = false;
-            vm.IsYearColumnVisible = false;
-
-            var restarted = CreateViewModel(out _, out _, out _, settingsPath);
-            await restarted.InitializeAsync();
-
-            await Assert.That(restarted.IsArtistColumnVisible).IsFalse();
-            await Assert.That(restarted.IsYearColumnVisible).IsFalse();
-            await Assert.That(restarted.IsTitleColumnVisible).IsTrue();
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-            File.Delete(IndexFilePath(settingsPath));
         }
     }
 
@@ -1261,8 +1127,8 @@ public class LibraryViewModelTests
             .ToList();
         vm.Tracks.ReplaceAll(tracks);
 
-        vm.SearchQuery = "zxqvkj";
-        await vm.SearchDebounceTask;
+        vm.Search.Query = "zxqvkj";
+        await vm.Search.DebounceTask;
 
         await Assert.That(vm.RecentlyAddedTracks).IsEmpty();
         await Assert.That(vm.DisplayedTracks.Count).IsEqualTo(1); // the library view still finds it
@@ -1307,8 +1173,8 @@ public class LibraryViewModelTests
         vm.Tracks.Add(new LibraryTrackViewModel(new Track("/music/b.mp3", "b.mp3") { Title = "No Woman No Cry", Artist = "Bob Marley", DateAddedUtc = now.AddDays(-1) }, vm));
         vm.Tracks.Add(new LibraryTrackViewModel(new Track("/music/c.mp3", "c.mp3") { Title = "Live Forever", Artist = "Oasis", DateAddedUtc = now }, vm));
 
-        vm.SearchQuery = "oasis";
-        await vm.SearchDebounceTask;
+        vm.Search.Query = "oasis";
+        await vm.Search.DebounceTask;
 
         await Assert.That(vm.RecentlyAddedTracks.Count).IsEqualTo(2);
         await Assert.That(vm.RecentlyAddedTracks[0].Track.FilePath).IsEqualTo("/music/c.mp3");
@@ -1343,32 +1209,6 @@ public class LibraryViewModelTests
     }
 
     [Test]
-    public async Task NewerColumns_AreHiddenByDefault_AndTheirVisibilityIsRemembered()
-    {
-        var settingsPath = CreateTempSettingsPath();
-        try
-        {
-            var vm = CreateViewModel(out _, out _, out _, settingsPath);
-            await Assert.That(vm.IsGenreColumnVisible).IsFalse();
-            await Assert.That(vm.IsAlbumArtistColumnVisible).IsFalse();
-            await Assert.That(vm.IsDiscNumberColumnVisible).IsFalse();
-
-            vm.IsGenreColumnVisible = true;
-            vm.IsAlbumArtistColumnVisible = true;
-            vm.IsDiscNumberColumnVisible = true;
-
-            var saved = new SettingsStore(settingsPath).Current.Columns!;
-            await Assert.That(saved["Genre"]).IsTrue();
-            await Assert.That(saved["AlbumArtist"]).IsTrue();
-            await Assert.That(saved["DiscNumber"]).IsTrue();
-        }
-        finally
-        {
-            File.Delete(settingsPath);
-        }
-    }
-
-    [Test]
     public async Task IsLoadingLibrary_IsFalseAfterFoldersFinishLoading()
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);
@@ -1377,7 +1217,7 @@ public class LibraryViewModelTests
         {
             filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
 
-            await vm.AddFolderCommand.ExecuteAsync(null);
+            await vm.Folders.AddFolderCommand.ExecuteAsync(null);
 
             await Assert.That(vm.IsLoadingLibrary).IsFalse();
         }
@@ -1432,8 +1272,8 @@ public class LibraryViewModelTests
         AddTrack(vm, "/music/b.mp3", "Legend", "Bob Marley", title: "No Woman No Cry");
         AddTrack(vm, "/music/c.mp3", "Some Album", "Some Artist", title: "Unrelated Song");
 
-        vm.SearchQuery = "oasis";
-        await vm.SearchDebounceTask;
+        vm.Search.Query = "oasis";
+        await vm.Search.DebounceTask;
 
         await Assert.That(vm.DisplayedTracks.Count).IsEqualTo(1);
         await Assert.That(vm.DisplayedTracks[0].Track.FilePath).IsEqualTo("/music/a.mp3");
@@ -1444,8 +1284,8 @@ public class LibraryViewModelTests
     {
         var vm = CreateViewModel(out _, out _, out _);
         AddTrack(vm, "/music/a.mp3", "Morning Glory", "Oasis", title: "Wonderwall");
-        vm.SearchQuery = "oasis";
-        await vm.SearchDebounceTask;
+        vm.Search.Query = "oasis";
+        await vm.Search.DebounceTask;
         await Assert.That(vm.DisplayedTracks.Count).IsEqualTo(1);
 
         AddTrack(vm, "/music/b.mp3", "Definitely Maybe", "Oasis", title: "Live Forever");
@@ -1454,41 +1294,17 @@ public class LibraryViewModelTests
     }
 
     [Test]
-    public async Task ClearSearchCommand_ResetsSearchQueryAndRestoresAllTracks()
+    public async Task ClearingTheSearch_RestoresAllTracks()
     {
         var vm = CreateViewModel(out _, out _, out _);
         AddTrack(vm, "/music/a.mp3", "Morning Glory", "Oasis", title: "Wonderwall");
         AddTrack(vm, "/music/b.mp3", "Legend", "Bob Marley", title: "No Woman No Cry");
-        vm.SearchQuery = "oasis";
+        vm.Search.Query = "oasis";
 
-        vm.ClearSearchCommand.Execute(null);
+        vm.Search.ClearCommand.Execute(null);
 
-        await Assert.That(vm.SearchQuery).IsEqualTo("");
+        await Assert.That(vm.Search.Query).IsEqualTo("");
         await Assert.That(vm.DisplayedTracks.Count).IsEqualTo(2);
-    }
-
-    [Test]
-    public async Task FocusSearchCommand_RaisesSearchFocusRequested()
-    {
-        var vm = CreateViewModel(out _, out _, out _);
-        var raised = false;
-        vm.SearchFocusRequested += (_, _) => raised = true;
-
-        vm.FocusSearchCommand.Execute(null);
-
-        await Assert.That(raised).IsTrue();
-    }
-
-    [Test]
-    public async Task NotifyColumnLayoutChanged_RaisesColumnLayoutChanged()
-    {
-        var vm = CreateViewModel(out _, out _, out _);
-        var raised = false;
-        vm.ColumnLayoutChanged += (_, _) => raised = true;
-
-        vm.NotifyColumnLayoutChanged();
-
-        await Assert.That(raised).IsTrue();
     }
 
     [Test]

@@ -116,7 +116,7 @@ public sealed partial class TrackListView : UserControl
 
         ApplyColumnLayout(vm);
         vm.Tracks.CollectionChanged += (_, _) => ApplySavedSort(vm);
-        vm.ColumnLayoutChanged += (_, _) => ApplyColumnLayout(vm);
+        vm.Columns.LayoutChanged += (_, _) => ApplyColumnLayout(vm);
     }
 
     private void ApplyColumnLayout(LibraryViewModel vm)
@@ -172,7 +172,7 @@ public sealed partial class TrackListView : UserControl
             .ToList();
 
         vm.Settings.Update(s => s with { ColumnOrder = orderedKeys });
-        vm.NotifyColumnLayoutChanged();
+        vm.Columns.NotifyLayoutChanged();
     }
 
     private void OnColumnPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
@@ -197,7 +197,7 @@ public sealed partial class TrackListView : UserControl
                 .ToDictionary(c => (string)c.Tag!, c => c.Width.Value);
 
             vm.Settings.Update(s => s with { ColumnWidths = widths });
-            vm.NotifyColumnLayoutChanged();
+            vm.Columns.NotifyLayoutChanged();
         }
     }
 
