@@ -20,6 +20,8 @@ public sealed record TrackCredits(string? Remixer, string? Composer, string? Con
     // Remixer has no native tag, so it uses each format's conventional free-form field (see CreditFields).
     public static TrackCredits Read(string filePath)
     {
+        AtlConfiguration.Ensure();
+
         try
         {
             var atlTrack = new AtlTrack(filePath);
@@ -29,7 +31,7 @@ public sealed record TrackCredits(string? Remixer, string? Composer, string? Con
                 CreditFields.NullIfBlank(atlTrack.Conductor),
                 CreditFields.NullIfBlank(atlTrack.Lyricist));
         }
-        catch (Exception)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return None;
         }

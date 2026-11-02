@@ -38,6 +38,8 @@ public static class TrackTagEditor
             Path.GetDirectoryName(filePath) ?? "",
             $".{Path.GetFileNameWithoutExtension(filePath)}.{Guid.NewGuid():N}.tmp{Path.GetExtension(filePath)}");
 
+        AtlConfiguration.Ensure();
+
         try
         {
             File.Copy(filePath, tempPath);

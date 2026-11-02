@@ -6,13 +6,6 @@ public static class MusicLibraryScanner
 {
     internal static readonly string[] SupportedExtensions = [".mp3", ".flac", ".wav", ".m4a", ".ogg", ".aiff", ".aif"];
 
-    static MusicLibraryScanner()
-    {
-        // Otherwise ATL reports the file name as Title for untitled files, which the tag editor
-        // would then show (and write back) as if it were a real tag.
-        ATL.Settings.UseFileNameWhenNoTitle = false;
-    }
-
     public static IReadOnlyList<Track> Scan(string folderPath)
     {
         return Directory.EnumerateFiles(folderPath, "*.*", SearchOption.AllDirectories)
@@ -26,6 +19,7 @@ public static class MusicLibraryScanner
 
     internal static Track ReadTrack(string path)
     {
+        AtlConfiguration.Ensure();
         var fileName = Path.GetFileName(path);
         var fileType = FileTypeOf(path);
 
@@ -54,7 +48,7 @@ public static class MusicLibraryScanner
                 FileType = fileType,
             };
         }
-        catch (Exception)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return new Track(path, fileName) { FileType = fileType };
         }
@@ -85,6 +79,8 @@ public static class MusicLibraryScanner
     // Embedded art wins; a cover file in the track's folder is the fallback.
     public static ArtworkResult? LoadArtworkWithSource(string filePath)
     {
+        AtlConfiguration.Ensure();
+
         try
         {
             var embedded = new AtlTrack(filePath).EmbeddedPictures.FirstOrDefault()?.PictureData;
@@ -97,7 +93,7 @@ public static class MusicLibraryScanner
                 ? new ArtworkResult(File.ReadAllBytes(coverPath), IsSeparateFile: true)
                 : null;
         }
-        catch (Exception)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return null;
         }

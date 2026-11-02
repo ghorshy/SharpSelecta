@@ -134,4 +134,23 @@ public class TrackCreditsTests
             dir.Delete(recursive: true);
         }
     }
+
+    [Test]
+    public async Task Read_OnAFileWithoutReadPermission_ReturnsNoCredits()
+    {
+        Skip.When(!OperatingSystem.IsLinux() || Environment.UserName == "root", "Unix permissions, non-root");
+        var dir = Directory.CreateTempSubdirectory("sharpselecta-credits-tests-");
+        try
+        {
+            var path = Path.Combine(dir.FullName, "locked.mp3");
+            File.WriteAllBytes(path, [1, 2, 3]);
+            File.SetUnixFileMode(path, UnixFileMode.None);
+
+            await Assert.That(TrackCredits.Read(path)).IsEqualTo(TrackCredits.None);
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
 }

@@ -88,6 +88,38 @@ public class MusicLibraryScannerTests
     }
 
     [Test]
+    public async Task ReadTrack_OnAFileWithoutReadPermission_FallsBackToFilenameOnly()
+    {
+        Skip.When(!OperatingSystem.IsLinux() || Environment.UserName == "root", "Unix permissions, non-root");
+        var root = Directory.CreateTempSubdirectory("sharpselecta-library-tests-");
+        try
+        {
+            var path = Path.Combine(root.FullName, "locked.mp3");
+            File.WriteAllBytes(path, [1, 2, 3]);
+            File.SetUnixFileMode(path, UnixFileMode.None);
+
+            var track = MusicLibraryScanner.ReadTrackIfExists(path)!;
+
+            await Assert.That(track.DisplayName).IsEqualTo("locked.mp3");
+            await Assert.That(track.FileType).IsEqualTo("MP3");
+            await Assert.That(MusicLibraryScanner.LoadArtworkWithSource(path)).IsNull();
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task AtlConfiguration_DisablesFileNameAsTitleAndConsoleStackTraces()
+    {
+        AtlConfiguration.Ensure();
+
+        await Assert.That(ATL.Settings.UseFileNameWhenNoTitle).IsFalse();
+        await Assert.That(ATL.Settings.OutputStacktracesToConsole).IsFalse();
+    }
+
+    [Test]
     public async Task Scan_ReadsTagsAndAudioPropertiesFromARealFile()
     {
         var root = Directory.CreateTempSubdirectory("sharpselecta-library-tests-");
