@@ -4,7 +4,6 @@ using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
 using System;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,11 +19,9 @@ using SharpSelecta.App.Services.Mpris;
 using SharpSelecta.App.ViewModels;
 using SharpSelecta.App.Views;
 using SharpSelecta.Audio;
-using SharpSelecta.Core.AlbumArt;
 using SharpSelecta.Core.Audio;
 using SharpSelecta.Core.Conversion;
 using SharpSelecta.Core.Presence;
-using SharpSelecta.Core.Updates;
 using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App;
@@ -65,23 +62,11 @@ public partial class App : Application
             services.AddSingleton<IFilePickerService>(new AvaloniaFilePickerService(mainWindow));
             services.AddSingleton<IFileManagerShell, SystemFileManagerShell>();
             services.AddSingleton<IFileManagerService, FileManagerService>();
+            services.AddViewModels(settings, ThemeLayout.From(this));
             var provider = services.BuildServiceProvider();
 
             var audioEngine = provider.GetRequiredService<IAudioEngine>();
-
-            var mainWindowViewModel = new MainWindowViewModel(
-                audioEngine,
-                provider.GetRequiredService<IOutputDeviceService>(),
-                provider.GetRequiredService<IFilePickerService>(),
-                provider.GetRequiredService<IFileManagerService>(),
-                settings,
-                ThemeLayout.From(this),
-                provider.GetRequiredService<ILogger<PlaybackControlsViewModel>>(),
-                provider.GetRequiredService<ILogger<LibraryViewModel>>(),
-                provider.GetRequiredService<ILogger<QueueViewModel>>(),
-                provider.GetServices<IAlbumArtProvider>().ToList(),
-                provider.GetRequiredService<TrackConversionService>(),
-                new UpdatesViewModel(settings, provider.GetRequiredService<IUpdateService>(), provider.GetRequiredService<ILogger<UpdatesViewModel>>()));
+            var mainWindowViewModel = provider.GetRequiredService<MainWindowViewModel>();
             mainWindow.DataContext = mainWindowViewModel;
             desktop.MainWindow = mainWindow;
 

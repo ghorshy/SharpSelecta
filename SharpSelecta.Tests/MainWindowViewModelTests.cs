@@ -1,7 +1,5 @@
 using Avalonia.Controls;
-using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
-using SharpSelecta.App.Services;
 using SharpSelecta.App.ViewModels;
 using SharpSelecta.Core.Audio;
 using SharpSelecta.Core.Library;
@@ -16,24 +14,15 @@ public class MainWindowViewModelTests
     private static string QueueStateFilePath(string settingsPath) =>
         Path.Combine(Path.GetDirectoryName(settingsPath)!, $"{Path.GetFileNameWithoutExtension(settingsPath)}.queue-state.json");
 
-    private static readonly int[] StandardEqualizerFrequencies = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+    private static MainWindowViewModel CreateViewModel(out IAudioEngine audioEngine, string? settingsFilePath = null) =>
+        TestMainWindowViewModel.Create(settingsFilePath ?? CreateTempSettingsPath(), out audioEngine);
 
-    private static MainWindowViewModel CreateViewModel(out IAudioEngine audioEngine, string? settingsFilePath = null)
+    [Test]
+    public async Task Updates_IsUnsupportedWhenNoUpdateServiceIsRegistered()
     {
-        audioEngine = Substitute.For<IAudioEngine>();
-        audioEngine.EqualizerBandFrequenciesHz.Returns(StandardEqualizerFrequencies);
-        audioEngine.EqualizerBandGainsDb.Returns(new float[10]);
-        var filePickerService = Substitute.For<IFilePickerService>();
-        return new MainWindowViewModel(
-            audioEngine,
-            Substitute.For<IOutputDeviceService>(),
-            filePickerService,
-            Substitute.For<IFileManagerService>(),
-            new SettingsStore(settingsFilePath ?? CreateTempSettingsPath()),
-            TestThemeLayout.Default,
-            NullLogger<PlaybackControlsViewModel>.Instance,
-            NullLogger<LibraryViewModel>.Instance,
-            NullLogger<QueueViewModel>.Instance);
+        var vm = CreateViewModel(out _);
+
+        await Assert.That(vm.Updates.IsSupported).IsFalse();
     }
 
     [Test]

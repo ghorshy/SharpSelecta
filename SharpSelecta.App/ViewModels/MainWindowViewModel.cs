@@ -5,13 +5,8 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using SharpSelecta.App.Services;
 using SharpSelecta.App.Styles;
-using SharpSelecta.Core.AlbumArt;
-using SharpSelecta.Core.Audio;
-using SharpSelecta.Core.Conversion;
 using SharpSelecta.Core.Library;
 using SharpSelecta.Core.Playback;
 
@@ -43,31 +38,28 @@ public partial class MainWindowViewModel : ViewModelBase
     public partial GridLength RightColumnWidth { get; set; }
 
     public MainWindowViewModel(
-        IAudioEngine audioEngine,
-        IOutputDeviceService outputDeviceService,
-        IFilePickerService filePickerService,
-        IFileManagerService fileManagerService,
         SettingsStore settings,
         ThemeLayout layout,
-        ILogger<PlaybackControlsViewModel> playbackControlsLogger,
-        ILogger<LibraryViewModel> libraryLogger,
-        ILogger<QueueViewModel> queueLogger,
-        IReadOnlyList<IAlbumArtProvider>? albumArtProviders = null,
-        TrackConversionService? conversionService = null,
-        UpdatesViewModel? updates = null)
+        PlaybackControlsViewModel playbackControls,
+        LibraryViewModel library,
+        QueueViewModel queue,
+        PlaybackSettingsViewModel playbackSettings,
+        InterfaceSettingsViewModel interfaceSettings,
+        IntegrationsSettingsViewModel integrations,
+        UpdatesViewModel updates,
+        ShortcutSettingsService shortcutSettings,
+        EqualizerViewModel equalizer)
     {
         _settings = settings;
-
-        var queue = new PlaybackQueue();
-        PlaybackControls = new PlaybackControlsViewModel(audioEngine, queue, settings, playbackControlsLogger);
-        Library = new LibraryViewModel(filePickerService, PlaybackControls, fileManagerService, settings, layout, libraryLogger, albumArtProviders, conversionService);
-        Queue = new QueueViewModel(PlaybackControls, queueLogger);
-        PlaybackSettings = new PlaybackSettingsViewModel(settings, outputDeviceService, PlaybackControls);
-        InterfaceSettings = new InterfaceSettingsViewModel(settings, filePickerService);
-        Integrations = new IntegrationsSettingsViewModel(settings);
-        Updates = updates ?? new UpdatesViewModel(settings, null, NullLogger.Instance);
-        ShortcutSettings = new ShortcutSettingsService(settings);
-        Equalizer = new EqualizerViewModel(settings, audioEngine);
+        PlaybackControls = playbackControls;
+        Library = library;
+        Queue = queue;
+        PlaybackSettings = playbackSettings;
+        InterfaceSettings = interfaceSettings;
+        Integrations = integrations;
+        Updates = updates;
+        ShortcutSettings = shortcutSettings;
+        Equalizer = equalizer;
         RightColumnWidth = new GridLength(settings.Current.RightColumnWidth ?? layout.RightColumnWidth);
     }
 
