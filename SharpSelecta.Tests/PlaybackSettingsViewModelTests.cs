@@ -48,7 +48,7 @@ public class PlaybackSettingsViewModelTests
             await Assert.That(new SettingsStore(settingsPath).Current.VolumeCurve).IsEqualTo(VolumeCurve.Linear);
             await Assert.That(new SettingsStore(settingsPath).Current.SeekStepSeconds).IsEqualTo(5);
             await Assert.That(playbackControls.SeekStepSeconds).IsEqualTo(5);
-            await Assert.That(playbackControls.VolumeCurve).IsEqualTo(VolumeCurve.Linear);
+            await Assert.That(playbackControls.Volume.Curve).IsEqualTo(VolumeCurve.Linear);
         }
         finally
         {
@@ -79,11 +79,11 @@ public class PlaybackSettingsViewModelTests
             await outputDeviceService.Received(1).SetOutputDeviceAsync("Focusrite Scarlett 2i2");
             await Assert.That(new SettingsStore(settingsPath).Current.OutputDeviceName).IsEqualTo("Focusrite Scarlett 2i2");
             await Assert.That(new SettingsStore(settingsPath).Current.VolumeCurve).IsEqualTo(VolumeCurve.Logarithmic);
-            await Assert.That(playbackControls.VolumeCurve).IsEqualTo(VolumeCurve.Logarithmic);
+            await Assert.That(playbackControls.Volume.Curve).IsEqualTo(VolumeCurve.Logarithmic);
             await Assert.That(new SettingsStore(settingsPath).Current.SeekStepSeconds).IsEqualTo(8);
             await Assert.That(playbackControls.SeekStepSeconds).IsEqualTo(8);
             await Assert.That(new SettingsStore(settingsPath).Current.UseWaveformSlider).IsTrue();
-            await Assert.That(playbackControls.UseWaveformSlider).IsTrue();
+            await Assert.That(playbackControls.Waveform.UseSlider).IsTrue();
             await Assert.That(new SettingsStore(settingsPath).Current.RestoreQueueOnStartup).IsFalse();
             await Assert.That(settingsVm.HasPendingChanges).IsFalse();
         }
@@ -210,18 +210,16 @@ public class PlaybackSettingsViewModelTests
     }
 
     [Test]
-    public async Task Constructor_AppliesAPreviouslySavedVolumeCurveToPlaybackControls()
+    public async Task Constructor_ReflectsAPreviouslySavedVolumeCurve()
     {
         var settingsPath = CreateTempSettingsPath();
         try
         {
             new SettingsStore(settingsPath).Update(s => s with { VolumeCurve = VolumeCurve.Logarithmic });
-            var playbackControls = CreatePlaybackControlsViewModel();
 
-            var vm = new PlaybackSettingsViewModel(new SettingsStore(settingsPath), Substitute.For<IOutputDeviceService>(), playbackControls);
+            var vm = new PlaybackSettingsViewModel(new SettingsStore(settingsPath), Substitute.For<IOutputDeviceService>(), CreatePlaybackControlsViewModel());
 
             await Assert.That(vm.UseLogarithmicVolumeScale).IsTrue();
-            await Assert.That(playbackControls.VolumeCurve).IsEqualTo(VolumeCurve.Logarithmic);
         }
         finally
         {
@@ -258,17 +256,16 @@ public class PlaybackSettingsViewModelTests
     }
 
     [Test]
-    public async Task Constructor_AppliesASavedUseWaveformSliderToPlaybackControls()
+    public async Task Constructor_ReflectsASavedUseWaveformSlider()
     {
         var settingsPath = CreateTempSettingsPath();
         try
         {
             new SettingsStore(settingsPath).Update(s => s with { UseWaveformSlider = true });
-            var playbackControls = CreatePlaybackControlsViewModel();
 
-            _ = new PlaybackSettingsViewModel(new SettingsStore(settingsPath), Substitute.For<IOutputDeviceService>(), playbackControls);
+            var vm = new PlaybackSettingsViewModel(new SettingsStore(settingsPath), Substitute.For<IOutputDeviceService>(), CreatePlaybackControlsViewModel());
 
-            await Assert.That(playbackControls.UseWaveformSlider).IsTrue();
+            await Assert.That(vm.UseWaveformSlider).IsTrue();
         }
         finally
         {

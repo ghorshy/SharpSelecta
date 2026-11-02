@@ -63,7 +63,6 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         _appliedRestoreQueueOnStartup = RestoreQueueOnStartup;
 
         useWaveformSlider = saved.UseWaveformSlider;
-        _playbackControls.UseWaveformSlider = useWaveformSlider;
         _appliedUseWaveformSlider = useWaveformSlider;
 
         if (saved.OutputDeviceName is { } savedDeviceName)
@@ -73,12 +72,8 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
         _appliedSelectedOutputDeviceDisplayName = selectedOutputDeviceDisplayName;
 
-        var savedVolumeCurve = saved.VolumeCurve;
-        useLogarithmicVolumeScale = savedVolumeCurve == VolumeCurve.Logarithmic;
-        _playbackControls.VolumeCurve = savedVolumeCurve;
+        useLogarithmicVolumeScale = saved.VolumeCurve == VolumeCurve.Logarithmic;
         _appliedUseLogarithmicVolumeScale = useLogarithmicVolumeScale;
-
-        _playbackControls.Volume = saved.Volume ?? _playbackControls.Volume;
 
         seekStepSeconds = saved.SeekStepSeconds;
         _playbackControls.SeekStepSeconds = seekStepSeconds;
@@ -113,10 +108,10 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
         _appliedRestoreQueueOnStartup = RestoreQueueOnStartup;
 
-        _playbackControls.UseWaveformSlider = UseWaveformSlider;
+        _playbackControls.Waveform.UseSlider = UseWaveformSlider;
         _appliedUseWaveformSlider = UseWaveformSlider;
 
-        _playbackControls.VolumeCurve = curve;
+        _playbackControls.Volume.Curve = curve;
         _appliedUseLogarithmicVolumeScale = UseLogarithmicVolumeScale;
 
         _playbackControls.SeekStepSeconds = SeekStepSeconds;

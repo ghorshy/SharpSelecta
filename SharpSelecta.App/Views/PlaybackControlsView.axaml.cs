@@ -27,13 +27,8 @@ public partial class PlaybackControlsView : UserControl
     private void OnPositionTimerTick(object? sender, EventArgs e) =>
         (DataContext as PlaybackControlsViewModel)?.RefreshPosition();
 
-    private void OnVolumeSliderPointerReleased(object? sender, PointerReleasedEventArgs e)
-    {
-        if (this.FindAncestorOfType<Window>() is { DataContext: MainWindowViewModel mainWindowViewModel })
-        {
-            mainWindowViewModel.PersistVolume();
-        }
-    }
+    private void OnVolumeSliderPointerReleased(object? sender, PointerReleasedEventArgs e) =>
+        (DataContext as PlaybackControlsViewModel)?.Volume.Persist();
 
     private void OnSettingsClick(object? sender, RoutedEventArgs e)
     {

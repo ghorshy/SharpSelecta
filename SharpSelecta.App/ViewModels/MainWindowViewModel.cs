@@ -81,9 +81,6 @@ public partial class MainWindowViewModel : ViewModelBase
     public void PersistRightColumnWidth() =>
         _settings.Update(s => s with { RightColumnWidth = RightColumnWidth.Value });
 
-    public void PersistVolume() =>
-        _settings.Update(s => s with { Volume = PlaybackControls.Volume });
-
     public async Task RestoreQueueIfEnabledAsync()
     {
         if (!PlaybackSettings.RestoreQueueOnStartup)

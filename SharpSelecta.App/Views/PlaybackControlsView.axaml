@@ -43,18 +43,18 @@
             <TextBlock Grid.Column="3" Text="{Binding PositionDisplay}" VerticalAlignment="Center"
                        Width="{DynamicResource Size.Playback.TimeWidth}" TextAlignment="Right" />
             <Slider Grid.Column="4" VerticalAlignment="Center" Minimum="0" Maximum="{Binding DurationSeconds}"
-                    Value="{Binding PositionSeconds}" IsVisible="{Binding !UseWaveformSlider}" />
+                    Value="{Binding PositionSeconds}" IsVisible="{Binding !Waveform.UseSlider}" />
             <controls:WaveformSliderView Grid.Column="4" VerticalAlignment="Stretch"
-                    Peaks="{Binding WaveformPeaks}" Maximum="{Binding DurationSeconds}"
-                    Value="{Binding PositionSeconds}" IsVisible="{Binding UseWaveformSlider}"
-                    IsLoading="{Binding IsWaveformLoading}"
+                    Peaks="{Binding Waveform.Peaks}" Maximum="{Binding DurationSeconds}"
+                    Value="{Binding PositionSeconds}" IsVisible="{Binding Waveform.UseSlider}"
+                    IsLoading="{Binding Waveform.IsLoading}"
                     BarWidth="{DynamicResource Size.Waveform.BarWidth}" BarGap="{DynamicResource Size.Waveform.BarGap}" />
             <Button Grid.Column="5" Classes="toolbar-button" Content="{Binding DurationDisplay}" Command="{Binding ToggleDurationDisplayCommand}"
                     Width="{DynamicResource Size.Playback.TimeWidth}" HorizontalContentAlignment="Left" />
             <svg:Svg Classes="toolbar-icon" Grid.Column="6" Width="{DynamicResource Size.Icon.M}" Height="{DynamicResource Size.Icon.M}" VerticalAlignment="Center"
-                     Path="{Binding Volume, Converter={x:Static converters:VolumeIconConverter.Instance}}"
+                     Path="{Binding Volume.Level, Converter={x:Static converters:VolumeIconConverter.Instance}}"
                      ToolTip.Tip="{x:Static res:Strings.Volume}" />
-            <Slider x:Name="VolumeSlider" Grid.Column="7" VerticalAlignment="Center" Minimum="0" Maximum="1" Value="{Binding Volume}" />
+            <Slider x:Name="VolumeSlider" Grid.Column="7" VerticalAlignment="Center" Minimum="0" Maximum="1" Value="{Binding Volume.Level}" />
             <Button Grid.Column="8" Classes="toolbar-button toolbar-button-hover" Command="{Binding ToggleRepeatModeCommand}" ToolTip.Tip="{Binding RepeatModeLabel}">
                 <svg:Svg Classes="toolbar-icon" Width="{DynamicResource Size.Icon.M}" Height="{DynamicResource Size.Icon.M}" Path="{Binding RepeatMode, Converter={x:Static converters:RepeatModeIconConverter.Instance}}" />
             </Button>

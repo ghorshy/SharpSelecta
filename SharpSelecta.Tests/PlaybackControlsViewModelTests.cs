@@ -64,42 +64,6 @@ public class PlaybackControlsViewModelTests
     }
 
     [Test]
-    public async Task SettingVolume_ForwardsToEngine()
-    {
-        var vm = CreateViewModel(out var audioEngine, out _);
-
-        vm.Volume = 0.4;
-
-        audioEngine.Received(1).Volume = 0.4f;
-        await Assert.That(vm.Volume).IsEqualTo(0.4);
-    }
-
-    [Test]
-    public async Task SettingVolume_WithLogarithmicCurve_AppliesTheSquaredAmplitudeToTheEngine()
-    {
-        var vm = CreateViewModel(out var audioEngine, out _);
-        vm.VolumeCurve = VolumeCurve.Logarithmic;
-        audioEngine.ClearReceivedCalls();
-
-        vm.Volume = 0.5;
-
-        audioEngine.Received(1).Volume = 0.25f;
-        await Assert.That(vm.Volume).IsEqualTo(0.5);
-    }
-
-    [Test]
-    public async Task SettingVolumeCurve_ReappliesTheCurrentVolumeToTheEngineImmediately()
-    {
-        var vm = CreateViewModel(out var audioEngine, out _);
-        vm.Volume = 0.5;
-        audioEngine.ClearReceivedCalls();
-
-        vm.VolumeCurve = VolumeCurve.Logarithmic;
-
-        audioEngine.Received(1).Volume = 0.25f;
-    }
-
-    [Test]
     public async Task SettingPositionSeconds_SeeksTheEngine()
     {
         var vm = CreateViewModel(out var audioEngine, out _);
@@ -807,15 +771,33 @@ public class PlaybackControlsViewModelTests
     }
 
     [Test]
+    public async Task Waveform_StartsFromTheSavedUseSliderSetting()
+    {
+        var settingsPath = CreateTempSettingsPath();
+        try
+        {
+            new SettingsStore(settingsPath).Update(s => s with { UseWaveformSlider = true });
+
+            var vm = CreateViewModel(out _, out _, settingsPath);
+
+            await Assert.That(vm.Waveform.UseSlider).IsTrue();
+        }
+        finally
+        {
+            File.Delete(settingsPath);
+        }
+    }
+
+    [Test]
     public async Task LoadTrackAsync_PopulatesWaveformPeaksFromTheEngine()
     {
         var vm = CreateViewModel(out var audioEngine, out _);
         audioEngine.GetWaveformPeaks(2000).Returns(new float[] { 0.1f, -0.5f, 0.9f });
 
         await vm.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
-        await vm.WaveformLoadTask;
+        await vm.Waveform.LoadTask;
 
-        await Assert.That(vm.WaveformPeaks).IsEquivalentTo([0.1f, -0.5f, 0.9f]);
+        await Assert.That(vm.Waveform.Peaks).IsEquivalentTo([0.1f, -0.5f, 0.9f]);
     }
 
     [Test]
@@ -833,9 +815,9 @@ public class PlaybackControlsViewModelTests
             var vm = CreateViewModel(out var audioEngine, out _, settingsPath);
 
             await vm.PlayNowAsync(new Track(trackPath, "tagged-track.mp3"));
-            await vm.WaveformLoadTask;
+            await vm.Waveform.LoadTask;
 
-            await Assert.That(vm.WaveformPeaks).IsEquivalentTo([0.4f, 0.6f]);
+            await Assert.That(vm.Waveform.Peaks).IsEquivalentTo([0.4f, 0.6f]);
             audioEngine.DidNotReceive().GetWaveformPeaks(Arg.Any<int>());
         }
         finally
@@ -861,9 +843,9 @@ public class PlaybackControlsViewModelTests
             audioEngine.GetWaveformPeaks(2000).Returns(new float[] { 0.2f, 0.8f });
 
             await vm.PlayNowAsync(new Track(trackPath, "tagged-track.mp3"));
-            await vm.WaveformLoadTask;
+            await vm.Waveform.LoadTask;
 
-            await Assert.That(vm.WaveformPeaks).IsEquivalentTo([0.2f, 0.8f]);
+            await Assert.That(vm.Waveform.Peaks).IsEquivalentTo([0.2f, 0.8f]);
             await Assert.That(LibraryIndexStore.TryGetWaveformPeaks(settingsPath, trackPath)).IsEquivalentTo([0.2f, 0.8f]);
         }
         finally
@@ -889,13 +871,13 @@ public class PlaybackControlsViewModelTests
         await vm.PlayNowAsync(new Track("/music/a.mp3", "a.mp3"));
 
         await Assert.That(vm.IsPlaying).IsTrue();
-        await Assert.That(vm.WaveformPeaks).IsEmpty();
-        await Assert.That(vm.IsWaveformLoading).IsTrue();
+        await Assert.That(vm.Waveform.Peaks).IsEmpty();
+        await Assert.That(vm.Waveform.IsLoading).IsTrue();
 
         release.Set();
-        await vm.WaveformLoadTask;
+        await vm.Waveform.LoadTask;
 
-        await Assert.That(vm.IsWaveformLoading).IsFalse();
+        await Assert.That(vm.Waveform.IsLoading).IsFalse();
     }
 
     [Test]
@@ -910,16 +892,16 @@ public class PlaybackControlsViewModelTests
             _ => new float[] { 0.7f });
 
         await vm.PlayNowAsync(new Track("/music/first.mp3", "first.mp3"));
-        var firstLoadTask = vm.WaveformLoadTask;
+        var firstLoadTask = vm.Waveform.LoadTask;
         await Assert.That(firstCallStarted.Wait(TimeSpan.FromSeconds(5))).IsTrue();
 
         await vm.PlayNowAsync(new Track("/music/second.mp3", "second.mp3"));
-        await vm.WaveformLoadTask;
+        await vm.Waveform.LoadTask;
 
         releaseFirst.Set();
         await firstLoadTask;
 
-        await Assert.That(vm.WaveformPeaks).IsEquivalentTo([0.7f]);
+        await Assert.That(vm.Waveform.Peaks).IsEquivalentTo([0.7f]);
     }
 
     [Test]

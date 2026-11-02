@@ -19,17 +19,12 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 {
     private const double RestartThresholdSeconds = 3.0;
 
-    // Reference resolution for the waveform display - WaveformSliderView downsamples this
-    // client-side to however many constant-width bars actually fit its current width.
-    private const int WaveformMasterPointCount = 2000;
-
     private readonly IAudioEngine _audioEngine;
     private readonly PlaybackQueue _queue;
     private readonly ILogger<PlaybackControlsViewModel> _logger;
     private readonly SettingsStore _settings;
     private bool _isSyncingFromEngine;
     private bool _hasHandledEndOfStream;
-    private int _waveformLoadGeneration;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(PlayPauseCommand))]
@@ -48,10 +43,6 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DurationDisplay))]
     private partial bool ShowRemainingTime { get; set; }
-    [ObservableProperty]
-    public partial double Volume { get; set; } = 1.0;
-    [ObservableProperty]
-    public partial VolumeCurve VolumeCurve { get; set; } = VolumeCurve.Linear;
     [ObservableProperty]
     public partial int SeekStepSeconds { get; set; } = 5;
 
@@ -88,20 +79,9 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     [NotifyPropertyChangedFor(nameof(RepeatModeLabel))]
     public partial RepeatMode RepeatMode { get; set; } = RepeatMode.Off;
 
-    [ObservableProperty]
-    public partial IReadOnlyList<float> WaveformPeaks { get; private set; } = [];
+    public VolumeViewModel Volume { get; }
 
-    // True from the moment extraction starts until it (successfully or not) finishes -
-    // WaveformSliderView shows a flat placeholder line instead of a blank control while this is set.
-    [ObservableProperty]
-    public partial bool IsWaveformLoading { get; private set; }
-
-    // Fire-and-forget from the UI's perspective (see LoadTrackCoreAsync) - exposed so tests
-    // can await it instead of racing the background extraction.
-    public Task WaveformLoadTask { get; private set; } = Task.CompletedTask;
-
-    [ObservableProperty]
-    public partial bool UseWaveformSlider { get; set; }
+    public WaveformViewModel Waveform { get; }
 
     public PlaybackControlsViewModel(IAudioEngine audioEngine, PlaybackQueue queue, SettingsStore settings, ILogger<PlaybackControlsViewModel> logger)
     {
@@ -109,6 +89,8 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         _queue = queue;
         _settings = settings;
         _logger = logger;
+        Volume = new VolumeViewModel(audioEngine, settings);
+        Waveform = new WaveformViewModel(audioEngine, settings, logger);
 
         // Auto DJ must not top the queue up from in here: adding entries while a change to the queue is still
         // being announced makes the queue view receive the events out of order and drift from the real
@@ -461,50 +443,12 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
                 PlayPauseCommand.Execute(null);
             }
 
-            // Not awaited so decoding never delays playback; the generation check drops stale results.
-            WaveformPeaks = [];
-            IsWaveformLoading = true;
-            WaveformLoadTask = LoadWaveformPeaksAsync(track, ++_waveformLoadGeneration);
+            Waveform.LoadForCurrentTrack(track);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load {FilePath}", track.FilePath);
             StatusMessage = Strings.FailedToLoadFile(ex.Message);
-        }
-    }
-
-    private async Task LoadWaveformPeaksAsync(Track track, int generation)
-    {
-        try
-        {
-            var peaks = await Task.Run(() =>
-            {
-                var cached = LibraryIndexStore.TryGetWaveformPeaks(_settings.FilePath, track.FilePath);
-                if (cached is not null)
-                {
-                    return cached;
-                }
-
-                var extracted = _audioEngine.GetWaveformPeaks(WaveformMasterPointCount);
-                LibraryIndexStore.SaveWaveformPeaks(_settings.FilePath, track.FilePath, extracted);
-                return extracted;
-            });
-
-            if (generation == _waveformLoadGeneration)
-            {
-                WaveformPeaks = peaks;
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to extract waveform peaks for {FilePath}", track.FilePath);
-        }
-        finally
-        {
-            if (generation == _waveformLoadGeneration)
-            {
-                IsWaveformLoading = false;
-            }
         }
     }
 
@@ -515,12 +459,6 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 
         _audioEngine.Seek(value);
     }
-
-    partial void OnVolumeChanged(double value) => ApplyVolumeToEngine();
-
-    partial void OnVolumeCurveChanged(VolumeCurve value) => ApplyVolumeToEngine();
-
-    private void ApplyVolumeToEngine() => _audioEngine.Volume = (float)VolumeScale.ToAmplitude(Volume, VolumeCurve);
 
     public void RefreshPosition() => _ = RefreshPositionAsync();
 

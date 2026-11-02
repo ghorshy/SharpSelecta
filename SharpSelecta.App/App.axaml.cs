@@ -99,13 +99,13 @@ public partial class App : Application
             mainWindowViewModel.Updates.RestartingToUpdate += (_, _) =>
             {
                 mainWindowViewModel.PersistQueueStateIfEnabled();
-                mainWindowViewModel.PersistVolume();
+                mainWindowViewModel.PlaybackControls.Volume.Persist();
             };
 
             desktop.Exit += (_, _) =>
             {
                 mainWindowViewModel.PersistQueueStateIfEnabled();
-                mainWindowViewModel.PersistVolume();
+                mainWindowViewModel.PlaybackControls.Volume.Persist();
                 mainWindowViewModel.Updates.InstallPendingUpdateOnExit();
                 richPresence.Dispose();
 
