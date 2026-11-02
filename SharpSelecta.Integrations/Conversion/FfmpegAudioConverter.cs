@@ -8,7 +8,9 @@ public sealed class FfmpegAudioConverter : IAudioConverter
 {
     private static readonly HashSet<string> LosslessCodecs = ["flac", "alac", "wavpack", "ape", "tta", "mlp", "truehd"];
 
-    public bool IsAvailable => IsOnPath("ffmpeg") && IsOnPath("ffprobe");
+    private readonly Lazy<bool> _isAvailable = new(() => IsOnPath("ffmpeg") && IsOnPath("ffprobe"));
+
+    public bool IsAvailable => _isAvailable.Value;
 
     public async Task<SourceInfo?> ProbeAsync(string path, CancellationToken cancellationToken)
     {
@@ -41,15 +43,12 @@ public sealed class FfmpegAudioConverter : IAudioConverter
 
     public async Task ConvertAsync(ConversionRequest request, IProgress<double> progress, CancellationToken cancellationToken)
     {
-        var source = await ProbeAsync(request.SourcePath, cancellationToken)
-                     ?? throw new InvalidOperationException($"Cannot read '{request.SourcePath}'.");
-
         var succeeded = await FFMpegArguments
             .FromFileInput(request.SourcePath)
             .OutputToFile(request.TargetPath, overwrite: false, options => options
                 .WithCustomArgument("-vn -map_metadata -1")
-                .WithCustomArgument(CodecArguments(request, source)))
-            .NotifyOnProgress(percent => progress.Report(percent / 100.0), source.Duration)
+                .WithCustomArgument(CodecArguments(request)))
+            .NotifyOnProgress(percent => progress.Report(percent / 100.0), request.Source.Duration)
             .CancellableThrough(cancellationToken)
             .ProcessAsynchronously();
 
@@ -59,15 +58,15 @@ public sealed class FfmpegAudioConverter : IAudioConverter
         progress.Report(1);
     }
 
-    private static string CodecArguments(ConversionRequest request, SourceInfo source) => request.Target switch
+    private static string CodecArguments(ConversionRequest request) => request.Target switch
     {
         ConversionTarget.Flac => "-c:a flac",
         ConversionTarget.AlacM4a => "-c:a alac",
         ConversionTarget.AacM4a => $"-c:a aac -b:a {RequireBitrate(request)}k",
         ConversionTarget.Mp3 => $"-c:a libmp3lame -b:a {RequireBitrate(request)}k",
         ConversionTarget.OggVorbis => $"-c:a libvorbis -b:a {RequireBitrate(request)}k",
-        ConversionTarget.Aiff => source.BitDepth is > 16 ? "-c:a pcm_s24be" : "-c:a pcm_s16be",
-        ConversionTarget.Wav => source.BitDepth is > 16 ? "-c:a pcm_s24le" : "-c:a pcm_s16le",
+        ConversionTarget.Aiff => request.Source.BitDepth is > 16 ? "-c:a pcm_s24be" : "-c:a pcm_s16be",
+        ConversionTarget.Wav => request.Source.BitDepth is > 16 ? "-c:a pcm_s24le" : "-c:a pcm_s16le",
         _ => throw new ArgumentOutOfRangeException(nameof(request), request.Target, null),
     };
 

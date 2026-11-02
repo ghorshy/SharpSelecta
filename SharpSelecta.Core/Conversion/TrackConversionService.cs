@@ -41,7 +41,7 @@ public sealed class TrackConversionService(IAudioConverter converter, ITrashServ
             var extension = ConversionRules.Extension(target);
 
             tempPath = Path.Combine(directory, $".{Path.GetFileNameWithoutExtension(track.FilePath)}.{Guid.NewGuid():N}.tmp{extension}");
-            await converter.ConvertAsync(new ConversionRequest(track.FilePath, tempPath, target, bitrateKbps), progress, cancellationToken);
+            await converter.ConvertAsync(new ConversionRequest(track.FilePath, tempPath, target, bitrateKbps, source), progress, cancellationToken);
 
             if (ConversionRules.KeepsAllTags(target))
             {

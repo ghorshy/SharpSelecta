@@ -11,8 +11,8 @@ public enum ConversionTarget
     Aiff,
 }
 
-// BitrateKbps is null for lossless targets.
-public sealed record ConversionRequest(string SourcePath, string TargetPath, ConversionTarget Target, int? BitrateKbps);
+// BitrateKbps is null for lossless targets. Source is the caller's probe of SourcePath.
+public sealed record ConversionRequest(string SourcePath, string TargetPath, ConversionTarget Target, int? BitrateKbps, SourceInfo Source);
 
 // What a file is, as far as converting it goes. Codec is the lower-case codec name ("flac", "alac", "aac",
 // "mp3", "pcm_s16le"...). BitrateKbps is null when the file doesn't say.
@@ -20,7 +20,7 @@ public sealed record SourceInfo(string Codec, bool IsLossless, int? BitrateKbps,
 
 public interface IAudioConverter
 {
-    // False while the encoder isn't there (e.g. FFmpeg isn't installed).
+    // False when the encoder isn't there (e.g. FFmpeg isn't installed); may be checked once per run.
     bool IsAvailable { get; }
 
     // Null when the file can't be read.

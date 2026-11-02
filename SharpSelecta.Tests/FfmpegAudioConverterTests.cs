@@ -47,12 +47,14 @@ public class FfmpegAudioConverterTests
     public async Task Convert_FlacToAlac_ProducesAnM4aFile()
     {
         Skip.When(!Converter.IsAvailable, "ffmpeg is not installed");
+        var flac = FixturePath("untagged-track.flac");
+        var probed = (await Converter.ProbeAsync(flac, CancellationToken.None))!;
         var target = TempTarget(".m4a");
 
         try
         {
             await Converter.ConvertAsync(
-                new ConversionRequest(FixturePath("untagged-track.flac"), target, ConversionTarget.AlacM4a, null),
+                new ConversionRequest(flac, target, ConversionTarget.AlacM4a, null, probed),
                 new Progress<double>(), CancellationToken.None);
 
             var info = await Converter.ProbeAsync(target, CancellationToken.None);
@@ -70,12 +72,13 @@ public class FfmpegAudioConverterTests
     {
         Skip.When(!Converter.IsAvailable, "ffmpeg is not installed");
         var source = await CreateStereoFlacAsync();
+        var probed = (await Converter.ProbeAsync(source, CancellationToken.None))!;
         var target = TempTarget(".mp3");
 
         try
         {
             await Converter.ConvertAsync(
-                new ConversionRequest(source, target, ConversionTarget.Mp3, 128),
+                new ConversionRequest(source, target, ConversionTarget.Mp3, 128, probed),
                 new Progress<double>(), CancellationToken.None);
 
             var info = await Converter.ProbeAsync(target, CancellationToken.None);
@@ -85,6 +88,30 @@ public class FfmpegAudioConverterTests
         finally
         {
             File.Delete(source);
+            File.Delete(target);
+        }
+    }
+
+    [Test]
+    public async Task Convert_UsesTheGivenSourceInfoInsteadOfProbingAgain()
+    {
+        Skip.When(!Converter.IsAvailable, "ffmpeg is not installed");
+        var flac = FixturePath("untagged-track.flac");
+        var target = TempTarget(".wav");
+        var probed = (await Converter.ProbeAsync(flac, CancellationToken.None))!;
+        await Assert.That(probed.BitDepth).IsEqualTo(16);
+
+        try
+        {
+            await Converter.ConvertAsync(
+                new ConversionRequest(flac, target, ConversionTarget.Wav, null, probed with { BitDepth = 24 }),
+                new Progress<double>(), CancellationToken.None);
+
+            var info = await Converter.ProbeAsync(target, CancellationToken.None);
+            await Assert.That(info!.Codec).IsEqualTo("pcm_s24le");
+        }
+        finally
+        {
             File.Delete(target);
         }
     }
