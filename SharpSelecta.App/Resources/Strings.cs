@@ -70,6 +70,14 @@ public static class Strings
     public static string ColumnBitDepth => Get(nameof(ColumnBitDepth));
     public static string ColumnBitrate => Get(nameof(ColumnBitrate));
     public static string ColumnFileType => Get(nameof(ColumnFileType));
+    public static string FileTypeMp3 => Get(nameof(FileTypeMp3));
+    public static string FileTypeFlac => Get(nameof(FileTypeFlac));
+    public static string FileTypeWav => Get(nameof(FileTypeWav));
+    public static string FileTypeM4a => Get(nameof(FileTypeM4a));
+    public static string FileTypeM4aAlac => Get(nameof(FileTypeM4aAlac));
+    public static string FileTypeM4aAac => Get(nameof(FileTypeM4aAac));
+    public static string FileTypeOgg => Get(nameof(FileTypeOgg));
+    public static string FileTypeAiff => Get(nameof(FileTypeAiff));
     public static string ColumnYear => Get(nameof(ColumnYear));
     public static string SortByDateAdded => Get(nameof(SortByDateAdded));
     public static string UnknownAlbum => Get(nameof(UnknownAlbum));

@@ -11,7 +11,7 @@ public class Mp4CodecTests
     {
         var track = MusicLibraryScanner.ReadTrackIfExists(FixturePath("untagged-track-alac.m4a"))!;
 
-        await Assert.That(track.FileType).IsEqualTo("M4A (ALAC)");
+        await Assert.That(track.FileType).IsEqualTo(AudioFileType.M4aAlac);
     }
 
     [Test]
@@ -19,13 +19,13 @@ public class Mp4CodecTests
     {
         var track = MusicLibraryScanner.ReadTrackIfExists(FixturePath("untagged-track.m4a"))!;
 
-        await Assert.That(track.FileType).IsEqualTo("M4A (AAC)");
+        await Assert.That(track.FileType).IsEqualTo(AudioFileType.M4aAac);
     }
 
     [Test]
-    public async Task FileType_OfOtherFormats_IsTheExtension()
+    public async Task FileType_OfOtherFormats_IsTheFormat()
     {
-        await Assert.That(MusicLibraryScanner.ReadTrackIfExists(FixturePath("untagged-track.flac"))!.FileType).IsEqualTo("FLAC");
+        await Assert.That(MusicLibraryScanner.ReadTrackIfExists(FixturePath("untagged-track.flac"))!.FileType).IsEqualTo(AudioFileType.Flac);
     }
 
     [Test]
@@ -35,7 +35,7 @@ public class Mp4CodecTests
         File.WriteAllBytes(path, [1, 2, 3]);
         try
         {
-            await Assert.That(MusicLibraryScanner.ReadTrackIfExists(path)!.FileType).IsEqualTo("M4A");
+            await Assert.That(MusicLibraryScanner.ReadTrackIfExists(path)!.FileType).IsEqualTo(AudioFileType.M4a);
         }
         finally
         {
@@ -53,7 +53,7 @@ public class Mp4CodecTests
 
         var reread = LibraryIndexStore.Reconcile(library.SettingsPath, [library.Root]).Tracks[0];
 
-        await Assert.That(reread.FileType).IsEqualTo("M4A (ALAC)");
+        await Assert.That(reread.FileType).IsEqualTo(AudioFileType.M4aAlac);
     }
 
     [Test]
@@ -62,11 +62,35 @@ public class Mp4CodecTests
         using var library = new M4aLibrary();
         LibraryIndexStore.Reconcile(library.SettingsPath, [library.Root]);
 
-        await library.ExecuteAsync("UPDATE Tracks SET FileType = 'M4A'");
+        await library.ExecuteAsync("UPDATE Tracks SET FileType = 'M4a'");
 
         var track = LibraryIndexStore.Reconcile(library.SettingsPath, [library.Root]).Tracks[0];
 
-        await Assert.That(track.FileType).IsEqualTo("M4A");
+        await Assert.That(track.FileType).IsEqualTo(AudioFileType.M4a);
+    }
+
+    [Test]
+    public async Task LoadIndexed_ReturnsTheFileTypeTheIndexWasReconciledWith()
+    {
+        using var library = new M4aLibrary();
+        LibraryIndexStore.Reconcile(library.SettingsPath, [library.Root]);
+
+        var track = LibraryIndexStore.LoadIndexed(library.SettingsPath, [library.Root])[0];
+
+        await Assert.That(track.FileType).IsEqualTo(AudioFileType.M4aAlac);
+    }
+
+    [Test]
+    public async Task LoadIndexed_MigratesFileTypesStoredAsDisplayLabels()
+    {
+        using var library = new M4aLibrary();
+        LibraryIndexStore.Reconcile(library.SettingsPath, [library.Root]);
+
+        await library.ExecuteAsync("UPDATE Tracks SET FileType = 'M4A (ALAC)'; PRAGMA user_version = 1;");
+
+        var track = LibraryIndexStore.LoadIndexed(library.SettingsPath, [library.Root])[0];
+
+        await Assert.That(track.FileType).IsEqualTo(AudioFileType.M4aAlac);
     }
 
     private sealed class M4aLibrary : IDisposable

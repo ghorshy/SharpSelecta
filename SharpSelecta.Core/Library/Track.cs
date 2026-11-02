@@ -15,6 +15,6 @@ public sealed record Track(string FilePath, string DisplayName)
     public int SampleRate { get; init; }
     public int BitDepth { get; init; }
     public int Bitrate { get; init; }
-    public string? FileType { get; init; }
+    public AudioFileType FileType { get; init; }
     public DateTime DateAddedUtc { get; init; }
 }

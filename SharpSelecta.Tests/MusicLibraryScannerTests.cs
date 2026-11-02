@@ -77,7 +77,7 @@ public class MusicLibraryScannerTests
 
             var track = MusicLibraryScanner.ReadTrackIfExists(path)!;
 
-            await Assert.That(track.FileType).IsEqualTo("WAV");
+            await Assert.That(track.FileType).IsEqualTo(AudioFileType.Wav);
         }
         finally
         {
@@ -99,7 +99,7 @@ public class MusicLibraryScannerTests
             var track = MusicLibraryScanner.ReadTrackIfExists(path)!;
 
             await Assert.That(track.DisplayName).IsEqualTo("locked.mp3");
-            await Assert.That(track.FileType).IsEqualTo("MP3");
+            await Assert.That(track.FileType).IsEqualTo(AudioFileType.Mp3);
             await Assert.That(MusicLibraryScanner.LoadArtworkWithSource(path)).IsNull();
         }
         finally
@@ -158,7 +158,7 @@ public class MusicLibraryScannerTests
             await Assert.That(track.Year).IsEqualTo(2024);
             await Assert.That(track.TrackNumber).IsEqualTo(3);
             await Assert.That(track.SampleRate).IsEqualTo(44100);
-            await Assert.That(track.FileType).IsEqualTo("MP3");
+            await Assert.That(track.FileType).IsEqualTo(AudioFileType.Mp3);
             await Assert.That(track.DisplayName).IsEqualTo("Test Song");
             await Assert.That(track.Duration.TotalSeconds).IsGreaterThan(0);
         }

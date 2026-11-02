@@ -19,8 +19,21 @@ public static class TrackFormatting
 
     public static string FormatBitrate(int bitrate) => bitrate > 0 ? $"{bitrate} kbps" : string.Empty;
 
+    public static string FormatFileType(AudioFileType fileType) => fileType switch
+    {
+        AudioFileType.Mp3 => Strings.FileTypeMp3,
+        AudioFileType.Flac => Strings.FileTypeFlac,
+        AudioFileType.Wav => Strings.FileTypeWav,
+        AudioFileType.M4a => Strings.FileTypeM4a,
+        AudioFileType.M4aAlac => Strings.FileTypeM4aAlac,
+        AudioFileType.M4aAac => Strings.FileTypeM4aAac,
+        AudioFileType.Ogg => Strings.FileTypeOgg,
+        AudioFileType.Aiff => Strings.FileTypeAiff,
+        _ => string.Empty,
+    };
+
     public static string TechnicalSummary(Track track) =>
-        $"{track.FileType} {FormatSampleRate(track.SampleRate)}, {FormatBitrate(track.Bitrate)}, {FormatDuration(track.Duration)}";
+        $"{FormatFileType(track.FileType)} {FormatSampleRate(track.SampleRate)}, {FormatBitrate(track.Bitrate)}, {FormatDuration(track.Duration)}";
 
     // The tag stores several artists joined by ATL's separator; the UI shows them with the
     // (localizable) display separator, e.g. "TRC;Trilla" -> "TRC, Trilla".

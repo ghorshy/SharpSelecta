@@ -19,5 +19,7 @@ public sealed class LibraryTrackViewModel(Track track, LibraryViewModel library,
 
     public string BitrateDisplay => TrackFormatting.FormatBitrate(Track.Bitrate);
 
+    public string FileTypeDisplay => TrackFormatting.FormatFileType(Track.FileType);
+
     public LibraryViewModel Library { get; } = library;
 }

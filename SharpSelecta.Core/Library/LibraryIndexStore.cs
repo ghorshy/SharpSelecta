@@ -485,7 +485,7 @@ public static class LibraryIndexStore
             SampleRate = reader.GetInt32(offset + 10),
             BitDepth = reader.GetInt32(offset + 11),
             Bitrate = reader.GetInt32(offset + 12),
-            FileType = NullableString(13),
+            FileType = Enum.TryParse<AudioFileType>(NullableString(13), out var fileType) ? fileType : AudioFileType.Unknown,
             DateAddedUtc = new DateTime(reader.GetInt64(offset + 16), DateTimeKind.Utc),
             Genre = NullableString(17),
             Comment = NullableString(18),
@@ -510,7 +510,7 @@ public static class LibraryIndexStore
         Bind(command, "@SampleRate", track.SampleRate);
         Bind(command, "@BitDepth", track.BitDepth);
         Bind(command, "@Bitrate", track.Bitrate);
-        Bind(command, "@FileType", track.FileType);
+        Bind(command, "@FileType", track.FileType.ToString());
         Bind(command, "@LastWriteTimeUtcTicks", lastWriteTimeUtc.Ticks);
         Bind(command, "@FileSizeBytes", fileSizeBytes);
     }
@@ -615,6 +615,30 @@ public static class LibraryIndexStore
                 COMMIT;
                 """;
             m4aCommand.ExecuteNonQuery();
+        }
+
+        // FileType used to hold the display label; it now holds the AudioFileType name.
+        if (SchemaVersion(connection) < 2)
+        {
+            using var fileTypeCommand = connection.CreateCommand();
+            fileTypeCommand.CommandText = """
+                BEGIN;
+                UPDATE Tracks SET FileType = CASE FileType
+                    WHEN 'MP3' THEN 'Mp3'
+                    WHEN 'FLAC' THEN 'Flac'
+                    WHEN 'WAV' THEN 'Wav'
+                    WHEN 'M4A' THEN 'M4a'
+                    WHEN 'M4A (ALAC)' THEN 'M4aAlac'
+                    WHEN 'M4A (AAC)' THEN 'M4aAac'
+                    WHEN 'OGG' THEN 'Ogg'
+                    WHEN 'AIFF' THEN 'Aiff'
+                    WHEN 'AIF' THEN 'Aiff'
+                    ELSE 'Unknown'
+                END;
+                PRAGMA user_version = 2;
+                COMMIT;
+                """;
+            fileTypeCommand.ExecuteNonQuery();
         }
 
         using (var playlistCommand = connection.CreateCommand())

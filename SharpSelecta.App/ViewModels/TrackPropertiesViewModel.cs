@@ -165,7 +165,7 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
 
     public string DurationDisplay => TrackFormatting.FormatDuration(TimeSpan.FromTicks(_tracks.Sum(t => t.Duration.Ticks)));
 
-    public string FileTypeDisplay => CommonOrVaries(t => t.FileType ?? string.Empty);
+    public string FileTypeDisplay => CommonOrVaries(t => TrackFormatting.FormatFileType(t.FileType));
 
     public string BitrateDisplay => CommonOrVaries(t => TrackFormatting.FormatBitrate(t.Bitrate));
 

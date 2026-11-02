@@ -427,6 +427,30 @@
   <data name="ColumnFileType" xml:space="preserve">
     <value>File Type</value>
   </data>
+  <data name="FileTypeMp3" xml:space="preserve">
+    <value>MP3</value>
+  </data>
+  <data name="FileTypeFlac" xml:space="preserve">
+    <value>FLAC</value>
+  </data>
+  <data name="FileTypeWav" xml:space="preserve">
+    <value>WAV</value>
+  </data>
+  <data name="FileTypeM4a" xml:space="preserve">
+    <value>M4A</value>
+  </data>
+  <data name="FileTypeM4aAlac" xml:space="preserve">
+    <value>M4A (ALAC)</value>
+  </data>
+  <data name="FileTypeM4aAac" xml:space="preserve">
+    <value>M4A (AAC)</value>
+  </data>
+  <data name="FileTypeOgg" xml:space="preserve">
+    <value>OGG</value>
+  </data>
+  <data name="FileTypeAiff" xml:space="preserve">
+    <value>AIFF</value>
+  </data>
   <data name="ColumnYear" xml:space="preserve">
     <value>Year</value>
   </data>

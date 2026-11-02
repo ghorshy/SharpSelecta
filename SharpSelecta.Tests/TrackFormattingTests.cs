@@ -50,11 +50,23 @@ public class TrackFormattingTests
     }
 
     [Test]
+    [Arguments(AudioFileType.Mp3, "MP3")]
+    [Arguments(AudioFileType.M4aAlac, "M4A (ALAC)")]
+    [Arguments(AudioFileType.M4aAac, "M4A (AAC)")]
+    [Arguments(AudioFileType.M4a, "M4A")]
+    [Arguments(AudioFileType.Aiff, "AIFF")]
+    [Arguments(AudioFileType.Unknown, "")]
+    public async Task FormatFileType_ShowsTheFormatLabel(AudioFileType fileType, string expected)
+    {
+        await Assert.That(TrackFormatting.FormatFileType(fileType)).IsEqualTo(expected);
+    }
+
+    [Test]
     public async Task TechnicalSummary_CombinesFileTypeSampleRateBitrateAndLength()
     {
         var track = new Track("/music/a.mp3", "a.mp3")
         {
-            FileType = "MP3",
+            FileType = AudioFileType.Mp3,
             SampleRate = 44100,
             Bitrate = 320,
             Duration = TimeSpan.FromSeconds(185),
