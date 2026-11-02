@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using Avalonia.Markup.Xaml;
+using SharpSelecta.App.Services;
 
 namespace SharpSelecta.Tests;
 
@@ -228,7 +228,7 @@ public partial class ThemeTokenTests
     {
         var xaml = File.ReadAllText(Path.Combine(AppDir(), "Styles", fileName));
 
-        var loaded = AvaloniaRuntimeXamlLoader.Load(xaml);
+        var loaded = SerializedXamlLoader.Load(xaml);
 
         await Assert.That(loaded).IsNotNull();
     }
@@ -239,7 +239,7 @@ public partial class ThemeTokenTests
         var host = new Avalonia.Controls.Border();
         foreach (var fileName in new[] { "ThemeMetrics.axaml", "Spacing.axaml" })
         {
-            var dictionary = (Avalonia.Controls.ResourceDictionary)AvaloniaRuntimeXamlLoader.Load(File.ReadAllText(Path.Combine(AppDir(), "Styles", fileName)));
+            var dictionary = (Avalonia.Controls.ResourceDictionary)SerializedXamlLoader.Load(File.ReadAllText(Path.Combine(AppDir(), "Styles", fileName)));
             host.Resources.MergedDictionaries.Add(dictionary);
         }
 

@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 using Avalonia.Styling;
 using SharpSelecta.Core.Library;
 
@@ -16,9 +15,6 @@ internal static class ThemeService
     private const string ThemesFolderName = "Themes";
 
     private static IResourceProvider? _appliedCustomTheme;
-
-    // AvaloniaRuntimeXamlLoader.Load isn't safe to call concurrently from multiple threads.
-    private static readonly object XamlLoadLock = new();
 
     public static string GetThemesDirectory(string settingsFilePath) =>
         Path.Combine(Path.GetDirectoryName(settingsFilePath) ?? ".", ThemesFolderName);
@@ -83,10 +79,7 @@ internal static class ThemeService
                 return false;
 
             var xaml = File.ReadAllText(filePath);
-            lock (XamlLoadLock)
-            {
-                provider = AvaloniaRuntimeXamlLoader.Load(xaml) as IResourceProvider;
-            }
+            provider = SerializedXamlLoader.Load(xaml) as IResourceProvider;
 
             return provider is not null;
         }
