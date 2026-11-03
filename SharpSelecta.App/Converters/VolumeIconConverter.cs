@@ -7,7 +7,7 @@ public sealed class VolumeIconConverter : IValueConverter
 {
     public static readonly VolumeIconConverter Instance = new();
 
-    private const string BasePath = "avares://SharpSelecta.App/Assets/Icons/";
+    private const string BasePath = "avares://sharpselecta/Assets/Icons/";
 
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         value is double volume

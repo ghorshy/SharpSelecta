@@ -50,7 +50,7 @@ jobs:
       - name: Installer
         run: >
           vpk pack --packId SharpSelecta --packVersion "$VERSION" --packDir publish
-          --mainExe SharpSelecta.App.exe --packTitle SharpSelecta --packAuthors ghorshy
+          --mainExe sharpselecta.exe --packTitle SharpSelecta --packAuthors ghorshy
           --runtime win-x64 --noPortable -o releases
 
       - name: Create the release

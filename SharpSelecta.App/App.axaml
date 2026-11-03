@@ -13,10 +13,10 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://SharpSelecta.App/Styles/ThemeColors.axaml" />
-                <ResourceInclude Source="avares://SharpSelecta.App/Styles/ThemeMetrics.axaml" />
-                <ResourceInclude Source="avares://SharpSelecta.App/Styles/Spacing.axaml" />
-                <ResourceInclude Source="avares://SharpSelecta.App/Styles/Icons.axaml" />
+                <ResourceInclude Source="avares://sharpselecta/Styles/ThemeColors.axaml" />
+                <ResourceInclude Source="avares://sharpselecta/Styles/ThemeMetrics.axaml" />
+                <ResourceInclude Source="avares://sharpselecta/Styles/Spacing.axaml" />
+                <ResourceInclude Source="avares://sharpselecta/Styles/Icons.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>
@@ -24,6 +24,6 @@
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
-        <StyleInclude Source="avares://SharpSelecta.App/Styles/DefaultTheme.axaml" />
+        <StyleInclude Source="avares://sharpselecta/Styles/DefaultTheme.axaml" />
     </Application.Styles>
 </Application>

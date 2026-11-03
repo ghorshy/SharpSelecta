@@ -32,6 +32,8 @@ public partial class App : Application
 
     public IReadOnlyList<string> OpenedPaths { get; init; } = [];
 
+    private static readonly TimeSpan OpenedFilesBatchWindow = TimeSpan.FromMilliseconds(400);
+
     private Task _openingFiles = Task.CompletedTask;
 
     public override void Initialize()
@@ -110,13 +112,15 @@ public partial class App : Application
 
             var logger = provider.GetRequiredService<ILogger<App>>();
             _openingFiles = InitializeAudioEngineAndRestoreStateAsync(audioEngine, mainWindowViewModel);
-            OpenFilesInOrder(mainWindowViewModel, OpenedPaths, logger);
+            var openedFiles = new OpenedFilesBatcher(OpenedFilesBatchWindow, TimeProvider.System,
+                paths => Dispatcher.UIThread.Post(() => OpenFilesInOrder(mainWindowViewModel, paths, logger)));
+            openedFiles.Add(OpenedPaths);
 
-            Activations?.Attach(paths => Dispatcher.UIThread.Post(() =>
+            Activations?.Attach(paths =>
             {
-                BringToFront(mainWindow);
-                OpenFilesInOrder(mainWindowViewModel, paths, logger);
-            }));
+                Dispatcher.UIThread.Post(() => BringToFront(mainWindow));
+                openedFiles.Add(paths);
+            });
 
             _ = mainWindowViewModel.Library.InitializeAsync();
             _ = mainWindowViewModel.Updates.CheckOnStartupAsync();
@@ -128,9 +132,6 @@ public partial class App : Application
     // Waits for the queue restore and for earlier requests, so opened files never get overwritten or reordered.
     private void OpenFilesInOrder(MainWindowViewModel mainWindowViewModel, IReadOnlyList<string> paths, ILogger<App> logger)
     {
-        if (paths.Count == 0)
-            return;
-
         var previous = _openingFiles;
         _openingFiles = OpenAsync();
 

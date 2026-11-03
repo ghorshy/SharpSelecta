@@ -26,15 +26,13 @@ public sealed class WindowsFileAssociations(RegistryKey classes, string exePath)
             progId.SetValue(null, Strings.AudioFileTypeName);
             using var icon = progId.CreateSubKey("DefaultIcon");
             icon.SetValue(null, $"\"{exePath}\",0");
-            using var command = progId.CreateSubKey(@"shell\open\command");
-            command.SetValue(null, OpenCommand);
+            WriteOpenVerb(progId);
         }
 
         using (var application = classes.CreateSubKey(ApplicationKeyPath))
         {
             application.SetValue("FriendlyAppName", Strings.AppName);
-            using var command = application.CreateSubKey(@"shell\open\command");
-            command.SetValue(null, OpenCommand);
+            WriteOpenVerb(application);
             using var supportedTypes = application.CreateSubKey("SupportedTypes");
             foreach (var extension in OpenedFiles.SupportedExtensions)
             {
@@ -49,6 +47,16 @@ public sealed class WindowsFileAssociations(RegistryKey classes, string exePath)
         }
 
         NotifyShell();
+    }
+
+    // Explorer still starts one process per file (merged again by OpenedFilesBatcher), but the default
+    // Document model hides the verb once more than 15 files are selected; Player raises that to 100.
+    private void WriteOpenVerb(RegistryKey key)
+    {
+        using var open = key.CreateSubKey(@"shell\open");
+        open.SetValue("MultiSelectModel", "Player");
+        using var command = open.CreateSubKey("command");
+        command.SetValue(null, OpenCommand);
     }
 
     public void Unregister()

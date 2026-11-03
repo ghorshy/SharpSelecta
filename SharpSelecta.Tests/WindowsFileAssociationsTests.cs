@@ -23,6 +23,7 @@ public class WindowsFileAssociationsTests
 
             await Assert.That(classes.OpenSubKey(@"SharpSelecta.AudioFile\shell\open\command")?.GetValue(null))
                 .IsEqualTo($"\"{ExePath}\" \"%1\"");
+            await Assert.That(classes.OpenSubKey(@"SharpSelecta.AudioFile\shell\open")?.GetValue("MultiSelectModel")).IsEqualTo("Player");
             await Assert.That(classes.OpenSubKey(@".flac\OpenWithProgids")?.GetValueNames()).Contains("SharpSelecta.AudioFile");
             await Assert.That(classes.OpenSubKey(@".m3u\OpenWithProgids")?.GetValueNames()).Contains("SharpSelecta.AudioFile");
             await Assert.That(classes.OpenSubKey(@".txt\OpenWithProgids")).IsNull();
