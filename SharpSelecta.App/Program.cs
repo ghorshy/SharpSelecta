@@ -1,7 +1,9 @@
 using Avalonia;
 using Serilog;
 using Serilog.Extensions.Logging;
+using SharpSelecta.App.Services;
 using SharpSelecta.App.Services.SingleInstance;
+using SharpSelecta.Core.Library;
 using Velopack;
 
 namespace SharpSelecta.App;
@@ -14,7 +16,11 @@ sealed class Program
         // Must run first: the Windows installer/updater may start the app just to run a hook and exit.
         if (OperatingSystem.IsWindows())
         {
-            VelopackApp.Build().Run();
+            VelopackApp.Build()
+                .OnAfterInstallFastCallback(_ => UpdateFileAssociations(register: true))
+                .OnAfterUpdateFastCallback(_ => UpdateFileAssociations(register: true))
+                .OnBeforeUninstallFastCallback(_ => UpdateFileAssociations(register: false))
+                .Run();
         }
 
         var logDirectory = Path.Combine(
@@ -32,17 +38,19 @@ sealed class Program
 
         var loggerFactory = new SerilogLoggerFactory(Log.Logger);
         var singleInstance = SingleInstanceGuard.CreateForCurrentPlatform(loggerFactory);
+        var activations = new ActivationInbox(singleInstance);
+        var openedPaths = OpenedFiles.ToAbsoluteArguments(args, Environment.CurrentDirectory);
 
         try
         {
             // No dispatcher or synchronization context exists yet, so blocking here can't deadlock.
-            if (singleInstance.StartAsync([]).GetAwaiter().GetResult() == SingleInstanceRole.Secondary)
+            if (singleInstance.StartAsync(openedPaths).GetAwaiter().GetResult() == SingleInstanceRole.Secondary)
             {
                 Log.Information("SharpSelecta is already running - asked it to come to the front, exiting");
                 return;
             }
 
-            BuildAvaloniaApp(() => new App { SingleInstance = singleInstance }).StartWithClassicDesktopLifetime(args);
+            BuildAvaloniaApp(() => new App { Activations = activations, OpenedPaths = openedPaths }).StartWithClassicDesktopLifetime(args);
         }
         catch (Exception ex)
         {
@@ -54,6 +62,29 @@ sealed class Program
             singleInstance.Dispose();
             loggerFactory.Dispose();
             Log.CloseAndFlush();
+        }
+    }
+
+    // Runs before logging is set up, and a throwing hook would fail the install, so failures only skip the "Open with" entries.
+    private static void UpdateFileAssociations(bool register)
+    {
+        if (!OperatingSystem.IsWindows() || Environment.ProcessPath is not { } exePath)
+            return;
+
+        try
+        {
+            var associations = WindowsFileAssociations.ForCurrentUser(exePath);
+            if (register)
+            {
+                associations.Register();
+            }
+            else
+            {
+                associations.Unregister();
+            }
+        }
+        catch (Exception)
+        {
         }
     }
 

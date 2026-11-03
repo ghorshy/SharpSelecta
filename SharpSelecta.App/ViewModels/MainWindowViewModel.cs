@@ -104,6 +104,30 @@ public partial class MainWindowViewModel : ViewModelBase
         await PlaybackControls.RestoreQueueAsync(restoredEntries, restoredCurrentIndex, state.PositionSeconds);
     }
 
+    public async Task OpenFilesAsync(IReadOnlyList<string> paths)
+    {
+        var tracks = await Task.Run(() => OpenedFiles.Expand(paths)
+            .Select(MusicLibraryScanner.ReadTrackIfExists)
+            .OfType<Track>()
+            .ToList());
+        if (tracks.Count == 0)
+            return;
+
+        var action = PlaybackControls.QueueEntries.Count == 0 ? OpenedFilesAction.ReplaceQueueAndPlay : _settings.Current.OpenedFilesAction;
+        switch (action)
+        {
+            case OpenedFilesAction.AddToQueue:
+                await PlaybackControls.AddToQueue(tracks);
+                break;
+            case OpenedFilesAction.PlayNext:
+                await PlaybackControls.PlayNext(tracks);
+                break;
+            default:
+                await PlaybackControls.ReplaceQueueAndPlayAsync(tracks);
+                break;
+        }
+    }
+
     public void PersistQueueStateIfEnabled()
     {
         if (!PlaybackSettings.RestoreQueueOnStartup)

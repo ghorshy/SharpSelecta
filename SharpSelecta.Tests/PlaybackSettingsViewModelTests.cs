@@ -210,4 +210,37 @@ public class PlaybackSettingsViewModelTests : IDisposable
 
         await Assert.That(vm.UseWaveformSlider).IsTrue();
     }
+
+    [Test]
+    public async Task OpenedFilesAction_DefaultsToReplacingTheQueue_AndPersistsOnlyOnApply()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = new PlaybackSettingsViewModel(new SettingsStore(settingsPath), Substitute.For<IOutputDeviceService>(), CreatePlaybackControlsViewModel());
+        var settingsVm = (ISettingsCategoryViewModel)vm;
+        await Assert.That(vm.SelectedOpenedFilesActionOption.Action).IsEqualTo(OpenedFilesAction.ReplaceQueueAndPlay);
+
+        vm.SelectedOpenedFilesActionOption = vm.OpenedFilesActionOptions.Single(o => o.Action == OpenedFilesAction.PlayNext);
+        await Assert.That(settingsVm.HasPendingChanges).IsTrue();
+        await Assert.That(new SettingsStore(settingsPath).Current.OpenedFilesAction).IsEqualTo(OpenedFilesAction.ReplaceQueueAndPlay);
+
+        settingsVm.ApplyCommand.Execute(null);
+
+        await Assert.That(settingsVm.HasPendingChanges).IsFalse();
+        await Assert.That(new SettingsStore(settingsPath).Current.OpenedFilesAction).IsEqualTo(OpenedFilesAction.PlayNext);
+    }
+
+    [Test]
+    public async Task OpenedFilesAction_CancelRevertsToTheSavedChoice()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        new SettingsStore(settingsPath).Update(s => s with { OpenedFilesAction = OpenedFilesAction.AddToQueue });
+        var vm = new PlaybackSettingsViewModel(new SettingsStore(settingsPath), Substitute.For<IOutputDeviceService>(), CreatePlaybackControlsViewModel());
+        await Assert.That(vm.SelectedOpenedFilesActionOption.Action).IsEqualTo(OpenedFilesAction.AddToQueue);
+
+        vm.SelectedOpenedFilesActionOption = vm.OpenedFilesActionOptions.Single(o => o.Action == OpenedFilesAction.ReplaceQueueAndPlay);
+        ((ISettingsCategoryViewModel)vm).CancelCommand.Execute(null);
+
+        await Assert.That(vm.SelectedOpenedFilesActionOption.Action).IsEqualTo(OpenedFilesAction.AddToQueue);
+        await Assert.That(((ISettingsCategoryViewModel)vm).HasPendingChanges).IsFalse();
+    }
 }

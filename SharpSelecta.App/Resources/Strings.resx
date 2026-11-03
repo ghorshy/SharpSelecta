@@ -202,6 +202,24 @@
   <data name="RestoreQueueOnStartup" xml:space="preserve">
     <value>Restore previous queue on startup</value>
   </data>
+  <data name="AppName" xml:space="preserve">
+    <value>SharpSelecta</value>
+  </data>
+  <data name="AudioFileTypeName" xml:space="preserve">
+    <value>Audio file</value>
+  </data>
+  <data name="OpenedFilesActionLabel" xml:space="preserve">
+    <value>When opening files from the file manager</value>
+  </data>
+  <data name="OpenedFilesReplaceQueueAndPlay" xml:space="preserve">
+    <value>Replace the queue and play</value>
+  </data>
+  <data name="OpenedFilesAddToQueue" xml:space="preserve">
+    <value>Add to the end of the queue</value>
+  </data>
+  <data name="OpenedFilesPlayNext" xml:space="preserve">
+    <value>Play next</value>
+  </data>
   <data name="OutputDevice" xml:space="preserve">
     <value>Output device</value>
   </data>

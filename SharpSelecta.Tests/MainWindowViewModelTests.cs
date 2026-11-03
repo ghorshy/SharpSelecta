@@ -151,6 +151,105 @@ public class MainWindowViewModelTests : IDisposable
         await Assert.That(QueueStateStore.Load(settingsPath)).IsNull();
     }
 
+    private string CopyFixture(string name)
+    {
+        var path = _temp.FilePath(name);
+        File.Copy(TaggedTrackFixturePath, path);
+        return path;
+    }
+
+    private MainWindowViewModel CreateViewModelOpeningFilesWith(OpenedFilesAction action, out IAudioEngine audioEngine)
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        new SettingsStore(settingsPath).Update(s => s with { OpenedFilesAction = action });
+        return CreateViewModel(out audioEngine, settingsPath);
+    }
+
+    private static string QueuedPaths(MainWindowViewModel vm) =>
+        string.Join("|", vm.PlaybackControls.QueueEntries.Select(e => e.Track.FilePath));
+
+    [Test]
+    public async Task OpenFilesAsync_ByDefault_ReplacesTheQueueAndPlaysTheFirstFile()
+    {
+        var vm = CreateViewModel(out var audioEngine);
+        await vm.PlaybackControls.PlayNowAsync(new Track(TaggedTrackFixturePath, "tagged-track.mp3"));
+        var a = CopyFixture("a.mp3");
+        var b = CopyFixture("b.mp3");
+
+        await vm.OpenFilesAsync([a, b]);
+
+        await Assert.That(QueuedPaths(vm)).IsEqualTo($"{a}|{b}");
+        await Assert.That(vm.Queue.CurrentIndex).IsEqualTo(0);
+        audioEngine.Received(1).Load(a);
+    }
+
+    [Test]
+    public async Task OpenFilesAsync_AddToQueue_AppendsWithoutInterruptingPlayback()
+    {
+        var vm = CreateViewModelOpeningFilesWith(OpenedFilesAction.AddToQueue, out var audioEngine);
+        await vm.PlaybackControls.PlayNowAsync(new Track(TaggedTrackFixturePath, "tagged-track.mp3"));
+        var a = CopyFixture("a.mp3");
+
+        await vm.OpenFilesAsync([a]);
+
+        await Assert.That(QueuedPaths(vm)).IsEqualTo($"{TaggedTrackFixturePath}|{a}");
+        await Assert.That(vm.Queue.CurrentIndex).IsEqualTo(0);
+        audioEngine.DidNotReceive().Load(a);
+    }
+
+    [Test]
+    public async Task OpenFilesAsync_PlayNext_InsertsAfterTheCurrentTrack()
+    {
+        var vm = CreateViewModelOpeningFilesWith(OpenedFilesAction.PlayNext, out var audioEngine);
+        var later = CopyFixture("later.mp3");
+        await vm.PlaybackControls.PlayNowAsync([new Track(TaggedTrackFixturePath, "tagged-track.mp3"), new Track(later, "later.mp3")]);
+        var a = CopyFixture("a.mp3");
+
+        await vm.OpenFilesAsync([a]);
+
+        await Assert.That(QueuedPaths(vm)).IsEqualTo($"{TaggedTrackFixturePath}|{a}|{later}");
+        await Assert.That(vm.Queue.CurrentIndex).IsEqualTo(0);
+        audioEngine.DidNotReceive().Load(a);
+    }
+
+    [Test]
+    public async Task OpenFilesAsync_AddToQueue_WithNothingQueued_PlaysTheFirstFile()
+    {
+        var vm = CreateViewModelOpeningFilesWith(OpenedFilesAction.AddToQueue, out var audioEngine);
+        var a = CopyFixture("a.mp3");
+
+        await vm.OpenFilesAsync([a]);
+
+        await Assert.That(QueuedPaths(vm)).IsEqualTo(a);
+        audioEngine.Received(1).Load(a);
+    }
+
+    [Test]
+    public async Task OpenFilesAsync_AddToQueue_KeepsEntriesQueuedBeforeAnythingPlayed()
+    {
+        var vm = CreateViewModelOpeningFilesWith(OpenedFilesAction.AddToQueue, out _);
+        await vm.PlaybackControls.AddToQueue(new Track(TaggedTrackFixturePath, "tagged-track.mp3"));
+        var a = CopyFixture("a.mp3");
+
+        await vm.OpenFilesAsync([a]);
+
+        await Assert.That(QueuedPaths(vm)).IsEqualTo($"{TaggedTrackFixturePath}|{a}");
+    }
+
+    [Test]
+    public async Task OpenFilesAsync_WithNoAudioFiles_LeavesTheQueueAlone()
+    {
+        var vm = CreateViewModel(out var audioEngine);
+        await vm.PlaybackControls.PlayNowAsync(new Track(TaggedTrackFixturePath, "tagged-track.mp3"));
+        var picture = _temp.FilePath("cover.jpg");
+        File.WriteAllBytes(picture, []);
+
+        await vm.OpenFilesAsync([picture]);
+
+        await Assert.That(QueuedPaths(vm)).IsEqualTo(TaggedTrackFixturePath);
+        audioEngine.Received(1).Load(Arg.Any<string>());
+    }
+
     [Test]
     public async Task Equalizer_IsConstructedWithTenBands()
     {

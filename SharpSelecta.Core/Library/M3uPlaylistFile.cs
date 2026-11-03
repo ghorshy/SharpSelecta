@@ -6,6 +6,8 @@ public static class M3uPlaylistFile
 {
     private static readonly char[] EntrySeparators = ['/', '\\'];
 
+    public static IReadOnlyList<string> Extensions { get; } = [".m3u", ".m3u8"];
+
     public static IReadOnlyList<string> ParsePaths(string content, string baseDirectoryForRelativePaths)
     {
         var paths = new List<string>();

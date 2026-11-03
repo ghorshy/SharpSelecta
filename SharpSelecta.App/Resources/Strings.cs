@@ -50,6 +50,12 @@ public static class Strings
     public static string ThemeFileTypeName => Get(nameof(ThemeFileTypeName));
     public static string InvalidThemeFile => Get(nameof(InvalidThemeFile));
     public static string RestoreQueueOnStartup => Get(nameof(RestoreQueueOnStartup));
+    public static string AppName => Get(nameof(AppName));
+    public static string AudioFileTypeName => Get(nameof(AudioFileTypeName));
+    public static string OpenedFilesActionLabel => Get(nameof(OpenedFilesActionLabel));
+    public static string OpenedFilesReplaceQueueAndPlay => Get(nameof(OpenedFilesReplaceQueueAndPlay));
+    public static string OpenedFilesAddToQueue => Get(nameof(OpenedFilesAddToQueue));
+    public static string OpenedFilesPlayNext => Get(nameof(OpenedFilesPlayNext));
     public static string OutputDevice => Get(nameof(OutputDevice));
     public static string SystemDefaultAudioDevice => Get(nameof(SystemDefaultAudioDevice));
     public static string UseLogarithmicVolumeScale => Get(nameof(UseLogarithmicVolumeScale));

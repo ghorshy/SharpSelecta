@@ -4,12 +4,15 @@ namespace SharpSelecta.Core.Library;
 
 public static class MusicLibraryScanner
 {
-    private static readonly string[] SupportedExtensions = [".mp3", ".flac", ".wav", ".m4a", ".ogg", ".aiff", ".aif"];
+    public static IReadOnlyList<string> SupportedExtensions { get; } = [".mp3", ".flac", ".wav", ".m4a", ".ogg", ".aiff", ".aif"];
 
     public static IEnumerable<string> FindAudioFiles(string folderPath) =>
         Directory.EnumerateFiles(folderPath, "*.*", SearchOption.AllDirectories)
-            .Where(path => SupportedExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
+            .Where(IsAudioFile)
             .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
+
+    public static bool IsAudioFile(string path) =>
+        SupportedExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase);
 
     internal static Track ReadTrack(string path)
     {

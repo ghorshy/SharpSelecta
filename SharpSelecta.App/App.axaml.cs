@@ -28,7 +28,11 @@ namespace SharpSelecta.App;
 
 public partial class App : Application
 {
-    public ISingleInstanceGuard? SingleInstance { get; init; }
+    public ActivationInbox? Activations { get; init; }
+
+    public IReadOnlyList<string> OpenedPaths { get; init; } = [];
+
+    private Task _openingFiles = Task.CompletedTask;
 
     public override void Initialize()
     {
@@ -80,11 +84,6 @@ public partial class App : Application
 
             mainWindow.Activated += (_, _) => Mpris()?.NudgePriority();
 
-            if (SingleInstance is not null)
-            {
-                SingleInstance.ActivationRequested += (_, _) => Dispatcher.UIThread.Post(() => BringToFront(mainWindow));
-            }
-
             var richPresence = new RichPresenceCoordinator(
                 mainWindowViewModel.PlaybackControls, provider.GetRequiredService<IRichPresence>(), mainWindowViewModel.Integrations);
 
@@ -109,12 +108,44 @@ public partial class App : Application
                 provider.Dispose();
             };
 
-            _ = InitializeAudioEngineAndRestoreStateAsync(audioEngine, mainWindowViewModel);
+            var logger = provider.GetRequiredService<ILogger<App>>();
+            _openingFiles = InitializeAudioEngineAndRestoreStateAsync(audioEngine, mainWindowViewModel);
+            OpenFilesInOrder(mainWindowViewModel, OpenedPaths, logger);
+
+            Activations?.Attach(paths => Dispatcher.UIThread.Post(() =>
+            {
+                BringToFront(mainWindow);
+                OpenFilesInOrder(mainWindowViewModel, paths, logger);
+            }));
+
             _ = mainWindowViewModel.Library.InitializeAsync();
             _ = mainWindowViewModel.Updates.CheckOnStartupAsync();
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    // Waits for the queue restore and for earlier requests, so opened files never get overwritten or reordered.
+    private void OpenFilesInOrder(MainWindowViewModel mainWindowViewModel, IReadOnlyList<string> paths, ILogger<App> logger)
+    {
+        if (paths.Count == 0)
+            return;
+
+        var previous = _openingFiles;
+        _openingFiles = OpenAsync();
+
+        async Task OpenAsync()
+        {
+            await previous.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing | ConfigureAwaitOptions.ContinueOnCapturedContext);
+            try
+            {
+                await mainWindowViewModel.OpenFilesAsync(paths);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to open {Count} path(s) passed to the app", paths.Count);
+            }
+        }
     }
 
     private static void BringToFront(Window window)

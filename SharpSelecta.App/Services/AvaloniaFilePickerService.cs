@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using SharpSelecta.App.Resources;
+using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.Services;
 
@@ -35,7 +36,7 @@ public sealed class AvaloniaFilePickerService(Window owner) : IFilePickerService
         {
             Title = Strings.ImportPlaylistFilePickerTitle,
             AllowMultiple = false,
-            FileTypeFilter = [new FilePickerFileType(Strings.PlaylistFileTypeName) { Patterns = ["*.m3u", "*.m3u8"] }],
+            FileTypeFilter = [new FilePickerFileType(Strings.PlaylistFileTypeName) { Patterns = [.. M3uPlaylistFile.Extensions.Select(extension => "*" + extension)] }],
         });
 
         return files.Count > 0 ? files[0].TryGetLocalPath() : null;

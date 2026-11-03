@@ -82,5 +82,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          cp packaging/linux/io.github.sharpselecta.SharpSelecta.desktop "SharpSelecta-$VERSION-linux-x64/"
           tar czf "SharpSelecta-$VERSION-linux-x64.tar.gz" "SharpSelecta-$VERSION-linux-x64"
           gh release upload "$GITHUB_REF_NAME" "SharpSelecta-$VERSION-linux-x64.tar.gz"

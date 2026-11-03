@@ -19,6 +19,7 @@ public sealed record AppSettings
     public AlbumSortMode AlbumSortMode { get; init; } = AlbumSortMode.Title;
     public bool AlbumSortDescending { get; init; }
     public bool RestoreQueueOnStartup { get; init; } = true;
+    public OpenedFilesAction OpenedFilesAction { get; init; } = OpenedFilesAction.ReplaceQueueAndPlay;
     public string? OutputDeviceName { get; init; }
     public double? Volume { get; init; }
     public VolumeCurve VolumeCurve { get; init; } = VolumeCurve.Linear;

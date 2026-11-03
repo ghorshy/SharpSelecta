@@ -17,6 +17,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     // Last-applied snapshot of each setting - HasPendingChanges compares the live (edited)
     // property values against these, and Cancel reverts to them.
     private bool _appliedRestoreQueueOnStartup;
+    private OpenedFilesAction _appliedOpenedFilesAction;
     private string _appliedSelectedOutputDeviceDisplayName;
     private bool _appliedUseLogarithmicVolumeScale;
     private int _appliedSeekStepSeconds;
@@ -26,6 +27,17 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
     [ObservableProperty]
     public partial bool RestoreQueueOnStartup { get; set; }
+
+    public IReadOnlyList<OpenedFilesActionOption> OpenedFilesActionOptions { get; } =
+    [
+        new(OpenedFilesAction.ReplaceQueueAndPlay, Strings.OpenedFilesReplaceQueueAndPlay),
+        new(OpenedFilesAction.AddToQueue, Strings.OpenedFilesAddToQueue),
+        new(OpenedFilesAction.PlayNext, Strings.OpenedFilesPlayNext),
+    ];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPendingChanges))]
+    public partial OpenedFilesActionOption SelectedOpenedFilesActionOption { get; set; }
 
     [ObservableProperty]
     private string selectedOutputDeviceDisplayName = Strings.SystemDefaultAudioDevice;
@@ -41,6 +53,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
     public bool HasPendingChanges =>
         RestoreQueueOnStartup != _appliedRestoreQueueOnStartup ||
+        SelectedOpenedFilesActionOption.Action != _appliedOpenedFilesAction ||
         SelectedOutputDeviceDisplayName != _appliedSelectedOutputDeviceDisplayName ||
         UseLogarithmicVolumeScale != _appliedUseLogarithmicVolumeScale ||
         SeekStepSeconds != _appliedSeekStepSeconds ||
@@ -59,6 +72,9 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
         RestoreQueueOnStartup = saved.RestoreQueueOnStartup;
         _appliedRestoreQueueOnStartup = RestoreQueueOnStartup;
+
+        SelectedOpenedFilesActionOption = OptionFor(saved.OpenedFilesAction);
+        _appliedOpenedFilesAction = saved.OpenedFilesAction;
 
         useWaveformSlider = saved.UseWaveformSlider;
         _appliedUseWaveformSlider = useWaveformSlider;
@@ -98,6 +114,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         _settings.Update(s => s with
         {
             RestoreQueueOnStartup = RestoreQueueOnStartup,
+            OpenedFilesAction = SelectedOpenedFilesActionOption.Action,
             UseWaveformSlider = UseWaveformSlider,
             VolumeCurve = curve,
             SeekStepSeconds = SeekStepSeconds,
@@ -105,6 +122,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         });
 
         _appliedRestoreQueueOnStartup = RestoreQueueOnStartup;
+        _appliedOpenedFilesAction = SelectedOpenedFilesActionOption.Action;
 
         _playbackControls.Waveform.UseSlider = UseWaveformSlider;
         _appliedUseWaveformSlider = UseWaveformSlider;
@@ -125,11 +143,15 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     private void CancelPlaybackSettings()
     {
         RestoreQueueOnStartup = _appliedRestoreQueueOnStartup;
+        SelectedOpenedFilesActionOption = OptionFor(_appliedOpenedFilesAction);
         SelectedOutputDeviceDisplayName = _appliedSelectedOutputDeviceDisplayName;
         UseLogarithmicVolumeScale = _appliedUseLogarithmicVolumeScale;
         SeekStepSeconds = _appliedSeekStepSeconds;
         UseWaveformSlider = _appliedUseWaveformSlider;
     }
+
+    private OpenedFilesActionOption OptionFor(OpenedFilesAction action) =>
+        OpenedFilesActionOptions.FirstOrDefault(o => o.Action == action) ?? OpenedFilesActionOptions[0];
 
     public async Task ApplyPersistedOutputDeviceAsync()
     {
@@ -154,3 +176,5 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         }
     }
 }
+
+public sealed record OpenedFilesActionOption(OpenedFilesAction Action, string DisplayName);
