@@ -8,7 +8,39 @@ public static partial class QueueStateStore
 {
     public sealed record QueueEntryData(string FilePath, QueueEntrySource Source);
 
-    public sealed record QueueState(IReadOnlyList<QueueEntryData> Entries, int CurrentIndex, double PositionSeconds);
+    public sealed record QueueState(IReadOnlyList<QueueEntryData> Entries, int CurrentIndex, double PositionSeconds)
+    {
+        // Reads every file, so run it off the UI thread. The saved position only carries over when the
+        // saved current file survives; otherwise the next survivor (or the last one) starts from the top.
+        public ResolvedQueue Resolve()
+        {
+            var entries = new List<QueueEntry>();
+            int? nextSurvivorIndex = null;
+            var currentSurvived = false;
+            for (var i = 0; i < Entries.Count; i++)
+            {
+                if (MusicLibraryScanner.ReadTrackIfExists(Entries[i].FilePath) is not { } track)
+                    continue;
+
+                var isAtOrPastSavedCurrent = CurrentIndex >= 0 && i >= CurrentIndex;
+                if (isAtOrPastSavedCurrent && nextSurvivorIndex is null)
+                {
+                    nextSurvivorIndex = entries.Count;
+                    currentSurvived = i == CurrentIndex;
+                }
+
+                entries.Add(new QueueEntry(track, Entries[i].Source));
+            }
+
+            if (entries.Count == 0)
+                return new ResolvedQueue(entries, -1, 0);
+
+            var currentIndex = CurrentIndex < 0 ? 0 : nextSurvivorIndex ?? entries.Count - 1;
+            return new ResolvedQueue(entries, currentIndex, currentSurvived ? PositionSeconds : 0);
+        }
+    }
+
+    public sealed record ResolvedQueue(IReadOnlyList<QueueEntry> Entries, int CurrentIndex, double PositionSeconds);
 
     public static QueueState? Load(string settingsFilePath)
     {

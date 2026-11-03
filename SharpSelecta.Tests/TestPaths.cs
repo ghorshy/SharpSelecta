@@ -7,4 +7,6 @@ public static class TestPaths
     public static string Rooted(params string[] segments) => Path.Combine([Root, .. segments]);
 
     public static string Music(params string[] segments) => Rooted(["music", .. segments]);
+
+    public static string Fixture(string name) => Path.Combine(AppContext.BaseDirectory, "Fixtures", name);
 }

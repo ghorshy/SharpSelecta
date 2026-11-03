@@ -4,7 +4,6 @@ using CommunityToolkit.Mvvm.Input;
 using SharpSelecta.App.Services;
 using SharpSelecta.App.Styles;
 using SharpSelecta.Core.Library;
-using SharpSelecta.Core.Playback;
 
 namespace SharpSelecta.App.ViewModels;
 
@@ -78,30 +77,11 @@ public partial class MainWindowViewModel : ViewModelBase
         if (state is null)
             return;
 
-        var (restoredEntries, restoredCurrentIndex) = await Task.Run(() =>
-        {
-            var entries = new List<QueueEntry>();
-            var currentIndex = -1;
-            for (var i = 0; i < state.Entries.Count; i++)
-            {
-                var savedEntry = state.Entries[i];
-                var track = MusicLibraryScanner.ReadTrackIfExists(savedEntry.FilePath);
-                if (track is null)
-                    continue;
-
-                if (i == state.CurrentIndex)
-                    currentIndex = entries.Count;
-
-                entries.Add(new QueueEntry(track, savedEntry.Source));
-            }
-
-            return (entries, currentIndex);
-        });
-
-        if (restoredEntries.Count == 0)
+        var restored = await Task.Run(state.Resolve);
+        if (restored.Entries.Count == 0)
             return;
 
-        await PlaybackControls.RestoreQueueAsync(restoredEntries, restoredCurrentIndex, state.PositionSeconds);
+        await PlaybackControls.RestoreQueueAsync(restored.Entries, restored.CurrentIndex, restored.PositionSeconds);
     }
 
     public async Task OpenFilesAsync(IReadOnlyList<string> paths)
