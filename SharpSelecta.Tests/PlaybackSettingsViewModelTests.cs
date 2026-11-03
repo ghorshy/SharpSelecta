@@ -18,12 +18,31 @@ public class PlaybackSettingsViewModelTests : IDisposable
         new(audioEngine ?? Substitute.For<IAudioEngine>(), new PlaybackQueue(), new SettingsStore(_temp.NewSettingsPath()), NullLogger<PlaybackControlsViewModel>.Instance);
 
     [Test]
-    public async Task SelectedOutputDeviceDisplayName_DefaultsToSystemDefault()
+    public async Task SelectedOutputDevice_DefaultsToSystemDefault()
     {
         var vm = new PlaybackSettingsViewModel(new SettingsStore(_temp.NewSettingsPath()), Substitute.For<IOutputDeviceService>(), CreatePlaybackControlsViewModel());
 
-        await Assert.That(vm.SelectedOutputDeviceDisplayName).IsEqualTo(Strings.SystemDefaultAudioDevice);
-        await Assert.That(vm.OutputDeviceDisplayNames).IsEquivalentTo([Strings.SystemDefaultAudioDevice]);
+        await Assert.That(vm.SelectedOutputDevice.DeviceName).IsNull();
+        await Assert.That(vm.SelectedOutputDevice.DisplayName).IsEqualTo(Strings.SystemDefaultAudioDevice);
+        await Assert.That(vm.OutputDevices.Select(d => d.DeviceName)).IsEquivalentTo(new string?[] { null });
+    }
+
+    [Test]
+    public async Task ADeviceNamedLikeTheSystemDefaultLabel_IsStillAppliedAsThatDevice()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var outputDeviceService = Substitute.For<IOutputDeviceService>();
+        outputDeviceService.GetOutputDevicesAsync().Returns(Task.FromResult<IReadOnlyList<AudioOutputDevice>>(
+            [new AudioOutputDevice(Strings.SystemDefaultAudioDevice, false)]));
+        var vm = new PlaybackSettingsViewModel(new SettingsStore(settingsPath), outputDeviceService, CreatePlaybackControlsViewModel());
+        await vm.ApplyPersistedOutputDeviceAsync();
+
+        vm.SelectedOutputDevice = vm.OutputDevices.Single(d => d.DeviceName is not null);
+        ((ISettingsCategoryViewModel)vm).ApplyCommand.Execute(null);
+        await vm.OutputDeviceSwitchTask;
+
+        await outputDeviceService.Received(1).SetOutputDeviceAsync(Strings.SystemDefaultAudioDevice);
+        await Assert.That(new SettingsStore(settingsPath).Current.OutputDeviceName).IsEqualTo(Strings.SystemDefaultAudioDevice);
     }
 
     [Test]
@@ -35,7 +54,7 @@ public class PlaybackSettingsViewModelTests : IDisposable
         var vm = new PlaybackSettingsViewModel(new SettingsStore(settingsPath), outputDeviceService, playbackControls);
         var settingsVm = (ISettingsCategoryViewModel)vm;
 
-        vm.SelectedOutputDeviceDisplayName = "Focusrite Scarlett 2i2";
+        vm.SelectedOutputDevice = OutputDeviceOption.For("Focusrite Scarlett 2i2");
         vm.UseLogarithmicVolumeScale = true;
         vm.SeekStepSeconds = 8;
         vm.UseWaveformSlider = true;
@@ -59,7 +78,7 @@ public class PlaybackSettingsViewModelTests : IDisposable
         var vm = new PlaybackSettingsViewModel(new SettingsStore(settingsPath), outputDeviceService, playbackControls);
         var settingsVm = (ISettingsCategoryViewModel)vm;
 
-        vm.SelectedOutputDeviceDisplayName = "Focusrite Scarlett 2i2";
+        vm.SelectedOutputDevice = OutputDeviceOption.For("Focusrite Scarlett 2i2");
         vm.UseLogarithmicVolumeScale = true;
         vm.SeekStepSeconds = 8;
         vm.UseWaveformSlider = true;
@@ -89,7 +108,7 @@ public class PlaybackSettingsViewModelTests : IDisposable
         var vm = new PlaybackSettingsViewModel(new SettingsStore(settingsPath), outputDeviceService, playbackControls);
         var settingsVm = (ISettingsCategoryViewModel)vm;
 
-        vm.SelectedOutputDeviceDisplayName = "Focusrite Scarlett 2i2";
+        vm.SelectedOutputDevice = OutputDeviceOption.For("Focusrite Scarlett 2i2");
         vm.UseLogarithmicVolumeScale = true;
         vm.SeekStepSeconds = 8;
         vm.UseWaveformSlider = true;
@@ -97,7 +116,7 @@ public class PlaybackSettingsViewModelTests : IDisposable
 
         settingsVm.CancelCommand.Execute(null);
 
-        await Assert.That(vm.SelectedOutputDeviceDisplayName).IsEqualTo(Strings.SystemDefaultAudioDevice);
+        await Assert.That(vm.SelectedOutputDevice.DeviceName).IsNull();
         await Assert.That(vm.UseLogarithmicVolumeScale).IsFalse();
         await Assert.That(vm.SeekStepSeconds).IsEqualTo(5);
         await Assert.That(vm.UseWaveformSlider).IsFalse();
@@ -116,7 +135,7 @@ public class PlaybackSettingsViewModelTests : IDisposable
 
         var vm = new PlaybackSettingsViewModel(new SettingsStore(settingsPath), outputDeviceService, CreatePlaybackControlsViewModel());
 
-        await Assert.That(vm.SelectedOutputDeviceDisplayName).IsEqualTo("Focusrite Scarlett 2i2");
+        await Assert.That(vm.SelectedOutputDevice.DeviceName).IsEqualTo("Focusrite Scarlett 2i2");
         await outputDeviceService.DidNotReceive().SetOutputDeviceAsync(Arg.Any<string?>());
         await Assert.That(((ISettingsCategoryViewModel)vm).HasPendingChanges).IsFalse();
     }
@@ -136,9 +155,9 @@ public class PlaybackSettingsViewModelTests : IDisposable
 
         await vm.ApplyPersistedOutputDeviceAsync();
 
-        await Assert.That(vm.OutputDeviceDisplayNames).IsEquivalentTo(
-            [Strings.SystemDefaultAudioDevice, "Built-in Speakers", "Focusrite Scarlett 2i2"]);
-        await Assert.That(vm.SelectedOutputDeviceDisplayName).IsEqualTo("Focusrite Scarlett 2i2");
+        await Assert.That(string.Join("|", vm.OutputDevices.Select(d => d.DisplayName)))
+            .IsEqualTo($"{Strings.SystemDefaultAudioDevice}|Built-in Speakers|Focusrite Scarlett 2i2");
+        await Assert.That(vm.SelectedOutputDevice.DeviceName).IsEqualTo("Focusrite Scarlett 2i2");
         await outputDeviceService.Received(1).SetOutputDeviceAsync("Focusrite Scarlett 2i2");
     }
 
@@ -154,7 +173,7 @@ public class PlaybackSettingsViewModelTests : IDisposable
 
         await vm.ApplyPersistedOutputDeviceAsync();
 
-        await Assert.That(vm.SelectedOutputDeviceDisplayName).IsEqualTo(Strings.SystemDefaultAudioDevice);
+        await Assert.That(vm.SelectedOutputDevice.DeviceName).IsNull();
         await outputDeviceService.DidNotReceive().SetOutputDeviceAsync(Arg.Any<string?>());
         await Assert.That(new SettingsStore(settingsPath).Current.OutputDeviceName).IsEqualTo("Unplugged USB DAC");
         await Assert.That(((ISettingsCategoryViewModel)vm).HasPendingChanges).IsFalse();

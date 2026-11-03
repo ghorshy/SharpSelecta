@@ -55,6 +55,8 @@ public sealed partial class UpdatesViewModel : ViewModelBase, ISettingsCategoryV
 
     public string? UpdateReadyMessage => ReadyVersion is { } version ? Strings.UpdateReady(version) : null;
 
+    public string DisplayName => Strings.SettingsCategoryUpdates;
+
     public bool HasPendingChanges => CheckAutomatically != _appliedCheckAutomatically;
 
     ICommand ISettingsCategoryViewModel.ApplyCommand => ApplyUpdatesSettingsCommand;

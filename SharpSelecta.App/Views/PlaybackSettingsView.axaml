@@ -27,9 +27,15 @@
 
         <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}">
             <TextBlock Text="{x:Static res:Strings.OutputDevice}" Classes="secondary" />
-            <ComboBox ItemsSource="{Binding OutputDeviceDisplayNames}"
-                      SelectedItem="{Binding SelectedOutputDeviceDisplayName}"
-                      HorizontalAlignment="Stretch" />
+            <ComboBox ItemsSource="{Binding OutputDevices}"
+                      SelectedItem="{Binding SelectedOutputDevice}"
+                      HorizontalAlignment="Stretch">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:OutputDeviceOption">
+                        <TextBlock Text="{Binding DisplayName}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
         </StackPanel>
 
         <CheckBox Content="{x:Static res:Strings.UseLogarithmicVolumeScale}"

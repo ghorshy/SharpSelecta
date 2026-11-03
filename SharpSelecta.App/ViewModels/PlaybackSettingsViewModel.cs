@@ -18,12 +18,12 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     // property values against these, and Cancel reverts to them.
     private bool _appliedRestoreQueueOnStartup;
     private OpenedFilesAction _appliedOpenedFilesAction;
-    private string _appliedSelectedOutputDeviceDisplayName;
+    private string? _appliedOutputDeviceName;
     private bool _appliedUseLogarithmicVolumeScale;
     private int _appliedSeekStepSeconds;
     private bool _appliedUseWaveformSlider;
 
-    public ObservableCollection<string> OutputDeviceDisplayNames { get; } = [Strings.SystemDefaultAudioDevice];
+    public ObservableCollection<OutputDeviceOption> OutputDevices { get; } = [OutputDeviceOption.SystemDefault];
 
     [ObservableProperty]
     public partial bool RestoreQueueOnStartup { get; set; }
@@ -40,7 +40,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     public partial OpenedFilesActionOption SelectedOpenedFilesActionOption { get; set; }
 
     [ObservableProperty]
-    private string selectedOutputDeviceDisplayName = Strings.SystemDefaultAudioDevice;
+    private OutputDeviceOption selectedOutputDevice = OutputDeviceOption.SystemDefault;
 
     [ObservableProperty]
     private bool useLogarithmicVolumeScale;
@@ -51,10 +51,13 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     [ObservableProperty]
     private bool useWaveformSlider;
 
+    public string DisplayName => Strings.SettingsCategoryPlayback;
+
+    // ?. because the bound ComboBox briefly pushes null while OutputDevices is repopulated.
     public bool HasPendingChanges =>
         RestoreQueueOnStartup != _appliedRestoreQueueOnStartup ||
         SelectedOpenedFilesActionOption.Action != _appliedOpenedFilesAction ||
-        SelectedOutputDeviceDisplayName != _appliedSelectedOutputDeviceDisplayName ||
+        SelectedOutputDevice?.DeviceName != _appliedOutputDeviceName ||
         UseLogarithmicVolumeScale != _appliedUseLogarithmicVolumeScale ||
         SeekStepSeconds != _appliedSeekStepSeconds ||
         UseWaveformSlider != _appliedUseWaveformSlider;
@@ -79,12 +82,8 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         useWaveformSlider = saved.UseWaveformSlider;
         _appliedUseWaveformSlider = useWaveformSlider;
 
-        if (saved.OutputDeviceName is { } savedDeviceName)
-        {
-            selectedOutputDeviceDisplayName = savedDeviceName;
-        }
-
-        _appliedSelectedOutputDeviceDisplayName = selectedOutputDeviceDisplayName;
+        selectedOutputDevice = OutputDeviceOption.For(saved.OutputDeviceName);
+        _appliedOutputDeviceName = saved.OutputDeviceName;
 
         useLogarithmicVolumeScale = saved.VolumeCurve == VolumeCurve.Logarithmic;
         _appliedUseLogarithmicVolumeScale = useLogarithmicVolumeScale;
@@ -96,7 +95,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
     partial void OnRestoreQueueOnStartupChanged(bool value) => OnPropertyChanged(nameof(HasPendingChanges));
 
-    partial void OnSelectedOutputDeviceDisplayNameChanged(string value) => OnPropertyChanged(nameof(HasPendingChanges));
+    partial void OnSelectedOutputDeviceChanged(OutputDeviceOption value) => OnPropertyChanged(nameof(HasPendingChanges));
 
     partial void OnUseLogarithmicVolumeScaleChanged(bool value) => OnPropertyChanged(nameof(HasPendingChanges));
 
@@ -110,7 +109,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     private void ApplyPlaybackSettings()
     {
         var curve = UseLogarithmicVolumeScale ? VolumeCurve.Logarithmic : VolumeCurve.Linear;
-        var deviceName = SelectedOutputDeviceDisplayName == Strings.SystemDefaultAudioDevice ? null : SelectedOutputDeviceDisplayName;
+        var deviceName = SelectedOutputDevice.DeviceName;
         _settings.Update(s => s with
         {
             RestoreQueueOnStartup = RestoreQueueOnStartup,
@@ -134,7 +133,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         _appliedSeekStepSeconds = SeekStepSeconds;
 
         OutputDeviceSwitchTask = _outputDeviceService.SetOutputDeviceAsync(deviceName);
-        _appliedSelectedOutputDeviceDisplayName = SelectedOutputDeviceDisplayName;
+        _appliedOutputDeviceName = deviceName;
 
         OnPropertyChanged(nameof(HasPendingChanges));
     }
@@ -144,7 +143,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     {
         RestoreQueueOnStartup = _appliedRestoreQueueOnStartup;
         SelectedOpenedFilesActionOption = OptionFor(_appliedOpenedFilesAction);
-        SelectedOutputDeviceDisplayName = _appliedSelectedOutputDeviceDisplayName;
+        SelectedOutputDevice = OutputDeviceOption.For(_appliedOutputDeviceName);
         UseLogarithmicVolumeScale = _appliedUseLogarithmicVolumeScale;
         SeekStepSeconds = _appliedSeekStepSeconds;
         UseWaveformSlider = _appliedUseWaveformSlider;
@@ -157,24 +156,39 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     {
         var devices = await _outputDeviceService.GetOutputDevicesAsync();
 
-        OutputDeviceDisplayNames.Clear();
-        OutputDeviceDisplayNames.Add(Strings.SystemDefaultAudioDevice);
+        // Read before Clear(): a bound ComboBox drops its selection when its items are cleared.
+        var wanted = SelectedOutputDevice;
+        OutputDevices.Clear();
+        OutputDevices.Add(OutputDeviceOption.SystemDefault);
         foreach (var device in devices)
         {
-            OutputDeviceDisplayNames.Add(device.Name);
+            OutputDevices.Add(OutputDeviceOption.For(device.Name));
         }
 
-        if (!OutputDeviceDisplayNames.Contains(SelectedOutputDeviceDisplayName))
+        if (OutputDevices.Contains(wanted))
         {
-            SelectedOutputDeviceDisplayName = Strings.SystemDefaultAudioDevice;
-            _appliedSelectedOutputDeviceDisplayName = Strings.SystemDefaultAudioDevice;
+            SelectedOutputDevice = wanted;
+        }
+        else
+        {
+            // Applied first, so the HasPendingChanges notification from the selection sees no pending change.
+            _appliedOutputDeviceName = null;
+            SelectedOutputDevice = OutputDeviceOption.SystemDefault;
         }
 
-        if (SelectedOutputDeviceDisplayName != Strings.SystemDefaultAudioDevice)
+        if (SelectedOutputDevice.DeviceName is { } deviceName)
         {
-            await _outputDeviceService.SetOutputDeviceAsync(SelectedOutputDeviceDisplayName);
+            await _outputDeviceService.SetOutputDeviceAsync(deviceName);
         }
     }
 }
 
 public sealed record OpenedFilesActionOption(OpenedFilesAction Action, string DisplayName);
+
+// A null DeviceName is the system default, so no real device's name can be mistaken for it.
+public sealed record OutputDeviceOption(string? DeviceName, string DisplayName)
+{
+    public static OutputDeviceOption SystemDefault => new(null, Strings.SystemDefaultAudioDevice);
+
+    public static OutputDeviceOption For(string? deviceName) => deviceName is null ? SystemDefault : new(deviceName, deviceName);
+}

@@ -32,6 +32,8 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
     [ObservableProperty]
     public partial string? StatusMessage { get; set; }
 
+    public string DisplayName => Strings.SettingsCategoryInterface;
+
     public bool HasPendingChanges => false;
 
     public ICommand ApplyCommand { get; } = new RelayCommand(() => { });

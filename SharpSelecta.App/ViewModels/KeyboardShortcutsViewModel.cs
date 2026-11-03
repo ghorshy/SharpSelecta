@@ -18,6 +18,8 @@ public sealed partial class KeyboardShortcutsViewModel : ViewModelBase, ISetting
 
     [ObservableProperty] public partial ShortcutRowViewModel? RecordingRow { get; set; }
 
+    public string DisplayName => Strings.SettingsCategoryKeyboardShortcuts;
+
     // Everything here is rebound and persisted immediately (like the other settings categories),
     // so Apply has nothing to stage - it's kept enabled rather than permanently greyed out.
     public bool HasPendingChanges => true;

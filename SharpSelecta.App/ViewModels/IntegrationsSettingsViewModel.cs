@@ -1,6 +1,7 @@
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using SharpSelecta.App.Resources;
 using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.ViewModels;
@@ -26,6 +27,8 @@ public sealed partial class IntegrationsSettingsViewModel : ViewModelBase, ISett
     public bool IsDiscordPresenceEnabled => _appliedDiscordPresenceEnabled;
 
     public event EventHandler? DiscordPresenceEnabledChanged;
+
+    public string DisplayName => Strings.SettingsCategoryIntegrations;
 
     public bool HasPendingChanges => DiscordPresenceEnabled != _appliedDiscordPresenceEnabled;
 

@@ -14,7 +14,7 @@ public partial class SettingsWindow : Window
 
     private async void OnOkClick(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is not SettingsWindowViewModel { SelectedCategoryViewModel: var category })
+        if (DataContext is not SettingsWindowViewModel { SelectedCategory: { } category })
             return;
 
         if (category.ApplyCommand is IAsyncRelayCommand applyAsync)
@@ -29,7 +29,7 @@ public partial class SettingsWindow : Window
 
     private void OnClosing(object? sender, WindowClosingEventArgs e)
     {
-        if (DataContext is SettingsWindowViewModel { SelectedCategoryViewModel: var category })
+        if (DataContext is SettingsWindowViewModel { SelectedCategory: { } category })
         {
             category.CancelCommand.Execute(null);
         }

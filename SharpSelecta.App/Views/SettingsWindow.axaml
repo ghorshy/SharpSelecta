@@ -21,12 +21,19 @@
         </Grid.ColumnDefinitions>
         <ListBox Grid.Row="0" Grid.Column="0"
                  ItemsSource="{Binding Categories}"
-                 SelectedItem="{Binding SelectedCategory}" />
+                 SelectionMode="Single,AlwaysSelected"
+                 SelectedItem="{Binding SelectedCategory}">
+            <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:ISettingsCategoryViewModel">
+                    <TextBlock Text="{Binding DisplayName}" />
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
 
         <!-- A category taller than the window (the keyboard shortcuts list) scrolls instead of being cut off. -->
         <ScrollViewer Grid.Row="0" Grid.Column="1" Padding="{styles:Spacing Uniform=M}"
                       VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-            <ContentControl Content="{Binding SelectedCategoryViewModel}">
+            <ContentControl Content="{Binding SelectedCategory}">
                 <ContentControl.DataTemplates>
                     <DataTemplate DataType="vm:LibraryViewModel">
                         <views:LibrarySettingsView />
@@ -58,8 +65,8 @@
             <Button Content="{x:Static res:Strings.Ok}" Click="OnOkClick" />
             <Button Content="{x:Static res:Strings.Cancel}" Click="OnCancelClick" />
             <Button Content="{x:Static res:Strings.Apply}"
-                    Command="{Binding SelectedCategoryViewModel.ApplyCommand}"
-                    IsEnabled="{Binding SelectedCategoryViewModel.HasPendingChanges}" />
+                    Command="{Binding SelectedCategory.ApplyCommand}"
+                    IsEnabled="{Binding SelectedCategory.HasPendingChanges}" />
         </StackPanel>
     </Grid>
 

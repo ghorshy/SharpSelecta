@@ -31,6 +31,8 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     public LibraryFoldersViewModel Folders { get; }
 
+    public string DisplayName => Strings.SettingsCategoryLibrary;
+
     public bool HasPendingChanges => Folders.HasPendingChanges;
 
     ICommand ISettingsCategoryViewModel.ApplyCommand => Folders.ApplyPendingChangesCommand;
