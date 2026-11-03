@@ -305,7 +305,16 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     }
 
     [RelayCommand(CanExecute = nameof(CanPlayPause))]
-    private void PlayPause()
+    private Task PlayPauseAsync()
+    {
+        if (TransportState != TransportState.Ready)
+            return NextTrackAsync();
+
+        TogglePlayback();
+        return Task.CompletedTask;
+    }
+
+    private void TogglePlayback()
     {
         if (IsPlaying)
         {
@@ -321,7 +330,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 
     private bool HasCurrentTrack() => _queue.CurrentIndex >= 0;
 
-    private bool CanPlayPause() => TransportState == TransportState.Ready;
+    private bool CanPlayPause() => TransportState == TransportState.Ready || _queue.CanGoNext;
 
     [RelayCommand(CanExecute = nameof(HasCurrentTrack))]
     private async Task PreviousTrackAsync()
@@ -436,7 +445,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
             RefreshPosition();
             if (autoPlay)
             {
-                PlayPauseCommand.Execute(null);
+                TogglePlayback();
             }
 
             Waveform.LoadForCurrentTrack(track);

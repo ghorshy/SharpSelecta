@@ -117,30 +117,6 @@ public class MprisMappingTests
     }
 
     [Test]
-    public async Task CanPlay_WhenAbleToResumeAnAlreadyLoadedTrack_IsTrue()
-    {
-        await Assert.That(MprisMapping.CanPlay(canResumeOrPause: true, hasCurrentTrack: true, canGoNext: false)).IsTrue();
-    }
-
-    [Test]
-    public async Task CanPlay_WithNoCurrentTrackButSomethingQueuedToAdvanceTo_IsTrue()
-    {
-        await Assert.That(MprisMapping.CanPlay(canResumeOrPause: false, hasCurrentTrack: false, canGoNext: true)).IsTrue();
-    }
-
-    [Test]
-    public async Task CanPlay_WithNoCurrentTrackAndNothingQueued_IsFalse()
-    {
-        await Assert.That(MprisMapping.CanPlay(canResumeOrPause: false, hasCurrentTrack: false, canGoNext: false)).IsFalse();
-    }
-
-    [Test]
-    public async Task CanPlay_WithACurrentTrackThatCannotBeResumed_IsFalse()
-    {
-        await Assert.That(MprisMapping.CanPlay(canResumeOrPause: false, hasCurrentTrack: true, canGoNext: false)).IsFalse();
-    }
-
-    [Test]
     public async Task BuildMetadata_PutsEveryArtistOfTheTrackInTheArtistList()
     {
         var track = new Track(TestPaths.Music("a.mp3"), "a.mp3") { Artist = "TRC;Trilla Jermaine Trilloski" };

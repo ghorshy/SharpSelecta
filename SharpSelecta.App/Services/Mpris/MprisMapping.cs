@@ -45,7 +45,4 @@ public static class MprisMapping
     }
 
     public static ObjectPath TrackId(Track track) => new($"/org/sharpselecta/Track/{(uint)track.FilePath.GetHashCode()}");
-
-    public static bool CanPlay(bool canResumeOrPause, bool hasCurrentTrack, bool canGoNext) =>
-        canResumeOrPause || (!hasCurrentTrack && canGoNext);
 }

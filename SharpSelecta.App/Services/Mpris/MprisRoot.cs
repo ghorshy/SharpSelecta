@@ -108,20 +108,10 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
     }).GetTask();
 
     Task IMediaPlayer2Player.PlayAsync() => Dispatcher.UIThread.InvokeAsync(() =>
-        _playbackControls.IsPlaying ? Task.CompletedTask : ToggleOrStartPlaybackAsync());
+        _playbackControls.IsPlaying ? Task.CompletedTask : _playbackControls.PlayPauseCommand.ExecuteAsync(null));
 
-    Task IMediaPlayer2Player.PlayPauseAsync() => Dispatcher.UIThread.InvokeAsync(ToggleOrStartPlaybackAsync);
-
-    private Task ToggleOrStartPlaybackAsync()
-    {
-        if (_playbackControls.CurrentTrack is null)
-        {
-            return _playbackControls.NextTrackCommand.ExecuteAsync(null);
-        }
-
-        _playbackControls.PlayPauseCommand.Execute(null);
-        return Task.CompletedTask;
-    }
+    Task IMediaPlayer2Player.PlayPauseAsync() =>
+        Dispatcher.UIThread.InvokeAsync(() => _playbackControls.PlayPauseCommand.ExecuteAsync(null));
 
     Task IMediaPlayer2Player.StopAsync() => ((IMediaPlayer2Player)this).PauseAsync();
 
@@ -176,8 +166,6 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
 
     private IDictionary<string, object> GetAllPlayerProperties()
     {
-        var canGoNext = _playbackControls.NextTrackCommand.CanExecute(null);
-        var canResume = _playbackControls.PlayPauseCommand.CanExecute(null);
         var hasTrack = _playbackControls.CurrentTrack is not null;
 
         return new Dictionary<string, object>
@@ -188,10 +176,10 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
             ["Rate"] = 1.0,
             ["MinimumRate"] = 1.0,
             ["MaximumRate"] = 1.0,
-            ["CanGoNext"] = canGoNext,
+            ["CanGoNext"] = _playbackControls.NextTrackCommand.CanExecute(null),
             ["CanGoPrevious"] = _playbackControls.PreviousTrackCommand.CanExecute(null),
-            ["CanPlay"] = MprisMapping.CanPlay(canResume, hasTrack, canGoNext),
-            ["CanPause"] = canResume,
+            ["CanPlay"] = _playbackControls.PlayPauseCommand.CanExecute(null),
+            ["CanPause"] = _playbackControls.TransportState == TransportState.Ready,
             ["CanSeek"] = hasTrack,
             ["CanControl"] = true,
         };

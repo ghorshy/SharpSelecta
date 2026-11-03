@@ -25,8 +25,11 @@ public class PlaybackControlsViewModelTests : IDisposable
         return new PlaybackControlsViewModel(audioEngine, queue, new SettingsStore(settingsFilePath ?? _temp.NewSettingsPath()), NullLogger<PlaybackControlsViewModel>.Instance);
     }
 
+    private static Task RestoreLoadedTrackAsync(PlaybackControlsViewModel vm) =>
+        vm.RestoreQueueAsync([new QueueEntry(new Track(TestPaths.Music("a.mp3"), "a.mp3"), QueueEntrySource.Manual)], 0, 0);
+
     [Test]
-    public async Task PlayPauseCommand_DisabledUntilSomethingIsLoaded()
+    public async Task PlayPauseCommand_DisabledWhileTheQueueIsEmpty()
     {
         var vm = CreateViewModel(out _, out _);
         await Assert.That(vm.PlayPauseCommand.CanExecute(null)).IsFalse();
@@ -37,9 +40,25 @@ public class PlaybackControlsViewModelTests : IDisposable
     }
 
     [Test]
+    public async Task PlayPauseCommand_WithSomethingQueuedButNothingLoaded_StartsTheFirstQueuedTrack()
+    {
+        var vm = CreateViewModel(out var audioEngine, out _);
+        var queued = new[] { new Track(TestPaths.Music("a.mp3"), "a.mp3"), new Track(TestPaths.Music("b.mp3"), "b.mp3") };
+        await vm.RestoreQueueAsync(queued.Select(track => new QueueEntry(track, QueueEntrySource.Manual)).ToList(), -1, 0);
+        await Assert.That(vm.PlayPauseCommand.CanExecute(null)).IsTrue();
+
+        await vm.PlayPauseCommand.ExecuteAsync(null);
+
+        audioEngine.Received(1).Load(TestPaths.Music("a.mp3"));
+        audioEngine.Received(1).Play();
+        await Assert.That(vm.IsPlaying).IsTrue();
+    }
+
+    [Test]
     public async Task PlayPauseCommand_WhenNotPlaying_PlaysAndUpdatesState()
     {
         var vm = CreateViewModel(out var audioEngine, out _);
+        await RestoreLoadedTrackAsync(vm);
 
         vm.PlayPauseCommand.Execute(null);
 
@@ -52,6 +71,7 @@ public class PlaybackControlsViewModelTests : IDisposable
     public async Task PlayPauseCommand_WhenPlaying_PausesAndUpdatesState()
     {
         var vm = CreateViewModel(out var audioEngine, out _);
+        await RestoreLoadedTrackAsync(vm);
         vm.PlayPauseCommand.Execute(null);
 
         vm.PlayPauseCommand.Execute(null);
