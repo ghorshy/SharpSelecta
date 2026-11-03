@@ -36,8 +36,8 @@ public static class ShortcutRegistry
             ShortcutScope.TrackList | ShortcutScope.AlbumGrid | ShortcutScope.Queue),
         new("Library.IncreaseTileSize", "Ctrl+OemPlus", () => Strings.ShortcutIncreaseTileSize, IncreaseTileSize, ShortcutSection.AlbumGrid, ShortcutScope.AlbumGrid),
         new("Library.DecreaseTileSize", "Ctrl+OemMinus", () => Strings.ShortcutDecreaseTileSize, DecreaseTileSize, ShortcutSection.AlbumGrid, ShortcutScope.AlbumGrid),
-        new("Library.IncreaseTileSizeWheel", "Ctrl+WheelUp", () => Strings.ShortcutIncreaseTileSizeWheel, IncreaseTileSize, ShortcutSection.AlbumGrid, ShortcutScope.AlbumGrid),
-        new("Library.DecreaseTileSizeWheel", "Ctrl+WheelDown", () => Strings.ShortcutDecreaseTileSizeWheel, DecreaseTileSize, ShortcutSection.AlbumGrid, ShortcutScope.AlbumGrid),
+        new("Library.IncreaseTileSizeWheel", "Ctrl+WheelUp", () => Strings.ShortcutIncreaseTileSize, IncreaseTileSize, ShortcutSection.AlbumGrid, ShortcutScope.AlbumGrid),
+        new("Library.DecreaseTileSizeWheel", "Ctrl+WheelDown", () => Strings.ShortcutDecreaseTileSize, DecreaseTileSize, ShortcutSection.AlbumGrid, ShortcutScope.AlbumGrid),
         new("Queue.ClearQueue", "", () => Strings.ShortcutClearQueue, vm => vm.Queue.ClearQueueCommand, ShortcutSection.Queue, ShortcutScope.Queue),
     ];
 }
