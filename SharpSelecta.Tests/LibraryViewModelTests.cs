@@ -245,6 +245,41 @@ public class LibraryViewModelTests : IDisposable
     }
 
     [Test]
+    public async Task InitializeAsync_WhenNothingChangedOnDiskSinceTheIndex_ReplacesTracksOnlyOnce()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), Path.Combine(root.FullName, "a.mp3"));
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), Path.Combine(root.FullName, "b.mp3"));
+        new SettingsStore(settingsPath).Update(s => s with { LibraryFolderPaths = [root.FullName] });
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var vm = CreateViewModel(out _, out _, out _, settingsPath);
+        var replacements = 0;
+        vm.Tracks.CollectionChanged += (_, _) => replacements++;
+
+        await vm.InitializeAsync();
+
+        await Assert.That(replacements).IsEqualTo(1);
+        await Assert.That(vm.Tracks.Count).IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task InitializeAsync_WhenAFileWasAddedSinceTheIndex_ShowsItAfterReconciling()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), Path.Combine(root.FullName, "a.mp3"));
+        new SettingsStore(settingsPath).Update(s => s with { LibraryFolderPaths = [root.FullName] });
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), Path.Combine(root.FullName, "b.mp3"));
+        var vm = CreateViewModel(out _, out _, out _, settingsPath);
+
+        await vm.InitializeAsync();
+
+        await Assert.That(vm.Tracks.Count).IsEqualTo(2);
+    }
+
+    [Test]
     public async Task InitializeAsync_WhenPlaylistSectionAndSelectionWereSaved_RestoresTheSelectedPlaylistAndItsTracks()
     {
         var settingsPath = _temp.NewSettingsPath();

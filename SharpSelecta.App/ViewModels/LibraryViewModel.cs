@@ -236,11 +236,10 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         {
             Folders.Restore(folderPaths);
 
-            var hydrateStopwatch = Stopwatch.StartNew();
-            var hydrated = await Task.Run(() => LibraryIndexStore.LoadIndexed(_settings.FilePath, folderPaths));
+            var (hydrated, hydrateMs) = await Task.Run(() => Timed(() => LibraryIndexStore.LoadIndexed(_settings.FilePath, folderPaths)));
             if (hydrated.Count > 0)
             {
-                _logger.LogInformation("Hydrated {TrackCount} tracks from index in {ElapsedMs} ms", hydrated.Count, hydrateStopwatch.ElapsedMilliseconds);
+                _logger.LogInformation("Hydrated {TrackCount} tracks from index in {ElapsedMs} ms", hydrated.Count, hydrateMs);
                 Tracks.ReplaceAll(hydrated.Select(track => new LibraryTrackViewModel(track, this)));
             }
 
@@ -288,11 +287,14 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
         try
         {
-            var stopwatch = Stopwatch.StartNew();
-            var result = await Task.Run(() => LibraryIndexStore.Reconcile(_settings.FilePath, folderPaths));
+            var (result, reconcileMs) = await Task.Run(() => Timed(() => LibraryIndexStore.Reconcile(_settings.FilePath, folderPaths)));
 
-            _logger.LogInformation("Reconciled {TrackCount} tracks in {ElapsedMs} ms", result.Tracks.Count, stopwatch.ElapsedMilliseconds);
-            Tracks.ReplaceAll(result.Tracks.Select(track => new LibraryTrackViewModel(track, this)));
+            _logger.LogInformation("Reconciled {TrackCount} tracks in {ElapsedMs} ms", result.Tracks.Count, reconcileMs);
+            if (!MatchesCurrentTracks(result.Tracks))
+            {
+                Tracks.ReplaceAll(result.Tracks.Select(track => new LibraryTrackViewModel(track, this)));
+            }
+
             // A playlist's rows depend on which of its files are in the index, which a rescan may have changed.
             Playlists.RefreshTracks();
             StatusMessage = result.FailedFolders.Count > 0
@@ -308,6 +310,16 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             }
         }
     }
+
+    private static (T Result, long ElapsedMs) Timed<T>(Func<T> work)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        var result = work();
+        return (result, stopwatch.ElapsedMilliseconds);
+    }
+
+    private bool MatchesCurrentTracks(IReadOnlyList<Track> tracks) =>
+        tracks.Count == Tracks.Count && Tracks.Select(item => item.Track).SequenceEqual(tracks);
 
     private Task PruneArtworkCacheAsync(IReadOnlyList<Track> tracks, int reconcile)
     {

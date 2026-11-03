@@ -223,6 +223,9 @@ public partial class AlbumGridViewModel : ViewModelBase
 
     private async Task LoadAlbumArtworkAsync(IReadOnlyList<(string RawKey, AlbumViewModel Album)> groups)
     {
+        if (groups.Count == 0)
+            return;
+
         var cacheDirectory = ArtworkCacheDirectory;
         var options = new ParallelOptions { MaxDegreeOfParallelism = ArtworkLoadConcurrency };
         var stopwatch = Stopwatch.StartNew();

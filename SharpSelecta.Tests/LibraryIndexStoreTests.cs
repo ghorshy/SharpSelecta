@@ -64,6 +64,22 @@ public class LibraryIndexStoreTests : IDisposable
     }
 
     [Test]
+    public async Task LoadIndexed_ReturnsTracksInTheSameOrderAsReconcile_EvenForFilesIndexedLater()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        CopyFixtureInto(root.FullName, "bravo.mp3");
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        CopyFixtureInto(root.FullName, "alpha.mp3");
+        var reconciled = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+        var hydrated = LibraryIndexStore.LoadIndexed(settingsPath, [root.FullName]);
+
+        await Assert.That(string.Join(",", hydrated.Select(t => Path.GetFileName(t.FilePath)))).IsEqualTo("alpha.mp3,bravo.mp3");
+        await Assert.That(hydrated.SequenceEqual(reconciled.Tracks)).IsTrue();
+    }
+
+    [Test]
     public async Task Reconcile_WhenMtimeAndSizeUnchanged_ReusesIndexedTagsWithoutReReadingTheFile()
     {
         var settingsPath = _temp.NewSettingsPath();

@@ -33,7 +33,7 @@ public static class LibraryIndexStore
         var tracks = new List<Track>();
         foreach (var folderPath in folderPaths)
         {
-            tracks.AddRange(LoadFolderIndex(connection, folderPath).Values.Select(v => v.Track));
+            tracks.AddRange(InScanOrder(LoadFolderIndex(connection, folderPath)));
         }
 
         return tracks;
@@ -68,6 +68,9 @@ public static class LibraryIndexStore
         return new ReconcileResult(tracks, failedFolders);
     }
 
+    private static List<Track> InScanOrder(Dictionary<string, (DateTime LastWriteTimeUtc, long FileSizeBytes, Track Track)> index) =>
+        index.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase).Select(entry => entry.Value.Track).ToList();
+
     private static (IReadOnlyList<Track> Tracks, bool Failed) ReconcileFolder(SqliteConnection connection, string folderPath)
     {
         var existing = LoadFolderIndex(connection, folderPath);
@@ -101,7 +104,7 @@ public static class LibraryIndexStore
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            return (existing.Values.Select(v => v.Track).ToList(), true);
+            return (InScanOrder(existing), true);
         }
 
         using (var transaction = connection.BeginTransaction())
