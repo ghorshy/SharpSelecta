@@ -62,7 +62,7 @@ public sealed partial class KeyboardShortcutsViewModel : ViewModelBase, ISetting
         row.IsRecording = false;
         RecordingRow = null;
 
-        var conflict = Rows.FirstOrDefault(r => r != row && r.Gesture == formattedGesture);
+        var conflict = Rows.FirstOrDefault(r => r != row && r.Gesture == formattedGesture && r.Scope.Overlaps(row.Scope));
         row.ConflictWarning = conflict != null ? Strings.ShortcutConflict(conflict.Description) : null;
 
         _shortcutSettings.SetOverride(row.Id, formattedGesture);

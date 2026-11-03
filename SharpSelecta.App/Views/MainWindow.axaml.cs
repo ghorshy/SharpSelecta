@@ -11,10 +11,14 @@ namespace SharpSelecta.App.Views;
 
 public partial class MainWindow : Window
 {
+    private ShortcutBindings? _shortcuts;
+
     public MainWindow()
     {
         InitializeComponent();
         AddHandler(InputElement.GotFocusEvent, OnGotFocus, RoutingStrategies.Bubble);
+        // Tunnel so a wheel shortcut preempts the ScrollViewer under the pointer - see avalonia_pointerwheel_tunnel_bubble_gotcha.
+        AddHandler(PointerWheelChangedEvent, OnPointerWheelChanged, RoutingStrategies.Tunnel);
         DataContextChanged += OnDataContextChanged;
     }
 
@@ -55,19 +59,36 @@ public partial class MainWindow : Window
 
     private void RebuildKeyBindings(MainWindowViewModel vm)
     {
+        _shortcuts = new ShortcutBindings(vm, () => ScopesOf(FocusManager?.GetFocusedElement() as Visual));
         KeyBindings.Clear();
-        foreach (var shortcut in ShortcutRegistry.All)
+        foreach (var (gesture, command) in _shortcuts.Keys)
         {
-            try
-            {
-                var gesture = KeyGesture.Parse(vm.ShortcutSettings.GetEffectiveGesture(shortcut.Id));
-                KeyBindings.Add(new KeyBinding { Gesture = gesture, Command = shortcut.Command(vm) });
-            }
-            catch (ArgumentException)
-            {
-                // Corrupted/hand-edited settings file - skip this shortcut rather than crash.
-            }
+            KeyBindings.Add(new KeyBinding { Gesture = gesture, Command = command });
         }
+    }
+
+    private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        if (_shortcuts is not null && WheelGesture.FromWheel(e.KeyModifiers, e.Delta.Y) is { } gesture &&
+            _shortcuts.TryHandleWheel(gesture, ScopesOf(e.Source as Visual), Math.Abs(e.Delta.Y)))
+            e.Handled = true;
+    }
+
+    private static ShortcutScope ScopesOf(Visual? element)
+    {
+        var scopes = ShortcutScope.Global;
+        for (var visual = element; visual is not null; visual = visual.GetVisualParent())
+        {
+            scopes |= visual switch
+            {
+                AlbumGridView => ShortcutScope.AlbumGrid,
+                TrackListView => ShortcutScope.TrackList,
+                QueueView => ShortcutScope.Queue,
+                _ => ShortcutScope.Global,
+            };
+        }
+
+        return scopes;
     }
 
     private void OnSplitterDragCompleted(object? sender, VectorEventArgs e) =>

@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Resources;
+using SharpSelecta.App.Shortcuts;
 
 namespace SharpSelecta.App.Resources;
 
@@ -96,6 +97,8 @@ public static class Strings
     public static string ShortcutSearchLibrary => Get(nameof(ShortcutSearchLibrary));
     public static string ShortcutIncreaseTileSize => Get(nameof(ShortcutIncreaseTileSize));
     public static string ShortcutDecreaseTileSize => Get(nameof(ShortcutDecreaseTileSize));
+    public static string ShortcutIncreaseTileSizeWheel => Get(nameof(ShortcutIncreaseTileSizeWheel));
+    public static string ShortcutDecreaseTileSizeWheel => Get(nameof(ShortcutDecreaseTileSizeWheel));
     public static string ShortcutSeekBackward => Get(nameof(ShortcutSeekBackward));
     public static string ShortcutSeekForward => Get(nameof(ShortcutSeekForward));
     public static string ShortcutPlayPause => Get(nameof(ShortcutPlayPause));
@@ -266,6 +269,14 @@ public static class Strings
 
     public static string FailedToScanFolder(string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("FailedToScanFolderFormat"), reason);
+
+    public static string ShortcutScopeName(ShortcutScope scope) => scope switch
+    {
+        ShortcutScope.AlbumGrid => Get("ShortcutScopeAlbumGrid"),
+        ShortcutScope.TrackList => Get("ShortcutScopeTrackList"),
+        ShortcutScope.Queue => Get("ShortcutScopeQueue"),
+        _ => throw new ArgumentOutOfRangeException(nameof(scope), scope, null),
+    };
 
     public static string ShortcutConflict(string otherDescription) =>
         string.Format(CultureInfo.CurrentCulture, Get("ShortcutConflictFormat"), otherDescription);

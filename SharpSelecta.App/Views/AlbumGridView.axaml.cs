@@ -15,8 +15,6 @@ public partial class AlbumGridView : UserControl
     public AlbumGridView()
     {
         InitializeComponent();
-
-        Scroller.AddHandler(PointerWheelChangedEvent, OnPointerWheelChanged, RoutingStrategies.Tunnel);
     }
 
     private void OnScrollerSizeChanged(object? sender, SizeChangedEventArgs e)
@@ -25,15 +23,6 @@ public partial class AlbumGridView : UserControl
         {
             vm.SetViewportWidth(e.NewSize.Width);
         }
-    }
-
-    private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
-    {
-        if (DataContext is not AlbumGridViewModel vm || !e.KeyModifiers.HasFlag(KeyModifiers.Control))
-            return;
-
-        vm.AdjustTileSize(e.Delta.Y * vm.TileSizeStep);
-        e.Handled = true;
     }
 
     private void OnTileTapped(object? sender, TappedEventArgs e)

@@ -16,20 +16,27 @@ public static class ShortcutRegistry
         _ => null, // Playlist has no Cover Art view - nothing to resize
     };
 
+    private static RelayCommand<double?> IncreaseTileSize(MainWindowViewModel vm) =>
+        new(steps => ActiveGridOrNull(vm.Library)?.IncreaseTileSizeCommand.Execute(steps));
+
+    private static RelayCommand<double?> DecreaseTileSize(MainWindowViewModel vm) =>
+        new(steps => ActiveGridOrNull(vm.Library)?.DecreaseTileSizeCommand.Execute(steps));
+
     public static IReadOnlyList<ShortcutDefinition> All { get; } =
     [
         new("Library.Refresh", "F5", () => Strings.ShortcutRefreshLibrary, vm => vm.Library.RescanCommand),
         new("Library.FocusSearch", "Ctrl+F", () => Strings.ShortcutSearchLibrary, vm => vm.Library.Search.FocusCommand),
-        new("Library.IncreaseTileSize", "Ctrl+OemPlus", () => Strings.ShortcutIncreaseTileSize,
-            vm => new RelayCommand(() => ActiveGridOrNull(vm.Library)?.IncreaseTileSizeCommand.Execute(null))),
-        new("Library.DecreaseTileSize", "Ctrl+OemMinus", () => Strings.ShortcutDecreaseTileSize,
-            vm => new RelayCommand(() => ActiveGridOrNull(vm.Library)?.DecreaseTileSizeCommand.Execute(null))),
+        new("Library.IncreaseTileSize", "Ctrl+OemPlus", () => Strings.ShortcutIncreaseTileSize, IncreaseTileSize, ShortcutScope.AlbumGrid),
+        new("Library.DecreaseTileSize", "Ctrl+OemMinus", () => Strings.ShortcutDecreaseTileSize, DecreaseTileSize, ShortcutScope.AlbumGrid),
+        new("Library.IncreaseTileSizeWheel", "Ctrl+WheelUp", () => Strings.ShortcutIncreaseTileSizeWheel, IncreaseTileSize, ShortcutScope.AlbumGrid),
+        new("Library.DecreaseTileSizeWheel", "Ctrl+WheelDown", () => Strings.ShortcutDecreaseTileSizeWheel, DecreaseTileSize, ShortcutScope.AlbumGrid),
         new("Playback.SeekBackward", "Left", () => Strings.ShortcutSeekBackward, vm => vm.PlaybackControls.SeekBackwardCommand),
         new("Playback.SeekForward", "Right", () => Strings.ShortcutSeekForward, vm => vm.PlaybackControls.SeekForwardCommand),
         new("Playback.PlayPause", "MediaPlayPause", () => Strings.ShortcutPlayPause, vm => vm.PlaybackControls.PlayPauseCommand),
         new("Playback.PreviousTrack", "MediaPreviousTrack", () => Strings.ShortcutPreviousTrack, vm => vm.PlaybackControls.PreviousTrackCommand),
         new("Playback.NextTrack", "MediaNextTrack", () => Strings.ShortcutNextTrack, vm => vm.PlaybackControls.NextTrackCommand),
-        new("Queue.ClearQueue", "", () => Strings.ShortcutClearQueue, vm => vm.Queue.ClearQueueCommand),
-        new("Library.Properties", "Alt+Enter", () => Strings.ShortcutProperties, vm => vm.OpenPropertiesCommand),
+        new("Queue.ClearQueue", "", () => Strings.ShortcutClearQueue, vm => vm.Queue.ClearQueueCommand, ShortcutScope.Queue),
+        new("Library.Properties", "Alt+Enter", () => Strings.ShortcutProperties, vm => vm.OpenPropertiesCommand,
+            ShortcutScope.TrackList | ShortcutScope.AlbumGrid | ShortcutScope.Queue),
     ];
 }

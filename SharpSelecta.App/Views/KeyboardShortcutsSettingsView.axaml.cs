@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using SharpSelecta.App.Shortcuts;
 using SharpSelecta.App.ViewModels;
 
 namespace SharpSelecta.App.Views;
@@ -20,6 +21,7 @@ public partial class KeyboardShortcutsSettingsView : UserControl
         // is already bound elsewhere - see avalonia_pointerwheel_tunnel_bubble_gotcha.
         AddHandler(KeyDownEvent, OnRecorderKeyDown, RoutingStrategies.Tunnel, handledEventsToo: true);
         AddHandler(KeyUpEvent, OnRecorderKeyUp, RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(PointerWheelChangedEvent, OnRecorderPointerWheelChanged, RoutingStrategies.Tunnel, handledEventsToo: true);
     }
 
     private void OnRecordClick(object? sender, RoutedEventArgs e)
@@ -82,6 +84,17 @@ public partial class KeyboardShortcutsSettingsView : UserControl
             _liveModifiers &= ~modifier;
             row.RecordingPreview = FormatModifierPreview(_liveModifiers);
         }
+    }
+
+    // A bare wheel isn't recordable: bound, it would swallow plain scrolling in its view.
+    private void OnRecorderPointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        if (DataContext is not KeyboardShortcutsViewModel vm || vm.RecordingRow is null ||
+            e.KeyModifiers == KeyModifiers.None || WheelGesture.FromWheel(e.KeyModifiers, e.Delta.Y) is not { } gesture)
+            return;
+
+        e.Handled = true;
+        vm.CompleteRecording(gesture.ToString());
     }
 
     private static KeyModifiers? KeyToModifier(Key key) => key switch

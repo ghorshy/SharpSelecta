@@ -505,6 +505,12 @@
   <data name="ShortcutDecreaseTileSize" xml:space="preserve">
     <value>Decrease album tile size</value>
   </data>
+  <data name="ShortcutIncreaseTileSizeWheel" xml:space="preserve">
+    <value>Increase album tile size (mouse wheel)</value>
+  </data>
+  <data name="ShortcutDecreaseTileSizeWheel" xml:space="preserve">
+    <value>Decrease album tile size (mouse wheel)</value>
+  </data>
   <data name="ShortcutSeekBackward" xml:space="preserve">
     <value>Seek backward</value>
   </data>
@@ -530,7 +536,16 @@
     <value>Reset</value>
   </data>
   <data name="PressAKeyCombination" xml:space="preserve">
-    <value>Press a key combination…</value>
+    <value>Press keys, or hold a modifier and scroll…</value>
+  </data>
+  <data name="ShortcutScopeAlbumGrid" xml:space="preserve">
+    <value>Album grid</value>
+  </data>
+  <data name="ShortcutScopeTrackList" xml:space="preserve">
+    <value>Track list</value>
+  </data>
+  <data name="ShortcutScopeQueue" xml:space="preserve">
+    <value>Queue</value>
   </data>
   <data name="ShortcutNotSet" xml:space="preserve">
     <value>Not set</value>

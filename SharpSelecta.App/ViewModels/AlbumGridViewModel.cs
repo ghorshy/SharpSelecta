@@ -81,11 +81,12 @@ public partial class AlbumGridViewModel : ViewModelBase
 
     public void AdjustTileSize(double delta) => TileSize = Math.Clamp(TileSize + delta, _layout.TileSizeMin, _layout.TileSizeMax);
 
+    // steps scales the change for a wheel gesture's delta (fractional on touchpads); null means one step.
     [RelayCommand]
-    private void IncreaseTileSize() => AdjustTileSize(_layout.TileSizeStep);
+    private void IncreaseTileSize(double? steps) => AdjustTileSize((steps ?? 1) * _layout.TileSizeStep);
 
     [RelayCommand]
-    private void DecreaseTileSize() => AdjustTileSize(-_layout.TileSizeStep);
+    private void DecreaseTileSize(double? steps) => AdjustTileSize(-(steps ?? 1) * _layout.TileSizeStep);
 
     partial void OnTileSizeChanged(double value)
     {

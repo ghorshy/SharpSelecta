@@ -14,6 +14,14 @@ public sealed partial class ShortcutRowViewModel : ViewModelBase
 
     public string DefaultGesture => _definition.DefaultGesture;
 
+    public ShortcutScope Scope => _definition.Scope;
+
+    public string? ScopeLabel => Scope == ShortcutScope.Global
+        ? null
+        : string.Join(", ", Enum.GetValues<ShortcutScope>()
+            .Where(s => s != ShortcutScope.Global && Scope.HasFlag(s))
+            .Select(Strings.ShortcutScopeName));
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DisplayGesture))]
     public partial string Gesture { get; set; }

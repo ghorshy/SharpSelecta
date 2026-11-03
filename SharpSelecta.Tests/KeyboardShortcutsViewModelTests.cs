@@ -85,6 +85,32 @@ public class KeyboardShortcutsViewModelTests : IDisposable
     }
 
     [Test]
+    public async Task CompleteRecording_WithAGestureUsedInAnotherViewsScope_HasNoConflictWarning()
+    {
+        var vm = CreateViewModel(out _);
+        var tileSizeRow = vm.Rows.Single(r => r.Id == "Library.IncreaseTileSize");
+        var clearQueueRow = vm.Rows.Single(r => r.Id == "Queue.ClearQueue");
+        vm.StartRecording(clearQueueRow);
+
+        vm.CompleteRecording(tileSizeRow.Gesture);
+
+        await Assert.That(clearQueueRow.ConflictWarning).IsNull();
+    }
+
+    [Test]
+    public async Task CompleteRecording_WithAGestureUsedByAScopedShortcut_ConflictsWhenTheNewOneIsGlobal()
+    {
+        var vm = CreateViewModel(out _);
+        var tileSizeRow = vm.Rows.Single(r => r.Id == "Library.IncreaseTileSize");
+        var refreshRow = vm.Rows.Single(r => r.Id == "Library.Refresh");
+        vm.StartRecording(refreshRow);
+
+        vm.CompleteRecording(tileSizeRow.Gesture);
+
+        await Assert.That(refreshRow.ConflictWarning).IsNotNull();
+    }
+
+    [Test]
     public async Task CompleteRecording_WithAUniqueGesture_HasNoConflictWarning()
     {
         var vm = CreateViewModel(out _);
@@ -141,5 +167,14 @@ public class KeyboardShortcutsViewModelTests : IDisposable
         var vm = CreateViewModel(out _);
 
         await Assert.That(vm.Rows.Select(r => r.Id)).IsEquivalentTo(ShortcutRegistry.All.Select(d => d.Id));
+    }
+
+    [Test]
+    public async Task Rows_NameTheViewsAScopedShortcutWorksIn()
+    {
+        var vm = CreateViewModel(out _);
+
+        await Assert.That(vm.Rows.Single(r => r.Id == "Library.Refresh").ScopeLabel).IsNull();
+        await Assert.That(vm.Rows.Single(r => r.Id == "Library.Properties").ScopeLabel).IsEqualTo("Album grid, Track list, Queue");
     }
 }
