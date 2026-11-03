@@ -229,25 +229,34 @@ public partial class AlbumGridViewModel : ViewModelBase
         var cacheDirectory = ArtworkCacheDirectory;
         var options = new ParallelOptions { MaxDegreeOfParallelism = ArtworkLoadConcurrency };
         var stopwatch = Stopwatch.StartNew();
+        var loaded = new CoalescingDispatch<(AlbumViewModel Album, byte[]? Artwork)>(
+            flush => Dispatcher.UIThread.Post(flush, DispatcherPriority.Background),
+            batch =>
+            {
+                foreach (var (album, artwork) in batch)
+                {
+                    album.ArtworkBytes = artwork;
+                }
+            });
 
-        await Parallel.ForEachAsync(groups, options, async (group, _) =>
+        await Parallel.ForEachAsync(groups, options, (group, _) =>
         {
             var (rawKey, album) = group;
             var firstTrackPath = album.Tracks.Count > 0 ? album.Tracks[0].Track.FilePath : null;
             if (firstTrackPath is null)
-                return;
+                return ValueTask.CompletedTask;
 
             try
             {
-                var artwork = AlbumArtworkCache.GetOrCreate(
-                    cacheDirectory, rawKey, () => MusicLibraryScanner.LoadArtwork(firstTrackPath));
-
-                await Dispatcher.UIThread.InvokeAsync(() => album.ArtworkBytes = artwork);
+                loaded.Add((album, AlbumArtworkCache.GetOrCreate(
+                    cacheDirectory, rawKey, () => MusicLibraryScanner.LoadArtwork(firstTrackPath))));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to load artwork for album {Album}", album.Title);
             }
+
+            return ValueTask.CompletedTask;
         });
 
         _logger.LogInformation("Loaded artwork for {AlbumCount} albums in {ElapsedMs} ms", groups.Count, stopwatch.ElapsedMilliseconds);
