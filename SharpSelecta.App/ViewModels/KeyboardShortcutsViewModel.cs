@@ -35,6 +35,7 @@ public sealed partial class KeyboardShortcutsViewModel : ViewModelBase, ISetting
                 .Select(definition =>
                     new ShortcutRowViewModel(definition, shortcutSettings.GetEffectiveGesture(definition.Id)))
         ];
+        RefreshConflictWarnings();
         Sections =
         [
             .. Rows.GroupBy(row => row.Section)
@@ -69,10 +70,8 @@ public sealed partial class KeyboardShortcutsViewModel : ViewModelBase, ISetting
         row.IsRecording = false;
         RecordingRow = null;
 
-        var conflict = Rows.FirstOrDefault(r => r != row && r.Gesture == formattedGesture && r.Scope.Overlaps(row.Scope));
-        row.ConflictWarning = conflict != null ? Strings.ShortcutConflict(conflict.Description) : null;
-
         _shortcutSettings.SetOverride(row.Id, formattedGesture);
+        RefreshConflictWarnings();
     }
 
     public void ResetToDefault(ShortcutRowViewModel row)
@@ -82,7 +81,7 @@ public sealed partial class KeyboardShortcutsViewModel : ViewModelBase, ISetting
 
         _shortcutSettings.ResetOverride(row.Id);
         row.Gesture = row.DefaultGesture;
-        row.ConflictWarning = null;
+        RefreshConflictWarnings();
     }
 
     public void ClearShortcut(ShortcutRowViewModel row)
@@ -92,6 +91,18 @@ public sealed partial class KeyboardShortcutsViewModel : ViewModelBase, ISetting
 
         _shortcutSettings.SetOverride(row.Id, string.Empty);
         row.Gesture = string.Empty;
-        row.ConflictWarning = null;
+        RefreshConflictWarnings();
+    }
+
+    // Recomputed for every row, since rebinding one side of a conflict also resolves it for the other.
+    private void RefreshConflictWarnings()
+    {
+        foreach (var row in Rows)
+        {
+            var conflict = row.Gesture.Length == 0
+                ? null
+                : Rows.FirstOrDefault(r => r != row && r.Gesture == row.Gesture && r.Scope.Overlaps(row.Scope));
+            row.ConflictWarning = conflict != null ? Strings.ShortcutConflict(conflict.Description) : null;
+        }
     }
 }

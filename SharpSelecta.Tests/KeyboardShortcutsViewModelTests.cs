@@ -111,6 +111,56 @@ public class KeyboardShortcutsViewModelTests : IDisposable
     }
 
     [Test]
+    public async Task RebindingTheOtherRowOfAConflict_ClearsTheWarning()
+    {
+        var vm = CreateViewModel(out _);
+        var (row, otherRow) = (vm.Rows[0], vm.Rows[1]);
+        vm.StartRecording(row);
+        vm.CompleteRecording(otherRow.Gesture);
+
+        vm.StartRecording(otherRow);
+        vm.CompleteRecording("Ctrl+Shift+Alt+F");
+
+        await Assert.That(row.ConflictWarning).IsNull();
+    }
+
+    [Test]
+    public async Task ClearingTheOtherRowOfAConflict_ClearsTheWarning()
+    {
+        var vm = CreateViewModel(out _);
+        var (row, otherRow) = (vm.Rows[0], vm.Rows[1]);
+        vm.StartRecording(row);
+        vm.CompleteRecording(otherRow.Gesture);
+
+        vm.ClearShortcut(otherRow);
+
+        await Assert.That(row.ConflictWarning).IsNull();
+    }
+
+    [Test]
+    public async Task AConflict_IsFlaggedOnBothRows()
+    {
+        var vm = CreateViewModel(out _);
+        var (row, otherRow) = (vm.Rows[0], vm.Rows[1]);
+        vm.StartRecording(row);
+
+        vm.CompleteRecording(otherRow.Gesture);
+
+        await Assert.That(otherRow.ConflictWarning).IsNotNull();
+    }
+
+    [Test]
+    public async Task AConflictSavedInSettings_IsFlaggedWhenThePageOpens()
+    {
+        var settings = new ShortcutSettingsService(new SettingsStore(_temp.NewSettingsPath()));
+        settings.SetOverride(ShortcutRegistry.All[0].Id, ShortcutRegistry.All[1].DefaultGesture);
+
+        var vm = new KeyboardShortcutsViewModel(settings);
+
+        await Assert.That(vm.Rows[0].ConflictWarning).IsNotNull();
+    }
+
+    [Test]
     public async Task CompleteRecording_WithAUniqueGesture_HasNoConflictWarning()
     {
         var vm = CreateViewModel(out _);
