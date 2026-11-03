@@ -22,21 +22,22 @@ public static class ShortcutRegistry
     private static RelayCommand<double?> DecreaseTileSize(MainWindowViewModel vm) =>
         new(steps => ActiveGridOrNull(vm.Library)?.DecreaseTileSizeCommand.Execute(steps));
 
+    // Listed section by section, in the order the settings page shows them.
     public static IReadOnlyList<ShortcutDefinition> All { get; } =
     [
-        new("Library.Refresh", "F5", () => Strings.ShortcutRefreshLibrary, vm => vm.Library.RescanCommand),
-        new("Library.FocusSearch", "Ctrl+F", () => Strings.ShortcutSearchLibrary, vm => vm.Library.Search.FocusCommand),
-        new("Library.IncreaseTileSize", "Ctrl+OemPlus", () => Strings.ShortcutIncreaseTileSize, IncreaseTileSize, ShortcutScope.AlbumGrid),
-        new("Library.DecreaseTileSize", "Ctrl+OemMinus", () => Strings.ShortcutDecreaseTileSize, DecreaseTileSize, ShortcutScope.AlbumGrid),
-        new("Library.IncreaseTileSizeWheel", "Ctrl+WheelUp", () => Strings.ShortcutIncreaseTileSizeWheel, IncreaseTileSize, ShortcutScope.AlbumGrid),
-        new("Library.DecreaseTileSizeWheel", "Ctrl+WheelDown", () => Strings.ShortcutDecreaseTileSizeWheel, DecreaseTileSize, ShortcutScope.AlbumGrid),
-        new("Playback.SeekBackward", "Left", () => Strings.ShortcutSeekBackward, vm => vm.PlaybackControls.SeekBackwardCommand),
-        new("Playback.SeekForward", "Right", () => Strings.ShortcutSeekForward, vm => vm.PlaybackControls.SeekForwardCommand),
-        new("Playback.PlayPause", "MediaPlayPause", () => Strings.ShortcutPlayPause, vm => vm.PlaybackControls.PlayPauseCommand),
-        new("Playback.PreviousTrack", "MediaPreviousTrack", () => Strings.ShortcutPreviousTrack, vm => vm.PlaybackControls.PreviousTrackCommand),
-        new("Playback.NextTrack", "MediaNextTrack", () => Strings.ShortcutNextTrack, vm => vm.PlaybackControls.NextTrackCommand),
-        new("Queue.ClearQueue", "", () => Strings.ShortcutClearQueue, vm => vm.Queue.ClearQueueCommand, ShortcutScope.Queue),
-        new("Library.Properties", "Alt+Enter", () => Strings.ShortcutProperties, vm => vm.OpenPropertiesCommand,
+        new("Playback.PlayPause", "MediaPlayPause", () => Strings.ShortcutPlayPause, vm => vm.PlaybackControls.PlayPauseCommand, ShortcutSection.Playback),
+        new("Playback.PreviousTrack", "MediaPreviousTrack", () => Strings.ShortcutPreviousTrack, vm => vm.PlaybackControls.PreviousTrackCommand, ShortcutSection.Playback),
+        new("Playback.NextTrack", "MediaNextTrack", () => Strings.ShortcutNextTrack, vm => vm.PlaybackControls.NextTrackCommand, ShortcutSection.Playback),
+        new("Playback.SeekBackward", "Left", () => Strings.ShortcutSeekBackward, vm => vm.PlaybackControls.SeekBackwardCommand, ShortcutSection.Playback),
+        new("Playback.SeekForward", "Right", () => Strings.ShortcutSeekForward, vm => vm.PlaybackControls.SeekForwardCommand, ShortcutSection.Playback),
+        new("Library.Refresh", "F5", () => Strings.ShortcutRefreshLibrary, vm => vm.Library.RescanCommand, ShortcutSection.Library),
+        new("Library.FocusSearch", "Ctrl+F", () => Strings.ShortcutSearchLibrary, vm => vm.Library.Search.FocusCommand, ShortcutSection.Library),
+        new("Library.Properties", "Alt+Enter", () => Strings.ShortcutProperties, vm => vm.OpenPropertiesCommand, ShortcutSection.Library,
             ShortcutScope.TrackList | ShortcutScope.AlbumGrid | ShortcutScope.Queue),
+        new("Library.IncreaseTileSize", "Ctrl+OemPlus", () => Strings.ShortcutIncreaseTileSize, IncreaseTileSize, ShortcutSection.AlbumGrid, ShortcutScope.AlbumGrid),
+        new("Library.DecreaseTileSize", "Ctrl+OemMinus", () => Strings.ShortcutDecreaseTileSize, DecreaseTileSize, ShortcutSection.AlbumGrid, ShortcutScope.AlbumGrid),
+        new("Library.IncreaseTileSizeWheel", "Ctrl+WheelUp", () => Strings.ShortcutIncreaseTileSizeWheel, IncreaseTileSize, ShortcutSection.AlbumGrid, ShortcutScope.AlbumGrid),
+        new("Library.DecreaseTileSizeWheel", "Ctrl+WheelDown", () => Strings.ShortcutDecreaseTileSizeWheel, DecreaseTileSize, ShortcutSection.AlbumGrid, ShortcutScope.AlbumGrid),
+        new("Queue.ClearQueue", "", () => Strings.ShortcutClearQueue, vm => vm.Queue.ClearQueueCommand, ShortcutSection.Queue, ShortcutScope.Queue),
     ];
 }

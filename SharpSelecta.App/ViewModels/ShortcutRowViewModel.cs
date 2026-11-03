@@ -16,7 +16,9 @@ public sealed partial class ShortcutRowViewModel : ViewModelBase
 
     public ShortcutScope Scope => _definition.Scope;
 
-    public string? ScopeLabel => Scope == ShortcutScope.Global
+    public ShortcutSection Section => _definition.Section;
+
+    public string? ScopeLabel => Scope == ShortcutScope.Global || Scope == _definition.Section.HomeScope
         ? null
         : string.Join(", ", Enum.GetValues<ShortcutScope>()
             .Where(s => s != ShortcutScope.Global && Scope.HasFlag(s))

@@ -11,22 +11,36 @@
              x:DataType="vm:KeyboardShortcutsViewModel">
 
     <StackPanel Spacing="{styles:SpacingValue XS}">
-        <ItemsControl ItemsSource="{Binding Rows}">
+        <ItemsControl ItemsSource="{Binding Sections}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Spacing="{styles:SpacingValue M}" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:ShortcutRowViewModel">
-                    <StackPanel Margin="{styles:Spacing Bottom=XS}">
-                        <Grid ColumnDefinitions="*,Auto,Auto,Auto">
-                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
-                                <TextBlock Text="{Binding ScopeLabel}" Classes="secondary small" TextWrapping="Wrap"
-                                           IsVisible="{Binding ScopeLabel, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
-                            </StackPanel>
-                            <Button Grid.Column="1" Content="{Binding DisplayGesture}" Click="OnRecordClick" Margin="{styles:Spacing Left=XS}" Width="{DynamicResource Size.Settings.ShortcutButtonWidth}" HorizontalContentAlignment="Center" />
-                            <Button Grid.Column="2" Content="{x:Static res:Strings.Reset}" Click="OnResetClick" Margin="{styles:Spacing Left=XXS}" />
-                            <Button Grid.Column="3" Content="{x:Static res:Strings.Clear}" Click="OnClearClick" Margin="{styles:Spacing Left=XXS}" />
-                        </Grid>
-                        <TextBlock Text="{Binding ConflictWarning}" Classes="error" TextWrapping="Wrap"
-                                   IsVisible="{Binding ConflictWarning, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+                <DataTemplate x:DataType="vm:ShortcutSectionViewModel">
+                    <StackPanel Spacing="{styles:SpacingValue XS}">
+                        <TextBlock Text="{Binding Title}" Classes="strong" />
+                        <ItemsControl ItemsSource="{Binding Rows}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ShortcutRowViewModel">
+                                    <StackPanel Margin="{styles:Spacing Bottom=XS}">
+                                        <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
+                                                <TextBlock Text="{Binding ScopeLabel}" Classes="secondary small" TextWrapping="Wrap"
+                                                           IsVisible="{Binding ScopeLabel, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+                                            </StackPanel>
+                                            <Button Grid.Column="1" Content="{Binding DisplayGesture}" Click="OnRecordClick" Margin="{styles:Spacing Left=XS}" Width="{DynamicResource Size.Settings.ShortcutButtonWidth}" HorizontalContentAlignment="Center" />
+                                            <Button Grid.Column="2" Content="{x:Static res:Strings.Reset}" Click="OnResetClick" Margin="{styles:Spacing Left=XXS}" />
+                                            <Button Grid.Column="3" Content="{x:Static res:Strings.Clear}" Click="OnClearClick" Margin="{styles:Spacing Left=XXS}" />
+                                        </Grid>
+                                        <TextBlock Text="{Binding ConflictWarning}" Classes="error" TextWrapping="Wrap"
+                                                   IsVisible="{Binding ConflictWarning, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>

@@ -14,6 +14,8 @@ public sealed partial class KeyboardShortcutsViewModel : ViewModelBase, ISetting
 
     public ObservableCollection<ShortcutRowViewModel> Rows { get; }
 
+    public IReadOnlyList<ShortcutSectionViewModel> Sections { get; }
+
     [ObservableProperty] public partial ShortcutRowViewModel? RecordingRow { get; set; }
 
     // Everything here is rebound and persisted immediately (like the other settings categories),
@@ -32,6 +34,11 @@ public sealed partial class KeyboardShortcutsViewModel : ViewModelBase, ISetting
             .. ShortcutRegistry.All
                 .Select(definition =>
                     new ShortcutRowViewModel(definition, shortcutSettings.GetEffectiveGesture(definition.Id)))
+        ];
+        Sections =
+        [
+            .. Rows.GroupBy(row => row.Section)
+                .Select(group => new ShortcutSectionViewModel(group.Key.Title(), [.. group]))
         ];
     }
 

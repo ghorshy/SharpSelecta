@@ -9,4 +9,5 @@ public sealed record ShortcutDefinition(
     string DefaultGesture,
     Func<string> Description,
     Func<MainWindowViewModel, ICommand> Command,
+    ShortcutSection Section,
     ShortcutScope Scope = ShortcutScope.Global);

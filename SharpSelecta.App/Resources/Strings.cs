@@ -97,6 +97,10 @@ public static class Strings
     public static string ShortcutSearchLibrary => Get(nameof(ShortcutSearchLibrary));
     public static string ShortcutIncreaseTileSize => Get(nameof(ShortcutIncreaseTileSize));
     public static string ShortcutDecreaseTileSize => Get(nameof(ShortcutDecreaseTileSize));
+    public static string ShortcutSectionPlayback => Get(nameof(ShortcutSectionPlayback));
+    public static string ShortcutSectionLibrary => Get(nameof(ShortcutSectionLibrary));
+    public static string ShortcutSectionAlbumGrid => Get(nameof(ShortcutSectionAlbumGrid));
+    public static string ShortcutSectionQueue => Get(nameof(ShortcutSectionQueue));
     public static string ShortcutIncreaseTileSizeWheel => Get(nameof(ShortcutIncreaseTileSizeWheel));
     public static string ShortcutDecreaseTileSizeWheel => Get(nameof(ShortcutDecreaseTileSizeWheel));
     public static string ShortcutSeekBackward => Get(nameof(ShortcutSeekBackward));

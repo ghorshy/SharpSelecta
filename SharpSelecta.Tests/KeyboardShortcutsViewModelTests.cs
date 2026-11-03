@@ -170,11 +170,23 @@ public class KeyboardShortcutsViewModelTests : IDisposable
     }
 
     [Test]
-    public async Task Rows_NameTheViewsAScopedShortcutWorksIn()
+    public async Task Sections_GroupTheRowsUnderTitledSectionsInOrder()
+    {
+        var vm = CreateViewModel(out _);
+
+        await Assert.That(string.Join("|", vm.Sections.Select(s => s.Title))).IsEqualTo("Playback|Library|Album grid|Queue");
+        await Assert.That(vm.Sections.SelectMany(s => s.Rows)).IsEquivalentTo(vm.Rows);
+        await Assert.That(vm.Sections.Single(s => s.Title == "Album grid").Rows.Select(r => r.Id))
+            .IsEquivalentTo(["Library.IncreaseTileSize", "Library.DecreaseTileSize", "Library.IncreaseTileSizeWheel", "Library.DecreaseTileSizeWheel"]);
+    }
+
+    [Test]
+    public async Task Rows_NameTheViewsAScopedShortcutWorksIn_OnlyWhenItsSectionDoesNotAlreadySaySo()
     {
         var vm = CreateViewModel(out _);
 
         await Assert.That(vm.Rows.Single(r => r.Id == "Library.Refresh").ScopeLabel).IsNull();
+        await Assert.That(vm.Rows.Single(r => r.Id == "Library.IncreaseTileSize").ScopeLabel).IsNull();
         await Assert.That(vm.Rows.Single(r => r.Id == "Library.Properties").ScopeLabel).IsEqualTo("Album grid, Track list, Queue");
     }
 }
