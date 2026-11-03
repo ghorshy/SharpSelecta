@@ -56,7 +56,36 @@ public static class AlbumArtworkCache
         }
     }
 
-    private static string GetCachePath(string cacheDirectory, string albumKey)
+    public static int Prune(string cacheDirectory, IEnumerable<string> liveAlbumKeys)
+    {
+        if (!Directory.Exists(cacheDirectory))
+        {
+            return 0;
+        }
+
+        var livePaths = liveAlbumKeys.Select(key => GetCachePath(cacheDirectory, key)).ToHashSet(StringComparer.Ordinal);
+        var deleted = 0;
+        foreach (var file in Directory.EnumerateFiles(cacheDirectory, "*.jpg"))
+        {
+            if (livePaths.Contains(file))
+            {
+                continue;
+            }
+
+            try
+            {
+                File.Delete(file);
+                deleted++;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+
+        return deleted;
+    }
+
+    public static string GetCachePath(string cacheDirectory, string albumKey)
     {
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(albumKey.Trim().ToUpperInvariant())));
         return Path.Combine(cacheDirectory, $"{hash}.jpg");

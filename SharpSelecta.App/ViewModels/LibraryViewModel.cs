@@ -20,6 +20,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     private readonly IFileManagerService _fileManagerService;
     private readonly SettingsStore _settings;
     private readonly ILogger<LibraryViewModel> _logger;
+    private int _reconcileGeneration;
     private readonly IReadOnlyList<IAlbumArtProvider> _albumArtProviders;
     private readonly TrackConversionService? _conversionService;
 
@@ -269,10 +270,12 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     private async Task ReconcileFoldersAsync()
     {
+        var reconcile = ++_reconcileGeneration;
         if (!Folders.HasFolders)
         {
             Tracks.ReplaceAll([]);
             StatusMessage = null;
+            _ = PruneArtworkCacheAsync([], reconcile);
             return;
         }
 
@@ -295,6 +298,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             StatusMessage = result.FailedFolders.Count > 0
                 ? Strings.FailedToScanFolder(string.Join(", ", result.FailedFolders))
                 : null;
+            _ = PruneArtworkCacheAsync(result.Tracks, reconcile);
         }
         finally
         {
@@ -303,6 +307,29 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
                 IsLoadingLibrary = false;
             }
         }
+    }
+
+    private Task PruneArtworkCacheAsync(IReadOnlyList<Track> tracks, int reconcile)
+    {
+        var cacheDirectory = AlbumGridViewModel.ArtworkCacheDirectoryFor(_settings.FilePath);
+        return Task.Run(() =>
+        {
+            if (reconcile != Volatile.Read(ref _reconcileGeneration))
+                return;
+
+            try
+            {
+                var deleted = AlbumArtworkCache.Prune(cacheDirectory, tracks.Select(AlbumGridViewModel.ArtworkKey));
+                if (deleted > 0)
+                {
+                    _logger.LogInformation("Pruned {Count} stale artwork thumbnails", deleted);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to prune the artwork cache");
+            }
+        });
     }
 
     [RelayCommand]
