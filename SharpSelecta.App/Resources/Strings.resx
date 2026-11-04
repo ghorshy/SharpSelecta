@@ -208,6 +208,21 @@
   <data name="AudioFileTypeName" xml:space="preserve">
     <value>Audio file</value>
   </data>
+  <data name="TrackStartActionLabel" xml:space="preserve">
+    <value>When double-clicking a track or album</value>
+  </data>
+  <data name="TrackStartInsertAndPlay" xml:space="preserve">
+    <value>Play it now, keep the rest of the queue</value>
+  </data>
+  <data name="TrackStartPlayFromHere" xml:space="preserve">
+    <value>Play from here (replace the queue with the rest of the list)</value>
+  </data>
+  <data name="TrackStartReplaceQueue" xml:space="preserve">
+    <value>Play only this (replace the queue)</value>
+  </data>
+  <data name="TrackStartAddToQueue" xml:space="preserve">
+    <value>Add to the end of the queue</value>
+  </data>
   <data name="OpenedFilesActionLabel" xml:space="preserve">
     <value>When opening files from the file manager</value>
   </data>

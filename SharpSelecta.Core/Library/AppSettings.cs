@@ -20,6 +20,7 @@ public sealed record AppSettings
     public bool AlbumSortDescending { get; init; }
     public bool RestoreQueueOnStartup { get; init; } = true;
     public OpenedFilesAction OpenedFilesAction { get; init; } = OpenedFilesAction.ReplaceQueueAndPlay;
+    public TrackStartAction TrackStartAction { get; init; } = TrackStartAction.InsertAndPlay;
     public string? OutputDeviceName { get; init; }
     public double? Volume { get; init; }
     public VolumeCurve VolumeCurve { get; init; } = VolumeCurve.Linear;

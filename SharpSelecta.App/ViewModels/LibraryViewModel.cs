@@ -353,30 +353,41 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         return _playbackControls.PlayNowAsync(track);
     }
 
-    // In a playlist, starting a track means "play the playlist from here": the queue becomes this
-    // track through the end of the playlist. Elsewhere it's a plain Play Now.
+    // The menu's Play Now: always insert-and-play, whatever the double-click setting says.
     [RelayCommand]
     private Task PlayTrackItemAsync(LibraryTrackViewModel item)
     {
-        if (LibrarySection == LibrarySection.Playlist)
-        {
-            var index = Playlists.Tracks.IndexOf(item);
-            if (index >= 0)
-            {
-                SetAutoDjSource(Playlists.SelectedPlaylistId);
-
-                // With Auto DJ on the playlist isn't queued in order - this track starts and Auto DJ adds
-                // random ones from the same playlist after it.
-                var rest = _playbackControls.IsAutoDjEnabled
-                    ? [item.Track]
-                    : Playlists.Tracks.Skip(index).Where(t => !t.IsMissing).Select(t => t.Track).ToList();
-                return _playbackControls.ReplaceQueueAndPlayAsync(rest);
-            }
-        }
-
-        SetAutoDjSource(null);
+        SetAutoDjSourceForSection();
         return _playbackControls.PlayNowAsync(item.Track);
     }
+
+    // A double-click on a track; shownInOrder is the list as displayed (sorted and filtered), for Play from here.
+    public Task StartTrackAsync(LibraryTrackViewModel clicked, IReadOnlyList<LibraryTrackViewModel> shownInOrder)
+    {
+        var index = shownInOrder.ToList().IndexOf(clicked);
+        var fromHere = index < 0 ? [clicked] : shownInOrder.Skip(index).Where(t => !t.IsMissing);
+        return StartAsync([clicked.Track], [.. fromHere.Select(t => t.Track)]);
+    }
+
+    public Task StartTracksAsync(IReadOnlyList<Track> tracks) => tracks.Count == 0 ? Task.CompletedTask : StartAsync(tracks, tracks);
+
+    private Task StartAsync(IReadOnlyList<Track> clicked, IReadOnlyList<Track> fromHere)
+    {
+        var action = _settings.Current.TrackStartAction;
+        // Like the menu's Add to queue, appending behind what's playing leaves the Auto DJ source alone.
+        if (action != TrackStartAction.AddToQueue || _playbackControls.CurrentTrack is null)
+            SetAutoDjSourceForSection();
+
+        // With Auto DJ on the rest isn't queued in order - the clicked track starts and Auto DJ adds
+        // random ones from the same source after it.
+        if (_playbackControls.IsAutoDjEnabled)
+            fromHere = clicked;
+
+        return _playbackControls.StartAsync(action, clicked, fromHere);
+    }
+
+    private void SetAutoDjSourceForSection() =>
+        SetAutoDjSource(LibrarySection == LibrarySection.Playlist ? Playlists.SelectedPlaylistId : null);
 
     [RelayCommand]
     private Task PlayNext(Track track) => _playbackControls.PlayNext(ResolveSelection(track));

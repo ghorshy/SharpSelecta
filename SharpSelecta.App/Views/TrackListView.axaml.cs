@@ -210,16 +210,18 @@ public sealed partial class TrackListView : UserControl
         });
     }
 
-    private void OnTrackDoubleTapped(object? sender, TappedEventArgs e)
+    private async void OnTrackDoubleTapped(object? sender, TappedEventArgs e)
     {
         if (e.Source is Visual source && source.FindAncestorOfType<DataGridColumnHeader>() is not null)
         {
             return;
         }
 
-        if (sender is DataGrid { SelectedItem: LibraryTrackViewModel item } && !item.IsMissing)
+        if (sender is DataGrid { SelectedItem: LibraryTrackViewModel item } grid && !item.IsMissing)
         {
-            item.Library.PlayTrackItemCommand.Execute(item);
+            // The CollectionView is the list as shown - sorted and filtered - which Play from here follows.
+            var shown = (grid.CollectionView ?? grid.ItemsSource)?.OfType<LibraryTrackViewModel>().ToList() ?? [item];
+            await item.Library.StartTrackAsync(item, shown);
         }
     }
 

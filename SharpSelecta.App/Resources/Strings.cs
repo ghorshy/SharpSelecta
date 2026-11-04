@@ -57,6 +57,11 @@ public static class Strings
     public static string OpenedFilesReplaceQueueAndPlay => Get(nameof(OpenedFilesReplaceQueueAndPlay));
     public static string OpenedFilesAddToQueue => Get(nameof(OpenedFilesAddToQueue));
     public static string OpenedFilesPlayNext => Get(nameof(OpenedFilesPlayNext));
+    public static string TrackStartActionLabel => Get(nameof(TrackStartActionLabel));
+    public static string TrackStartInsertAndPlay => Get(nameof(TrackStartInsertAndPlay));
+    public static string TrackStartPlayFromHere => Get(nameof(TrackStartPlayFromHere));
+    public static string TrackStartReplaceQueue => Get(nameof(TrackStartReplaceQueue));
+    public static string TrackStartAddToQueue => Get(nameof(TrackStartAddToQueue));
     public static string OutputDevice => Get(nameof(OutputDevice));
     public static string SystemDefaultAudioDevice => Get(nameof(SystemDefaultAudioDevice));
     public static string UseLogarithmicVolumeScale => Get(nameof(UseLogarithmicVolumeScale));

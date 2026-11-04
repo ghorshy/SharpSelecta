@@ -18,6 +18,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     // property values against these, and Cancel reverts to them.
     private bool _appliedRestoreQueueOnStartup;
     private OpenedFilesAction _appliedOpenedFilesAction;
+    private TrackStartAction _appliedTrackStartAction;
     private string? _appliedOutputDeviceName;
     private bool _appliedUseLogarithmicVolumeScale;
     private int _appliedSeekStepSeconds;
@@ -39,6 +40,18 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     [NotifyPropertyChangedFor(nameof(HasPendingChanges))]
     public partial OpenedFilesActionOption SelectedOpenedFilesActionOption { get; set; }
 
+    public IReadOnlyList<TrackStartActionOption> TrackStartActionOptions { get; } =
+    [
+        new(TrackStartAction.InsertAndPlay, Strings.TrackStartInsertAndPlay),
+        new(TrackStartAction.PlayFromHere, Strings.TrackStartPlayFromHere),
+        new(TrackStartAction.ReplaceQueue, Strings.TrackStartReplaceQueue),
+        new(TrackStartAction.AddToQueue, Strings.TrackStartAddToQueue),
+    ];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPendingChanges))]
+    public partial TrackStartActionOption SelectedTrackStartActionOption { get; set; }
+
     [ObservableProperty]
     private OutputDeviceOption selectedOutputDevice = OutputDeviceOption.SystemDefault;
 
@@ -57,6 +70,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     public bool HasPendingChanges =>
         RestoreQueueOnStartup != _appliedRestoreQueueOnStartup ||
         SelectedOpenedFilesActionOption.Action != _appliedOpenedFilesAction ||
+        SelectedTrackStartActionOption.Action != _appliedTrackStartAction ||
         SelectedOutputDevice?.DeviceName != _appliedOutputDeviceName ||
         UseLogarithmicVolumeScale != _appliedUseLogarithmicVolumeScale ||
         SeekStepSeconds != _appliedSeekStepSeconds ||
@@ -78,6 +92,9 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
         SelectedOpenedFilesActionOption = OptionFor(saved.OpenedFilesAction);
         _appliedOpenedFilesAction = saved.OpenedFilesAction;
+
+        SelectedTrackStartActionOption = OptionFor(saved.TrackStartAction);
+        _appliedTrackStartAction = saved.TrackStartAction;
 
         useWaveformSlider = saved.UseWaveformSlider;
         _appliedUseWaveformSlider = useWaveformSlider;
@@ -114,6 +131,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         {
             RestoreQueueOnStartup = RestoreQueueOnStartup,
             OpenedFilesAction = SelectedOpenedFilesActionOption.Action,
+            TrackStartAction = SelectedTrackStartActionOption.Action,
             UseWaveformSlider = UseWaveformSlider,
             VolumeCurve = curve,
             SeekStepSeconds = SeekStepSeconds,
@@ -122,6 +140,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
         _appliedRestoreQueueOnStartup = RestoreQueueOnStartup;
         _appliedOpenedFilesAction = SelectedOpenedFilesActionOption.Action;
+        _appliedTrackStartAction = SelectedTrackStartActionOption.Action;
 
         _playbackControls.Waveform.UseSlider = UseWaveformSlider;
         _appliedUseWaveformSlider = UseWaveformSlider;
@@ -143,6 +162,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     {
         RestoreQueueOnStartup = _appliedRestoreQueueOnStartup;
         SelectedOpenedFilesActionOption = OptionFor(_appliedOpenedFilesAction);
+        SelectedTrackStartActionOption = OptionFor(_appliedTrackStartAction);
         SelectedOutputDevice = OutputDeviceOption.For(_appliedOutputDeviceName);
         UseLogarithmicVolumeScale = _appliedUseLogarithmicVolumeScale;
         SeekStepSeconds = _appliedSeekStepSeconds;
@@ -151,6 +171,9 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
     private OpenedFilesActionOption OptionFor(OpenedFilesAction action) =>
         OpenedFilesActionOptions.FirstOrDefault(o => o.Action == action) ?? OpenedFilesActionOptions[0];
+
+    private TrackStartActionOption OptionFor(TrackStartAction action) =>
+        TrackStartActionOptions.FirstOrDefault(o => o.Action == action) ?? TrackStartActionOptions[0];
 
     public async Task ApplyPersistedOutputDeviceAsync()
     {
@@ -184,6 +207,8 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 }
 
 public sealed record OpenedFilesActionOption(OpenedFilesAction Action, string DisplayName);
+
+public sealed record TrackStartActionOption(TrackStartAction Action, string DisplayName);
 
 // A null DeviceName is the system default, so no real device's name can be mistaken for it.
 public sealed record OutputDeviceOption(string? DeviceName, string DisplayName)

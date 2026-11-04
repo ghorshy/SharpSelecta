@@ -262,4 +262,38 @@ public class PlaybackSettingsViewModelTests : IDisposable
         await Assert.That(vm.SelectedOpenedFilesActionOption.Action).IsEqualTo(OpenedFilesAction.AddToQueue);
         await Assert.That(((ISettingsCategoryViewModel)vm).HasPendingChanges).IsFalse();
     }
+
+    [Test]
+    public async Task TrackStartAction_DefaultsToInsertAndPlay_AndPersistsOnlyOnApply()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = new PlaybackSettingsViewModel(new SettingsStore(settingsPath), Substitute.For<IOutputDeviceService>(), CreatePlaybackControlsViewModel());
+        var settingsVm = (ISettingsCategoryViewModel)vm;
+        await Assert.That(vm.SelectedTrackStartActionOption.Action).IsEqualTo(TrackStartAction.InsertAndPlay);
+        await Assert.That(vm.TrackStartActionOptions.Select(o => o.Action)).IsEquivalentTo(Enum.GetValues<TrackStartAction>());
+
+        vm.SelectedTrackStartActionOption = vm.TrackStartActionOptions.Single(o => o.Action == TrackStartAction.PlayFromHere);
+        await Assert.That(settingsVm.HasPendingChanges).IsTrue();
+        await Assert.That(new SettingsStore(settingsPath).Current.TrackStartAction).IsEqualTo(TrackStartAction.InsertAndPlay);
+
+        settingsVm.ApplyCommand.Execute(null);
+
+        await Assert.That(settingsVm.HasPendingChanges).IsFalse();
+        await Assert.That(new SettingsStore(settingsPath).Current.TrackStartAction).IsEqualTo(TrackStartAction.PlayFromHere);
+    }
+
+    [Test]
+    public async Task TrackStartAction_CancelRevertsToTheSavedChoice()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        new SettingsStore(settingsPath).Update(s => s with { TrackStartAction = TrackStartAction.AddToQueue });
+        var vm = new PlaybackSettingsViewModel(new SettingsStore(settingsPath), Substitute.For<IOutputDeviceService>(), CreatePlaybackControlsViewModel());
+        await Assert.That(vm.SelectedTrackStartActionOption.Action).IsEqualTo(TrackStartAction.AddToQueue);
+
+        vm.SelectedTrackStartActionOption = vm.TrackStartActionOptions.Single(o => o.Action == TrackStartAction.ReplaceQueue);
+        ((ISettingsCategoryViewModel)vm).CancelCommand.Execute(null);
+
+        await Assert.That(vm.SelectedTrackStartActionOption.Action).IsEqualTo(TrackStartAction.AddToQueue);
+        await Assert.That(((ISettingsCategoryViewModel)vm).HasPendingChanges).IsFalse();
+    }
 }

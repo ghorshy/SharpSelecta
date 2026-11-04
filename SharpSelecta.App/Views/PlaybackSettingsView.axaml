@@ -13,6 +13,19 @@
         <CheckBox Content="{x:Static res:Strings.RestoreQueueOnStartup}" IsChecked="{Binding RestoreQueueOnStartup}" />
 
         <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}">
+            <TextBlock Text="{x:Static res:Strings.TrackStartActionLabel}" Classes="secondary" />
+            <ComboBox ItemsSource="{Binding TrackStartActionOptions}"
+                      SelectedItem="{Binding SelectedTrackStartActionOption}"
+                      HorizontalAlignment="Stretch">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:TrackStartActionOption">
+                        <TextBlock Text="{Binding DisplayName}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </StackPanel>
+
+        <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}">
             <TextBlock Text="{x:Static res:Strings.OpenedFilesActionLabel}" Classes="secondary" />
             <ComboBox ItemsSource="{Binding OpenedFilesActionOptions}"
                       SelectedItem="{Binding SelectedOpenedFilesActionOption}"

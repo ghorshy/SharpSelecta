@@ -534,9 +534,10 @@ public class LibraryViewModelTests : IDisposable
         await Assert.That(playbackControls.CurrentTrack!.Title).IsEqualTo("Edited Title");
     }
 
-    private (LibraryViewModel Vm, PlaybackControlsViewModel Playback, List<Track> Tracks, string SettingsPath, DirectoryInfo Root) CreatePlaylistWithTracks(int count, bool addMissingAtEnd = false)
+    private (LibraryViewModel Vm, PlaybackControlsViewModel Playback, List<Track> Tracks, string SettingsPath, DirectoryInfo Root) CreatePlaylistWithTracks(int count, bool addMissingAtEnd = false, TrackStartAction startAction = TrackStartAction.InsertAndPlay)
     {
         var settingsPath = _temp.NewSettingsPath();
+        new SettingsStore(settingsPath).Update(s => s with { TrackStartAction = startAction });
         var root = _temp.NewSubdirectory();
         for (var i = 1; i <= count; i++)
         {
@@ -557,18 +558,134 @@ public class LibraryViewModelTests : IDisposable
         return (vm, playback, indexed, settingsPath, root);
     }
 
+    private static IReadOnlyList<LibraryTrackViewModel> Shown(LibraryViewModel vm) => vm.Playlists.Tracks;
+
+    private static string QueuedFileNames(PlaybackControlsViewModel playback) =>
+        string.Join("|", playback.QueueEntries.Select(e => Path.GetFileName(e.Track.FilePath)));
+
+    private static Track Elsewhere() => new(TestPaths.Music("something-else.mp3"), "else.mp3");
+
     [Test]
-    public async Task PlayTrackItem_InAPlaylist_ReplacesTheQueueWithTheClickedTrackThroughTheEndOfThePlaylist()
+    public async Task StartTrack_InsertAndPlay_PutsTheTrackAfterTheCurrentOneAndPlaysIt_KeepingTheQueue()
     {
         var (vm, playback, tracks, _, _) = CreatePlaylistWithTracks(4);
-        await playback.PlayNowAsync(new Track(TestPaths.Music("something-else.mp3"), "else.mp3"));
+        await playback.PlayNowAsync(Elsewhere());
+
+        await vm.StartTrackAsync(vm.Playlists.Tracks[1], Shown(vm));
+
+        await Assert.That(QueuedFileNames(playback)).IsEqualTo("something-else.mp3|track2.mp3");
+        await Assert.That(playback.CurrentTrack!.FilePath).IsEqualTo(tracks[1].FilePath);
+    }
+
+    [Test]
+    public async Task StartTrack_PlayFromHere_ReplacesTheQueueWithTheClickedTrackThroughTheEndOfTheShownList()
+    {
+        var (vm, playback, tracks, _, _) = CreatePlaylistWithTracks(4, startAction: TrackStartAction.PlayFromHere);
+        await playback.PlayNowAsync(Elsewhere());
+
+        await vm.StartTrackAsync(vm.Playlists.Tracks[1], Shown(vm));
+
+        await Assert.That(QueuedFileNames(playback)).IsEqualTo("track2.mp3|track3.mp3|track4.mp3");
+        await Assert.That(playback.QueueCurrentIndex).IsEqualTo(0);
+        await Assert.That(playback.CurrentTrack!.FilePath).IsEqualTo(tracks[1].FilePath);
+    }
+
+    [Test]
+    public async Task StartTrack_ReplaceQueue_LeavesOnlyTheClickedTrack()
+    {
+        var (vm, playback, tracks, _, _) = CreatePlaylistWithTracks(4, startAction: TrackStartAction.ReplaceQueue);
+        await playback.PlayNowAsync(Elsewhere());
+
+        await vm.StartTrackAsync(vm.Playlists.Tracks[1], Shown(vm));
+
+        await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath)).IsEquivalentTo([tracks[1].FilePath]);
+        await Assert.That(playback.CurrentTrack!.FilePath).IsEqualTo(tracks[1].FilePath);
+    }
+
+    [Test]
+    public async Task StartTrack_AddToQueue_AppendsWithoutInterruptingWhatIsPlaying()
+    {
+        var (vm, playback, _, _, _) = CreatePlaylistWithTracks(4, startAction: TrackStartAction.AddToQueue);
+        await playback.PlayNowAsync(Elsewhere());
+
+        await vm.StartTrackAsync(vm.Playlists.Tracks[1], Shown(vm));
+
+        await Assert.That(QueuedFileNames(playback)).IsEqualTo("something-else.mp3|track2.mp3");
+        await Assert.That(playback.CurrentTrack!.FilePath).IsEqualTo(Elsewhere().FilePath);
+    }
+
+    [Test]
+    public async Task StartTrack_AddToQueue_BehindWhatIsPlaying_LeavesTheAutoDjSourceAlone()
+    {
+        var (vm, playback, _, settingsPath, _) = CreatePlaylistWithTracks(4, startAction: TrackStartAction.AddToQueue);
+        await playback.PlayNowAsync(Elsewhere());
+
+        await vm.StartTrackAsync(vm.Playlists.Tracks[1], Shown(vm));
+
+        await Assert.That(new SettingsStore(settingsPath).Current.AutoDjSourcePlaylistId).IsNull();
+    }
+
+    [Test]
+    public async Task StartTrack_AddToQueue_WithNothingLoaded_StartsTheTrack()
+    {
+        var (vm, playback, tracks, _, _) = CreatePlaylistWithTracks(4, startAction: TrackStartAction.AddToQueue);
+
+        await vm.StartTrackAsync(vm.Playlists.Tracks[1], Shown(vm));
+
+        await Assert.That(playback.CurrentTrack!.FilePath).IsEqualTo(tracks[1].FilePath);
+        await Assert.That(playback.IsPlaying).IsTrue();
+    }
+
+    [Test]
+    public async Task StartTrack_PlayFromHere_WithAutoDjOn_StartsThatTrackAndAddsRandomOnesFromThePlaylist()
+    {
+        var (vm, playback, tracks, settingsPath, _) = CreatePlaylistWithTracks(10, startAction: TrackStartAction.PlayFromHere);
+        playback.IsAutoDjEnabled = true;
+        var playlistId = vm.Playlists.SelectedPlaylistId;
+
+        await vm.StartTrackAsync(vm.Playlists.Tracks[3], Shown(vm));
+
+        await Assert.That(playback.QueueEntries[0].Track.FilePath).IsEqualTo(tracks[3].FilePath);
+        await Assert.That(playback.QueueEntries.Count).IsEqualTo(1 + AutoDj.Lookahead);
+        await Assert.That(playback.QueueEntries.Skip(1).All(e => e.Source == QueueEntrySource.AutoDj)).IsTrue();
+        await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath).Distinct().Count()).IsEqualTo(playback.QueueEntries.Count);
+        await Assert.That(playback.QueueEntries.All(e => tracks.Any(t => t.FilePath == e.Track.FilePath))).IsTrue();
+        await Assert.That(new SettingsStore(settingsPath).Current.AutoDjSourcePlaylistId).IsEqualTo(playlistId);
+    }
+
+    [Test]
+    public async Task StartTrack_InAPlaylist_RemembersThePlaylistForAutoDjLater()
+    {
+        var (vm, playback, tracks, settingsPath, _) = CreatePlaylistWithTracks(4, startAction: TrackStartAction.PlayFromHere);
+        await vm.StartTrackAsync(vm.Playlists.Tracks[1], Shown(vm));
+
+        await Assert.That(new SettingsStore(settingsPath).Current.AutoDjSourcePlaylistId).IsEqualTo(vm.Playlists.SelectedPlaylistId);
+
+        playback.ToggleAutoDjCommand.Execute(null); // turning it on later uses that playlist
+        await Assert.That(playback.AutoDjPool!().Count).IsEqualTo(4);
+    }
+
+    [Test]
+    public async Task StartTracks_ForAWholeAlbum_PlayFromHere_QueuesTheWholeAlbum()
+    {
+        var (vm, playback, tracks, _, _) = CreatePlaylistWithTracks(3, startAction: TrackStartAction.PlayFromHere);
+        await playback.PlayNowAsync(Elsewhere());
+
+        await vm.StartTracksAsync(tracks);
+
+        await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath)).IsEquivalentTo(tracks.Select(t => t.FilePath));
+        await Assert.That(playback.CurrentTrack!.FilePath).IsEqualTo(tracks[0].FilePath);
+    }
+
+    [Test]
+    public async Task PlayTrackItem_TheMenusPlayNow_InsertsAndPlaysWhateverTheSetting()
+    {
+        var (vm, playback, tracks, _, _) = CreatePlaylistWithTracks(4, startAction: TrackStartAction.ReplaceQueue);
+        await playback.PlayNowAsync(Elsewhere());
 
         await vm.PlayTrackItemCommand.ExecuteAsync(vm.Playlists.Tracks[1]);
 
-        await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath))
-            .IsEquivalentTo(tracks.Skip(1).Select(t => t.FilePath));
-        await Assert.That(playback.QueueCurrentIndex).IsEqualTo(0);
-        await Assert.That(playback.CurrentTrack!.FilePath).IsEqualTo(tracks[1].FilePath);
+        await Assert.That(QueuedFileNames(playback)).IsEqualTo("something-else.mp3|track2.mp3");
     }
 
     [Test]
@@ -587,36 +704,6 @@ public class LibraryViewModelTests : IDisposable
         await Assert.That(vm.Tracks.Count).IsEqualTo(3);
         await Assert.That(vm.Tracks.Select(t => Path.GetFileName(t.Track.FilePath))).Contains("brand-new.mp3");
         await Assert.That(vm.Playlists.Tracks.Count(t => t.IsMissing)).IsEqualTo(1);
-    }
-
-    [Test]
-    public async Task PlayTrackItem_InAPlaylist_WithAutoDjOn_StartsThatTrackAndAddsRandomOnesFromThePlaylist()
-    {
-        var (vm, playback, tracks, settingsPath, _) = CreatePlaylistWithTracks(10);
-        playback.IsAutoDjEnabled = true;
-        var playlistId = vm.Playlists.SelectedPlaylistId;
-
-        await vm.PlayTrackItemCommand.ExecuteAsync(vm.Playlists.Tracks[3]);
-
-        await Assert.That(playback.QueueEntries[0].Track.FilePath).IsEqualTo(vm.Playlists.Tracks[3].Track.FilePath);
-        await Assert.That(playback.QueueEntries.Count).IsEqualTo(1 + AutoDj.Lookahead);
-        await Assert.That(playback.QueueEntries.Skip(1).All(e => e.Source == QueueEntrySource.AutoDj)).IsTrue();
-        await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath).Distinct().Count()).IsEqualTo(playback.QueueEntries.Count);
-        await Assert.That(playback.QueueEntries.All(e => tracks.Any(t => t.FilePath == e.Track.FilePath))).IsTrue();
-        await Assert.That(new SettingsStore(settingsPath).Current.AutoDjSourcePlaylistId).IsEqualTo(playlistId);
-    }
-
-    [Test]
-    public async Task PlayTrackItem_InAPlaylist_WithAutoDjOff_StillQueuesTheRestInOrder_ButRemembersThePlaylistForLater()
-    {
-        var (vm, playback, tracks, settingsPath, _) = CreatePlaylistWithTracks(4);
-        await vm.PlayTrackItemCommand.ExecuteAsync(vm.Playlists.Tracks[1]);
-
-        await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath)).IsEquivalentTo(tracks.Skip(1).Select(t => t.FilePath));
-        await Assert.That(new SettingsStore(settingsPath).Current.AutoDjSourcePlaylistId).IsEqualTo(vm.Playlists.SelectedPlaylistId);
-
-        playback.ToggleAutoDjCommand.Execute(null); // turning it on later uses that playlist
-        await Assert.That(playback.AutoDjPool!().Count).IsEqualTo(4);
     }
 
     [Test]
@@ -650,10 +737,10 @@ public class LibraryViewModelTests : IDisposable
     }
 
     [Test]
-    public async Task PlayTrackItem_InAPlaylist_SkipsMissingFilesWhenBuildingTheQueue()
+    public async Task StartTrack_PlayFromHere_SkipsMissingFilesWhenBuildingTheQueue()
     {
-        var (vm, playback, tracks, _, _) = CreatePlaylistWithTracks(2, addMissingAtEnd: true);
-        await vm.PlayTrackItemCommand.ExecuteAsync(vm.Playlists.Tracks[0]);
+        var (vm, playback, tracks, _, _) = CreatePlaylistWithTracks(2, addMissingAtEnd: true, startAction: TrackStartAction.PlayFromHere);
+        await vm.StartTrackAsync(vm.Playlists.Tracks[0], Shown(vm));
 
         await Assert.That(playback.QueueEntries.Select(e => e.Track.FilePath))
             .IsEquivalentTo(tracks.Select(t => t.FilePath));

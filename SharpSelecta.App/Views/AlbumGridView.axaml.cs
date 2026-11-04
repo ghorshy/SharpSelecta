@@ -34,13 +34,13 @@ public partial class AlbumGridView : UserControl
         }
     }
 
-    private void OnTileDoubleTapped(object? sender, TappedEventArgs e)
+    private async void OnTileDoubleTapped(object? sender, TappedEventArgs e)
     {
         if (sender is Control { DataContext: AlbumViewModel album } tile)
         {
             (DataContext as AlbumGridViewModel)?.ExpandAlbum(album);
-            album.Library.PlayAlbumNowCommand.Execute(album);
             ScrollExpandedPanelIntoView(tile);
+            await album.Library.StartTracksAsync(album.UnderlyingTracks);
         }
     }
 
@@ -54,11 +54,13 @@ public partial class AlbumGridView : UserControl
         }, DispatcherPriority.Loaded);
     }
 
-    private void OnExpandedTrackDoubleTapped(object? sender, TappedEventArgs e)
+    private async void OnExpandedTrackDoubleTapped(object? sender, TappedEventArgs e)
     {
-        if (sender is Control { DataContext: AlbumTrackRowViewModel item })
+        if (sender is Control { DataContext: AlbumTrackRowViewModel item } row)
         {
-            item.Track.Library.PlayNowCommand.Execute(item.Track.Track);
+            var album = row.FindAncestorOfType<ListBox>()?.DataContext as AlbumViewModel;
+            IReadOnlyList<LibraryTrackViewModel> shown = album is null ? [item.Track] : [.. album.TrackRows.Select(r => r.Track)];
+            await item.Track.Library.StartTrackAsync(item.Track, shown);
         }
     }
 

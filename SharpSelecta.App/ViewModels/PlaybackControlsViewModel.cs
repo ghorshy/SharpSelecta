@@ -402,6 +402,15 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         await LoadTrackAsync(tracks[0]);
     }
 
+    // clicked is what was double-clicked (a track, or an album's tracks); fromHere adds what follows it.
+    public Task StartAsync(TrackStartAction action, IReadOnlyList<Track> clicked, IReadOnlyList<Track> fromHere) => action switch
+    {
+        TrackStartAction.PlayFromHere => ReplaceQueueAndPlayAsync(fromHere),
+        TrackStartAction.ReplaceQueue => ReplaceQueueAndPlayAsync(clicked),
+        TrackStartAction.AddToQueue when CurrentTrack is not null => AddToQueue(clicked),
+        _ => PlayNowAsync(clicked),
+    };
+
     // Throws away the current queue (including whatever is playing) and starts the given tracks, in order.
     public async Task ReplaceQueueAndPlayAsync(IReadOnlyList<Track> tracks)
     {
