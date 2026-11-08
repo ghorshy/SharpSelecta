@@ -9,10 +9,18 @@
              x:Class="SharpSelecta.App.Views.IntegrationsSettingsView"
              x:DataType="vm:IntegrationsSettingsViewModel">
 
-    <StackPanel Spacing="{styles:SpacingValue XXS}">
-        <CheckBox Content="{x:Static res:Strings.DiscordPresenceToggle}" IsChecked="{Binding DiscordPresenceEnabled}" />
-        <TextBlock Text="{x:Static res:Strings.DiscordPresenceHint}" Classes="tertiary small" TextWrapping="Wrap"
-                   Margin="{styles:Spacing Left=L}" />
+    <StackPanel Spacing="{styles:SpacingValue S}">
+        <StackPanel Spacing="{styles:SpacingValue XXS}">
+            <CheckBox Content="{x:Static res:Strings.DiscordPresenceToggle}" IsChecked="{Binding DiscordPresenceEnabled}" />
+            <TextBlock Text="{x:Static res:Strings.DiscordPresenceHint}" Classes="tertiary small" TextWrapping="Wrap"
+                       Margin="{styles:Spacing Left=L}" />
+        </StackPanel>
+
+        <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}">
+            <TextBlock Text="{x:Static res:Strings.FanartApiKeyLabel}" Classes="secondary" />
+            <TextBox Text="{Binding FanartApiKey}" HorizontalAlignment="Stretch" />
+            <TextBlock Text="{x:Static res:Strings.FanartApiKeyHint}" Classes="tertiary small" TextWrapping="Wrap" />
+        </StackPanel>
     </StackPanel>
 
 </UserControl>

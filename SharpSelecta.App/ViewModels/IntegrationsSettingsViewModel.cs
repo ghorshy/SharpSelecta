@@ -11,12 +11,13 @@ public sealed partial class IntegrationsSettingsViewModel : ViewModelBase, ISett
 {
     private readonly SettingsStore _settings;
     private bool _appliedDiscordPresenceEnabled;
+    private string? _shownFanartApiKey;
 
     public IntegrationsSettingsViewModel(SettingsStore settings)
     {
         _settings = settings;
         _appliedDiscordPresenceEnabled = settings.Current.DiscordPresenceEnabled;
-        DiscordPresenceEnabled = _appliedDiscordPresenceEnabled;
+        ShowSavedValues();
     }
 
     // Off by default: the status tells everyone on Discord what you're listening to.
@@ -28,9 +29,15 @@ public sealed partial class IntegrationsSettingsViewModel : ViewModelBase, ISett
 
     public event EventHandler? DiscordPresenceEnabledChanged;
 
+    [ObservableProperty]
+    public partial string? FanartApiKey { get; set; }
+
+    private bool HasFanartApiKeyEdit =>
+        (string.IsNullOrWhiteSpace(FanartApiKey) ? null : FanartApiKey.Trim()) != _shownFanartApiKey;
+
     public string DisplayName => Strings.SettingsCategoryIntegrations;
 
-    public bool HasPendingChanges => DiscordPresenceEnabled != _appliedDiscordPresenceEnabled;
+    public bool HasPendingChanges => DiscordPresenceEnabled != _appliedDiscordPresenceEnabled || HasFanartApiKeyEdit;
 
     ICommand ISettingsCategoryViewModel.ApplyCommand => ApplyIntegrationsCommand;
 
@@ -38,12 +45,16 @@ public sealed partial class IntegrationsSettingsViewModel : ViewModelBase, ISett
 
     partial void OnDiscordPresenceEnabledChanged(bool value) => OnPropertyChanged(nameof(HasPendingChanges));
 
+    partial void OnFanartApiKeyChanged(string? value) => OnPropertyChanged(nameof(HasPendingChanges));
+
     [RelayCommand]
     private void ApplyIntegrations()
     {
         var changed = DiscordPresenceEnabled != _appliedDiscordPresenceEnabled;
-        _settings.Update(s => s with { DiscordPresenceEnabled = DiscordPresenceEnabled });
+        var fanartApiKey = HasFanartApiKeyEdit ? FanartApiKey : _settings.Current.FanartApiKey;
+        _settings.Update(s => s with { DiscordPresenceEnabled = DiscordPresenceEnabled, FanartApiKey = fanartApiKey });
         _appliedDiscordPresenceEnabled = DiscordPresenceEnabled;
+        ShowSavedFanartApiKey();
         OnPropertyChanged(nameof(HasPendingChanges));
 
         if (changed)
@@ -54,5 +65,18 @@ public sealed partial class IntegrationsSettingsViewModel : ViewModelBase, ISett
     }
 
     [RelayCommand]
-    private void CancelIntegrations() => DiscordPresenceEnabled = _appliedDiscordPresenceEnabled;
+    private void CancelIntegrations() => ShowSavedValues();
+
+    public void ShowSavedValues()
+    {
+        DiscordPresenceEnabled = _appliedDiscordPresenceEnabled;
+        ShowSavedFanartApiKey();
+    }
+
+    // The cover search can save a key too, so only an edit of what was shown overwrites the stored one.
+    private void ShowSavedFanartApiKey()
+    {
+        _shownFanartApiKey = _settings.Current.FanartApiKey;
+        FanartApiKey = _shownFanartApiKey;
+    }
 }

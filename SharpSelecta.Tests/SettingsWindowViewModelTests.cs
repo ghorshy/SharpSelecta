@@ -94,4 +94,18 @@ public class SettingsWindowViewModelTests : IDisposable
 
         await Assert.That(unsupported.Categories.OfType<UpdatesViewModel>().Any()).IsFalse();
     }
+
+    [Test]
+    public async Task Opening_ShowsAFanartKeySavedFromTheCoverSearchSinceTheLastOpen()
+    {
+        var store = new SettingsStore(_temp.NewSettingsPath());
+        var integrations = new IntegrationsSettingsViewModel(store);
+        store.Update(s => s with { FanartApiKey = "abc123" });
+
+        _ = new SettingsWindowViewModel(
+            CreateLibraryViewModel(), CreatePlaybackSettingsViewModel(), CreateInterfaceSettingsViewModel(), integrations, CreateShortcutSettingsService());
+
+        await Assert.That(integrations.FanartApiKey).IsEqualTo("abc123");
+        await Assert.That(integrations.HasPendingChanges).IsFalse();
+    }
 }

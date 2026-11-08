@@ -124,6 +124,8 @@ public static class Strings
     public static string UpdateLater => Get(nameof(UpdateLater));
     public static string DiscordPresenceToggle => Get(nameof(DiscordPresenceToggle));
     public static string DiscordPresenceHint => Get(nameof(DiscordPresenceHint));
+    public static string FanartApiKeyLabel => Get(nameof(FanartApiKeyLabel));
+    public static string FanartApiKeyHint => Get(nameof(FanartApiKeyHint));
     public static string AutoDj => Get(nameof(AutoDj));
     public static string AutoDjTooltip => Get(nameof(AutoDjTooltip));
     public static string ColumnDisc => Get(nameof(ColumnDisc));

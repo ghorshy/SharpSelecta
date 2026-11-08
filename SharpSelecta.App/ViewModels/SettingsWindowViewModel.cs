@@ -17,6 +17,7 @@ public partial class SettingsWindowViewModel : ViewModelBase
         IntegrationsSettingsViewModel integrations, ShortcutSettingsService shortcutSettings, UpdatesViewModel? updates = null)
     {
         KeyboardShortcuts = new KeyboardShortcutsViewModel(shortcutSettings);
+        integrations.ShowSavedValues();
         List<ISettingsCategoryViewModel> categories = [library, playback, interfaceSettings, integrations, KeyboardShortcuts];
         // Updates is only listed where this install can update itself.
         if (updates is { IsSupported: true })

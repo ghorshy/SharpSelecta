@@ -415,6 +415,12 @@
   <data name="DiscordPresenceHint" xml:space="preserve">
     <value>While a track is playing and Discord is running, it shows as your Discord status. It is cleared when you pause or stop.</value>
   </data>
+  <data name="FanartApiKeyLabel" xml:space="preserve">
+    <value>fanart.tv API key</value>
+  </data>
+  <data name="FanartApiKeyHint" xml:space="preserve">
+    <value>Lets the cover search look on fanart.tv. Get a free personal key from your account at fanart.tv. Leave empty to skip fanart.tv.</value>
+  </data>
   <data name="AutoDj" xml:space="preserve">
     <value>Auto DJ</value>
   </data>
