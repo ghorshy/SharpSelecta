@@ -1093,4 +1093,17 @@ public class PlaybackControlsViewModelTests : IDisposable
 
         await Assert.That(CreateViewModel(out _, out _, path).IsAutoDjEnabled).IsTrue();
     }
+
+    [Test]
+    public async Task RepeatMode_IsRememberedAcrossInstances()
+    {
+        var path = _temp.NewSettingsPath();
+        var first = CreateViewModel(out _, out _, path);
+        await Assert.That(first.RepeatMode).IsEqualTo(RepeatMode.Off);
+
+        first.ToggleRepeatModeCommand.Execute(null);
+        first.ToggleRepeatModeCommand.Execute(null);
+
+        await Assert.That(CreateViewModel(out _, out _, path).RepeatMode).IsEqualTo(RepeatMode.RepeatOne);
+    }
 }

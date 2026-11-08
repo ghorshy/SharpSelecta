@@ -2,6 +2,7 @@ using System.Runtime.Versioning;
 using System.Text.Json;
 using SharpSelecta.Core.Audio;
 using SharpSelecta.Core.Library;
+using SharpSelecta.Core.Playback;
 
 namespace SharpSelecta.Tests;
 
@@ -22,6 +23,7 @@ public class SettingsStoreTests : IDisposable
         await Assert.That(settings.VolumeCurve).IsEqualTo(VolumeCurve.Linear);
         await Assert.That(settings.CheckForUpdatesAutomatically).IsTrue();
         await Assert.That(settings.AutoDjEnabled).IsFalse();
+        await Assert.That(settings.RepeatMode).IsEqualTo(RepeatMode.Off);
         await Assert.That(settings.DiscordPresenceEnabled).IsFalse();
         await Assert.That(settings.EqualizerEnabled).IsFalse();
         await Assert.That(settings.UseWaveformSlider).IsFalse();
@@ -82,6 +84,7 @@ public class SettingsStoreTests : IDisposable
             EqualizerBandGainsDb = [1.5f, -2f],
             UseWaveformSlider = true,
             AutoDjEnabled = true,
+            RepeatMode = RepeatMode.RepeatAll,
             AutoDjSourcePlaylistId = "playlist-2",
             DiscordPresenceEnabled = true,
             CheckForUpdatesAutomatically = false,
@@ -117,6 +120,7 @@ public class SettingsStoreTests : IDisposable
         await Assert.That(s.EqualizerBandGainsDb).IsEquivalentTo([1.5f, -2f]);
         await Assert.That(s.UseWaveformSlider).IsTrue();
         await Assert.That(s.AutoDjEnabled).IsTrue();
+        await Assert.That(s.RepeatMode).IsEqualTo(RepeatMode.RepeatAll);
         await Assert.That(s.AutoDjSourcePlaylistId).IsEqualTo("playlist-2");
         await Assert.That(s.DiscordPresenceEnabled).IsTrue();
         await Assert.That(s.CheckForUpdatesAutomatically).IsFalse();

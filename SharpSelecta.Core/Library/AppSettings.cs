@@ -1,4 +1,5 @@
 using SharpSelecta.Core.Audio;
+using SharpSelecta.Core.Playback;
 
 namespace SharpSelecta.Core.Library;
 
@@ -36,6 +37,8 @@ public sealed record AppSettings
 
     // The playlist Auto DJ draws from; null means the whole library.
     public string? AutoDjSourcePlaylistId { get; init; }
+
+    public RepeatMode RepeatMode { get; init; } = RepeatMode.Off;
 
     public bool DiscordPresenceEnabled { get; init; }
     public bool CheckForUpdatesAutomatically { get; init; } = true;

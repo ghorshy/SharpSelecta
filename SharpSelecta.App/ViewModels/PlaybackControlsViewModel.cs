@@ -100,10 +100,11 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         };
 
         IsAutoDjEnabled = settings.Current.AutoDjEnabled;
-        _autoDjSettingLoaded = true;
+        RepeatMode = settings.Current.RepeatMode;
+        _settingsLoaded = true;
     }
 
-    private bool _autoDjSettingLoaded;
+    private bool _settingsLoaded;
     private bool _isToppingUpAutoDj;
 
     [ObservableProperty]
@@ -115,7 +116,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 
     partial void OnIsAutoDjEnabledChanged(bool value)
     {
-        if (!_autoDjSettingLoaded)
+        if (!_settingsLoaded)
             return;
 
         _settings.Update(s => s with { AutoDjEnabled = value });
@@ -292,6 +293,14 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         RepeatMode.RepeatOne => Strings.RepeatOne,
         _ => Strings.RepeatOff,
     };
+
+    partial void OnRepeatModeChanged(RepeatMode value)
+    {
+        if (!_settingsLoaded)
+            return;
+
+        _settings.Update(s => s with { RepeatMode = value });
+    }
 
     [RelayCommand]
     private void ToggleRepeatMode()
