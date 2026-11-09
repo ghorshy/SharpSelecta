@@ -35,6 +35,7 @@ public partial class App : Application
     private static readonly TimeSpan OpenedFilesBatchWindow = TimeSpan.FromMilliseconds(400);
 
     private Task _openingFiles = Task.CompletedTask;
+    private volatile bool _filesRequested;
 
     public override void Initialize()
     {
@@ -114,6 +115,7 @@ public partial class App : Application
             };
 
             var logger = provider.GetRequiredService<ILogger<App>>();
+            _filesRequested = OpenedPaths.Count > 0;
             _openingFiles = InitializeAudioEngineAndRestoreStateAsync(audioEngine, mainWindowViewModel);
             var openedFiles = new OpenedFilesBatcher(OpenedFilesBatchWindow, TimeProvider.System,
                 paths => Dispatcher.UIThread.Post(() => OpenFilesInOrder(mainWindowViewModel, paths, logger)));
@@ -121,6 +123,7 @@ public partial class App : Application
 
             Activations?.Attach(paths =>
             {
+                _filesRequested = true;
                 Dispatcher.UIThread.Post(() => BringToFront(mainWindow));
                 openedFiles.Add(paths);
             });
@@ -163,11 +166,15 @@ public partial class App : Application
         window.Activate();
     }
 
-    private static async Task InitializeAudioEngineAndRestoreStateAsync(IAudioEngine audioEngine, MainWindowViewModel mainWindowViewModel)
+    private async Task InitializeAudioEngineAndRestoreStateAsync(IAudioEngine audioEngine, MainWindowViewModel mainWindowViewModel)
     {
         await Task.Run(() => audioEngine.InitializeAsync());
         await mainWindowViewModel.PlaybackSettings.ApplyPersistedOutputDeviceAsync();
         mainWindowViewModel.Equalizer.ApplyPersistedState();
         await mainWindowViewModel.RestoreQueueIfEnabledAsync();
+        if (!_filesRequested)
+        {
+            mainWindowViewModel.ResumePlaybackIfEnabled();
+        }
     }
 }

@@ -17,6 +17,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     // Last-applied snapshot of each setting - HasPendingChanges compares the live (edited)
     // property values against these, and Cancel reverts to them.
     private bool _appliedRestoreQueueOnStartup;
+    private bool _appliedResumePlaybackOnLaunch;
     private OpenedFilesAction _appliedOpenedFilesAction;
     private TrackStartAction _appliedTrackStartAction;
     private VolumeNormalization _appliedVolumeNormalization;
@@ -32,6 +33,10 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
     [ObservableProperty]
     public partial bool RestoreQueueOnStartup { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPendingChanges))]
+    public partial bool ResumePlaybackOnLaunch { get; set; }
 
     public IReadOnlyList<OpenedFilesActionOption> OpenedFilesActionOptions { get; } =
     [
@@ -102,6 +107,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     // ?. because the bound ComboBox briefly pushes null while OutputDevices is repopulated.
     public bool HasPendingChanges =>
         RestoreQueueOnStartup != _appliedRestoreQueueOnStartup ||
+        ResumePlaybackOnLaunch != _appliedResumePlaybackOnLaunch ||
         SelectedOpenedFilesActionOption.Action != _appliedOpenedFilesAction ||
         SelectedTrackStartActionOption.Action != _appliedTrackStartAction ||
         SelectedVolumeNormalizationOption.Normalization != _appliedVolumeNormalization ||
@@ -126,6 +132,8 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
         RestoreQueueOnStartup = saved.RestoreQueueOnStartup;
         _appliedRestoreQueueOnStartup = RestoreQueueOnStartup;
+        ResumePlaybackOnLaunch = saved.ResumePlaybackOnLaunch;
+        _appliedResumePlaybackOnLaunch = ResumePlaybackOnLaunch;
 
         SelectedOpenedFilesActionOption = OptionFor(saved.OpenedFilesAction);
         _appliedOpenedFilesAction = saved.OpenedFilesAction;
@@ -180,6 +188,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         _settings.Update(s => s with
         {
             RestoreQueueOnStartup = RestoreQueueOnStartup,
+            ResumePlaybackOnLaunch = ResumePlaybackOnLaunch,
             OpenedFilesAction = SelectedOpenedFilesActionOption.Action,
             TrackStartAction = SelectedTrackStartActionOption.Action,
             VolumeNormalization = SelectedVolumeNormalizationOption.Normalization,
@@ -193,6 +202,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         });
 
         _appliedRestoreQueueOnStartup = RestoreQueueOnStartup;
+        _appliedResumePlaybackOnLaunch = ResumePlaybackOnLaunch;
         _appliedOpenedFilesAction = SelectedOpenedFilesActionOption.Action;
         _appliedTrackStartAction = SelectedTrackStartActionOption.Action;
 
@@ -226,6 +236,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     private void CancelPlaybackSettings()
     {
         RestoreQueueOnStartup = _appliedRestoreQueueOnStartup;
+        ResumePlaybackOnLaunch = _appliedResumePlaybackOnLaunch;
         SelectedOpenedFilesActionOption = OptionFor(_appliedOpenedFilesAction);
         SelectedTrackStartActionOption = OptionFor(_appliedTrackStartAction);
         SelectedVolumeNormalizationOption = OptionFor(_appliedVolumeNormalization);

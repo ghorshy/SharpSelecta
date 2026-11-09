@@ -59,6 +59,7 @@ public class PlaybackSettingsViewModelTests : IDisposable
         vm.SeekStepSeconds = 8;
         vm.PreviousRestartThresholdSeconds = 0;
         vm.PauseOnDeviceDisconnect = false;
+        vm.ResumePlaybackOnLaunch = true;
         vm.UseWaveformSlider = true;
         vm.RestoreQueueOnStartup = false; // defaults to true, so this is a genuine pending change
 
@@ -72,6 +73,7 @@ public class PlaybackSettingsViewModelTests : IDisposable
         await Assert.That(playbackControls.PreviousRestartThresholdSeconds).IsEqualTo(3);
         await Assert.That(new SettingsStore(settingsPath).Current.PauseOnDeviceDisconnect).IsTrue();
         await Assert.That(playbackControls.PauseOnDeviceDisconnect).IsTrue();
+        await Assert.That(new SettingsStore(settingsPath).Current.ResumePlaybackOnLaunch).IsFalse();
         await Assert.That(playbackControls.Volume.Curve).IsEqualTo(VolumeCurve.Linear);
     }
 
@@ -89,6 +91,7 @@ public class PlaybackSettingsViewModelTests : IDisposable
         vm.SeekStepSeconds = 8;
         vm.PreviousRestartThresholdSeconds = 0;
         vm.PauseOnDeviceDisconnect = false;
+        vm.ResumePlaybackOnLaunch = true;
         vm.UseWaveformSlider = true;
         vm.RestoreQueueOnStartup = false; // defaults to true, so this is a genuine change to persist
 
@@ -105,6 +108,7 @@ public class PlaybackSettingsViewModelTests : IDisposable
         await Assert.That(playbackControls.PreviousRestartThresholdSeconds).IsEqualTo(0);
         await Assert.That(new SettingsStore(settingsPath).Current.PauseOnDeviceDisconnect).IsFalse();
         await Assert.That(playbackControls.PauseOnDeviceDisconnect).IsFalse();
+        await Assert.That(new SettingsStore(settingsPath).Current.ResumePlaybackOnLaunch).IsTrue();
         await Assert.That(new SettingsStore(settingsPath).Current.UseWaveformSlider).IsTrue();
         await Assert.That(playbackControls.Waveform.UseSlider).IsTrue();
         await Assert.That(new SettingsStore(settingsPath).Current.RestoreQueueOnStartup).IsFalse();
@@ -125,6 +129,7 @@ public class PlaybackSettingsViewModelTests : IDisposable
         vm.SeekStepSeconds = 8;
         vm.PreviousRestartThresholdSeconds = 0;
         vm.PauseOnDeviceDisconnect = false;
+        vm.ResumePlaybackOnLaunch = true;
         vm.UseWaveformSlider = true;
         vm.RestoreQueueOnStartup = false; // defaults to true, so this is a genuine change to revert
 
@@ -135,6 +140,7 @@ public class PlaybackSettingsViewModelTests : IDisposable
         await Assert.That(vm.SeekStepSeconds).IsEqualTo(5);
         await Assert.That(vm.PreviousRestartThresholdSeconds).IsEqualTo(3);
         await Assert.That(vm.PauseOnDeviceDisconnect).IsTrue();
+        await Assert.That(vm.ResumePlaybackOnLaunch).IsFalse();
         await Assert.That(vm.UseWaveformSlider).IsFalse();
         await Assert.That(vm.RestoreQueueOnStartup).IsTrue();
         await Assert.That(settingsVm.HasPendingChanges).IsFalse();
@@ -220,6 +226,17 @@ public class PlaybackSettingsViewModelTests : IDisposable
         var vm = new PlaybackSettingsViewModel(new SettingsStore(_temp.NewSettingsPath()), Substitute.For<IOutputDeviceService>(), CreatePlaybackControlsViewModel());
 
         await Assert.That(vm.SeekStepSeconds).IsEqualTo(5);
+    }
+
+    [Test]
+    public async Task Constructor_LoadsAPreviouslySavedResumePlaybackOnLaunch()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        new SettingsStore(settingsPath).Update(s => s with { ResumePlaybackOnLaunch = true });
+
+        var vm = new PlaybackSettingsViewModel(new SettingsStore(settingsPath), Substitute.For<IOutputDeviceService>(), CreatePlaybackControlsViewModel());
+
+        await Assert.That(vm.ResumePlaybackOnLaunch).IsTrue();
     }
 
     [Test]

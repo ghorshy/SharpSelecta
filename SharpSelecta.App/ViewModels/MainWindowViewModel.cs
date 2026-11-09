@@ -84,6 +84,15 @@ public partial class MainWindowViewModel : ViewModelBase
         await PlaybackControls.RestoreQueueAsync(restored.Entries, restored.CurrentIndex, restored.PositionSeconds);
     }
 
+    public void ResumePlaybackIfEnabled()
+    {
+        if (PlaybackSettings is { RestoreQueueOnStartup: true, ResumePlaybackOnLaunch: true } &&
+            PlaybackControls is { TransportState: TransportState.Ready, IsPlaying: false })
+        {
+            PlaybackControls.PlayPauseCommand.Execute(null);
+        }
+    }
+
     public async Task OpenFilesAsync(IReadOnlyList<string> paths)
     {
         var tracks = await Task.Run(() => OpenedFiles.Expand(paths)

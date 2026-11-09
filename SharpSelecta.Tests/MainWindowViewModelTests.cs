@@ -106,6 +106,64 @@ public class MainWindowViewModelTests : IDisposable
         await Assert.That(restarted.Queue.Entries.Count).IsEqualTo(1);
     }
 
+    private async Task<MainWindowViewModel> RestartWithSavedQueueAsync(Action<SettingsStore> configure)
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = CreateViewModel(out _, settingsPath);
+        await vm.PlaybackControls.PlayNowAsync(new Track(TaggedTrackFixturePath, "tagged-track.mp3"));
+        vm.PersistQueueStateIfEnabled();
+        configure(new SettingsStore(settingsPath));
+        return CreateViewModel(out _, settingsPath);
+    }
+
+    [Test]
+    public async Task ResumePlaybackIfEnabled_WhenOn_PlaysTheRestoredTrack()
+    {
+        var restarted = await RestartWithSavedQueueAsync(s => s.Update(x => x with { ResumePlaybackOnLaunch = true }));
+        await restarted.RestoreQueueIfEnabledAsync();
+
+        restarted.ResumePlaybackIfEnabled();
+
+        await Assert.That(restarted.PlaybackControls.IsPlaying).IsTrue();
+    }
+
+    [Test]
+    public async Task ResumePlaybackIfEnabled_ByDefault_StaysPaused()
+    {
+        var restarted = await RestartWithSavedQueueAsync(_ => { });
+        await restarted.RestoreQueueIfEnabledAsync();
+
+        restarted.ResumePlaybackIfEnabled();
+
+        await Assert.That(restarted.PlaybackControls.IsPlaying).IsFalse();
+    }
+
+    [Test]
+    public async Task ResumePlaybackIfEnabled_WithRestoreQueueOff_DoesNothing()
+    {
+        var restarted = await RestartWithSavedQueueAsync(s => s.Update(x => x with { ResumePlaybackOnLaunch = true, RestoreQueueOnStartup = false }));
+        await restarted.RestoreQueueIfEnabledAsync();
+
+        restarted.ResumePlaybackIfEnabled();
+
+        await Assert.That(restarted.PlaybackControls.IsPlaying).IsFalse();
+        await Assert.That(restarted.Queue.Entries.Count).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task ResumePlaybackIfEnabled_WithNothingSaved_DoesNothing()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        new SettingsStore(settingsPath).Update(x => x with { ResumePlaybackOnLaunch = true });
+        var vm = CreateViewModel(out var audioEngine, settingsPath);
+        await vm.RestoreQueueIfEnabledAsync();
+
+        vm.ResumePlaybackIfEnabled();
+
+        audioEngine.DidNotReceive().Load(Arg.Any<string>());
+        await Assert.That(vm.PlaybackControls.IsPlaying).IsFalse();
+    }
+
     [Test]
     public async Task RestoreQueueIfEnabledAsync_WhenDisabled_LeavesQueueEmpty()
     {

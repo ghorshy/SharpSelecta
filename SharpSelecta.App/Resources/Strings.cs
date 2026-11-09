@@ -51,6 +51,7 @@ public static class Strings
     public static string ThemeFileTypeName => Get(nameof(ThemeFileTypeName));
     public static string InvalidThemeFile => Get(nameof(InvalidThemeFile));
     public static string RestoreQueueOnStartup => Get(nameof(RestoreQueueOnStartup));
+    public static string ResumePlaybackOnLaunch => Get(nameof(ResumePlaybackOnLaunch));
     public static string AppName => Get(nameof(AppName));
     public static string AudioFileTypeName => Get(nameof(AudioFileTypeName));
     public static string OpenedFilesActionLabel => Get(nameof(OpenedFilesActionLabel));

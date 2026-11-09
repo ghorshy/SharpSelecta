@@ -11,6 +11,8 @@
 
     <StackPanel Spacing="{styles:SpacingValue S}">
         <CheckBox Content="{x:Static res:Strings.RestoreQueueOnStartup}" IsChecked="{Binding RestoreQueueOnStartup}" />
+        <CheckBox Content="{x:Static res:Strings.ResumePlaybackOnLaunch}" IsChecked="{Binding ResumePlaybackOnLaunch}"
+                  IsEnabled="{Binding RestoreQueueOnStartup}" Margin="{styles:Spacing Left=L}" />
 
         <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}">
             <TextBlock Text="{x:Static res:Strings.TrackStartActionLabel}" Classes="secondary" />

@@ -202,6 +202,9 @@
   <data name="RestoreQueueOnStartup" xml:space="preserve">
     <value>Restore previous queue on startup</value>
   </data>
+  <data name="ResumePlaybackOnLaunch" xml:space="preserve">
+    <value>Start playing the restored track</value>
+  </data>
   <data name="AppName" xml:space="preserve">
     <value>SharpSelecta</value>
   </data>

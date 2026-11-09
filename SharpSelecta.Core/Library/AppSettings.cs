@@ -20,6 +20,7 @@ public sealed record AppSettings
     public AlbumSortMode AlbumSortMode { get; init; } = AlbumSortMode.Title;
     public bool AlbumSortDescending { get; init; }
     public bool RestoreQueueOnStartup { get; init; } = true;
+    public bool ResumePlaybackOnLaunch { get; init; }
     public OpenedFilesAction OpenedFilesAction { get; init; } = OpenedFilesAction.ReplaceQueueAndPlay;
     public TrackStartAction TrackStartAction { get; init; } = TrackStartAction.InsertAndPlay;
     public string? OutputDeviceName { get; init; }
