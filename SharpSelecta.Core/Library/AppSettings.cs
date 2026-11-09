@@ -26,6 +26,7 @@ public sealed record AppSettings
     public double? Volume { get; init; }
     public VolumeCurve VolumeCurve { get; init; } = VolumeCurve.Linear;
     public VolumeNormalization VolumeNormalization { get; init; } = VolumeNormalization.Off;
+    public double UntaggedGainDb { get; init; } = -6;
     public int SeekStepSeconds { get; init; } = 5;
     public IReadOnlyDictionary<string, string>? ShortcutOverrides { get; init; }
     public AppTheme Theme { get; init; } = AppTheme.Dark;

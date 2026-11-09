@@ -332,4 +332,39 @@ public class PlaybackSettingsViewModelTests : IDisposable
         await Assert.That(vm.SelectedVolumeNormalizationOption.Normalization).IsEqualTo(VolumeNormalization.Track);
         await Assert.That(((ISettingsCategoryViewModel)vm).HasPendingChanges).IsFalse();
     }
+
+    [Test]
+    public async Task UntaggedGain_DefaultsToMinusSix_AndOnApplyPersistsAndReachesPlayback()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var playback = CreatePlaybackControlsViewModel();
+        var vm = new PlaybackSettingsViewModel(new SettingsStore(settingsPath), Substitute.For<IOutputDeviceService>(), playback);
+        var settingsVm = (ISettingsCategoryViewModel)vm;
+        await Assert.That(vm.UntaggedGainDb).IsEqualTo(-6);
+
+        vm.UntaggedGainDb = -10;
+        await Assert.That(settingsVm.HasPendingChanges).IsTrue();
+        await Assert.That(playback.UntaggedGainDb).IsEqualTo(-6);
+
+        settingsVm.ApplyCommand.Execute(null);
+
+        await Assert.That(playback.UntaggedGainDb).IsEqualTo(-10);
+        await Assert.That(new SettingsStore(settingsPath).Current.UntaggedGainDb).IsEqualTo(-10);
+
+        vm.UntaggedGainDb = -2;
+        settingsVm.CancelCommand.Execute(null);
+        await Assert.That(vm.UntaggedGainDb).IsEqualTo(-10);
+    }
+
+    [Test]
+    public async Task UntaggedGain_CanOnlyBeSetWhileNormalizationIsOn()
+    {
+        var vm = new PlaybackSettingsViewModel(new SettingsStore(_temp.NewSettingsPath()), Substitute.For<IOutputDeviceService>(), CreatePlaybackControlsViewModel());
+        await Assert.That(vm.IsUntaggedGainEditable).IsFalse();
+
+        vm.SelectedVolumeNormalizationOption = vm.VolumeNormalizationOptions.Single(o => o.Normalization == VolumeNormalization.Track);
+
+        await Assert.That(vm.IsUntaggedGainEditable).IsTrue();
+        await Assert.That(vm.UntaggedGainText).IsEqualTo("−6 dB");
+    }
 }

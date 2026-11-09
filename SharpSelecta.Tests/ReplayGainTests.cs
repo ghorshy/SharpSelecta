@@ -10,47 +10,48 @@ public class ReplayGainTests
     [Test]
     public async Task Off_LeavesTheTrackUntouched()
     {
-        await Assert.That(Info(trackGainDb: -6.02).LinearGain(VolumeNormalization.Off)).IsEqualTo(1f);
+        await Assert.That(Info(trackGainDb: -6.02).LinearGain(VolumeNormalization.Off, untaggedGainDb: 0)).IsEqualTo(1f);
     }
 
     [Test]
     public async Task Track_AppliesTheTrackGain()
     {
-        await Assert.That(Info(trackGainDb: -6.02, albumGainDb: -12.04).LinearGain(VolumeNormalization.Track))
+        await Assert.That(Info(trackGainDb: -6.02, albumGainDb: -12.04).LinearGain(VolumeNormalization.Track, untaggedGainDb: 0))
             .IsEqualTo(0.5f).Within(0.001f);
     }
 
     [Test]
     public async Task Album_AppliesTheAlbumGain()
     {
-        await Assert.That(Info(trackGainDb: -6.02, albumGainDb: -12.04).LinearGain(VolumeNormalization.Album))
+        await Assert.That(Info(trackGainDb: -6.02, albumGainDb: -12.04).LinearGain(VolumeNormalization.Album, untaggedGainDb: 0))
             .IsEqualTo(0.25f).Within(0.001f);
     }
 
     [Test]
     public async Task EachMode_FallsBackToTheOtherGain_WhenItsOwnIsMissing()
     {
-        await Assert.That(Info(albumGainDb: -6.02).LinearGain(VolumeNormalization.Track)).IsEqualTo(0.5f).Within(0.001f);
-        await Assert.That(Info(trackGainDb: -6.02).LinearGain(VolumeNormalization.Album)).IsEqualTo(0.5f).Within(0.001f);
+        await Assert.That(Info(albumGainDb: -6.02).LinearGain(VolumeNormalization.Track, untaggedGainDb: 0)).IsEqualTo(0.5f).Within(0.001f);
+        await Assert.That(Info(trackGainDb: -6.02).LinearGain(VolumeNormalization.Album, untaggedGainDb: 0)).IsEqualTo(0.5f).Within(0.001f);
     }
 
     [Test]
     public async Task AnUntaggedTrack_GetsTheUntaggedGain()
     {
-        await Assert.That(Info().LinearGain(VolumeNormalization.Track)).IsEqualTo(0.501f).Within(0.001f);
+        await Assert.That(Info().LinearGain(VolumeNormalization.Track, untaggedGainDb: -12.04)).IsEqualTo(0.25f).Within(0.001f);
+        await Assert.That(Info().LinearGain(VolumeNormalization.Off, untaggedGainDb: -12.04)).IsEqualTo(1f);
     }
 
     [Test]
     public async Task APositiveGain_IsCappedSoThePeakDoesNotClip()
     {
-        await Assert.That(Info(trackGainDb: 6.02, trackPeak: 0.8).LinearGain(VolumeNormalization.Track)).IsEqualTo(1.25f).Within(0.001f);
-        await Assert.That(Info(albumGainDb: 6.02, albumPeak: 0.8, trackPeak: 0.4).LinearGain(VolumeNormalization.Album)).IsEqualTo(1.25f).Within(0.001f);
+        await Assert.That(Info(trackGainDb: 6.02, trackPeak: 0.8).LinearGain(VolumeNormalization.Track, untaggedGainDb: 0)).IsEqualTo(1.25f).Within(0.001f);
+        await Assert.That(Info(albumGainDb: 6.02, albumPeak: 0.8, trackPeak: 0.4).LinearGain(VolumeNormalization.Album, untaggedGainDb: 0)).IsEqualTo(1.25f).Within(0.001f);
     }
 
     [Test]
     public async Task AFallbackGain_IsCappedByItsOwnPeak()
     {
-        await Assert.That(Info(trackPeak: 0.4, albumGainDb: 6.02, albumPeak: 0.8).LinearGain(VolumeNormalization.Track))
+        await Assert.That(Info(trackPeak: 0.4, albumGainDb: 6.02, albumPeak: 0.8).LinearGain(VolumeNormalization.Track, untaggedGainDb: 0))
             .IsEqualTo(1.25f).Within(0.001f);
     }
 

@@ -434,7 +434,13 @@
     <value>Per album</value>
   </data>
   <data name="VolumeNormalizationHint" xml:space="preserve">
-    <value>Evens out loudness using the ReplayGain tags in your files. Per album keeps the differences between tracks of one album. Tracks without tags are turned down a little so they sit closer to tagged ones.</value>
+    <value>Evens out loudness using the ReplayGain tags in your files. Per album keeps the differences between tracks of one album. Tracks without tags get the gain set below, so they can sit closer to tagged ones.</value>
+  </data>
+  <data name="UntaggedGainLabel" xml:space="preserve">
+    <value>Tracks without ReplayGain tags</value>
+  </data>
+  <data name="UntaggedGainFormat" xml:space="preserve">
+    <value>{0:+0;−0;0} dB</value>
   </data>
   <data name="AutoDj" xml:space="preserve">
     <value>Auto DJ</value>

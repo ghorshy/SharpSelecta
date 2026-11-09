@@ -102,6 +102,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         IsAutoDjEnabled = settings.Current.AutoDjEnabled;
         RepeatMode = settings.Current.RepeatMode;
         Normalization = settings.Current.VolumeNormalization;
+        UntaggedGainDb = settings.Current.UntaggedGainDb;
         _settingsLoaded = true;
     }
 
@@ -119,7 +120,17 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         }
     }
 
-    private void ApplyTrackGain() => _audioEngine.TrackGain = _currentReplayGain.LinearGain(Normalization);
+    public double UntaggedGainDb
+    {
+        get;
+        set
+        {
+            field = value;
+            ApplyTrackGain();
+        }
+    }
+
+    private void ApplyTrackGain() => _audioEngine.TrackGain = _currentReplayGain.LinearGain(Normalization, UntaggedGainDb);
 
     [ObservableProperty]
     public partial bool IsAutoDjEnabled { get; set; }

@@ -131,6 +131,11 @@ public static class Strings
     public static string VolumeNormalizationTrack => Get(nameof(VolumeNormalizationTrack));
     public static string VolumeNormalizationAlbum => Get(nameof(VolumeNormalizationAlbum));
     public static string VolumeNormalizationHint => Get(nameof(VolumeNormalizationHint));
+    public static string UntaggedGainLabel => Get(nameof(UntaggedGainLabel));
+
+    public static string UntaggedGain(double gainDb) =>
+        string.Format(CultureInfo.CurrentCulture, Get("UntaggedGainFormat"), gainDb);
+
     public static string AutoDj => Get(nameof(AutoDj));
     public static string AutoDjTooltip => Get(nameof(AutoDjTooltip));
     public static string ColumnDisc => Get(nameof(ColumnDisc));

@@ -65,6 +65,15 @@
             <TextBlock Text="{x:Static res:Strings.VolumeNormalizationHint}" Classes="tertiary small" TextWrapping="Wrap" />
         </StackPanel>
 
+        <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}" IsEnabled="{Binding IsUntaggedGainEditable}">
+            <TextBlock Text="{x:Static res:Strings.UntaggedGainLabel}" Classes="secondary" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{styles:SpacingValue S}">
+                <Slider Minimum="-12" Maximum="0" TickFrequency="1" IsSnapToTickEnabled="True"
+                        Value="{Binding UntaggedGainDb}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding UntaggedGainText}" VerticalAlignment="Center" />
+            </Grid>
+        </StackPanel>
+
         <CheckBox Content="{x:Static res:Strings.UseLogarithmicVolumeScale}"
                   IsChecked="{Binding UseLogarithmicVolumeScale}"
                   Margin="{styles:Spacing Top=S}" />

@@ -6,10 +6,6 @@ namespace SharpSelecta.Core.Audio;
 
 public sealed record ReplayGainInfo(double? TrackGainDb, double? TrackPeak, double? AlbumGainDb, double? AlbumPeak)
 {
-    // Most of a typical library has no ReplayGain tags; tagged tracks usually come out around -6 to -9 dB,
-    // so leaving untagged ones at 0 dB would make them jump out next to tagged ones.
-    public const double UntaggedGainDb = -6;
-
     public static readonly ReplayGainInfo None = new(null, null, null, null);
 
     // Never stops a track from playing: a file whose tags can't be read just plays without normalization data.
@@ -43,7 +39,8 @@ public sealed record ReplayGainInfo(double? TrackGainDb, double? TrackPeak, doub
             Number(byKey, "REPLAYGAIN_ALBUM_GAIN"), Number(byKey, "REPLAYGAIN_ALBUM_PEAK"));
     }
 
-    public float LinearGain(VolumeNormalization mode)
+    // untaggedGainDb: for a track with no gain tags, which would otherwise jump out next to tagged (turned down) ones.
+    public float LinearGain(VolumeNormalization mode, double untaggedGainDb)
     {
         if (mode == VolumeNormalization.Off)
             return 1f;
@@ -55,7 +52,7 @@ public sealed record ReplayGainInfo(double? TrackGainDb, double? TrackPeak, doub
             ? (other.GainDb, other.Peak ?? preferred.Peak)
             : (preferred.GainDb, preferred.Peak ?? other.Peak);
 
-        var linear = Math.Pow(10, (gainDb ?? UntaggedGainDb) / 20);
+        var linear = Math.Pow(10, (gainDb ?? untaggedGainDb) / 20);
         if (peak is > 0 && linear * peak > 1)
         {
             linear = 1 / peak.Value;

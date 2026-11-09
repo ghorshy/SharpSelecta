@@ -20,6 +20,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     private OpenedFilesAction _appliedOpenedFilesAction;
     private TrackStartAction _appliedTrackStartAction;
     private VolumeNormalization _appliedVolumeNormalization;
+    private double _appliedUntaggedGainDb;
     private string? _appliedOutputDeviceName;
     private bool _appliedUseLogarithmicVolumeScale;
     private int _appliedSeekStepSeconds;
@@ -62,7 +63,17 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasPendingChanges))]
+    [NotifyPropertyChangedFor(nameof(IsUntaggedGainEditable))]
     public partial VolumeNormalizationOption SelectedVolumeNormalizationOption { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPendingChanges))]
+    [NotifyPropertyChangedFor(nameof(UntaggedGainText))]
+    public partial double UntaggedGainDb { get; set; }
+
+    public bool IsUntaggedGainEditable => SelectedVolumeNormalizationOption.Normalization != VolumeNormalization.Off;
+
+    public string UntaggedGainText => Strings.UntaggedGain(UntaggedGainDb);
 
     [ObservableProperty]
     private OutputDeviceOption selectedOutputDevice = OutputDeviceOption.SystemDefault;
@@ -84,6 +95,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         SelectedOpenedFilesActionOption.Action != _appliedOpenedFilesAction ||
         SelectedTrackStartActionOption.Action != _appliedTrackStartAction ||
         SelectedVolumeNormalizationOption.Normalization != _appliedVolumeNormalization ||
+        UntaggedGainDb != _appliedUntaggedGainDb ||
         SelectedOutputDevice?.DeviceName != _appliedOutputDeviceName ||
         UseLogarithmicVolumeScale != _appliedUseLogarithmicVolumeScale ||
         SeekStepSeconds != _appliedSeekStepSeconds ||
@@ -111,6 +123,8 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
         SelectedVolumeNormalizationOption = OptionFor(saved.VolumeNormalization);
         _appliedVolumeNormalization = saved.VolumeNormalization;
+        UntaggedGainDb = saved.UntaggedGainDb;
+        _appliedUntaggedGainDb = saved.UntaggedGainDb;
 
         useWaveformSlider = saved.UseWaveformSlider;
         _appliedUseWaveformSlider = useWaveformSlider;
@@ -149,6 +163,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
             OpenedFilesAction = SelectedOpenedFilesActionOption.Action,
             TrackStartAction = SelectedTrackStartActionOption.Action,
             VolumeNormalization = SelectedVolumeNormalizationOption.Normalization,
+            UntaggedGainDb = UntaggedGainDb,
             UseWaveformSlider = UseWaveformSlider,
             VolumeCurve = curve,
             SeekStepSeconds = SeekStepSeconds,
@@ -161,6 +176,8 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
         _playbackControls.Normalization = SelectedVolumeNormalizationOption.Normalization;
         _appliedVolumeNormalization = SelectedVolumeNormalizationOption.Normalization;
+        _playbackControls.UntaggedGainDb = UntaggedGainDb;
+        _appliedUntaggedGainDb = UntaggedGainDb;
 
         _playbackControls.Waveform.UseSlider = UseWaveformSlider;
         _appliedUseWaveformSlider = UseWaveformSlider;
@@ -184,6 +201,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         SelectedOpenedFilesActionOption = OptionFor(_appliedOpenedFilesAction);
         SelectedTrackStartActionOption = OptionFor(_appliedTrackStartAction);
         SelectedVolumeNormalizationOption = OptionFor(_appliedVolumeNormalization);
+        UntaggedGainDb = _appliedUntaggedGainDb;
         SelectedOutputDevice = OutputDeviceOption.For(_appliedOutputDeviceName);
         UseLogarithmicVolumeScale = _appliedUseLogarithmicVolumeScale;
         SeekStepSeconds = _appliedSeekStepSeconds;

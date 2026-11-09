@@ -1175,4 +1175,17 @@ public class PlaybackControlsViewModelTests : IDisposable
 
         await Assert.That(engine.TrackGain).IsEqualTo(0.5f).Within(0.001f);
     }
+
+    [Test]
+    public async Task Normalization_TurnsAnUntaggedTrackDownByTheUntaggedGain_ChangedAtOnce()
+    {
+        var vm = CreateViewModel(out var engine, out _);
+        vm.Normalization = VolumeNormalization.Track;
+        await vm.LoadTrackAsync(new Track(TestPaths.Fixture("untagged-track.flac"), "a"));
+        await Assert.That(engine.TrackGain).IsEqualTo(0.501f).Within(0.001f);
+
+        vm.UntaggedGainDb = -12.04;
+
+        await Assert.That(engine.TrackGain).IsEqualTo(0.25f).Within(0.001f);
+    }
 }
