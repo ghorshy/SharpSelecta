@@ -14,6 +14,7 @@ public static class ServiceCollectionExtensions
                 .AddSingleton<IOutputDeviceService>(provider =>
                     OperatingSystem.IsLinux() && PipeWireOutputDeviceService.IsAvailable()
                         ? new PipeWireOutputDeviceService(provider.GetRequiredService<ILogger<PipeWireOutputDeviceService>>())
-                        : new EngineOutputDeviceService(provider.GetRequiredService<IAudioEngine>()));
+                        : new EngineOutputDeviceService(
+                            provider.GetRequiredService<IAudioEngine>(), provider.GetRequiredService<ILogger<EngineOutputDeviceService>>()));
     }
 }

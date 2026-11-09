@@ -100,4 +100,42 @@ public class PactlJsonTests
 
         await Assert.That(indexes).IsEquivalentTo([42L]);
     }
+
+    [Test]
+    public async Task ParseSinkIndexes_ReturnsTheIndexOfEachSink()
+    {
+        const string json = """
+            [
+                { "index": 66, "name": "alsa_output.usb-FiiO_DigiHug_USB_Audio-01.analog-stereo" },
+                { "index": 70, "name": "alsa_output.usb-PreSonus_Audio_AudioBox_USB-00.analog-stereo" }
+            ]
+            """;
+
+        await Assert.That(PactlJson.ParseSinkIndexes(json)).IsEquivalentTo([66L, 70L]);
+    }
+
+    [Test]
+    public async Task FindOwnStreamSink_ReturnsTheSinkOfTheOwnStream()
+    {
+        const string json = """
+            [
+                { "index": 155, "sink": 66, "properties": { "application.name": "Zen" } },
+                { "index": 306, "sink": 70, "properties": { "application.name": "PipeWire ALSA [SharpSelecta.App]" } }
+            ]
+            """;
+
+        await Assert.That(PactlJson.FindOwnStreamSink(json, "SharpSelecta.App")).IsEqualTo(70L);
+    }
+
+    [Test]
+    public async Task FindOwnStreamSink_WhenNoStreamMatches_ReturnsNull()
+    {
+        const string json = """
+            [
+                { "index": 155, "sink": 66, "properties": { "application.name": "Zen" } }
+            ]
+            """;
+
+        await Assert.That(PactlJson.FindOwnStreamSink(json, "SharpSelecta.App")).IsNull();
+    }
 }

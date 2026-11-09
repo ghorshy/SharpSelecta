@@ -82,6 +82,46 @@ public class PlaybackControlsViewModelTests : IDisposable
     }
 
     [Test]
+    public async Task OutputDeviceLost_WhilePlaying_Pauses()
+    {
+        var vm = CreateViewModel(out var audioEngine, out _);
+        await RestoreLoadedTrackAsync(vm);
+        vm.PlayPauseCommand.Execute(null);
+
+        vm.OnOutputDeviceLost();
+
+        audioEngine.Received(1).Pause();
+        await Assert.That(vm.IsPlaying).IsFalse();
+    }
+
+    [Test]
+    public async Task OutputDeviceLost_WithPauseOnDeviceDisconnectOff_KeepsPlaying()
+    {
+        var vm = CreateViewModel(out var audioEngine, out _);
+        vm.PauseOnDeviceDisconnect = false;
+        await RestoreLoadedTrackAsync(vm);
+        vm.PlayPauseCommand.Execute(null);
+
+        vm.OnOutputDeviceLost();
+
+        audioEngine.DidNotReceive().Pause();
+        await Assert.That(vm.IsPlaying).IsTrue();
+    }
+
+    [Test]
+    public async Task OutputDeviceLost_WhilePaused_StaysPaused()
+    {
+        var vm = CreateViewModel(out var audioEngine, out _);
+        await RestoreLoadedTrackAsync(vm);
+
+        vm.OnOutputDeviceLost();
+
+        audioEngine.DidNotReceive().Play();
+        audioEngine.DidNotReceive().Pause();
+        await Assert.That(vm.IsPlaying).IsFalse();
+    }
+
+    [Test]
     public async Task SettingPositionSeconds_SeeksTheEngine()
     {
         var vm = CreateViewModel(out var audioEngine, out _);

@@ -51,6 +51,9 @@
             </ComboBox>
         </StackPanel>
 
+        <CheckBox Content="{x:Static res:Strings.PauseOnDeviceDisconnect}" IsChecked="{Binding PauseOnDeviceDisconnect}"
+                  Margin="{styles:Spacing Top=S}" />
+
         <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}">
             <TextBlock Text="{x:Static res:Strings.VolumeNormalizationLabel}" Classes="secondary" />
             <ComboBox ItemsSource="{Binding VolumeNormalizationOptions}"

@@ -145,6 +145,7 @@ public static class Strings
     public static string ShortcutRefreshLibrary => Get(nameof(ShortcutRefreshLibrary));
     public static string ShortcutProperties => Get(nameof(ShortcutProperties));
     public static string SeekStepSeconds => Get(nameof(SeekStepSeconds));
+    public static string PauseOnDeviceDisconnect => Get(nameof(PauseOnDeviceDisconnect));
     public static string PreviousRestartThresholdSeconds => Get(nameof(PreviousRestartThresholdSeconds));
     public static string Reset => Get(nameof(Reset));
     public static string PressAKeyCombination => Get(nameof(PressAKeyCombination));

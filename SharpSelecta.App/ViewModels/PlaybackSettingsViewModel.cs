@@ -25,6 +25,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     private bool _appliedUseLogarithmicVolumeScale;
     private int _appliedSeekStepSeconds;
     private int _appliedPreviousRestartThresholdSeconds;
+    private bool _appliedPauseOnDeviceDisconnect;
     private bool _appliedUseWaveformSlider;
 
     public ObservableCollection<OutputDeviceOption> OutputDevices { get; } = [OutputDeviceOption.SystemDefault];
@@ -90,6 +91,10 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     public partial int PreviousRestartThresholdSeconds { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPendingChanges))]
+    public partial bool PauseOnDeviceDisconnect { get; set; }
+
+    [ObservableProperty]
     private bool useWaveformSlider;
 
     public string DisplayName => Strings.SettingsCategoryPlayback;
@@ -105,6 +110,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         UseLogarithmicVolumeScale != _appliedUseLogarithmicVolumeScale ||
         SeekStepSeconds != _appliedSeekStepSeconds ||
         PreviousRestartThresholdSeconds != _appliedPreviousRestartThresholdSeconds ||
+        PauseOnDeviceDisconnect != _appliedPauseOnDeviceDisconnect ||
         UseWaveformSlider != _appliedUseWaveformSlider;
 
     ICommand ISettingsCategoryViewModel.ApplyCommand => ApplyPlaybackSettingsCommand;
@@ -148,6 +154,10 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         PreviousRestartThresholdSeconds = saved.PreviousRestartThresholdSeconds;
         _playbackControls.PreviousRestartThresholdSeconds = saved.PreviousRestartThresholdSeconds;
         _appliedPreviousRestartThresholdSeconds = saved.PreviousRestartThresholdSeconds;
+
+        PauseOnDeviceDisconnect = saved.PauseOnDeviceDisconnect;
+        _playbackControls.PauseOnDeviceDisconnect = saved.PauseOnDeviceDisconnect;
+        _appliedPauseOnDeviceDisconnect = saved.PauseOnDeviceDisconnect;
     }
 
     partial void OnRestoreQueueOnStartupChanged(bool value) => OnPropertyChanged(nameof(HasPendingChanges));
@@ -178,6 +188,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
             VolumeCurve = curve,
             SeekStepSeconds = SeekStepSeconds,
             PreviousRestartThresholdSeconds = PreviousRestartThresholdSeconds,
+            PauseOnDeviceDisconnect = PauseOnDeviceDisconnect,
             OutputDeviceName = deviceName,
         });
 
@@ -202,6 +213,9 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         _playbackControls.PreviousRestartThresholdSeconds = PreviousRestartThresholdSeconds;
         _appliedPreviousRestartThresholdSeconds = PreviousRestartThresholdSeconds;
 
+        _playbackControls.PauseOnDeviceDisconnect = PauseOnDeviceDisconnect;
+        _appliedPauseOnDeviceDisconnect = PauseOnDeviceDisconnect;
+
         OutputDeviceSwitchTask = _outputDeviceService.SetOutputDeviceAsync(deviceName);
         _appliedOutputDeviceName = deviceName;
 
@@ -220,6 +234,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         UseLogarithmicVolumeScale = _appliedUseLogarithmicVolumeScale;
         SeekStepSeconds = _appliedSeekStepSeconds;
         PreviousRestartThresholdSeconds = _appliedPreviousRestartThresholdSeconds;
+        PauseOnDeviceDisconnect = _appliedPauseOnDeviceDisconnect;
         UseWaveformSlider = _appliedUseWaveformSlider;
     }
 

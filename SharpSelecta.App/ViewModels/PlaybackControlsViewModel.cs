@@ -43,6 +43,9 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     public partial int PreviousRestartThresholdSeconds { get; set; } = 3;
 
     [ObservableProperty]
+    public partial bool PauseOnDeviceDisconnect { get; set; } = true;
+
+    [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SeekBackwardCommand))]
     [NotifyCanExecuteChangedFor(nameof(SeekForwardCommand))]
     public partial bool IsArrowKeyNavigationFocused { get; set; }
@@ -346,6 +349,14 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 
         TogglePlayback();
         return Task.CompletedTask;
+    }
+
+    public void OnOutputDeviceLost()
+    {
+        if (PauseOnDeviceDisconnect && IsPlaying)
+        {
+            TogglePlayback();
+        }
     }
 
     private void TogglePlayback()

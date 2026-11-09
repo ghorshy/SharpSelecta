@@ -29,6 +29,7 @@ public sealed record AppSettings
     public double UntaggedGainDb { get; init; } = -6;
     public int SeekStepSeconds { get; init; } = 5;
     public int PreviousRestartThresholdSeconds { get; init; } = 3;
+    public bool PauseOnDeviceDisconnect { get; init; } = true;
     public IReadOnlyDictionary<string, string>? ShortcutOverrides { get; init; }
     public AppTheme Theme { get; init; } = AppTheme.Dark;
     public string? CustomThemeFileName { get; init; }

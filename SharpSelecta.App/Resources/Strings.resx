@@ -580,6 +580,9 @@
   <data name="SeekStepSeconds" xml:space="preserve">
     <value>Seek step (seconds)</value>
   </data>
+  <data name="PauseOnDeviceDisconnect" xml:space="preserve">
+    <value>Pause when the output device disconnects</value>
+  </data>
   <data name="PreviousRestartThresholdSeconds" xml:space="preserve">
     <value>Previous restarts the track after (seconds, 0 = never)</value>
   </data>

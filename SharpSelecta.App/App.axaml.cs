@@ -86,6 +86,9 @@ public partial class App : Application
 
             mainWindow.Activated += (_, _) => Mpris()?.NudgePriority();
 
+            provider.GetRequiredService<IOutputDeviceService>().ActiveDeviceLost += (_, _) =>
+                Dispatcher.UIThread.Post(mainWindowViewModel.PlaybackControls.OnOutputDeviceLost);
+
             var richPresence = new RichPresenceCoordinator(
                 mainWindowViewModel.PlaybackControls, provider.GetRequiredService<IRichPresence>(), mainWindowViewModel.Integrations);
 
