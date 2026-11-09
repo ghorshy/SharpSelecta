@@ -51,6 +51,20 @@
             </ComboBox>
         </StackPanel>
 
+        <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}">
+            <TextBlock Text="{x:Static res:Strings.VolumeNormalizationLabel}" Classes="secondary" />
+            <ComboBox ItemsSource="{Binding VolumeNormalizationOptions}"
+                      SelectedItem="{Binding SelectedVolumeNormalizationOption}"
+                      HorizontalAlignment="Stretch">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:VolumeNormalizationOption">
+                        <TextBlock Text="{Binding DisplayName}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+            <TextBlock Text="{x:Static res:Strings.VolumeNormalizationHint}" Classes="tertiary small" TextWrapping="Wrap" />
+        </StackPanel>
+
         <CheckBox Content="{x:Static res:Strings.UseLogarithmicVolumeScale}"
                   IsChecked="{Binding UseLogarithmicVolumeScale}"
                   Margin="{styles:Spacing Top=S}" />

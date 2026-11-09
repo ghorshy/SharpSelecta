@@ -1106,4 +1106,73 @@ public class PlaybackControlsViewModelTests : IDisposable
 
         await Assert.That(CreateViewModel(out _, out _, path).RepeatMode).IsEqualTo(RepeatMode.RepeatOne);
     }
+
+    private string TrackWithReplayGain(string trackGain)
+    {
+        var path = _temp.FilePath($"rg-{Guid.NewGuid():N}.flac");
+        File.Copy(TestPaths.Fixture("untagged-track.flac"), path);
+        var atl = new ATL.Track(path);
+        atl.AdditionalFields["REPLAYGAIN_TRACK_GAIN"] = trackGain;
+        atl.Save();
+        return path;
+    }
+
+    [Test]
+    public async Task Normalization_IsOffByDefault_SoTracksPlayAtTheirOwnLevel()
+    {
+        var vm = CreateViewModel(out var engine, out _);
+
+        await vm.LoadTrackAsync(new Track(TrackWithReplayGain("-6.02 dB"), "a"));
+
+        await Assert.That(engine.TrackGain).IsEqualTo(1f);
+    }
+
+    [Test]
+    public async Task Normalization_AppliesEachLoadedTracksReplayGain()
+    {
+        var vm = CreateViewModel(out var engine, out _);
+        vm.Normalization = VolumeNormalization.Track;
+
+        await vm.LoadTrackAsync(new Track(TrackWithReplayGain("-6.02 dB"), "a"));
+        await Assert.That(engine.TrackGain).IsEqualTo(0.5f).Within(0.001f);
+
+        await vm.LoadTrackAsync(new Track(TrackWithReplayGain("-12.04 dB"), "b"));
+        await Assert.That(engine.TrackGain).IsEqualTo(0.25f).Within(0.001f);
+    }
+
+    [Test]
+    public async Task Normalization_ChangedWhileATrackIsLoaded_AppliesToItAtOnce()
+    {
+        var vm = CreateViewModel(out var engine, out _);
+        await vm.LoadTrackAsync(new Track(TrackWithReplayGain("-6.02 dB"), "a"));
+
+        vm.Normalization = VolumeNormalization.Track;
+        await Assert.That(engine.TrackGain).IsEqualTo(0.5f).Within(0.001f);
+
+        vm.Normalization = VolumeNormalization.Off;
+        await Assert.That(engine.TrackGain).IsEqualTo(1f);
+    }
+
+    [Test]
+    public async Task Normalization_StartsFromTheSavedSetting()
+    {
+        var path = _temp.NewSettingsPath();
+        new SettingsStore(path).Update(s => s with { VolumeNormalization = VolumeNormalization.Album });
+
+        await Assert.That(CreateViewModel(out _, out _, path).Normalization).IsEqualTo(VolumeNormalization.Album);
+    }
+
+    [Test]
+    public async Task Normalization_KeepsThePlayingTracksGain_WhenTheNextTrackFailsToLoad()
+    {
+        var vm = CreateViewModel(out var engine, out _);
+        vm.Normalization = VolumeNormalization.Track;
+        await vm.LoadTrackAsync(new Track(TrackWithReplayGain("-6.02 dB"), "a"));
+        var broken = TrackWithReplayGain("-12.04 dB");
+        engine.When(e => e.Load(broken)).Do(_ => throw new InvalidOperationException("cannot decode"));
+
+        await vm.LoadTrackAsync(new Track(broken, "b"));
+
+        await Assert.That(engine.TrackGain).IsEqualTo(0.5f).Within(0.001f);
+    }
 }

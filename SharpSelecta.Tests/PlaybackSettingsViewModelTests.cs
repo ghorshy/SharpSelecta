@@ -296,4 +296,40 @@ public class PlaybackSettingsViewModelTests : IDisposable
         await Assert.That(vm.SelectedTrackStartActionOption.Action).IsEqualTo(TrackStartAction.AddToQueue);
         await Assert.That(((ISettingsCategoryViewModel)vm).HasPendingChanges).IsFalse();
     }
+
+    [Test]
+    public async Task VolumeNormalization_DefaultsToOff_AndOnApplyPersistsAndReachesPlayback()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var playback = CreatePlaybackControlsViewModel();
+        var vm = new PlaybackSettingsViewModel(new SettingsStore(settingsPath), Substitute.For<IOutputDeviceService>(), playback);
+        var settingsVm = (ISettingsCategoryViewModel)vm;
+        await Assert.That(vm.SelectedVolumeNormalizationOption.Normalization).IsEqualTo(VolumeNormalization.Off);
+        await Assert.That(vm.VolumeNormalizationOptions.Select(o => o.Normalization)).IsEquivalentTo(Enum.GetValues<VolumeNormalization>());
+
+        vm.SelectedVolumeNormalizationOption = vm.VolumeNormalizationOptions.Single(o => o.Normalization == VolumeNormalization.Album);
+        await Assert.That(settingsVm.HasPendingChanges).IsTrue();
+        await Assert.That(playback.Normalization).IsEqualTo(VolumeNormalization.Off);
+
+        settingsVm.ApplyCommand.Execute(null);
+
+        await Assert.That(settingsVm.HasPendingChanges).IsFalse();
+        await Assert.That(playback.Normalization).IsEqualTo(VolumeNormalization.Album);
+        await Assert.That(new SettingsStore(settingsPath).Current.VolumeNormalization).IsEqualTo(VolumeNormalization.Album);
+    }
+
+    [Test]
+    public async Task VolumeNormalization_CancelRevertsToTheSavedChoice()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        new SettingsStore(settingsPath).Update(s => s with { VolumeNormalization = VolumeNormalization.Track });
+        var vm = new PlaybackSettingsViewModel(new SettingsStore(settingsPath), Substitute.For<IOutputDeviceService>(), CreatePlaybackControlsViewModel());
+        await Assert.That(vm.SelectedVolumeNormalizationOption.Normalization).IsEqualTo(VolumeNormalization.Track);
+
+        vm.SelectedVolumeNormalizationOption = vm.VolumeNormalizationOptions.Single(o => o.Normalization == VolumeNormalization.Off);
+        ((ISettingsCategoryViewModel)vm).CancelCommand.Execute(null);
+
+        await Assert.That(vm.SelectedVolumeNormalizationOption.Normalization).IsEqualTo(VolumeNormalization.Track);
+        await Assert.That(((ISettingsCategoryViewModel)vm).HasPendingChanges).IsFalse();
+    }
 }

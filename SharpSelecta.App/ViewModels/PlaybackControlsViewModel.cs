@@ -101,11 +101,25 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 
         IsAutoDjEnabled = settings.Current.AutoDjEnabled;
         RepeatMode = settings.Current.RepeatMode;
+        Normalization = settings.Current.VolumeNormalization;
         _settingsLoaded = true;
     }
 
     private bool _settingsLoaded;
+    private ReplayGainInfo _currentReplayGain = ReplayGainInfo.None;
     private bool _isToppingUpAutoDj;
+
+    public VolumeNormalization Normalization
+    {
+        get;
+        set
+        {
+            field = value;
+            ApplyTrackGain();
+        }
+    }
+
+    private void ApplyTrackGain() => _audioEngine.TrackGain = _currentReplayGain.LinearGain(Normalization);
 
     [ObservableProperty]
     public partial bool IsAutoDjEnabled { get; set; }
@@ -446,7 +460,13 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     {
         try
         {
-            await Task.Run(() => _audioEngine.Load(track.FilePath));
+            var replayGain = await Task.Run(() =>
+            {
+                _audioEngine.Load(track.FilePath);
+                return ReplayGainInfo.Read(track.FilePath);
+            });
+            _currentReplayGain = replayGain;
+            ApplyTrackGain();
             LoadedFileName = track.DisplayName;
             StatusMessage = null;
             IsPlaying = false;

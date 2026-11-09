@@ -19,6 +19,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     private bool _appliedRestoreQueueOnStartup;
     private OpenedFilesAction _appliedOpenedFilesAction;
     private TrackStartAction _appliedTrackStartAction;
+    private VolumeNormalization _appliedVolumeNormalization;
     private string? _appliedOutputDeviceName;
     private bool _appliedUseLogarithmicVolumeScale;
     private int _appliedSeekStepSeconds;
@@ -52,6 +53,17 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     [NotifyPropertyChangedFor(nameof(HasPendingChanges))]
     public partial TrackStartActionOption SelectedTrackStartActionOption { get; set; }
 
+    public IReadOnlyList<VolumeNormalizationOption> VolumeNormalizationOptions { get; } =
+    [
+        new(VolumeNormalization.Off, Strings.VolumeNormalizationOff),
+        new(VolumeNormalization.Track, Strings.VolumeNormalizationTrack),
+        new(VolumeNormalization.Album, Strings.VolumeNormalizationAlbum),
+    ];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPendingChanges))]
+    public partial VolumeNormalizationOption SelectedVolumeNormalizationOption { get; set; }
+
     [ObservableProperty]
     private OutputDeviceOption selectedOutputDevice = OutputDeviceOption.SystemDefault;
 
@@ -71,6 +83,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         RestoreQueueOnStartup != _appliedRestoreQueueOnStartup ||
         SelectedOpenedFilesActionOption.Action != _appliedOpenedFilesAction ||
         SelectedTrackStartActionOption.Action != _appliedTrackStartAction ||
+        SelectedVolumeNormalizationOption.Normalization != _appliedVolumeNormalization ||
         SelectedOutputDevice?.DeviceName != _appliedOutputDeviceName ||
         UseLogarithmicVolumeScale != _appliedUseLogarithmicVolumeScale ||
         SeekStepSeconds != _appliedSeekStepSeconds ||
@@ -95,6 +108,9 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
         SelectedTrackStartActionOption = OptionFor(saved.TrackStartAction);
         _appliedTrackStartAction = saved.TrackStartAction;
+
+        SelectedVolumeNormalizationOption = OptionFor(saved.VolumeNormalization);
+        _appliedVolumeNormalization = saved.VolumeNormalization;
 
         useWaveformSlider = saved.UseWaveformSlider;
         _appliedUseWaveformSlider = useWaveformSlider;
@@ -132,6 +148,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
             RestoreQueueOnStartup = RestoreQueueOnStartup,
             OpenedFilesAction = SelectedOpenedFilesActionOption.Action,
             TrackStartAction = SelectedTrackStartActionOption.Action,
+            VolumeNormalization = SelectedVolumeNormalizationOption.Normalization,
             UseWaveformSlider = UseWaveformSlider,
             VolumeCurve = curve,
             SeekStepSeconds = SeekStepSeconds,
@@ -141,6 +158,9 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         _appliedRestoreQueueOnStartup = RestoreQueueOnStartup;
         _appliedOpenedFilesAction = SelectedOpenedFilesActionOption.Action;
         _appliedTrackStartAction = SelectedTrackStartActionOption.Action;
+
+        _playbackControls.Normalization = SelectedVolumeNormalizationOption.Normalization;
+        _appliedVolumeNormalization = SelectedVolumeNormalizationOption.Normalization;
 
         _playbackControls.Waveform.UseSlider = UseWaveformSlider;
         _appliedUseWaveformSlider = UseWaveformSlider;
@@ -163,6 +183,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         RestoreQueueOnStartup = _appliedRestoreQueueOnStartup;
         SelectedOpenedFilesActionOption = OptionFor(_appliedOpenedFilesAction);
         SelectedTrackStartActionOption = OptionFor(_appliedTrackStartAction);
+        SelectedVolumeNormalizationOption = OptionFor(_appliedVolumeNormalization);
         SelectedOutputDevice = OutputDeviceOption.For(_appliedOutputDeviceName);
         UseLogarithmicVolumeScale = _appliedUseLogarithmicVolumeScale;
         SeekStepSeconds = _appliedSeekStepSeconds;
@@ -174,6 +195,9 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
     private TrackStartActionOption OptionFor(TrackStartAction action) =>
         TrackStartActionOptions.FirstOrDefault(o => o.Action == action) ?? TrackStartActionOptions[0];
+
+    private VolumeNormalizationOption OptionFor(VolumeNormalization normalization) =>
+        VolumeNormalizationOptions.FirstOrDefault(o => o.Normalization == normalization) ?? VolumeNormalizationOptions[0];
 
     public async Task ApplyPersistedOutputDeviceAsync()
     {
@@ -209,6 +233,8 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 public sealed record OpenedFilesActionOption(OpenedFilesAction Action, string DisplayName);
 
 public sealed record TrackStartActionOption(TrackStartAction Action, string DisplayName);
+
+public sealed record VolumeNormalizationOption(VolumeNormalization Normalization, string DisplayName);
 
 // A null DeviceName is the system default, so no real device's name can be mistaken for it.
 public sealed record OutputDeviceOption(string? DeviceName, string DisplayName)

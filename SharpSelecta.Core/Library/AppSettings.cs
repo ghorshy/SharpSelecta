@@ -25,6 +25,7 @@ public sealed record AppSettings
     public string? OutputDeviceName { get; init; }
     public double? Volume { get; init; }
     public VolumeCurve VolumeCurve { get; init; } = VolumeCurve.Linear;
+    public VolumeNormalization VolumeNormalization { get; init; } = VolumeNormalization.Off;
     public int SeekStepSeconds { get; init; } = 5;
     public IReadOnlyDictionary<string, string>? ShortcutOverrides { get; init; }
     public AppTheme Theme { get; init; } = AppTheme.Dark;

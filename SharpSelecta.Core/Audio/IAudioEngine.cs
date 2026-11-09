@@ -11,6 +11,9 @@ public interface IAudioEngine : IDisposable
     double Duration { get; }
     float Volume { get; set; }
 
+    // Linear gain for the loaded track on top of Volume (volume normalization); kept for the next Load.
+    float TrackGain { get; set; }
+
     IReadOnlyList<AudioOutputDevice> GetOutputDevices();
 
     // Null selects the system default device. Requires InitializeAsync to have completed.

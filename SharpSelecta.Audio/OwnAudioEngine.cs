@@ -11,6 +11,7 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
     private AudioMixer? _mixer;
     private FileSource? _currentTrack;
     private float _pendingVolume = 1.0f;
+    private float _trackGain = 1.0f;
     private OwnaudioNET.Effects.EqualizerEffect? _equalizer;
     private OwnaudioNET.Effects.LimiterEffect? _limiter;
 
@@ -64,7 +65,7 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
 
         logger.LogInformation("Loading {FilePath}", filePath);
 
-        _currentTrack = new FileSource(filePath);
+        _currentTrack = new FileSource(filePath) { Volume = _trackGain };
         _currentTrack.AttachToClock(_mixer.MasterClock);
         _currentTrack.Seek(0);
 
@@ -88,6 +89,17 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
         {
             _pendingVolume = value;
             _mixer?.MasterVolume = value;
+        }
+    }
+
+    // FileSource.Volume accepts 0-20.
+    public float TrackGain
+    {
+        get => _trackGain;
+        set
+        {
+            _trackGain = Math.Clamp(value, 0f, 20f);
+            _currentTrack?.Volume = _trackGain;
         }
     }
 

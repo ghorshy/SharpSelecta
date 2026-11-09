@@ -126,6 +126,11 @@ public static class Strings
     public static string DiscordPresenceHint => Get(nameof(DiscordPresenceHint));
     public static string FanartApiKeyLabel => Get(nameof(FanartApiKeyLabel));
     public static string FanartApiKeyHint => Get(nameof(FanartApiKeyHint));
+    public static string VolumeNormalizationLabel => Get(nameof(VolumeNormalizationLabel));
+    public static string VolumeNormalizationOff => Get(nameof(VolumeNormalizationOff));
+    public static string VolumeNormalizationTrack => Get(nameof(VolumeNormalizationTrack));
+    public static string VolumeNormalizationAlbum => Get(nameof(VolumeNormalizationAlbum));
+    public static string VolumeNormalizationHint => Get(nameof(VolumeNormalizationHint));
     public static string AutoDj => Get(nameof(AutoDj));
     public static string AutoDjTooltip => Get(nameof(AutoDjTooltip));
     public static string ColumnDisc => Get(nameof(ColumnDisc));
