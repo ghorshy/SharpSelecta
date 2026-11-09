@@ -19,6 +19,7 @@ public class SettingsStoreTests : IDisposable
 
         await Assert.That(settings.RestoreQueueOnStartup).IsTrue();
         await Assert.That(settings.SeekStepSeconds).IsEqualTo(5);
+        await Assert.That(settings.PreviousRestartThresholdSeconds).IsEqualTo(3);
         await Assert.That(settings.Theme).IsEqualTo(AppTheme.Dark);
         await Assert.That(settings.VolumeCurve).IsEqualTo(VolumeCurve.Linear);
         await Assert.That(settings.CheckForUpdatesAutomatically).IsTrue();

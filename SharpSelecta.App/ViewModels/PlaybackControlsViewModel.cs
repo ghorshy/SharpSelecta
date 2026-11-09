@@ -13,8 +13,6 @@ namespace SharpSelecta.App.ViewModels;
 
 public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
 {
-    private const double RestartThresholdSeconds = 3.0;
-
     private readonly IAudioEngine _audioEngine;
     private readonly PlaybackQueue _queue;
     private readonly ILogger<PlaybackControlsViewModel> _logger;
@@ -41,6 +39,8 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     private partial bool ShowRemainingTime { get; set; }
     [ObservableProperty]
     public partial int SeekStepSeconds { get; set; } = 5;
+    [ObservableProperty]
+    public partial int PreviousRestartThresholdSeconds { get; set; } = 3;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SeekBackwardCommand))]
@@ -369,7 +369,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
     [RelayCommand(CanExecute = nameof(HasCurrentTrack))]
     private async Task PreviousTrackAsync()
     {
-        if (PositionSeconds > RestartThresholdSeconds)
+        if (PreviousRestartThresholdSeconds > 0 && PositionSeconds > PreviousRestartThresholdSeconds)
         {
             RestartCurrentTrack();
             return;

@@ -580,6 +580,9 @@
   <data name="SeekStepSeconds" xml:space="preserve">
     <value>Seek step (seconds)</value>
   </data>
+  <data name="PreviousRestartThresholdSeconds" xml:space="preserve">
+    <value>Previous restarts the track after (seconds, 0 = never)</value>
+  </data>
   <data name="Reset" xml:space="preserve">
     <value>Reset</value>
   </data>

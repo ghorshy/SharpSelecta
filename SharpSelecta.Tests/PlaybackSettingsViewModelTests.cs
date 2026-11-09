@@ -57,6 +57,7 @@ public class PlaybackSettingsViewModelTests : IDisposable
         vm.SelectedOutputDevice = OutputDeviceOption.For("Focusrite Scarlett 2i2");
         vm.UseLogarithmicVolumeScale = true;
         vm.SeekStepSeconds = 8;
+        vm.PreviousRestartThresholdSeconds = 0;
         vm.UseWaveformSlider = true;
         vm.RestoreQueueOnStartup = false; // defaults to true, so this is a genuine pending change
 
@@ -66,6 +67,8 @@ public class PlaybackSettingsViewModelTests : IDisposable
         await Assert.That(new SettingsStore(settingsPath).Current.VolumeCurve).IsEqualTo(VolumeCurve.Linear);
         await Assert.That(new SettingsStore(settingsPath).Current.SeekStepSeconds).IsEqualTo(5);
         await Assert.That(playbackControls.SeekStepSeconds).IsEqualTo(5);
+        await Assert.That(new SettingsStore(settingsPath).Current.PreviousRestartThresholdSeconds).IsEqualTo(3);
+        await Assert.That(playbackControls.PreviousRestartThresholdSeconds).IsEqualTo(3);
         await Assert.That(playbackControls.Volume.Curve).IsEqualTo(VolumeCurve.Linear);
     }
 
@@ -81,6 +84,7 @@ public class PlaybackSettingsViewModelTests : IDisposable
         vm.SelectedOutputDevice = OutputDeviceOption.For("Focusrite Scarlett 2i2");
         vm.UseLogarithmicVolumeScale = true;
         vm.SeekStepSeconds = 8;
+        vm.PreviousRestartThresholdSeconds = 0;
         vm.UseWaveformSlider = true;
         vm.RestoreQueueOnStartup = false; // defaults to true, so this is a genuine change to persist
 
@@ -93,6 +97,8 @@ public class PlaybackSettingsViewModelTests : IDisposable
         await Assert.That(playbackControls.Volume.Curve).IsEqualTo(VolumeCurve.Logarithmic);
         await Assert.That(new SettingsStore(settingsPath).Current.SeekStepSeconds).IsEqualTo(8);
         await Assert.That(playbackControls.SeekStepSeconds).IsEqualTo(8);
+        await Assert.That(new SettingsStore(settingsPath).Current.PreviousRestartThresholdSeconds).IsEqualTo(0);
+        await Assert.That(playbackControls.PreviousRestartThresholdSeconds).IsEqualTo(0);
         await Assert.That(new SettingsStore(settingsPath).Current.UseWaveformSlider).IsTrue();
         await Assert.That(playbackControls.Waveform.UseSlider).IsTrue();
         await Assert.That(new SettingsStore(settingsPath).Current.RestoreQueueOnStartup).IsFalse();
@@ -111,6 +117,7 @@ public class PlaybackSettingsViewModelTests : IDisposable
         vm.SelectedOutputDevice = OutputDeviceOption.For("Focusrite Scarlett 2i2");
         vm.UseLogarithmicVolumeScale = true;
         vm.SeekStepSeconds = 8;
+        vm.PreviousRestartThresholdSeconds = 0;
         vm.UseWaveformSlider = true;
         vm.RestoreQueueOnStartup = false; // defaults to true, so this is a genuine change to revert
 
@@ -119,6 +126,7 @@ public class PlaybackSettingsViewModelTests : IDisposable
         await Assert.That(vm.SelectedOutputDevice.DeviceName).IsNull();
         await Assert.That(vm.UseLogarithmicVolumeScale).IsFalse();
         await Assert.That(vm.SeekStepSeconds).IsEqualTo(5);
+        await Assert.That(vm.PreviousRestartThresholdSeconds).IsEqualTo(3);
         await Assert.That(vm.UseWaveformSlider).IsFalse();
         await Assert.That(vm.RestoreQueueOnStartup).IsTrue();
         await Assert.That(settingsVm.HasPendingChanges).IsFalse();
@@ -204,6 +212,19 @@ public class PlaybackSettingsViewModelTests : IDisposable
         var vm = new PlaybackSettingsViewModel(new SettingsStore(_temp.NewSettingsPath()), Substitute.For<IOutputDeviceService>(), CreatePlaybackControlsViewModel());
 
         await Assert.That(vm.SeekStepSeconds).IsEqualTo(5);
+    }
+
+    [Test]
+    public async Task Constructor_AppliesAPreviouslySavedPreviousRestartThresholdToPlaybackControls()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        new SettingsStore(settingsPath).Update(s => s with { PreviousRestartThresholdSeconds = 7 });
+        var playbackControls = CreatePlaybackControlsViewModel();
+
+        var vm = new PlaybackSettingsViewModel(new SettingsStore(settingsPath), Substitute.For<IOutputDeviceService>(), playbackControls);
+
+        await Assert.That(vm.PreviousRestartThresholdSeconds).IsEqualTo(7);
+        await Assert.That(playbackControls.PreviousRestartThresholdSeconds).IsEqualTo(7);
     }
 
     [Test]

@@ -198,6 +198,44 @@ public class PlaybackControlsViewModelTests : IDisposable
     }
 
     [Test]
+    [Arguments(0, 10.0)]
+    [Arguments(5, 5.0)]
+    [Arguments(10, 8.0)]
+    public async Task PreviousTrackCommand_AtOrBelowThresholdOrWhenThresholdIsZero_GoesBack(int threshold, double position)
+    {
+        var vm = CreateViewModel(out var audioEngine, out var queue);
+        vm.PreviousRestartThresholdSeconds = threshold;
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
+        queue.AddToQueue(new Track(TestPaths.Music("b.mp3"), "b.mp3"));
+        await vm.NextTrackCommand.ExecuteAsync(null);
+        vm.PositionSeconds = position;
+        audioEngine.ClearReceivedCalls();
+
+        await vm.PreviousTrackCommand.ExecuteAsync(null);
+
+        audioEngine.Received(1).Load(TestPaths.Music("a.mp3"));
+        await Assert.That(vm.LoadedFileName).IsEqualTo("a.mp3");
+    }
+
+    [Test]
+    public async Task PreviousTrackCommand_AboveARaisedThreshold_RestartsCurrentTrack()
+    {
+        var vm = CreateViewModel(out var audioEngine, out var queue);
+        vm.PreviousRestartThresholdSeconds = 10;
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
+        queue.AddToQueue(new Track(TestPaths.Music("b.mp3"), "b.mp3"));
+        await vm.NextTrackCommand.ExecuteAsync(null);
+        vm.PositionSeconds = 11.0;
+        audioEngine.ClearReceivedCalls();
+
+        await vm.PreviousTrackCommand.ExecuteAsync(null);
+
+        audioEngine.DidNotReceive().Load(Arg.Any<string>());
+        audioEngine.Received(1).Seek(0);
+        await Assert.That(vm.LoadedFileName).IsEqualTo("b.mp3");
+    }
+
+    [Test]
     public async Task PreviousTrackCommand_AtStartOfHistory_RestartsEvenWithinThreshold()
     {
         var vm = CreateViewModel(out var audioEngine, out var queue);
