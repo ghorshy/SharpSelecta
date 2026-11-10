@@ -272,6 +272,22 @@ public sealed partial class TrackListView : UserControl
         }
     }
 
+    private void OnRowMenuOpening(object? sender, CancelEventArgs e)
+    {
+        if (sender is ContextMenu { DataContext: LibraryTrackViewModel item } menu)
+        {
+            CompilationFlagMenu.Refresh(menu, item.Library, item.Library.ResolveSelection(item.Track));
+        }
+    }
+
+    private async void OnCompilationClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { DataContext: LibraryTrackViewModel item } menuItem)
+        {
+            await CompilationFlagMenu.ToggleAsync(menuItem, item.Library, item.Library.ResolveSelection(item.Track));
+        }
+    }
+
     private async void OnPropertiesClick(object? sender, RoutedEventArgs e)
     {
         if (sender is MenuItem { DataContext: LibraryTrackViewModel item })

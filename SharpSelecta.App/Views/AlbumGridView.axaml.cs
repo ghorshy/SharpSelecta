@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -79,6 +80,38 @@ public partial class AlbumGridView : UserControl
         {
             AddToPlaylistMenu.Rebuild(submenu, trackItem.Library.Playlists,
                 playlistId => trackItem.Library.AddToPlaylistCommand.Execute((trackItem.Track, playlistId)));
+        }
+    }
+
+    private void OnAlbumMenuOpening(object? sender, CancelEventArgs e)
+    {
+        if (sender is ContextMenu { DataContext: AlbumViewModel album } menu)
+        {
+            CompilationFlagMenu.Refresh(menu, album.Library, album.UnderlyingTracks);
+        }
+    }
+
+    private async void OnAlbumCompilationClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { DataContext: AlbumViewModel album } item)
+        {
+            await CompilationFlagMenu.ToggleAsync(item, album.Library, album.UnderlyingTracks);
+        }
+    }
+
+    private void OnTrackMenuOpening(object? sender, CancelEventArgs e)
+    {
+        if (sender is ContextMenu { DataContext: AlbumTrackRowViewModel { Track: var trackItem } } menu)
+        {
+            CompilationFlagMenu.Refresh(menu, trackItem.Library, [trackItem.Track]);
+        }
+    }
+
+    private async void OnTrackCompilationClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { DataContext: AlbumTrackRowViewModel { Track: var trackItem } } item)
+        {
+            await CompilationFlagMenu.ToggleAsync(item, trackItem.Library, [trackItem.Track]);
         }
     }
 

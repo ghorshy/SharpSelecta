@@ -94,7 +94,7 @@
                                                 Tapped="OnTileTapped"
                                                 DoubleTapped="OnTileDoubleTapped">
                                             <Border.ContextMenu>
-                                                <ContextMenu>
+                                                <ContextMenu Opening="OnAlbumMenuOpening">
                                                     <MenuItem Header="{x:Static res:Strings.PlayNow}"
                                                               Command="{Binding Library.PlayAlbumNowCommand}"
                                                               CommandParameter="{Binding}" />
@@ -112,6 +112,8 @@
                                                               Command="{Binding Library.ShowAlbumInFileManagerCommand}"
                                                               CommandParameter="{Binding}" />
                                                     <Separator />
+                                                    <MenuItem Header="{x:Static res:Strings.ITunesCompilation}" Classes="compilation-flag"
+                                                              ToggleType="CheckBox" Click="OnAlbumCompilationClick" />
                                                     <MenuItem Header="{x:Static res:Strings.Properties}"
                                                               Click="OnAlbumPropertiesClick" />
                                                 </ContextMenu>
@@ -169,7 +171,7 @@
                                                                 <Grid ColumnDefinitions="Auto,*,Auto" DoubleTapped="OnExpandedTrackDoubleTapped"
                                                                       Background="Transparent">
                                                                     <Grid.ContextMenu>
-                                                                        <ContextMenu>
+                                                                        <ContextMenu Opening="OnTrackMenuOpening">
                                                                             <MenuItem Header="{x:Static res:Strings.PlayNow}"
                                                                                       Command="{Binding Track.Library.PlayNowCommand}"
                                                                                       CommandParameter="{Binding Track.Track}" />
@@ -187,6 +189,8 @@
                                                                                       Command="{Binding Track.Library.ShowInFileManagerCommand}"
                                                                                       CommandParameter="{Binding Track.Track}" />
                                                                             <Separator />
+                                                                            <MenuItem Header="{x:Static res:Strings.ITunesCompilation}" Classes="compilation-flag"
+                                                                                      ToggleType="CheckBox" Click="OnTrackCompilationClick" />
                                                                             <MenuItem Header="{x:Static res:Strings.Properties}"
                                                                                       Click="OnTrackPropertiesClick" />
                                                                         </ContextMenu>

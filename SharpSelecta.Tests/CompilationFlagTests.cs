@@ -70,30 +70,4 @@ public class CompilationFlagTests
             dir.Delete(recursive: true);
         }
     }
-
-    [Test]
-    [Arguments("untagged-track.mp3")]
-    [Arguments("untagged-track.m4a")]
-    [Arguments("untagged-track.flac")]
-    public async Task Write_OnlyTouchesTheFlagWhenAsked(string fixtureName)
-    {
-        var path = CopyFixture(fixtureName, out var dir);
-        try
-        {
-            var edits = new TrackTagEdits("Title", null, "Biohzrd", "Biohzrd Dub Pack 2024", null, null, null, null);
-
-            TrackTagEditor.Write(path, edits with { IsCompilation = true });
-            await Assert.That(CompilationFlag.IsSet(path)).IsTrue();
-
-            TrackTagEditor.Write(path, edits);
-            await Assert.That(CompilationFlag.IsSet(path)).IsTrue();
-
-            TrackTagEditor.Write(path, edits with { IsCompilation = false });
-            await Assert.That(CompilationFlag.IsSet(path)).IsFalse();
-        }
-        finally
-        {
-            dir.Delete(recursive: true);
-        }
-    }
 }

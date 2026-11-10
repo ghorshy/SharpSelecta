@@ -547,6 +547,27 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     [RelayCommand]
     private Task AddAlbumToQueue(AlbumViewModel album) => _playbackControls.AddToQueue(album.UnderlyingTracks);
 
+    public Task<bool> AreAllCompilationsAsync(IReadOnlyList<Track> tracks) =>
+        Task.Run(() => tracks.Count > 0 && tracks.All(t => CompilationFlag.IsSet(t.FilePath)));
+
+    public Task SetCompilationFlagAsync(IReadOnlyList<Track> tracks, bool isCompilation) => Task.Run(() =>
+    {
+        foreach (var track in tracks.Where(t => File.Exists(t.FilePath)))
+        {
+            try
+            {
+                if (CompilationFlag.IsSet(track.FilePath) != isCompilation)
+                {
+                    TrackTagEditor.WriteCompilationFlag(track.FilePath, isCompilation);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to write the compilation flag of {FilePath}", track.FilePath);
+            }
+        }
+    });
+
     [RelayCommand]
     private Task ShowInFileManagerAsync(Track track) => _fileManagerService.RevealInFileManagerAsync(track.FilePath);
 

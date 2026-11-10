@@ -81,7 +81,7 @@
                      playlist" stays fully actionable. -->
                 <Setter Property="ContextMenu">
                     <Setter.Value>
-                        <ContextMenu x:DataType="vm:LibraryTrackViewModel">
+                        <ContextMenu x:DataType="vm:LibraryTrackViewModel" Opening="OnRowMenuOpening">
                             <MenuItem Header="{x:Static res:Strings.PlayNow}"
                                       Command="{Binding Library.PlayTrackItemCommand}"
                                       CommandParameter="{Binding}"
@@ -110,6 +110,8 @@
                                       CommandParameter="{Binding Track}"
                                       IsEnabled="{Binding !IsMissing}" />
                             <Separator />
+                            <MenuItem Header="{x:Static res:Strings.ITunesCompilation}" Classes="compilation-flag"
+                                      ToggleType="CheckBox" Click="OnCompilationClick" />
                             <MenuItem Header="{x:Static res:Strings.Properties}"
                                       Click="OnPropertiesClick"
                                       IsEnabled="{Binding !IsMissing}" />

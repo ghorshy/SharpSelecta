@@ -12,8 +12,7 @@ public sealed record TrackTagEdits(
     string? Comment,
     int? Year,
     int? TrackNumber,
-    int? DiscNumber = null,
-    bool? IsCompilation = null);
+    int? DiscNumber = null);
 
 public abstract record CoverArtEdit
 {
@@ -47,11 +46,6 @@ public static class TrackTagEditor
             atlTrack.Year = edits.Year ?? 0;
             atlTrack.TrackNumber = edits.TrackNumber ?? 0;
             atlTrack.DiscNumber = edits.DiscNumber ?? 0;
-
-            if (edits.IsCompilation is { } isCompilation)
-            {
-                CompilationFlag.Apply(atlTrack, filePath, isCompilation);
-            }
 
             if (credits is not null)
             {

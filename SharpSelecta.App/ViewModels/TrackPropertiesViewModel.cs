@@ -23,7 +23,6 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
     private readonly HashSet<string> _varyingFields = [];
 
     private readonly List<TrackCredits> _credits;
-    private readonly List<bool> _compilationFlags;
     private readonly IReadOnlyList<IAlbumArtProvider> _albumArtProviders;
 
     private TrackTagEdits _baseline = new(null, null, null, null, null, null, null, null);
@@ -56,7 +55,6 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
 
         _tracks = [.. tracks];
         _credits = [.. _tracks.Select(t => TrackCredits.Read(t.FilePath))];
-        _compilationFlags = [.. _tracks.Select(t => CompilationFlag.IsSet(t.FilePath))];
         _filePickerService = filePickerService;
         _fileManagerService = fileManagerService;
         _logger = logger;
@@ -110,13 +108,6 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
 
     [ObservableProperty]
     public partial string? Lyricist { get; set; }
-
-    // Null while the tracks disagree, which keeps each track's own flag.
-    [ObservableProperty]
-    public partial bool? IsCompilation { get; set; }
-
-    [ObservableProperty]
-    public partial bool CompilationVaries { get; private set; }
 
     [ObservableProperty]
     public partial string YearText { get; set; } = "";
@@ -228,7 +219,7 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
                 break;
             case nameof(Title) or nameof(Genre)
                 or nameof(Comment) or nameof(YearText) or nameof(TrackNumberText) or nameof(DiscNumberText) or nameof(SaveCoverAsSeparateFile)
-                or nameof(Remixer) or nameof(Composer) or nameof(Conductor) or nameof(Lyricist) or nameof(IsCompilation):
+                or nameof(Remixer) or nameof(Composer) or nameof(Conductor) or nameof(Lyricist):
                 RefreshState();
                 break;
         }
@@ -366,13 +357,13 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
         var typedCredits = CurrentCredits();
         var writeCredits = typedCredits != _creditsBaseline;
         var work = _tracks
-            .Select((track, i) => (Track: track, Edits: EditsFor(track, _compilationFlags[i], current), Credits: writeCredits ? CreditsFor(_credits[i], typedCredits) : null))
+            .Select((track, i) => (Track: track, Edits: EditsFor(track, current), Credits: writeCredits ? CreditsFor(_credits[i], typedCredits) : null))
             .ToList();
         try
         {
             var (results, coverState) = await Task.Run(() =>
             {
-                var saved = new List<(Track Original, Track? Updated, Exception? Error, TrackCredits? Credits, bool? IsCompilation)>();
+                var saved = new List<(Track Original, Track? Updated, Exception? Error, TrackCredits? Credits)>();
                 foreach (var (track, edits, credits) in work)
                 {
                     try
@@ -380,12 +371,11 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
                         TrackTagEditor.Write(track.FilePath, edits, cover, credits);
                         var updated = MusicLibraryScanner.ReadTrackIfExists(track.FilePath)
                             ?? throw new FileNotFoundException("The file disappeared while saving.", track.FilePath);
-                        saved.Add((track, updated with { DateAddedUtc = track.DateAddedUtc }, null,
-                            TrackCredits.Read(track.FilePath), CompilationFlag.IsSet(track.FilePath)));
+                        saved.Add((track, updated with { DateAddedUtc = track.DateAddedUtc }, null, TrackCredits.Read(track.FilePath)));
                     }
                     catch (Exception ex)
                     {
-                        saved.Add((track, null, ex, null, null));
+                        saved.Add((track, null, ex, null));
                     }
                 }
 
@@ -401,7 +391,6 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
 
                 _tracks[i] = updated;
                 _credits[i] = results[i].Credits ?? _credits[i];
-                _compilationFlags[i] = results[i].IsCompilation ?? _compilationFlags[i];
                 savedTracks.Add(updated);
             }
 
@@ -459,8 +448,6 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
         Composer = CommonCredit(nameof(Composer), c => c.Composer);
         Conductor = CommonCredit(nameof(Conductor), c => c.Conductor);
         Lyricist = CommonCredit(nameof(Lyricist), c => c.Lyricist);
-        CompilationVaries = _compilationFlags.Distinct().Count() > 1;
-        IsCompilation = CompilationVaries ? null : _compilationFlags[0];
 
         // Texts are valid here, so no baseline fallback is needed to read them back.
         _baseline = CurrentEdits();
@@ -547,7 +534,7 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
         var discNumber = TryParseOptionalNumber(DiscNumberText, out var parsedDisc) ? parsedDisc : _baseline.DiscNumber;
         return new TrackTagEdits(
             Normalize(Title), Normalize(Artist), Normalize(AlbumArtist), Normalize(Album),
-            Normalize(Genre), Normalize(Comment), year, trackNumber, discNumber, IsCompilation);
+            Normalize(Genre), Normalize(Comment), year, trackNumber, discNumber);
     }
 
     private TrackCredits CurrentCredits() =>
@@ -569,7 +556,7 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
 
     // What to write to one track: the typed value, except that a field that varied across the tracks
     // and was left empty keeps that track's own value.
-    private TrackTagEdits EditsFor(Track track, bool isCompilation, TrackTagEdits typed)
+    private TrackTagEdits EditsFor(Track track, TrackTagEdits typed)
     {
         string? Text(string field, string? value, string? own) =>
             _varyingFields.Contains(field) && value is null ? own : value;
@@ -585,8 +572,7 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
             Text(nameof(Comment), typed.Comment, Normalize(track.Comment)),
             Number(nameof(YearText), typed.Year, track.Year),
             Number(nameof(TrackNumberText), typed.TrackNumber, track.TrackNumber),
-            Number(nameof(DiscNumberText), typed.DiscNumber, track.DiscNumber),
-            typed.IsCompilation == isCompilation ? null : typed.IsCompilation);
+            Number(nameof(DiscNumberText), typed.DiscNumber, track.DiscNumber));
     }
 
     private CoverArtEdit? CurrentCoverEdit()
