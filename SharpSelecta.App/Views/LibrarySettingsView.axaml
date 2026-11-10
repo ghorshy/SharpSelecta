@@ -28,6 +28,7 @@
         <TextBlock Text="{Binding StatusMessage}" Classes="error" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
 
         <Button Content="{x:Static res:Strings.ClearArtworkCache}" Command="{Binding Grid.ClearArtworkCacheCommand}" HorizontalAlignment="Left" Margin="{styles:Spacing Top=S}" />
+        <Button Content="{x:Static res:Strings.FindInconsistentCompilationFlags}" Click="OnFindInconsistentCompilationFlagsClick" HorizontalAlignment="Left" />
     </StackPanel>
 
 </UserControl>

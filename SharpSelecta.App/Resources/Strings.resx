@@ -817,4 +817,40 @@
   <data name="CurrentVersionFormat" xml:space="preserve">
     <value>Version {0}</value>
   </data>
+  <data name="ITunesCompilation" xml:space="preserve">
+    <value>iTunes compilation</value>
+  </data>
+  <data name="FindInconsistentCompilationFlags" xml:space="preserve">
+    <value>Find inconsistent compilation flags…</value>
+  </data>
+  <data name="CompilationFlagsWindowTitle" xml:space="preserve">
+    <value>Inconsistent compilation flags</value>
+  </data>
+  <data name="CompilationFlagsHint" xml:space="preserve">
+    <value>These albums have one album artist, but only some of their tracks are marked as part of a compilation, so players and phones split them in two. Clearing the flag on the checked files keeps each album together; nothing else in the files changes.</value>
+  </data>
+  <data name="CompilationFlagsChecking" xml:space="preserve">
+    <value>Checking compilation flags…</value>
+  </data>
+  <data name="CompilationFlagsNoneFound" xml:space="preserve">
+    <value>No inconsistent compilation flags found.</value>
+  </data>
+  <data name="CompilationFlagsWithoutFlag" xml:space="preserve">
+    <value>Without the flag:</value>
+  </data>
+  <data name="ClearCompilationFlag" xml:space="preserve">
+    <value>Clear flag on checked files</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="FailedToClearCompilationFlagFormat" xml:space="preserve">
+    <value>Could not clear the flag on: {0}</value>
+  </data>
+  <data name="CompilationFlagsAlbumFormat" xml:space="preserve">
+    <value>{0} — {1}</value>
+  </data>
+  <data name="FailedToCheckCompilationFlagsFormat" xml:space="preserve">
+    <value>Could not check the compilation flags: {0}</value>
+  </data>
 </root>

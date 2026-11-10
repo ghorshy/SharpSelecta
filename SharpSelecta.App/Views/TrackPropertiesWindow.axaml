@@ -41,8 +41,12 @@
                                      PlaceholderText="{Binding AlbumArtistPlaceholder}" />
 
                             <TextBlock Grid.Row="3" Classes="field-label" Text="{x:Static res:Strings.ColumnAlbum}" />
-                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Album}"
-                                     PlaceholderText="{Binding AlbumPlaceholder}" />
+                            <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="{styles:SpacingValue S}">
+                                <TextBox Grid.Column="0" Text="{Binding Album}"
+                                         PlaceholderText="{Binding AlbumPlaceholder}" />
+                                <CheckBox Grid.Column="1" Content="{x:Static res:Strings.ITunesCompilation}"
+                                          IsChecked="{Binding IsCompilation}" IsThreeState="{Binding CompilationVaries}" />
+                            </Grid>
 
                             <TextBlock Grid.Row="4" Classes="field-label" Text="{x:Static res:Strings.LabelGenre}" />
                             <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Genre}"

@@ -18,4 +18,12 @@ public partial class LibrarySettingsView : UserControl
 
         vm.Folders.RemovePendingFolderCommand.Execute(folderPath);
     }
+
+    private async void OnFindInconsistentCompilationFlagsClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is LibraryViewModel vm && TopLevel.GetTopLevel(this) is Window owner)
+        {
+            await CompilationFlagsWindow.ShowAsync(owner, vm.CreateCompilationFlags());
+        }
+    }
 }

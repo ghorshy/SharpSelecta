@@ -1,0 +1,65 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SharpSelecta.App.ViewModels"
+        xmlns:res="using:SharpSelecta.App.Resources"
+        xmlns:conv="using:Avalonia.Data.Converters"
+        xmlns:styles="using:SharpSelecta.App.Styles"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="560" d:DesignHeight="520"
+        x:Class="SharpSelecta.App.Views.CompilationFlagsWindow"
+        x:DataType="vm:CompilationFlagsViewModel"
+        Title="{x:Static res:Strings.CompilationFlagsWindowTitle}"
+        Width="{DynamicResource Size.CompilationFlags.Width}"
+        Height="{DynamicResource Size.CompilationFlags.Height}"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="{styles:Spacing Uniform=M}" RowSpacing="{styles:SpacingValue M}">
+        <TextBlock Grid.Row="0" Text="{x:Static res:Strings.CompilationFlagsHint}" Classes="secondary" TextWrapping="Wrap" />
+
+        <Panel Grid.Row="1">
+            <ScrollViewer>
+                <ItemsControl ItemsSource="{Binding Albums}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:InconsistentAlbumViewModel">
+                            <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Bottom=M}">
+                                <TextBlock Text="{Binding Heading}" Classes="strong" TextTrimming="CharacterEllipsis" />
+                                <ItemsControl ItemsSource="{Binding FlaggedFiles}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:FlaggedFileViewModel">
+                                            <CheckBox Content="{Binding FileName}" IsChecked="{Binding IsChecked}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Text="{x:Static res:Strings.CompilationFlagsWithoutFlag}" Classes="secondary small" />
+                                <ItemsControl ItemsSource="{Binding UnflaggedFileNames}" Margin="{styles:Spacing Left=S}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="x:String">
+                                            <TextBlock Text="{Binding}" Classes="tertiary" TextTrimming="CharacterEllipsis" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+            <StackPanel IsVisible="{Binding IsBusy}" Spacing="{styles:SpacingValue S}"
+                        HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="{x:Static res:Strings.CompilationFlagsChecking}" Classes="secondary" HorizontalAlignment="Center" />
+                <ProgressBar IsIndeterminate="True" />
+            </StackPanel>
+            <TextBlock Text="{x:Static res:Strings.CompilationFlagsNoneFound}" Classes="secondary"
+                       IsVisible="{Binding ShowNoneFound}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Panel>
+
+        <TextBlock Grid.Row="2" Text="{Binding ErrorMessage}" Classes="error" TextWrapping="Wrap"
+                   IsVisible="{Binding ErrorMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{styles:SpacingValue S}">
+            <Button Content="{x:Static res:Strings.ClearCompilationFlag}" Command="{Binding FixSelectedCommand}" />
+            <Button Content="{x:Static res:Strings.Close}" Click="OnCloseClick" IsCancel="True" />
+        </StackPanel>
+    </Grid>
+</Window>

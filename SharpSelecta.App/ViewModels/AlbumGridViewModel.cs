@@ -165,9 +165,7 @@ public partial class AlbumGridViewModel : ViewModelBase
             : null;
 
         var groups = _library.Tracks
-            .GroupBy(
-                t => (Album: (t.Track.Album ?? string.Empty).Trim(), AlbumArtist: (t.Track.AlbumArtist ?? string.Empty).Trim()),
-                AlbumGroupKeyComparer.Instance)
+            .GroupBy(t => AlbumKey.Of(t.Track))
             .Where(g => newestPaths is null || g.Any(t => newestPaths.Contains(t.Track.FilePath)))
             .OrderBy(g => g.Key.Album, StringComparer.OrdinalIgnoreCase)
             .ThenBy(g => g.Key.AlbumArtist, StringComparer.OrdinalIgnoreCase)
@@ -199,8 +197,11 @@ public partial class AlbumGridViewModel : ViewModelBase
         Path.Combine(Path.GetDirectoryName(settingsFilePath)!, "artwork-cache");
 
     // Same key the albums are grouped (and their thumbnails cached) by.
-    public static string ArtworkKey(Track track) =>
-        $"{(track.Album ?? string.Empty).Trim()}{(track.AlbumArtist ?? string.Empty).Trim()}";
+    public static string ArtworkKey(Track track)
+    {
+        var key = AlbumKey.Of(track);
+        return $"{key.Album}{key.AlbumArtist}";
+    }
 
     [RelayCommand]
     private void ClearArtworkCache()
@@ -261,20 +262,6 @@ public partial class AlbumGridViewModel : ViewModelBase
         });
 
         _logger.LogInformation("Loaded artwork for {AlbumCount} albums in {ElapsedMs} ms", groups.Count, stopwatch.ElapsedMilliseconds);
-    }
-
-    private sealed class AlbumGroupKeyComparer : IEqualityComparer<(string Album, string AlbumArtist)>
-    {
-        public static readonly AlbumGroupKeyComparer Instance = new();
-
-        public bool Equals((string Album, string AlbumArtist) x, (string Album, string AlbumArtist) y) =>
-            string.Equals(x.Album, y.Album, StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(x.AlbumArtist, y.AlbumArtist, StringComparison.OrdinalIgnoreCase);
-
-        public int GetHashCode((string Album, string AlbumArtist) key) =>
-            HashCode.Combine(
-                key.Album.ToUpperInvariant(),
-                key.AlbumArtist.ToUpperInvariant());
     }
 
     private static string ResolveArtistLabel(IEnumerable<LibraryTrackViewModel> tracks)

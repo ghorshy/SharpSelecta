@@ -95,6 +95,9 @@
     <x:Double x:Key="Size.AlbumArtSearch.Height">660</x:Double>
     <x:Double x:Key="Size.AlbumArtSearch.TileImage">150</x:Double>
 
+    <x:Double x:Key="Size.CompilationFlags.Width">560</x:Double>
+    <x:Double x:Key="Size.CompilationFlags.Height">520</x:Double>
+
     <x:Double x:Key="Size.Properties.Width">760</x:Double>
     <x:Double x:Key="Size.Properties.Height">620</x:Double>
     <x:Double x:Key="Size.Properties.MinWidth">640</x:Double>

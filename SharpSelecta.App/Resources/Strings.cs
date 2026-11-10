@@ -250,6 +250,25 @@ public static class Strings
     public static string Varies => Get(nameof(Varies));
     public static string MultipleLocations => Get(nameof(MultipleLocations));
 
+    public static string ITunesCompilation => Get(nameof(ITunesCompilation));
+    public static string FindInconsistentCompilationFlags => Get(nameof(FindInconsistentCompilationFlags));
+    public static string CompilationFlagsWindowTitle => Get(nameof(CompilationFlagsWindowTitle));
+    public static string CompilationFlagsHint => Get(nameof(CompilationFlagsHint));
+    public static string CompilationFlagsChecking => Get(nameof(CompilationFlagsChecking));
+    public static string CompilationFlagsNoneFound => Get(nameof(CompilationFlagsNoneFound));
+    public static string CompilationFlagsWithoutFlag => Get(nameof(CompilationFlagsWithoutFlag));
+    public static string ClearCompilationFlag => Get(nameof(ClearCompilationFlag));
+    public static string Close => Get(nameof(Close));
+
+    public static string CompilationFlagsAlbum(string album, string albumArtist) =>
+        string.Format(CultureInfo.CurrentCulture, Get("CompilationFlagsAlbumFormat"), album, albumArtist);
+
+    public static string FailedToCheckCompilationFlags(string message) =>
+        string.Format(CultureInfo.CurrentCulture, Get("FailedToCheckCompilationFlagsFormat"), message);
+
+    public static string FailedToClearCompilationFlag(string failedNames) =>
+        string.Format(CultureInfo.CurrentCulture, Get("FailedToClearCompilationFlagFormat"), failedNames);
+
     public static string TracksSelected(int count) =>
         string.Format(CultureInfo.CurrentCulture, Get("TracksSelectedFormat"), count);
 

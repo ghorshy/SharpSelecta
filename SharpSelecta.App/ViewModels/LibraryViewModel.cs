@@ -440,6 +440,8 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             ? LibraryIndexStore.GetPlaylistTracks(_settings.FilePath, playlistId).Where(e => e.Track is not null).Select(e => e.Track!).ToList()
             : LibraryTracks();
 
+    public CompilationFlagsViewModel CreateCompilationFlags() => new(LibraryTracks(), _logger);
+
     public TrackPropertiesViewModel CreateTrackProperties(Track track) => CreateTrackProperties([track]);
 
     public TrackPropertiesViewModel CreateTrackProperties(IReadOnlyList<Track> tracks)

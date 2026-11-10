@@ -12,7 +12,8 @@ public sealed record TrackTagEdits(
     string? Comment,
     int? Year,
     int? TrackNumber,
-    int? DiscNumber = null);
+    int? DiscNumber = null,
+    bool? IsCompilation = null);
 
 public abstract record CoverArtEdit
 {
@@ -34,6 +35,40 @@ public static class TrackTagEditor
     // Null credits leave the file's credits as they are.
     public static void Write(string filePath, TrackTagEdits edits, CoverArtEdit? cover = null, TrackCredits? credits = null)
     {
+        byte[]? coverFileBytes = null;
+        WriteThroughTempCopy(filePath, atlTrack =>
+        {
+            atlTrack.Title = edits.Title ?? "";
+            atlTrack.Artist = edits.Artist ?? "";
+            atlTrack.AlbumArtist = edits.AlbumArtist ?? "";
+            atlTrack.Album = edits.Album ?? "";
+            atlTrack.Genre = edits.Genre ?? "";
+            atlTrack.Comment = edits.Comment ?? "";
+            atlTrack.Year = edits.Year ?? 0;
+            atlTrack.TrackNumber = edits.TrackNumber ?? 0;
+            atlTrack.DiscNumber = edits.DiscNumber ?? 0;
+
+            if (edits.IsCompilation is { } isCompilation)
+            {
+                CompilationFlag.Apply(atlTrack, filePath, isCompilation);
+            }
+
+            if (credits is not null)
+            {
+                CreditFields.Apply(atlTrack, filePath, credits);
+            }
+
+            coverFileBytes = ApplyCover(atlTrack, cover ?? new CoverArtEdit.Keep());
+        },
+        // Cover file goes before the final rename: if it fails, the original track is untouched.
+        () => ApplyCoverFile(filePath, cover ?? new CoverArtEdit.Keep(), coverFileBytes));
+    }
+
+    public static void WriteCompilationFlag(string filePath, bool isCompilation) =>
+        WriteThroughTempCopy(filePath, atlTrack => CompilationFlag.Apply(atlTrack, filePath, isCompilation));
+
+    private static void WriteThroughTempCopy(string filePath, Action<AtlTrack> edit, Action? beforeReplacing = null)
+    {
         var tempPath = HiddenTempFile.PathNextTo(filePath, Path.GetExtension(filePath));
 
         AtlConfiguration.Ensure();
@@ -42,33 +77,15 @@ public static class TrackTagEditor
         {
             File.Copy(filePath, tempPath);
 
-            var atlTrack = new AtlTrack(tempPath)
-            {
-                Title = edits.Title ?? "",
-                Artist = edits.Artist ?? "",
-                AlbumArtist = edits.AlbumArtist ?? "",
-                Album = edits.Album ?? "",
-                Genre = edits.Genre ?? "",
-                Comment = edits.Comment ?? "",
-                Year = edits.Year ?? 0,
-                TrackNumber = edits.TrackNumber ?? 0,
-                DiscNumber = edits.DiscNumber ?? 0,
-            };
-
-            if (credits is not null)
-            {
-                CreditFields.Apply(atlTrack, filePath, credits);
-            }
-
-            var coverFileBytes = ApplyCover(atlTrack, cover ?? new CoverArtEdit.Keep());
+            var atlTrack = new AtlTrack(tempPath);
+            edit(atlTrack);
 
             if (!atlTrack.Save())
             {
                 throw new IOException($"Could not write tags to '{filePath}'.");
             }
 
-            // Cover file goes before the final rename: if it fails, the original track is untouched.
-            ApplyCoverFile(filePath, cover ?? new CoverArtEdit.Keep(), coverFileBytes);
+            beforeReplacing?.Invoke();
 
             File.Move(tempPath, filePath, overwrite: true);
         }
