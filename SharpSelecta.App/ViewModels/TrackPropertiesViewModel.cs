@@ -7,6 +7,7 @@ using SharpSelecta.App.Formatting;
 using SharpSelecta.App.Resources;
 using SharpSelecta.App.Services;
 using SharpSelecta.Core.AlbumArt;
+using SharpSelecta.Core.Conversion;
 using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.ViewModels;
@@ -27,6 +28,7 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
 
     private TrackTagEdits _baseline = new(null, null, null, null, null, null, null, null);
     private TrackCredits _creditsBaseline = TrackCredits.None;
+    private Dictionary<string, string?> _baselineTexts = [];
     private bool _persistedHasCover;
     private bool _persistedCoverIsSeparateFile;
     private byte[]? _replacementCover;
@@ -342,6 +344,84 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
     [RelayCommand]
     private Task ShowInFileManagerAsync() => _fileManagerService.RevealInFileManagerAsync(Track.FilePath);
 
+    // Switches to the converted copies, reading them from disk; edits not applied yet stay as unsaved
+    // edits on top, since the conversion copied what was on disk, not what was typed.
+    public async Task FollowConvertedAsync(IReadOnlyList<ConversionOutcome> outcomes)
+    {
+        var convertedByPath = outcomes
+            .Where(o => o.Converted is not null)
+            .ToDictionary(o => o.Source.FilePath, o => o.Converted!);
+        if (!_tracks.Any(t => convertedByPath.ContainsKey(t.FilePath)))
+            return;
+
+        var typed = EditableFields()
+            .Where(field => Normalize(field.Get()) != Normalize(_baselineTexts[field.Name]))
+            .Select(field => (field.Set, Value: field.Get()))
+            .ToList();
+        var replacementCover = _replacementCover;
+        var coverRemoved = _coverRemoved;
+        var storageChanged = SaveCoverAsSeparateFile != _persistedCoverIsSeparateFile;
+        var saveCoverAsSeparateFile = SaveCoverAsSeparateFile;
+
+        var tracks = _tracks.Select(t => convertedByPath.GetValueOrDefault(t.FilePath) ?? t).ToList();
+        try
+        {
+            var (credits, coverState) = await Task.Run(() => (tracks.Select(t => TrackCredits.Read(t.FilePath)).ToList(), ReadCoverState(tracks)));
+
+            _tracks.Clear();
+            _tracks.AddRange(tracks);
+            _credits.Clear();
+            _credits.AddRange(credits);
+            ErrorMessage = null;
+            LoadFieldsFromTracks();
+            ApplyCoverState(coverState);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to read the converted files");
+            ErrorMessage = Strings.FailedToLoadFile(ex.Message);
+            return;
+        }
+
+        foreach (var (set, value) in typed)
+        {
+            set(value);
+        }
+
+        if (replacementCover is not null)
+        {
+            SetCover(replacementCover);
+        }
+        else if (coverRemoved && _persistedHasCover)
+        {
+            RemoveCover();
+        }
+
+        if (storageChanged)
+        {
+            SaveCoverAsSeparateFile = saveCoverAsSeparateFile;
+        }
+
+        OnPropertyChanged(string.Empty);
+    }
+
+    private IEnumerable<(string Name, Func<string?> Get, Action<string?> Set)> EditableFields() =>
+    [
+        (nameof(Title), () => Title, v => Title = v),
+        (nameof(Artist), () => Artist, v => Artist = v),
+        (nameof(AlbumArtist), () => AlbumArtist, v => AlbumArtist = v),
+        (nameof(Album), () => Album, v => Album = v),
+        (nameof(Genre), () => Genre, v => Genre = v),
+        (nameof(Comment), () => Comment, v => Comment = v),
+        (nameof(YearText), () => YearText, v => YearText = v ?? ""),
+        (nameof(TrackNumberText), () => TrackNumberText, v => TrackNumberText = v ?? ""),
+        (nameof(DiscNumberText), () => DiscNumberText, v => DiscNumberText = v ?? ""),
+        (nameof(Remixer), () => Remixer, v => Remixer = v),
+        (nameof(Composer), () => Composer, v => Composer = v),
+        (nameof(Conductor), () => Conductor, v => Conductor = v),
+        (nameof(Lyricist), () => Lyricist, v => Lyricist = v),
+    ];
+
     private async Task<bool> TryApplyAsync()
     {
         if (!IsDirty)
@@ -452,6 +532,7 @@ public sealed partial class TrackPropertiesViewModel : ViewModelBase
         // Texts are valid here, so no baseline fallback is needed to read them back.
         _baseline = CurrentEdits();
         _creditsBaseline = CurrentCredits();
+        _baselineTexts = EditableFields().ToDictionary(field => field.Name, field => field.Get());
     }
 
     private string? CommonCredit(string field, Func<TrackCredits, string?> selector)

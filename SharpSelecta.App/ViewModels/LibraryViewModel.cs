@@ -492,15 +492,18 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     public TrackPropertiesViewModel CreateTrackProperties(IReadOnlyList<Track> tracks)
     {
         var conversion = _conversionService is null ? null : new TrackConversionViewModel(tracks, _conversionService, _logger);
-        if (conversion is not null)
-        {
-            conversion.Converted += (_, outcomes) => _ = OnTracksConvertedAsync(outcomes);
-        }
-
         var properties = new TrackPropertiesViewModel(tracks, _filePickerService, _fileManagerService, _logger, _albumArtProviders)
         {
             Conversion = conversion,
         };
+        if (conversion is not null)
+        {
+            conversion.Converted += (_, outcomes) =>
+            {
+                _ = OnTracksConvertedAsync(outcomes);
+                _ = properties.FollowConvertedAsync(outcomes);
+            };
+        }
         properties.TracksSaved += (_, updated) => OnTracksTagsSaved(updated);
         return properties;
     }

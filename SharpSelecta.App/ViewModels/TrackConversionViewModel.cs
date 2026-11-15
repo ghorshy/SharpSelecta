@@ -295,7 +295,7 @@ public sealed partial class TrackConversionViewModel : ViewModelBase
             _logger.LogError("Failed to convert {FilePath}: {Error}", failure.Source.FilePath, failure.Error);
         }
 
-        ForgetRemovedOriginals(outcomes);
+        await FollowConvertedAsync(outcomes);
         ResultMessage = Summarize(outcomes, batch.Count, cancelled);
         Progress = cancelled ? 0 : 100;
 
@@ -311,21 +311,37 @@ public sealed partial class TrackConversionViewModel : ViewModelBase
     [RelayCommand]
     public void CancelConversion() => _cancellation?.Cancel();
 
-    // An original that went to the trash can't be converted again.
-    private void ForgetRemovedOriginals(IEnumerable<ConversionOutcome> outcomes)
+    // The window follows the converted copies (as the tag editor does), so they can be converted again.
+    public async Task FollowConvertedAsync(IReadOnlyList<ConversionOutcome> outcomes)
     {
-        foreach (var removed in outcomes.Where(o => o.OriginalRemoved))
+        var followed = new List<int>();
+        foreach (var outcome in outcomes.Where(o => o.Converted is not null))
         {
-            var index = _tracks.FindIndex(track => track.FilePath == removed.Source.FilePath);
+            var index = _tracks.FindIndex(track => track.FilePath == outcome.Source.FilePath);
             if (index >= 0)
             {
-                _tracks.RemoveAt(index);
-                _sources.RemoveAt(index);
+                _tracks[index] = outcome.Converted!;
+                _sources[index] = null;
+                followed.Add(index);
+            }
+        }
+
+        if (followed.Count == 0)
+            return;
+
+        if (IsAvailable)
+        {
+            IsProbing = true;
+            var probed = await Task.WhenAll(followed.Select(index => _service.ProbeAsync(_tracks[index].FilePath, CancellationToken.None)));
+            for (var i = 0; i < followed.Count; i++)
+            {
+                _sources[followed[i]] = probed[i];
             }
         }
 
         RebuildBitrates();
         UpdateFrom();
+        IsProbing = false;
     }
 
     private static string Summarize(IReadOnlyList<ConversionOutcome> outcomes, int attempted, bool cancelled)

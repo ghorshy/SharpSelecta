@@ -145,4 +145,23 @@ public class TrackConversionViewModelTests
         viewModel.SelectedTarget = Option(viewModel, ConversionTarget.Flac);
         await Assert.That(viewModel.ShowWavTagsHint).IsFalse();
     }
+    [Test]
+    public async Task AfterAConversion_TheTabFollowsTheConvertedFile_AndOffersItAgain()
+    {
+        var converter = Substitute.For<IAudioConverter>();
+        converter.IsAvailable.Returns(true);
+        var source = new Track(TestPaths.Music("song.flac"), "song");
+        var converted = new Track(TestPaths.Music("song.mp3"), "song");
+        converter.ProbeAsync(source.FilePath, Arg.Any<CancellationToken>()).Returns(Flac);
+        converter.ProbeAsync(converted.FilePath, Arg.Any<CancellationToken>()).Returns(Mp3At160);
+        var viewModel = new TrackConversionViewModel([source], new TrackConversionService(converter, Substitute.For<ITrashService>()), NullLogger.Instance);
+        await viewModel.LoadTask;
+
+        await viewModel.FollowConvertedAsync([new ConversionOutcome(source, converted, OriginalRemoved: true, Error: null)]);
+        viewModel.SelectedTarget = Option(viewModel, ConversionTarget.AacM4a);
+
+        await Assert.That(viewModel.FromSummary).Contains("MP3");
+        await Assert.That(viewModel.EligibleCount).IsEqualTo(1);
+        await Assert.That(viewModel.BitrateOptions.Max(o => o.Kbps)).IsEqualTo(160);
+    }
 }

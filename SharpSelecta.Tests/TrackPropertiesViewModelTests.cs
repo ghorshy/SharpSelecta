@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using SharpSelecta.App.Services;
 using SharpSelecta.App.ViewModels;
+using SharpSelecta.Core.Conversion;
 using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.Tests;
@@ -513,6 +514,121 @@ public class TrackPropertiesViewModelTests
             await Assert.That(MusicLibraryScanner.ReadTrackIfExists(path)!.DiscNumber).IsEqualTo(2);
             await Assert.That(vm.DiscNumberText).IsEqualTo("2");
             await Assert.That(vm.IsDirty).IsFalse();
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+    private static readonly DateTime ConvertedAt = new(2026, 11, 16, 10, 0, 0, DateTimeKind.Utc);
+
+    // What a conversion that trashed the original leaves behind: a FLAC next to it carrying the
+    // tags that were on disk, and the original gone.
+    private static ConversionOutcome ConvertToFlac(Track source, string artist = "Test Artist")
+    {
+        var convertedPath = Path.ChangeExtension(source.FilePath, ".flac");
+        File.WriteAllBytes(convertedPath, Fixture("untagged-track.flac"));
+        TrackTagEditor.Write(convertedPath, new TrackTagEdits(source.Title, artist, source.AlbumArtist, source.Album, null, null, source.Year, source.TrackNumber));
+        File.Delete(source.FilePath);
+        var converted = MusicLibraryScanner.ReadTrackIfExists(convertedPath)! with { DateAddedUtc = ConvertedAt };
+        return new ConversionOutcome(source, converted, OriginalRemoved: true, Error: null);
+    }
+
+    [Test]
+    public async Task AfterAConversion_TheEditorShowsTheConvertedFile_AndApplyWritesToIt()
+    {
+        var vm = CreateViewModel("tagged-track.mp3", out var path, out var dir, out _, out _);
+        try
+        {
+            var outcome = ConvertToFlac(vm.Track);
+
+            await vm.FollowConvertedAsync([outcome]);
+
+            await Assert.That(vm.Track.FilePath).IsEqualTo(outcome.Converted!.FilePath);
+            await Assert.That(vm.Location).IsEqualTo(outcome.Converted.FilePath);
+            await Assert.That(vm.FileTypeDisplay).IsNotEqualTo(SharpSelecta.App.Formatting.TrackFormatting.FormatFileType(AudioFileType.Mp3));
+            await Assert.That(vm.IsDirty).IsFalse();
+
+            Track? saved = null;
+            vm.TracksSaved += (_, tracks) => saved = tracks.Single();
+            vm.Title = "Retitled";
+            await vm.ApplyCommand.ExecuteAsync(null);
+
+            await Assert.That(vm.ErrorMessage).IsNull();
+            await Assert.That(MusicLibraryScanner.ReadTrackIfExists(outcome.Converted.FilePath)!.Title).IsEqualTo("Retitled");
+            await Assert.That(saved!.DateAddedUtc).IsEqualTo(ConvertedAt);
+            await Assert.That(File.Exists(path)).IsFalse();
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task EditsTypedBeforeTheConversion_StayUnsaved_OnTopOfTheConvertedFilesTags()
+    {
+        var vm = CreateViewModel("tagged-track.mp3", out _, out var dir, out _, out _);
+        try
+        {
+            vm.Title = "Typed before converting";
+            vm.YearText = "1999";
+            var outcome = ConvertToFlac(vm.Track, artist: "Artist On The Copy");
+
+            await vm.FollowConvertedAsync([outcome]);
+
+            await Assert.That(vm.Title).IsEqualTo("Typed before converting");
+            await Assert.That(vm.YearText).IsEqualTo("1999");
+            await Assert.That(vm.Artist).IsEqualTo("Artist On The Copy");
+            await Assert.That(vm.IsDirty).IsTrue();
+            await Assert.That(MusicLibraryScanner.ReadTrackIfExists(outcome.Converted!.FilePath)!.Title).IsNotEqualTo("Typed before converting");
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task InABatch_OnlyTheConvertedTracksAreFollowed()
+    {
+        var dir = Directory.CreateTempSubdirectory("sharpselecta-track-properties-tests-");
+        try
+        {
+            var paths = new[] { "a.mp3", "b.mp3" }.Select(name => Path.Combine(dir.FullName, name)).ToList();
+            foreach (var path in paths)
+            {
+                File.WriteAllBytes(path, Fixture("tagged-track.mp3"));
+            }
+
+            var tracks = paths.Select(path => MusicLibraryScanner.ReadTrackIfExists(path)!).ToList();
+            var vm = new TrackPropertiesViewModel(tracks, Substitute.For<IFilePickerService>(), Substitute.For<IFileManagerService>(), NullLogger.Instance);
+            var outcome = ConvertToFlac(tracks[0]);
+
+            await vm.FollowConvertedAsync([outcome]);
+
+            await Assert.That(vm.Tracks.Select(t => t.FilePath)).IsEquivalentTo([outcome.Converted!.FilePath, paths[1]]);
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task AnOutcomeForAnotherFile_ChangesNothing()
+    {
+        var vm = CreateViewModel("tagged-track.mp3", out var path, out var dir, out _, out _);
+        try
+        {
+            var raised = 0;
+            vm.PropertyChanged += (_, _) => raised++;
+            var stranger = new Track(Path.Combine(dir.FullName, "other.mp3"), "other");
+
+            await vm.FollowConvertedAsync([new ConversionOutcome(stranger, stranger with { FilePath = "x.flac" }, true, null)]);
+
+            await Assert.That(vm.Track.FilePath).IsEqualTo(path);
+            await Assert.That(raised).IsEqualTo(0);
         }
         finally
         {
