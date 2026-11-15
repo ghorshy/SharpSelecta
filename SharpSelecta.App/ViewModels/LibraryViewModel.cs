@@ -568,6 +568,49 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         }
     });
 
+    public event EventHandler<LibraryTrackViewModel>? RevealTrackRequested;
+
+    // Stays in the section on screen when it shows the playing track; otherwise goes to the whole library,
+    // clearing a search that hides it.
+    [RelayCommand]
+    private void RevealPlayingTrack()
+    {
+        if (_playbackControls.CurrentTrack?.FilePath is not { } path || Tracks.All(t => t.Track.FilePath != path))
+            return;
+
+        if (RevealIn(LibrarySection, path))
+            return;
+
+        LibrarySection = LibrarySection.Library;
+        if (RevealIn(LibrarySection.Library, path))
+            return;
+
+        Search.ClearCommand.Execute(null);
+        RevealIn(LibrarySection.Library, path);
+    }
+
+    private bool RevealIn(LibrarySection section, string path)
+    {
+        if (section == LibrarySection.Library && ViewMode == LibraryViewMode.AlbumGrid)
+            return Grid.Reveal(path);
+
+        if (section == LibrarySection.RecentlyAdded && RecentlyAddedViewMode == LibraryViewMode.AlbumGrid)
+            return RecentlyAddedGrid.Reveal(path);
+
+        IEnumerable<LibraryTrackViewModel> shown = section switch
+        {
+            LibrarySection.Playlist => Playlists.Tracks,
+            LibrarySection.RecentlyAdded => RecentlyAddedTracks,
+            _ => DisplayedTracks,
+        };
+
+        if (shown.FirstOrDefault(t => t.Track.FilePath == path) is not { } item)
+            return false;
+
+        RevealTrackRequested?.Invoke(this, item);
+        return true;
+    }
+
     [RelayCommand]
     private Task ShowInFileManagerAsync(Track track) => _fileManagerService.RevealInFileManagerAsync(track.FilePath);
 

@@ -16,6 +16,37 @@ public partial class AlbumGridView : UserControl
     public AlbumGridView()
     {
         InitializeComponent();
+        DataContextChanged += (_, _) =>
+        {
+            if (DataContext is AlbumGridViewModel vm)
+                vm.RevealRequested += (_, reveal) => Dispatcher.UIThread.Post(() => Reveal(vm, reveal), DispatcherPriority.Loaded);
+        };
+    }
+
+    // Rows are virtualized, so the album's row may not exist yet; a resize while the grid was hidden
+    // may also have rebuilt the rows and collapsed the album since.
+    private void Reveal(AlbumGridViewModel vm, AlbumTrackReveal reveal)
+    {
+        var rowIndex = vm.Rows.ToList().FindIndex(r => r.Tiles.Contains(reveal.Album));
+        if (rowIndex < 0)
+            return;
+
+        if (vm.ExpandedAlbum != reveal.Album)
+            vm.ExpandAlbum(reveal.Album);
+
+        var row = RowsRepeater.GetOrCreateElement(rowIndex);
+        row.UpdateLayout();
+        row.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => b.Child is ContentControl)?.BringIntoView();
+
+        if (row.GetVisualDescendants().OfType<ListBox>().FirstOrDefault() is not { } tracks)
+            return;
+
+        tracks.SelectedItem = reveal.Track;
+        if (tracks.ContainerFromItem(reveal.Track) is { } container)
+        {
+            container.BringIntoView();
+            container.Focus();
+        }
     }
 
     private void OnScrollerSizeChanged(object? sender, SizeChangedEventArgs e)

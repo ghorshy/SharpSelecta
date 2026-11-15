@@ -580,6 +580,24 @@
   <data name="ShortcutClearQueue" xml:space="preserve">
     <value>Clear queue</value>
   </data>
+  <data name="ShortcutVolumeUp" xml:space="preserve">
+    <value>Volume up</value>
+  </data>
+  <data name="ShortcutVolumeDown" xml:space="preserve">
+    <value>Volume down</value>
+  </data>
+  <data name="ShortcutToggleMute" xml:space="preserve">
+    <value>Mute / unmute</value>
+  </data>
+  <data name="ShortcutToggleRepeat" xml:space="preserve">
+    <value>Toggle repeat</value>
+  </data>
+  <data name="ShortcutToggleAutoDj" xml:space="preserve">
+    <value>Toggle Auto DJ</value>
+  </data>
+  <data name="ShortcutRevealPlayingTrack" xml:space="preserve">
+    <value>Go to the playing track</value>
+  </data>
   <data name="SeekStepSeconds" xml:space="preserve">
     <value>Seek step (seconds)</value>
   </data>

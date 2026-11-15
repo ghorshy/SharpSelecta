@@ -1227,4 +1227,112 @@ public class LibraryViewModelTests : IDisposable
 
         await fileManagerService.Received(1).RevealInFileManagerAsync(TestPaths.Music("a.mp3"));
     }
+    private async Task<(LibraryViewModel Vm, PlaybackControlsViewModel Playback)> CreateLibraryPlaying(int count, int playingIndex)
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        for (var i = 1; i <= count; i++)
+        {
+            File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), Path.Combine(root.FullName, $"track{i}.mp3"));
+        }
+
+        new SettingsStore(settingsPath).Update(s => s with { LibraryFolderPaths = [root.FullName] });
+        var vm = CreateViewModel(out _, out _, out var playback, settingsPath);
+        await vm.InitializeAsync();
+        await playback.PlayNowAsync(vm.Tracks.Single(t => t.Track.FilePath.EndsWith($"track{playingIndex}.mp3")).Track);
+        return (vm, playback);
+    }
+
+    private static List<LibraryTrackViewModel> RecordReveals(LibraryViewModel vm)
+    {
+        var revealed = new List<LibraryTrackViewModel>();
+        vm.RevealTrackRequested += (_, item) => revealed.Add(item);
+        return revealed;
+    }
+
+    [Test]
+    public async Task RevealPlayingTrack_InTheLibraryList_AsksTheListToShowThePlayingTrack()
+    {
+        var (vm, playback) = await CreateLibraryPlaying(3, playingIndex: 2);
+        var revealed = RecordReveals(vm);
+
+        vm.RevealPlayingTrackCommand.Execute(null);
+
+        await Assert.That(revealed.Single().Track.FilePath).IsEqualTo(playback.CurrentTrack!.FilePath);
+        await Assert.That(vm.DisplayedTracks).Contains(revealed.Single());
+    }
+
+    [Test]
+    public async Task RevealPlayingTrack_WhenTheSearchHidesIt_ClearsTheSearch()
+    {
+        var (vm, playback) = await CreateLibraryPlaying(3, playingIndex: 1);
+        vm.Search.Query = "zzzz-matches-nothing";
+        await vm.Search.DebounceTask;
+        var revealed = RecordReveals(vm);
+
+        vm.RevealPlayingTrackCommand.Execute(null);
+
+        await Assert.That(vm.Search.Query).IsEqualTo("");
+        await Assert.That(revealed.Single().Track.FilePath).IsEqualTo(playback.CurrentTrack!.FilePath);
+    }
+
+    [Test]
+    public async Task RevealPlayingTrack_InAPlaylistThatHasIt_StaysInThePlaylist()
+    {
+        var (vm, playback) = await CreateLibraryPlaying(3, playingIndex: 2);
+        vm.Playlists.CreatePlaylist("Mix");
+        vm.Playlists.AddTracksToSelectedPlaylist([playback.CurrentTrack!]);
+        vm.LibrarySection = LibrarySection.Playlist;
+        var revealed = RecordReveals(vm);
+
+        vm.RevealPlayingTrackCommand.Execute(null);
+
+        await Assert.That(vm.LibrarySection).IsEqualTo(LibrarySection.Playlist);
+        await Assert.That(vm.Playlists.Tracks).Contains(revealed.Single());
+    }
+
+    [Test]
+    public async Task RevealPlayingTrack_InAPlaylistWithoutIt_SwitchesToTheLibrary()
+    {
+        var (vm, playback) = await CreateLibraryPlaying(3, playingIndex: 2);
+        vm.Playlists.CreatePlaylist("Mix");
+        vm.Playlists.AddTracksToSelectedPlaylist([vm.Tracks.First(t => t.Track != playback.CurrentTrack).Track]);
+        vm.LibrarySection = LibrarySection.Playlist;
+        var revealed = RecordReveals(vm);
+
+        vm.RevealPlayingTrackCommand.Execute(null);
+
+        await Assert.That(vm.LibrarySection).IsEqualTo(LibrarySection.Library);
+        await Assert.That(revealed.Single().Track.FilePath).IsEqualTo(playback.CurrentTrack!.FilePath);
+    }
+
+    [Test]
+    public async Task RevealPlayingTrack_InTheAlbumGrid_ExpandsItsAlbumAndAsksTheGridToShowTheTrack()
+    {
+        var (vm, playback) = await CreateLibraryPlaying(3, playingIndex: 3);
+        vm.ViewMode = LibraryViewMode.AlbumGrid;
+        var listReveals = RecordReveals(vm);
+        AlbumTrackReveal? gridReveal = null;
+        vm.Grid.RevealRequested += (_, reveal) => gridReveal = reveal;
+
+        vm.RevealPlayingTrackCommand.Execute(null);
+
+        await Assert.That(listReveals).IsEmpty();
+        await Assert.That(gridReveal!.Track.Track.Track.FilePath).IsEqualTo(playback.CurrentTrack!.FilePath);
+        await Assert.That(vm.Grid.ExpandedAlbum).IsSameReferenceAs(gridReveal.Album);
+    }
+
+    [Test]
+    public async Task RevealPlayingTrack_WhenThePlayingTrackIsNotInTheLibrary_DoesNothing()
+    {
+        var (vm, playback) = await CreateLibraryPlaying(2, playingIndex: 1);
+        await playback.PlayNowAsync(Elsewhere());
+        vm.LibrarySection = LibrarySection.RecentlyAdded;
+        var revealed = RecordReveals(vm);
+
+        vm.RevealPlayingTrackCommand.Execute(null);
+
+        await Assert.That(revealed).IsEmpty();
+        await Assert.That(vm.LibrarySection).IsEqualTo(LibrarySection.RecentlyAdded);
+    }
 }

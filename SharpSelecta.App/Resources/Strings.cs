@@ -113,6 +113,12 @@ public static class Strings
     public static string ShortcutPreviousTrack => Get(nameof(ShortcutPreviousTrack));
     public static string ShortcutNextTrack => Get(nameof(ShortcutNextTrack));
     public static string ShortcutClearQueue => Get(nameof(ShortcutClearQueue));
+    public static string ShortcutVolumeUp => Get(nameof(ShortcutVolumeUp));
+    public static string ShortcutVolumeDown => Get(nameof(ShortcutVolumeDown));
+    public static string ShortcutToggleMute => Get(nameof(ShortcutToggleMute));
+    public static string ShortcutToggleRepeat => Get(nameof(ShortcutToggleRepeat));
+    public static string ShortcutToggleAutoDj => Get(nameof(ShortcutToggleAutoDj));
+    public static string ShortcutRevealPlayingTrack => Get(nameof(ShortcutRevealPlayingTrack));
     public static string SettingsCategoryIntegrations => Get(nameof(SettingsCategoryIntegrations));
     public static string SettingsCategoryUpdates => Get(nameof(SettingsCategoryUpdates));
     public static string CheckForUpdatesAutomatically => Get(nameof(CheckForUpdatesAutomatically));

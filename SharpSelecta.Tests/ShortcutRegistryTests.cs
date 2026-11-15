@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Windows.Input;
 using SharpSelecta.App.Shortcuts;
 using SharpSelecta.App.ViewModels;
 using SharpSelecta.Core.Library;
@@ -74,5 +75,30 @@ public class ShortcutRegistryTests : IDisposable
         command.Execute(null); // must no-op - no Cover Art view exists for a playlist
         await Assert.That(vm.Grid.TileSize).IsEqualTo(libraryTileSizeNow);
         await Assert.That(vm.RecentlyAddedGrid.TileSize).IsEqualTo(recentlyAddedTileSizeNow);
+    }
+    [Test]
+    [Arguments("Playback.VolumeUp", "Ctrl+Up")]
+    [Arguments("Playback.VolumeDown", "Ctrl+Down")]
+    [Arguments("Playback.ToggleMute", "Ctrl+M")]
+    [Arguments("Playback.ToggleRepeat", "Ctrl+R")]
+    [Arguments("Playback.ToggleAutoDj", "Ctrl+D")]
+    [Arguments("Library.RevealPlayingTrack", "Ctrl+J")]
+    public async Task NewShortcuts_HaveTheirDefaultGestures(string id, string gesture)
+    {
+        await Assert.That(ShortcutRegistry.All.Single(s => s.Id == id).DefaultGesture).IsEqualTo(gesture);
+    }
+
+    [Test]
+    public async Task NewShortcuts_RunTheMatchingCommands()
+    {
+        var vm = CreateMainWindowViewModel();
+        ICommand CommandOf(string id) => ShortcutRegistry.All.Single(s => s.Id == id).Command(vm);
+
+        await Assert.That(CommandOf("Playback.VolumeUp")).IsSameReferenceAs(vm.PlaybackControls.Volume.VolumeUpCommand);
+        await Assert.That(CommandOf("Playback.VolumeDown")).IsSameReferenceAs(vm.PlaybackControls.Volume.VolumeDownCommand);
+        await Assert.That(CommandOf("Playback.ToggleMute")).IsSameReferenceAs(vm.PlaybackControls.Volume.ToggleMuteCommand);
+        await Assert.That(CommandOf("Playback.ToggleRepeat")).IsSameReferenceAs(vm.PlaybackControls.ToggleRepeatModeCommand);
+        await Assert.That(CommandOf("Playback.ToggleAutoDj")).IsSameReferenceAs(vm.PlaybackControls.ToggleAutoDjCommand);
+        await Assert.That(CommandOf("Library.RevealPlayingTrack")).IsSameReferenceAs(vm.Library.RevealPlayingTrackCommand);
     }
 }

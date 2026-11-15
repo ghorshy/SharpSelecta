@@ -71,7 +71,7 @@
                  scroll position. A large library (hundreds of albums) made that the dominant cost
                  in both memory and CPU. Each row's own tile strip stays a plain ItemsControl since
                  a single row only ever has a handful of tiles (whatever the column count is). -->
-            <ItemsRepeater ItemsSource="{Binding Rows}">
+            <ItemsRepeater x:Name="RowsRepeater" ItemsSource="{Binding Rows}">
                 <ItemsRepeater.ItemTemplate>
                     <DataTemplate x:DataType="vm:AlbumRowViewModel">
                         <StackPanel Margin="{styles:Spacing Bottom=L}">

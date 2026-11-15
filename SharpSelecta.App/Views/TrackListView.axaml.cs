@@ -114,6 +114,18 @@ public sealed partial class TrackListView : UserControl
         ApplyColumnLayout(vm);
         vm.Tracks.CollectionChanged += (_, _) => ApplySavedSort(vm);
         vm.Columns.LayoutChanged += (_, _) => ApplyColumnLayout(vm);
+        vm.RevealTrackRequested += (_, item) => Dispatcher.UIThread.Post(() => Reveal(item), DispatcherPriority.Loaded);
+    }
+
+    // Every list shares the LibraryViewModel; only the one on screen that lists the track reacts.
+    private void Reveal(LibraryTrackViewModel item)
+    {
+        if (!IsEffectivelyVisible || ItemsSource?.Contains(item) != true)
+            return;
+
+        TracksGrid.SelectedItem = item;
+        TracksGrid.ScrollIntoView(item, null);
+        TracksGrid.Focus();
     }
 
     private void ApplyColumnLayout(LibraryViewModel vm)

@@ -146,6 +146,23 @@ public partial class AlbumGridViewModel : ViewModelBase
 
     public void ExpandAlbum(AlbumViewModel album) => SetExpandedAlbum(album);
 
+    public event EventHandler<AlbumTrackReveal>? RevealRequested;
+
+    public bool Reveal(string filePath)
+    {
+        foreach (var album in Rows.SelectMany(r => r.Tiles))
+        {
+            if (album.TrackRows.FirstOrDefault(r => r.Track.Track.FilePath == filePath) is { } trackRow)
+            {
+                SetExpandedAlbum(album);
+                RevealRequested?.Invoke(this, new AlbumTrackReveal(album, trackRow));
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void SetExpandedAlbum(AlbumViewModel? album)
     {
         ExpandedAlbum = album;

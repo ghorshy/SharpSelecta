@@ -70,6 +70,79 @@ public class VolumeViewModelTests : IDisposable
         audioEngine.Received(1).Volume = 0.25f;
     }
 
+    private VolumeViewModel CreateAt(double level) =>
+        new(Substitute.For<IAudioEngine>(), new SettingsStore(_temp.NewSettingsPath())) { Level = level };
+
+    [Test]
+    public async Task VolumeUpAndDown_StepTheSliderPosition_AndStopAtTheEnds()
+    {
+        var vm = CreateAt(0.5);
+
+        vm.VolumeUpCommand.Execute(null);
+        await Assert.That(vm.Level).IsEqualTo(0.55);
+
+        vm.VolumeDownCommand.Execute(null);
+        vm.VolumeDownCommand.Execute(null);
+        await Assert.That(vm.Level).IsEqualTo(0.45);
+
+        vm.Level = 0.98;
+        vm.VolumeUpCommand.Execute(null);
+        await Assert.That(vm.Level).IsEqualTo(1.0);
+
+        vm.Level = 0.02;
+        vm.VolumeDownCommand.Execute(null);
+        await Assert.That(vm.Level).IsEqualTo(0.0);
+    }
+
+    [Test]
+    public async Task ToggleMute_SilencesAndThenRestoresTheLevelFromBefore()
+    {
+        var vm = CreateAt(0.7);
+
+        vm.ToggleMuteCommand.Execute(null);
+        await Assert.That(vm.Level).IsEqualTo(0.0);
+
+        vm.ToggleMuteCommand.Execute(null);
+        await Assert.That(vm.Level).IsEqualTo(0.7);
+    }
+
+    [Test]
+    public async Task MovingTheSliderWhileMuted_ForgetsTheLevelFromBeforeMute()
+    {
+        var vm = CreateAt(0.7);
+        vm.ToggleMuteCommand.Execute(null);
+
+        vm.Level = 0.2;
+        vm.ToggleMuteCommand.Execute(null);
+
+        await Assert.That(vm.Level).IsEqualTo(0.0);
+        vm.ToggleMuteCommand.Execute(null);
+        await Assert.That(vm.Level).IsEqualTo(0.2);
+    }
+
+    [Test]
+    public async Task VolumeUpWhileMuted_UnmutesOneStepAboveTheLevelFromBefore()
+    {
+        var vm = CreateAt(0.5);
+        vm.ToggleMuteCommand.Execute(null);
+
+        vm.VolumeUpCommand.Execute(null);
+
+        await Assert.That(vm.Level).IsEqualTo(0.55);
+    }
+
+    [Test]
+    public async Task Persist_WhileMuted_SavesTheLevelFromBeforeMute()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = new VolumeViewModel(Substitute.For<IAudioEngine>(), new SettingsStore(settingsPath)) { Level = 0.6 };
+        vm.ToggleMuteCommand.Execute(null);
+
+        vm.Persist();
+
+        await Assert.That(new SettingsStore(settingsPath).Current.Volume).IsEqualTo(0.6);
+    }
+
     [Test]
     public async Task SettingCurve_ReappliesTheCurrentLevelToTheEngineImmediately()
     {

@@ -115,8 +115,10 @@ public class ShortcutBindingsTests : IDisposable
     {
         var vm = CreateMainWindowViewModel();
 
-        // 13 registry entries minus the 2 wheel gestures and the unbound Clear queue.
-        await Assert.That(Bind(vm).Keys.Count).IsEqualTo(10);
+        var keyGestures = ShortcutRegistry.All.Count(s => s.DefaultGesture.Length > 0 && !WheelGesture.TryParse(s.DefaultGesture, out _));
+
+        await Assert.That(keyGestures).IsLessThan(ShortcutRegistry.All.Count);
+        await Assert.That(Bind(vm).Keys.Count).IsEqualTo(keyGestures);
     }
 
     [Test]
