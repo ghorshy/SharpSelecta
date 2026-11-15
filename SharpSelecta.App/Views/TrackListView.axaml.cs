@@ -1,3 +1,4 @@
+using System.Collections.Specialized;
 using System.ComponentModel;
 using Avalonia;
 using Avalonia.Collections;
@@ -46,7 +47,7 @@ public sealed partial class TrackListView : UserControl
     }
 
     private bool _columnWidthsDirty;
-    private readonly List<Track> _orderedSelection = [];
+    private readonly List<LibraryTrackViewModel> _orderedSelection = [];
     private LibraryTrackViewModel? _rowBeingDragged;
 
     public TrackListView()
@@ -88,7 +89,7 @@ public sealed partial class TrackListView : UserControl
         {
             if (removed is LibraryTrackViewModel removedItem)
             {
-                _orderedSelection.Remove(removedItem.Track);
+                _orderedSelection.Remove(removedItem);
             }
         }
 
@@ -96,13 +97,13 @@ public sealed partial class TrackListView : UserControl
         {
             if (added is LibraryTrackViewModel addedItem)
             {
-                _orderedSelection.Add(addedItem.Track);
+                _orderedSelection.Add(addedItem);
             }
         }
 
         if (DataContext is LibraryViewModel vm)
         {
-            vm.SetSelectedTracksInOrder([.._orderedSelection]);
+            vm.SetSelectedTracksInOrder([.. _orderedSelection.Select(item => item.Track)]);
         }
     }
 
@@ -112,7 +113,11 @@ public sealed partial class TrackListView : UserControl
             return;
 
         ApplyColumnLayout(vm);
-        vm.Tracks.CollectionChanged += (_, _) => ApplySavedSort(vm);
+        vm.Tracks.CollectionChanged += (_, e) =>
+        {
+            if (e.Action == NotifyCollectionChangedAction.Reset)
+                ApplySavedSort(vm);
+        };
         vm.Columns.LayoutChanged += (_, _) => ApplyColumnLayout(vm);
         vm.RevealTrackRequested += (_, item) => Dispatcher.UIThread.Post(() => Reveal(item), DispatcherPriority.Loaded);
     }

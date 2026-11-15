@@ -23,8 +23,7 @@ public partial class AlbumGridView : UserControl
         };
     }
 
-    // Rows are virtualized, so the album's row may not exist yet; a resize while the grid was hidden
-    // may also have rebuilt the rows and collapsed the album since.
+    // Rows are virtualized, so the album's row may not be realized yet.
     private void Reveal(AlbumGridViewModel vm, AlbumTrackReveal reveal)
     {
         var rowIndex = vm.Rows.ToList().FindIndex(r => r.Tiles.Contains(reveal.Album));

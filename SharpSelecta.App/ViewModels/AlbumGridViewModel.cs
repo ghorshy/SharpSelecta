@@ -62,7 +62,7 @@ public partial class AlbumGridViewModel : ViewModelBase
             SortDescending = true;
         }
 
-        _library.Tracks.CollectionChanged += (_, _) => RebuildAlbums();
+        _library.Tracks.Changed += (_, _) => RebuildAlbums();
         _library.Search.Applied += (_, _) => RebuildRows(force: true);
 
         RebuildAlbums();
@@ -173,8 +173,28 @@ public partial class AlbumGridViewModel : ViewModelBase
         }
     }
 
-    private void RebuildAlbums()
+    private readonly HashSet<AlbumKey> _staleArtwork = [];
+
+    // A cover edit leaves the Track records equal, so the tracks alone wouldn't get these albums rebuilt.
+    public void MarkArtworkStale(IEnumerable<Track> tracks) => _staleArtwork.UnionWith(tracks.Select(AlbumKey.Of));
+
+    public void RebuildIfStale()
     {
+        if (_staleArtwork.Count > 0)
+            RebuildAlbums();
+    }
+
+    // Albums whose tracks didn't change are kept, with their artwork; only new or changed ones are built and loaded.
+    private void RebuildAlbums(bool reloadAll = false)
+    {
+        var existing = reloadAll ? new Dictionary<AlbumKey, AlbumViewModel>() : Albums.ToDictionary(a => AlbumKey.Of(a.UnderlyingTracks[0]));
+        foreach (var key in _staleArtwork)
+        {
+            existing.Remove(key);
+        }
+
+        _staleArtwork.Clear();
+
         // The Recently Added grid shows every album that has one of the newest tracks - the whole album,
         // not just those tracks, so an expanded album is never missing songs.
         var newestPaths = _limitToRecentlyAdded
@@ -192,21 +212,31 @@ public partial class AlbumGridViewModel : ViewModelBase
                     .OrderBy(t => t.Track.TrackNumber ?? int.MaxValue)
                     .ThenBy(t => t.Track.Title, StringComparer.OrdinalIgnoreCase)
                     .ToList();
+                existing.TryGetValue(g.Key, out var previous);
+                if (previous is not null && IsUnchanged(previous, orderedTracks))
+                    return (RawKey: $"{g.Key.Album}{g.Key.AlbumArtist}", Album: previous, IsNew: false);
+
                 var album = new AlbumViewModel(
                     g.Key.Album.Length > 0 ? g.Key.Album : Strings.UnknownAlbum,
                     ResolveArtistLabel(orderedTracks),
                     orderedTracks.Select(t => t.Track.Year).FirstOrDefault(y => y.HasValue),
                     orderedTracks,
-                    _library);
-                return (RawKey: $"{g.Key.Album}{g.Key.AlbumArtist}", Album: album);
+                    _library)
+                {
+                    ArtworkBytes = previous?.ArtworkBytes,
+                };
+                return (RawKey: $"{g.Key.Album}{g.Key.AlbumArtist}", Album: album, IsNew: true);
             })
             .ToList();
 
-        Albums.ReplaceAll(groups.Select(g => g.Album));
-        RebuildRows(force: true);
+        Albums.SyncTo([.. groups.Select(g => g.Album)]);
+        RebuildRows(force: true, keepExpanded: true);
 
-        _ = LoadAlbumArtworkAsync(groups);
+        _ = LoadAlbumArtworkAsync([.. groups.Where(g => g.IsNew).Select(g => (g.RawKey, g.Album))]);
     }
+
+    private static bool IsUnchanged(AlbumViewModel album, IReadOnlyList<LibraryTrackViewModel> tracks) =>
+        album.Tracks.SequenceEqual(tracks) && album.UnderlyingTracks.SequenceEqual(tracks.Select(t => t.Track));
 
     private string ArtworkCacheDirectory => ArtworkCacheDirectoryFor(_settings.FilePath);
 
@@ -237,7 +267,7 @@ public partial class AlbumGridViewModel : ViewModelBase
             }
         }
 
-        RebuildAlbums();
+        RebuildAlbums(reloadAll: true);
     }
 
     private async Task LoadAlbumArtworkAsync(IReadOnlyList<(string RawKey, AlbumViewModel Album)> groups)
@@ -295,14 +325,13 @@ public partial class AlbumGridViewModel : ViewModelBase
         return artists.Any(a => ArtistList.Split(a).Count > 0) ? Strings.VariousArtists : string.Empty;
     }
 
-    private void RebuildRows(bool force)
+    private void RebuildRows(bool force, bool keepExpanded = false)
     {
         var newColumnCount = ComputeColumnCount(_viewportWidth, TileSize);
         if (!force && newColumnCount == _columnCount)
             return;
 
         _columnCount = newColumnCount;
-        ExpandedAlbum = null;
 
         var query = _library.Search.Query;
         var albums = !_library.Search.IsActive
@@ -313,11 +342,19 @@ public partial class AlbumGridViewModel : ViewModelBase
                 .OrderByDescending(x => x.Score)
                 .Select(x => x.Album);
 
+        // Rows that hold the same tiles as before are kept, so only the changed ones are re-realized.
         var rows = albums
             .Chunk(_columnCount)
-            .Select(tiles => new AlbumRowViewModel(tiles));
+            .Select((tiles, i) => i < Rows.Count && Rows[i].Tiles.SequenceEqual(tiles) ? Rows[i] : new AlbumRowViewModel(tiles))
+            .ToList();
 
-        Rows.ReplaceAll(rows);
+        Rows.SyncTo(rows);
+
+        // A library change keeps the expanded album open if it, or the album rebuilt in its place, is still shown.
+        var expandedKey = keepExpanded && ExpandedAlbum is { } expanded ? AlbumKey.Of(expanded.UnderlyingTracks[0]) : (AlbumKey?)null;
+        SetExpandedAlbum(expandedKey is { } key
+            ? rows.SelectMany(r => r.Tiles).FirstOrDefault(a => AlbumKey.Of(a.UnderlyingTracks[0]) == key)
+            : null);
     }
 
     private static int? SearchScore(AlbumViewModel album, string query)

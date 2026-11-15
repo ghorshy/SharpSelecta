@@ -1,11 +1,19 @@
+using CommunityToolkit.Mvvm.ComponentModel;
 using SharpSelecta.App.Formatting;
 using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.ViewModels;
 
-public sealed class LibraryTrackViewModel(Track track, LibraryViewModel library, bool isMissing = false)
+public sealed class LibraryTrackViewModel(Track track, LibraryViewModel library, bool isMissing = false) : ObservableObject
 {
-    public Track Track { get; } = track;
+    public Track Track { get; private set; } = track;
+
+    // In place rather than a new instance, so a selected row stays selected.
+    public void Update(Track track)
+    {
+        Track = track;
+        OnPropertyChanged(string.Empty);
+    }
 
     public bool IsMissing { get; } = isMissing;
 

@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -1334,5 +1336,139 @@ public class LibraryViewModelTests : IDisposable
 
         await Assert.That(revealed).IsEmpty();
         await Assert.That(vm.LibrarySection).IsEqualTo(LibrarySection.RecentlyAdded);
+    }
+    private static int _fileWrites;
+
+    // Written next to the target and renamed over it: the album grid may still be reading the old file's artwork.
+    private static string AddFile(DirectoryInfo root, string name, string album, string title = "Song")
+    {
+        var path = Path.Combine(root.FullName, name);
+        var staging = Path.Combine(root.FullName, $"staging-{Guid.NewGuid():N}.mp3");
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), staging);
+        TrackTagEditor.Write(staging, new TrackTagEdits(title, "Artist", "Artist", album, null, null, null, null));
+        File.SetLastWriteTimeUtc(staging, DateTime.UtcNow.AddMinutes(Interlocked.Increment(ref _fileWrites)));
+        File.Move(staging, path, overwrite: true);
+        return path;
+    }
+
+    private async Task<(LibraryViewModel Vm, DirectoryInfo Root)> CreateScannedLibrary(params (string Name, string Album)[] files)
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        foreach (var (name, album) in files)
+        {
+            AddFile(root, name, album);
+        }
+
+        new SettingsStore(settingsPath).Update(s => s with { LibraryFolderPaths = [root.FullName] });
+        var vm = CreateViewModel(out _, out _, out _, settingsPath);
+        await vm.InitializeAsync();
+        return (vm, root);
+    }
+
+    private static List<NotifyCollectionChangedAction> RecordActions<T>(ObservableCollection<T> collection)
+    {
+        var actions = new List<NotifyCollectionChangedAction>();
+        collection.CollectionChanged += (_, e) => actions.Add(e.Action);
+        return actions;
+    }
+
+    [Test]
+    public async Task Rescan_AppliesAddedAndRemovedFilesAsItemChanges_KeepingTheOtherRows()
+    {
+        var (vm, root) = await CreateScannedLibrary(("a.mp3", "A"), ("b.mp3", "A"), ("c.mp3", "A"));
+        var kept = vm.Tracks.Single(t => t.Track.FilePath.EndsWith("a.mp3"));
+        var trackActions = RecordActions(vm.Tracks);
+        var displayedActions = RecordActions(vm.DisplayedTracks);
+
+        File.Delete(Path.Combine(root.FullName, "b.mp3"));
+        AddFile(root, "d.mp3", "A");
+        await vm.RescanCommand.ExecuteAsync(null);
+
+        await Assert.That(vm.Tracks.Select(t => Path.GetFileName(t.Track.FilePath))).IsEquivalentTo(["a.mp3", "c.mp3", "d.mp3"]);
+        await Assert.That(vm.Tracks[0]).IsSameReferenceAs(kept);
+        await Assert.That(trackActions).IsEquivalentTo([NotifyCollectionChangedAction.Remove, NotifyCollectionChangedAction.Add]);
+        await Assert.That(displayedActions).DoesNotContain(NotifyCollectionChangedAction.Reset);
+    }
+
+    [Test]
+    public async Task Rescan_UpdatesAFileWithChangedTagsInPlace()
+    {
+        var (vm, root) = await CreateScannedLibrary(("a.mp3", "A"), ("b.mp3", "A"));
+        var row = vm.Tracks.Single(t => t.Track.FilePath.EndsWith("a.mp3"));
+        var trackActions = RecordActions(vm.Tracks);
+        var changedProperties = new List<string?>();
+        row.PropertyChanged += (_, e) => changedProperties.Add(e.PropertyName);
+
+        AddFile(root, "a.mp3", "A", title: "Renamed");
+        await vm.RescanCommand.ExecuteAsync(null);
+
+        await Assert.That(vm.Tracks.Single(t => t.Track.FilePath.EndsWith("a.mp3"))).IsSameReferenceAs(row);
+        await Assert.That(row.Track.Title).IsEqualTo("Renamed");
+        await Assert.That(changedProperties).IsNotEmpty();
+        await Assert.That(trackActions).IsEmpty();
+    }
+
+    [Test]
+    public async Task Rescan_WithNothingChanged_RaisesNoCollectionChanges()
+    {
+        var (vm, _) = await CreateScannedLibrary(("a.mp3", "A"));
+        var changed = 0;
+        vm.Tracks.Changed += (_, _) => changed++;
+
+        await vm.RescanCommand.ExecuteAsync(null);
+
+        await Assert.That(changed).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task Rescan_RebuildsOnlyTheAlbumsThatChanged_AndKeepsTheExpandedOneOpen()
+    {
+        var (vm, root) = await CreateScannedLibrary(("a1.mp3", "A"), ("b1.mp3", "B"));
+        var albumA = vm.Grid.Albums.Single(a => a.Title == "A");
+        var albumB = vm.Grid.Albums.Single(a => a.Title == "B");
+        albumB.ArtworkBytes = [1, 2, 3];
+        vm.Grid.ExpandAlbum(albumB);
+        vm.Grid.ExpandAlbum(albumA);
+
+        AddFile(root, "a2.mp3", "A");
+        await vm.RescanCommand.ExecuteAsync(null);
+
+        var rebuiltA = vm.Grid.Albums.Single(a => a.Title == "A");
+        await Assert.That(rebuiltA).IsNotSameReferenceAs(albumA);
+        await Assert.That(rebuiltA.Tracks.Count).IsEqualTo(2);
+        await Assert.That(vm.Grid.Albums.Single(a => a.Title == "B")).IsSameReferenceAs(albumB);
+        await Assert.That(albumB.ArtworkBytes).IsEquivalentTo(new byte[] { 1, 2, 3 });
+        await Assert.That(vm.Grid.ExpandedAlbum).IsSameReferenceAs(rebuiltA);
+        await Assert.That(vm.Grid.Rows.Count(r => r.ExpandedAlbum == rebuiltA)).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task Rescan_KeepsTheRightClickSelectionPointingAtUpdatedTracks()
+    {
+        var (vm, root) = await CreateScannedLibrary(("a.mp3", "A"), ("b.mp3", "A"));
+        vm.SetSelectedTracksInOrder([.. vm.Tracks.Select(t => t.Track)]);
+
+        AddFile(root, "a.mp3", "A", title: "Renamed");
+        await vm.RescanCommand.ExecuteAsync(null);
+
+        var renamed = vm.Tracks.Single(t => t.Track.FilePath.EndsWith("a.mp3")).Track;
+        await Assert.That(vm.ResolveSelection(renamed).Count).IsEqualTo(2);
+    }
+    [Test]
+    public async Task Rescan_KeepsTheOpenPlaylistsRowsThatDidNotChange()
+    {
+        var (vm, _, tracks, _, root) = CreatePlaylistWithTracks(3);
+        vm.Folders.Paths.Add(root.FullName);
+        await vm.RescanCommand.ExecuteAsync(null);
+        var keptRow = vm.Playlists.Tracks[1];
+        var actions = RecordActions(vm.Playlists.Tracks);
+
+        File.Delete(tracks[0].FilePath);
+        await vm.RescanCommand.ExecuteAsync(null);
+
+        await Assert.That(vm.Playlists.Tracks[1]).IsSameReferenceAs(keptRow);
+        await Assert.That(vm.Playlists.Tracks[0].IsMissing).IsTrue();
+        await Assert.That(actions).IsEquivalentTo([NotifyCollectionChangedAction.Remove, NotifyCollectionChangedAction.Add]);
     }
 }

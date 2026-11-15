@@ -385,4 +385,22 @@ public class AlbumGridViewModelTests : IDisposable
 
         await Assert.That(grid.AllowUserSort).IsTrue();
     }
+    [Test]
+    public async Task RebuildIfStale_RebuildsOnlyTheMarkedAlbums_EvenWhenTheirTracksAreUnchanged()
+    {
+        var vm = CreateLibraryViewModel();
+        AddTrack(vm, TestPaths.Music("a.mp3"), "A");
+        AddTrack(vm, TestPaths.Music("b.mp3"), "B");
+        var albumA = vm.Grid.Albums.Single(a => a.Title == "A");
+        var albumB = vm.Grid.Albums.Single(a => a.Title == "B");
+
+        vm.Grid.RebuildIfStale();
+        await Assert.That(vm.Grid.Albums.Single(a => a.Title == "A")).IsSameReferenceAs(albumA);
+
+        vm.Grid.MarkArtworkStale([albumA.UnderlyingTracks[0]]);
+        vm.Grid.RebuildIfStale();
+
+        await Assert.That(vm.Grid.Albums.Single(a => a.Title == "A")).IsNotSameReferenceAs(albumA);
+        await Assert.That(vm.Grid.Albums.Single(a => a.Title == "B")).IsSameReferenceAs(albumB);
+    }
 }

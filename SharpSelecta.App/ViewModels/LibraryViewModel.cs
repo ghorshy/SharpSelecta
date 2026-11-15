@@ -49,7 +49,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     {
         if (!Search.IsActive)
         {
-            DisplayedTracks.ReplaceAll(Tracks);
+            DisplayedTracks.SyncTo(Tracks);
             return;
         }
 
@@ -57,9 +57,10 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             .Select(t => (Vm: t, Score: FuzzySearch.Score(t.Track, Search.Query)))
             .Where(x => x.Score is not null)
             .OrderByDescending(x => x.Score)
-            .Select(x => x.Vm);
+            .Select(x => x.Vm)
+            .ToList();
 
-        DisplayedTracks.ReplaceAll(ranked);
+        DisplayedTracks.SyncTo(ranked);
     }
 
     public bool HasTracks => Tracks.Count > 0;
@@ -156,8 +157,8 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     private void RefreshRecentlyAddedTracks()
     {
         var newest = NewestTracks();
-        RecentlyAddedTracks.ReplaceAll(Search.IsActive
-            ? newest.Where(t => FuzzySearch.Score(t.Track, Search.Query) is not null)
+        RecentlyAddedTracks.SyncTo(Search.IsActive
+            ? newest.Where(t => FuzzySearch.Score(t.Track, Search.Query) is not null).ToList()
             : newest);
     }
 
@@ -202,7 +203,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             RefreshRecentlyAddedTracks();
         };
 
-        Tracks.CollectionChanged += (_, _) =>
+        Tracks.Changed += (_, _) =>
         {
             OnPropertyChanged(nameof(HasTracks));
             OnPropertyChanged(nameof(NoTracks));
@@ -292,10 +293,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             var (result, reconcileMs) = await Task.Run(() => Timed(() => LibraryIndexStore.Reconcile(_settings.FilePath, folderPaths)));
 
             _logger.LogInformation("Reconciled {TrackCount} tracks in {ElapsedMs} ms", result.Tracks.Count, reconcileMs);
-            if (!MatchesCurrentTracks(result.Tracks))
-            {
-                Tracks.ReplaceAll(result.Tracks.Select(track => new LibraryTrackViewModel(track, this)));
-            }
+            SyncTracks(result.Tracks);
 
             // A playlist's rows depend on which of its files are in the index, which a rescan may have changed.
             Playlists.RefreshTracks();
@@ -320,8 +318,26 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         return (result, stopwatch.ElapsedMilliseconds);
     }
 
-    private bool MatchesCurrentTracks(IReadOnlyList<Track> tracks) =>
-        tracks.Count == Tracks.Count && Tracks.Select(item => item.Track).SequenceEqual(tracks);
+    // Applied as a diff by file path, so selection, scroll and the expanded album survive a rescan.
+    private void SyncTracks(IReadOnlyList<Track> tracks)
+    {
+        if (Tracks.Count == 0)
+        {
+            if (tracks.Count > 0)
+                Tracks.ReplaceAll(tracks.Select(track => new LibraryTrackViewModel(track, this)));
+
+            return;
+        }
+
+        Tracks.SyncTo(tracks, item => item.Track, track => track.FilePath,
+            track => new LibraryTrackViewModel(track, this), (item, track) => item.Update(track));
+
+        if (_selectedTracksInOrder.Count > 0)
+        {
+            var byPath = Tracks.ToDictionary(item => item.Track.FilePath, item => item.Track);
+            _selectedTracksInOrder = [.. _selectedTracksInOrder.Select(t => byPath.GetValueOrDefault(t.FilePath)).OfType<Track>()];
+        }
+    }
 
     private Task PruneArtworkCacheAsync(IReadOnlyList<Track> tracks, int reconcile)
     {
@@ -494,21 +510,15 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             AlbumArtworkCache.Invalidate(cacheDirectory, AlbumGridViewModel.ArtworkKey(updated));
         }
 
-        // A single changed track is swapped in place (keeps the grid's scroll/selection); several at
-        // once are swapped in one reset, so the album grid isn't rebuilt once per track.
-        if (updatedTracks.Count == 1)
+        var previous = Tracks.Where(item => updatedByPath.ContainsKey(item.Track.FilePath)).Select(item => item.Track).ToList();
+        foreach (var grid in new[] { Grid, RecentlyAddedGrid })
         {
-            var index = Tracks.Select((item, i) => (item, i)).FirstOrDefault(x => x.item.Track.FilePath == updatedTracks[0].FilePath);
-            if (index.item is not null)
-            {
-                Tracks[index.i] = new LibraryTrackViewModel(updatedTracks[0], this);
-            }
+            grid.MarkArtworkStale([.. previous, .. updatedTracks]);
         }
-        else
-        {
-            Tracks.ReplaceAll(Tracks.ToList().Select(item =>
-                updatedByPath.TryGetValue(item.Track.FilePath, out var updated) ? new LibraryTrackViewModel(updated, this) : item));
-        }
+
+        SyncTracks([.. Tracks.Select(item => updatedByPath.GetValueOrDefault(item.Track.FilePath) ?? item.Track)]);
+        Grid.RebuildIfStale();
+        RecentlyAddedGrid.RebuildIfStale();
 
         Playlists.RefreshTracks();
         foreach (var updated in updatedTracks)

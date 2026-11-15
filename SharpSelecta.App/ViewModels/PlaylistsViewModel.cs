@@ -43,14 +43,23 @@ public partial class PlaylistsViewModel : ObservableObject
     {
         if (SelectedPlaylistId is not { } playlistId)
         {
-            Tracks.ReplaceAll([]);
+            Tracks.SyncTo([]);
             return;
         }
 
+        // Rows whose track didn't change are reused, so a rescan doesn't reset the playlist view.
+        var reusable = Tracks
+            .GroupBy(row => (row.Track, row.IsMissing))
+            .ToDictionary(g => g.Key, g => new Queue<LibraryTrackViewModel>(g));
+
         var entries = LibraryIndexStore.GetPlaylistTracks(_settings.FilePath, playlistId);
-        Tracks.ReplaceAll(entries.Select(e => e.Track is { } track
-            ? new LibraryTrackViewModel(track, _library)
-            : new LibraryTrackViewModel(MissingTrackPlaceholder(e.FilePath), _library, isMissing: true)));
+        Tracks.SyncTo([.. entries.Select(e =>
+        {
+            var key = e.Track is { } track ? (track, false) : (MissingTrackPlaceholder(e.FilePath), true);
+            return reusable.TryGetValue(key, out var rows) && rows.TryDequeue(out var row)
+                ? row
+                : new LibraryTrackViewModel(key.Item1, _library, key.Item2);
+        })]);
     }
 
     // A synthetic Track for a PlaylistTracks row whose file no longer has a matching Tracks row -
