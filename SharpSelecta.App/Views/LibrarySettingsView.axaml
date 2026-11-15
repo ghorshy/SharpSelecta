@@ -27,6 +27,11 @@
         <Button Content="{x:Static res:Strings.ChooseLibraryFolder}" Command="{Binding Folders.AddPendingFolderCommand}" HorizontalAlignment="Left" />
         <TextBlock Text="{Binding StatusMessage}" Classes="error" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
 
+        <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}">
+            <CheckBox Content="{x:Static res:Strings.WatchLibraryFolders}" IsChecked="{Binding WatchFolders}" />
+            <TextBlock Text="{x:Static res:Strings.WatchLibraryFoldersHint}" Classes="tertiary small" TextWrapping="Wrap" />
+        </StackPanel>
+
         <Button Content="{x:Static res:Strings.ClearArtworkCache}" Command="{Binding Grid.ClearArtworkCacheCommand}" HorizontalAlignment="Left" Margin="{styles:Spacing Top=S}" />
         <Button Content="{x:Static res:Strings.FindInconsistentCompilationFlags}" Click="OnFindInconsistentCompilationFlagsClick" HorizontalAlignment="Left" />
     </StackPanel>

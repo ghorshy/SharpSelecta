@@ -33,11 +33,39 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     public string DisplayName => Strings.SettingsCategoryLibrary;
 
-    public bool HasPendingChanges => Folders.HasPendingChanges;
+    public bool HasPendingChanges => Folders.HasPendingChanges || WatchFolders != IsWatchingFolders;
 
-    ICommand ISettingsCategoryViewModel.ApplyCommand => Folders.ApplyPendingChangesCommand;
+    ICommand ISettingsCategoryViewModel.ApplyCommand => ApplySettingsCommand;
 
-    ICommand ISettingsCategoryViewModel.CancelCommand => Folders.CancelPendingChangesCommand;
+    ICommand ISettingsCategoryViewModel.CancelCommand => CancelSettingsCommand;
+
+    // The checkbox; IsWatchingFolders is what's applied.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPendingChanges))]
+    public partial bool WatchFolders { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPendingChanges))]
+    public partial bool IsWatchingFolders { get; private set; }
+
+    [RelayCommand]
+    private async Task ApplySettingsAsync()
+    {
+        if (WatchFolders != IsWatchingFolders)
+        {
+            IsWatchingFolders = WatchFolders;
+            _settings.Update(s => s with { WatchLibraryFolders = WatchFolders });
+        }
+
+        await Folders.ApplyPendingChangesCommand.ExecuteAsync(null);
+    }
+
+    [RelayCommand]
+    private void CancelSettings()
+    {
+        WatchFolders = IsWatchingFolders;
+        Folders.CancelPendingChangesCommand.Execute(null);
+    }
 
     public BulkObservableCollection<LibraryTrackViewModel> Tracks { get; } = [];
 
@@ -195,6 +223,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         Playlists = new PlaylistsViewModel(this, settings);
         Columns = new LibraryColumnsViewModel(settings);
         Folders = new LibraryFoldersViewModel(filePickerService, settings, ReconcileFoldersAsync);
+        IsWatchingFolders = WatchFolders = settings.Current.WatchLibraryFolders;
         ApplyAutoDjSource(settings.Current.AutoDjSourcePlaylistId);
 
         Search.Applied += (_, _) =>

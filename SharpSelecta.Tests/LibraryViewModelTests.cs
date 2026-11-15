@@ -1471,4 +1471,24 @@ public class LibraryViewModelTests : IDisposable
         await Assert.That(vm.Playlists.Tracks[0].IsMissing).IsTrue();
         await Assert.That(actions).IsEquivalentTo([NotifyCollectionChangedAction.Remove, NotifyCollectionChangedAction.Add]);
     }
+    [Test]
+    public async Task WatchFolders_IsAPendingSetting_SavedOnApply_AndUndoneByCancel()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = CreateViewModel(out _, out _, out _, settingsPath);
+        await Assert.That(vm.IsWatchingFolders).IsTrue();
+
+        vm.WatchFolders = false;
+        await Assert.That(vm.HasPendingChanges).IsTrue();
+        ((ISettingsCategoryViewModel)vm).CancelCommand.Execute(null);
+        await Assert.That(vm.WatchFolders).IsTrue();
+        await Assert.That(vm.HasPendingChanges).IsFalse();
+
+        vm.WatchFolders = false;
+        ((ISettingsCategoryViewModel)vm).ApplyCommand.Execute(null);
+
+        await Assert.That(vm.IsWatchingFolders).IsFalse();
+        await Assert.That(vm.HasPendingChanges).IsFalse();
+        await Assert.That(new SettingsStore(settingsPath).Current.WatchLibraryFolders).IsFalse();
+    }
 }

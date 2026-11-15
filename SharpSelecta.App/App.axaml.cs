@@ -90,6 +90,10 @@ public partial class App : Application
             provider.GetRequiredService<IOutputDeviceService>().ActiveDeviceLost += (_, _) =>
                 Dispatcher.UIThread.Post(mainWindowViewModel.PlaybackControls.OnOutputDeviceLost);
 
+            var libraryChanges = new FileSystemLibraryChangeSource(provider.GetRequiredService<ILogger<FileSystemLibraryChangeSource>>());
+            var libraryWatch = new LibraryWatchCoordinator(mainWindowViewModel.Library, libraryChanges,
+                work => Dispatcher.UIThread.InvokeAsync(work), provider.GetRequiredService<ILogger<LibraryWatchCoordinator>>());
+
             var richPresence = new RichPresenceCoordinator(
                 mainWindowViewModel.PlaybackControls, provider.GetRequiredService<IRichPresence>(), mainWindowViewModel.Integrations);
 
@@ -105,6 +109,8 @@ public partial class App : Application
                 mainWindowViewModel.PlaybackControls.Volume.Persist();
                 mainWindowViewModel.Updates.InstallPendingUpdateOnExit();
                 richPresence.Dispose();
+                libraryWatch.Dispose();
+                libraryChanges.Dispose();
 
                 if (Mpris() is { } mprisService)
                 {
@@ -128,7 +134,7 @@ public partial class App : Application
                 openedFiles.Add(paths);
             });
 
-            _ = mainWindowViewModel.Library.InitializeAsync();
+            _ = InitializeLibraryAsync(mainWindowViewModel.Library, libraryWatch);
             _ = mainWindowViewModel.Updates.CheckOnStartupAsync();
         }
 
@@ -153,6 +159,13 @@ public partial class App : Application
                 logger.LogError(ex, "Failed to open {Count} path(s) passed to the app", paths.Count);
             }
         }
+    }
+
+    // Watching starts after the startup reconcile, so that one isn't followed by a second for the same changes.
+    private static async Task InitializeLibraryAsync(LibraryViewModel library, LibraryWatchCoordinator libraryWatch)
+    {
+        await library.InitializeAsync();
+        libraryWatch.Start();
     }
 
     private static void BringToFront(Window window)

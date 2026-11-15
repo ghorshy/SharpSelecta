@@ -21,6 +21,9 @@ public sealed partial class LibraryFoldersViewModel : ViewModelBase
 
     public bool HasPendingChanges => !PendingPaths.SequenceEqual(Paths);
 
+    // After the user added, removed or applied folders - not on the startup restore.
+    public event EventHandler? PathsSaved;
+
     public LibraryFoldersViewModel(IFilePickerService filePickerService, SettingsStore settings, Func<Task> onFoldersChanged)
     {
         _filePickerService = filePickerService;
@@ -102,5 +105,9 @@ public sealed partial class LibraryFoldersViewModel : ViewModelBase
         }
     }
 
-    private void Save() => _settings.Update(s => s with { LibraryFolderPaths = Paths.ToList() });
+    private void Save()
+    {
+        _settings.Update(s => s with { LibraryFolderPaths = Paths.ToList() });
+        PathsSaved?.Invoke(this, EventArgs.Empty);
+    }
 }

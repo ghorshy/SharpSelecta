@@ -601,6 +601,12 @@
   <data name="SeekStepSeconds" xml:space="preserve">
     <value>Seek step (seconds)</value>
   </data>
+  <data name="WatchLibraryFolders" xml:space="preserve">
+    <value>Watch folders for changes</value>
+  </data>
+  <data name="WatchLibraryFoldersHint" xml:space="preserve">
+    <value>New, changed and deleted files show up without pressing F5.</value>
+  </data>
   <data name="PauseOnDeviceDisconnect" xml:space="preserve">
     <value>Pause when the output device disconnects</value>
   </data>

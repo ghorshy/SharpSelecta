@@ -6,6 +6,7 @@ namespace SharpSelecta.Core.Library;
 public sealed record AppSettings
 {
     public IReadOnlyList<string>? LibraryFolderPaths { get; init; }
+    public bool WatchLibraryFolders { get; init; } = true;
     public IReadOnlyDictionary<string, bool>? Columns { get; init; }
     public IReadOnlyList<string>? ColumnOrder { get; init; }
     public double? RightColumnWidth { get; init; }

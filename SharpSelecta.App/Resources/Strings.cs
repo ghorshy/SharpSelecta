@@ -113,6 +113,8 @@ public static class Strings
     public static string ShortcutPreviousTrack => Get(nameof(ShortcutPreviousTrack));
     public static string ShortcutNextTrack => Get(nameof(ShortcutNextTrack));
     public static string ShortcutClearQueue => Get(nameof(ShortcutClearQueue));
+    public static string WatchLibraryFolders => Get(nameof(WatchLibraryFolders));
+    public static string WatchLibraryFoldersHint => Get(nameof(WatchLibraryFoldersHint));
     public static string ShortcutVolumeUp => Get(nameof(ShortcutVolumeUp));
     public static string ShortcutVolumeDown => Get(nameof(ShortcutVolumeDown));
     public static string ShortcutToggleMute => Get(nameof(ShortcutToggleMute));
