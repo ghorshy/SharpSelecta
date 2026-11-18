@@ -904,4 +904,10 @@
   <data name="AccentHexPlaceholder" xml:space="preserve">
     <value>#RRGGBB</value>
   </data>
+  <data name="ShowTrackChangeNotifications" xml:space="preserve">
+    <value>Show a notification when the track changes</value>
+  </data>
+  <data name="TrackChangeNotificationsHint" xml:space="preserve">
+    <value>Not shown while the SharpSelecta window is focused.</value>
+  </data>
 </root>

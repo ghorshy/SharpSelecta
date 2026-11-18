@@ -15,6 +15,7 @@ using SharpSelecta.Integrations.Updates;
 using SharpSelecta.App.Services;
 using SharpSelecta.App.Styles;
 using SharpSelecta.App.Services.Mpris;
+using SharpSelecta.App.Services.Notifications;
 using SharpSelecta.App.Services.SingleInstance;
 using SharpSelecta.App.ViewModels;
 using SharpSelecta.App.Views;
@@ -98,6 +99,14 @@ public partial class App : Application
             var richPresence = new RichPresenceCoordinator(
                 mainWindowViewModel.PlaybackControls, provider.GetRequiredService<IRichPresence>(), mainWindowViewModel.Integrations);
 
+            // Windows toasts need a different API; Linux only for now.
+            var desktopNotifications = OperatingSystem.IsLinux()
+                ? new FreedesktopTrackNotifications(provider.GetRequiredService<ILogger<FreedesktopTrackNotifications>>())
+                : null;
+            var trackNotifier = desktopNotifications is null ? null : new TrackChangeNotifier(
+                mainWindowViewModel.PlaybackControls, desktopNotifications, settings, () => mainWindow.IsActive,
+                provider.GetRequiredService<ILogger<TrackChangeNotifier>>());
+
             mainWindowViewModel.Updates.RestartingToUpdate += (_, _) =>
             {
                 mainWindowViewModel.PersistQueueStateIfEnabled();
@@ -110,6 +119,8 @@ public partial class App : Application
                 mainWindowViewModel.PlaybackControls.Volume.Persist();
                 mainWindowViewModel.Updates.InstallPendingUpdateOnExit();
                 richPresence.Dispose();
+                trackNotifier?.Dispose();
+                desktopNotifications?.Dispose();
                 libraryWatch.Dispose();
                 libraryChanges.Dispose();
 

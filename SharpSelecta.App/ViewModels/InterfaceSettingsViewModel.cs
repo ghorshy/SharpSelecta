@@ -55,6 +55,12 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
 
     public bool HasCustomAccent => _settings.Current.AccentColor is not null;
 
+    [ObservableProperty]
+    public partial bool ShowTrackChangeNotifications { get; set; }
+
+    // Only the freedesktop (Linux) notifications exist so far.
+    public bool AreTrackChangeNotificationsSupported => OperatingSystem.IsLinux();
+
     public string DisplayName => Strings.SettingsCategoryInterface;
 
     public bool HasPendingChanges => false;
@@ -98,6 +104,7 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
 
         var saved = settings.Current;
         SelectedFontSizeOption = FontSizeOptions.FirstOrDefault(o => o.Size == saved.FontSize) ?? FontSizeOptions[0];
+        ShowTrackChangeNotifications = saved.TrackChangeNotifications;
         AccentHex = saved.AccentColor ?? string.Empty;
         ChooseAccentSwatchCommand = new RelayCommand<IBrush?>(brush =>
         {
@@ -113,6 +120,12 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
     {
         if (_loaded)
             UpdateAppearance(s => s with { FontSize = value.Size });
+    }
+
+    partial void OnShowTrackChangeNotificationsChanged(bool value)
+    {
+        if (_loaded)
+            _settings.Update(s => s with { TrackChangeNotifications = value });
     }
 
     partial void OnAccentPickerColorChanged(Color value)

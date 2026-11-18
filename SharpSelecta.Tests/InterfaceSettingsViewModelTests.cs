@@ -62,7 +62,7 @@ public class InterfaceSettingsViewModelTests : IDisposable
         var settingsPath = _temp.NewSettingsPath();
         new SettingsStore(settingsPath).Update(s => s with
         {
-            FontSize = 18, AccentColor = "#D13438",
+            FontSize = 18, AccentColor = "#D13438", TrackChangeNotifications = true,
         });
         var writtenAt = File.GetLastWriteTimeUtc(settingsPath);
         File.SetLastWriteTimeUtc(settingsPath, writtenAt.AddMinutes(-1));
@@ -72,19 +72,22 @@ public class InterfaceSettingsViewModelTests : IDisposable
         await Assert.That(vm.SelectedFontSizeOption.Size).IsEqualTo(18);
         await Assert.That(vm.AccentHex).IsEqualTo("#D13438");
         await Assert.That(vm.HasCustomAccent).IsTrue();
+        await Assert.That(vm.ShowTrackChangeNotifications).IsTrue();
         await Assert.That(File.GetLastWriteTimeUtc(settingsPath)).IsEqualTo(writtenAt.AddMinutes(-1));
     }
 
     [Test]
-    public async Task ChoosingTextSize_Persists()
+    public async Task ChoosingTextSizeAndNotifications_Persists()
     {
         var settingsPath = _temp.NewSettingsPath();
         var vm = CreateViewModel(settingsPath);
 
         vm.SelectedFontSizeOption = vm.FontSizeOptions.Single(o => o.Size == 16);
+        vm.ShowTrackChangeNotifications = true;
 
         var saved = new SettingsStore(settingsPath).Current;
         await Assert.That(saved.FontSize).IsEqualTo(16);
+        await Assert.That(saved.TrackChangeNotifications).IsTrue();
 
         vm.SelectedFontSizeOption = vm.FontSizeOptions[0];
         await Assert.That(new SettingsStore(settingsPath).Current.FontSize).IsNull();

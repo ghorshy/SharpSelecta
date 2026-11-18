@@ -73,6 +73,12 @@
             </ComboBox.ItemTemplate>
         </ComboBox>
 
+        <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=L}"
+                    IsVisible="{Binding AreTrackChangeNotificationsSupported}">
+            <CheckBox Content="{x:Static res:Strings.ShowTrackChangeNotifications}" IsChecked="{Binding ShowTrackChangeNotifications}" />
+            <TextBlock Text="{x:Static res:Strings.TrackChangeNotificationsHint}" Classes="tertiary small" TextWrapping="Wrap"
+                       Margin="{styles:Spacing Left=L}" />
+        </StackPanel>
     </StackPanel>
 
 </UserControl>

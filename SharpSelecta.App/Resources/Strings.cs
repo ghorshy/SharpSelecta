@@ -55,6 +55,8 @@ public static class Strings
     public static string AccentColor => Get(nameof(AccentColor));
     public static string UseThemeAccent => Get(nameof(UseThemeAccent));
     public static string AccentHexPlaceholder => Get(nameof(AccentHexPlaceholder));
+    public static string ShowTrackChangeNotifications => Get(nameof(ShowTrackChangeNotifications));
+    public static string TrackChangeNotificationsHint => Get(nameof(TrackChangeNotificationsHint));
 
     public static string Pixels(int size) =>
         string.Format(CultureInfo.CurrentCulture, Get("PixelsFormat"), size);
