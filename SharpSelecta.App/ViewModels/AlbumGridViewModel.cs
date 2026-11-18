@@ -146,6 +146,58 @@ public partial class AlbumGridViewModel : ViewModelBase
 
     public void ExpandAlbum(AlbumViewModel album) => SetExpandedAlbum(album);
 
+    private List<AlbumViewModel> _selection = [];
+    private AlbumViewModel? _selectionAnchor;
+
+    // In click order; a Shift range adds the shown albums in their shown order.
+    public IReadOnlyList<AlbumViewModel> SelectedAlbums => _selection;
+
+    public void Select(AlbumViewModel album)
+    {
+        SetSelection([album]);
+        _selectionAnchor = album;
+    }
+
+    public void ToggleSelected(AlbumViewModel album)
+    {
+        SetSelection(_selection.Contains(album) ? _selection.Where(a => a != album) : [.. _selection, album]);
+        _selectionAnchor = album;
+    }
+
+    public void SelectRangeTo(AlbumViewModel album)
+    {
+        var shown = Rows.SelectMany(r => r.Tiles).ToList();
+        var from = _selectionAnchor is null ? -1 : shown.IndexOf(_selectionAnchor);
+        var to = shown.IndexOf(album);
+        if (from < 0 || to < 0)
+        {
+            Select(album);
+            return;
+        }
+
+        SetSelection(shown.Skip(Math.Min(from, to)).Take(Math.Abs(to - from) + 1));
+    }
+
+    private void SetSelection(IEnumerable<AlbumViewModel> albums)
+    {
+        var selection = albums.Distinct().ToList();
+        foreach (var album in _selection.Except(selection))
+        {
+            album.IsSelected = false;
+        }
+
+        foreach (var album in selection)
+        {
+            album.IsSelected = true;
+        }
+
+        _selection = selection;
+    }
+
+    private static AlbumKey KeyOf(AlbumViewModel album) => AlbumKey.Of(album.UnderlyingTracks[0]);
+
+    public void ReportDragFailure(Exception exception) => _logger.LogError(exception, "Dragging tracks failed");
+
     public event EventHandler<AlbumTrackReveal>? RevealRequested;
 
     public bool Reveal(string filePath)
@@ -350,11 +402,14 @@ public partial class AlbumGridViewModel : ViewModelBase
 
         Rows.SyncTo(rows);
 
+        var shownByKey = rows.SelectMany(r => r.Tiles).ToDictionary(KeyOf);
+
         // A library change keeps the expanded album open if it, or the album rebuilt in its place, is still shown.
-        var expandedKey = keepExpanded && ExpandedAlbum is { } expanded ? AlbumKey.Of(expanded.UnderlyingTracks[0]) : (AlbumKey?)null;
-        SetExpandedAlbum(expandedKey is { } key
-            ? rows.SelectMany(r => r.Tiles).FirstOrDefault(a => AlbumKey.Of(a.UnderlyingTracks[0]) == key)
-            : null);
+        SetExpandedAlbum(keepExpanded && ExpandedAlbum is { } expanded ? shownByKey.GetValueOrDefault(KeyOf(expanded)) : null);
+
+        // The selection follows rebuilt albums and drops the ones a search hides, so a drag never takes hidden albums.
+        SetSelection(_selection.Select(a => shownByKey.GetValueOrDefault(KeyOf(a))).OfType<AlbumViewModel>());
+        _selectionAnchor = _selectionAnchor is { } anchor ? shownByKey.GetValueOrDefault(KeyOf(anchor)) : null;
     }
 
     private static int? SearchScore(AlbumViewModel album, string query)
@@ -407,6 +462,7 @@ public partial class AlbumGridViewModel : ViewModelBase
         if (viewportWidth <= 0)
             return 1;
 
-        return Math.Max(1, (int)Math.Floor((viewportWidth + _layout.TileSpacing) / (tileSize + _layout.TileSpacing)));
+        var tileWidth = tileSize + 2 * _layout.TilePadding;
+        return Math.Max(1, (int)Math.Floor((viewportWidth + _layout.TileSpacing) / (tileWidth + _layout.TileSpacing)));
     }
 }

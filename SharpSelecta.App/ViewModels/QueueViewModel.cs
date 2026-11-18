@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using SharpSelecta.Core.Library;
 using SharpSelecta.Core.Playback;
 
 namespace SharpSelecta.App.ViewModels;
@@ -115,6 +116,9 @@ public partial class QueueViewModel : ViewModelBase
 
     public void MoveEntry(QueueEntryViewModel entry, QueueEntryViewModel? targetEntry) =>
         _playbackControls.MoveQueueEntry(entry.Entry, targetEntry?.Entry);
+
+    public Task InsertTracks(IReadOnlyList<Track> tracks, QueueEntryViewModel? targetEntry) =>
+        _playbackControls.InsertIntoQueue(tracks, targetEntry?.Entry);
 
     public void ReportDragReorderFailure(Exception exception) =>
         _logger.LogError(exception, "Queue drag-and-drop reorder failed");

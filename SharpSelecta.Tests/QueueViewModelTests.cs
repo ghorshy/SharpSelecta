@@ -214,4 +214,29 @@ public class QueueViewModelTests : IDisposable
         await Assert.That(playback.QueueEntries.Count).IsEqualTo(1 + AutoDj.Lookahead);
         await AssertViewMirrorsQueue(queue, playback);
     }
+    [Test]
+    public async Task InsertTracks_PutsThemBeforeTheTargetEntry_OrAtTheEndWithoutOne()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
+        queue.AddToQueue(new Track(TestPaths.Music("b.mp3"), "b.mp3"));
+
+        await vm.InsertTracks([new Track(TestPaths.Music("x.mp3"), "x.mp3"), new Track(TestPaths.Music("y.mp3"), "y.mp3")], vm.Entries[1]);
+        await vm.InsertTracks([new Track(TestPaths.Music("z.mp3"), "z.mp3")], null);
+
+        await Assert.That(string.Join("|", vm.Entries.Select(e => Path.GetFileName(e.Entry.Track.FilePath)))).IsEqualTo("a.mp3|x.mp3|y.mp3|b.mp3|z.mp3");
+        await Assert.That(vm.CurrentIndex).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task InsertTracks_BeforeThePlayingEntry_KeepsItPlaying()
+    {
+        var vm = CreateViewModel(out _, out var queue);
+        queue.PlayNow(new Track(TestPaths.Music("a.mp3"), "a.mp3"));
+
+        await vm.InsertTracks([new Track(TestPaths.Music("x.mp3"), "x.mp3")], vm.Entries[0]);
+
+        await Assert.That(vm.CurrentIndex).IsEqualTo(1);
+        await Assert.That(queue.Entries[queue.CurrentIndex].Track.FilePath).IsEqualTo(TestPaths.Music("a.mp3"));
+    }
 }

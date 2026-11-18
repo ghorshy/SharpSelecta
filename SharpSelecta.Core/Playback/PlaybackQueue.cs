@@ -81,6 +81,23 @@ public sealed class PlaybackQueue
         }
     }
 
+    // Where the user dropped them, even among Auto DJ entries. Inserting at or before the current
+    // entry moves it down, so the same track keeps playing.
+    public void InsertAt(int index, IReadOnlyList<Track> tracks)
+    {
+        var firstIndex = Math.Clamp(index, 0, _entries.Count);
+        var insertIndex = firstIndex;
+        foreach (var track in tracks)
+        {
+            _entries.Insert(insertIndex++, new QueueEntry(track, QueueEntrySource.Manual));
+        }
+
+        if (tracks.Count > 0 && CurrentIndex >= 0 && firstIndex <= CurrentIndex)
+        {
+            SetCurrentIndex(CurrentIndex + tracks.Count);
+        }
+    }
+
     public void AddAutoDjEntry(Track track) => _entries.Add(new QueueEntry(track, QueueEntrySource.AutoDj));
 
     public void Move(int oldIndex, int newIndex)

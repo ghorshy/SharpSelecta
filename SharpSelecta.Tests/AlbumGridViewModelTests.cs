@@ -403,4 +403,106 @@ public class AlbumGridViewModelTests : IDisposable
         await Assert.That(vm.Grid.Albums.Single(a => a.Title == "A")).IsNotSameReferenceAs(albumA);
         await Assert.That(vm.Grid.Albums.Single(a => a.Title == "B")).IsSameReferenceAs(albumB);
     }
+    private LibraryViewModel CreateWithAlbums(params string[] albums)
+    {
+        var vm = CreateLibraryViewModel();
+        foreach (var album in albums)
+        {
+            AddTrack(vm, TestPaths.Music($"{album}.mp3"), album);
+        }
+
+        return vm;
+    }
+
+    private static AlbumViewModel Album(LibraryViewModel vm, string title) => vm.Grid.Albums.Single(a => a.Title == title);
+
+    private static string Selected(LibraryViewModel vm) => string.Join("|", vm.Grid.SelectedAlbums.Select(a => a.Title));
+
+    [Test]
+    public async Task Select_SelectsOnlyThatAlbum_AndMarksIt()
+    {
+        var vm = CreateWithAlbums("A", "B");
+        vm.Grid.ToggleSelected(Album(vm, "A"));
+
+        vm.Grid.Select(Album(vm, "B"));
+
+        await Assert.That(Selected(vm)).IsEqualTo("B");
+        await Assert.That(Album(vm, "A").IsSelected).IsFalse();
+        await Assert.That(Album(vm, "B").IsSelected).IsTrue();
+    }
+
+    [Test]
+    public async Task ToggleSelected_AddsAndRemoves_KeepingClickOrder()
+    {
+        var vm = CreateWithAlbums("A", "B", "C");
+
+        vm.Grid.Select(Album(vm, "C"));
+        vm.Grid.ToggleSelected(Album(vm, "A"));
+        vm.Grid.ToggleSelected(Album(vm, "B"));
+        vm.Grid.ToggleSelected(Album(vm, "C"));
+
+        await Assert.That(Selected(vm)).IsEqualTo("A|B");
+        await Assert.That(Album(vm, "C").IsSelected).IsFalse();
+    }
+
+    [Test]
+    public async Task SelectRangeTo_SelectsTheShownAlbumsBetweenTheLastClickedOneAndThisOne()
+    {
+        var vm = CreateWithAlbums("A", "B", "C", "D");
+
+        vm.Grid.Select(Album(vm, "D"));
+        vm.Grid.SelectRangeTo(Album(vm, "B"));
+
+        await Assert.That(Selected(vm)).IsEqualTo("B|C|D");
+    }
+
+    [Test]
+    public async Task SelectRangeTo_WithNothingClickedYet_SelectsJustThatAlbum()
+    {
+        var vm = CreateWithAlbums("A", "B");
+
+        vm.Grid.SelectRangeTo(Album(vm, "B"));
+
+        await Assert.That(Selected(vm)).IsEqualTo("B");
+    }
+
+    [Test]
+    public async Task ASearchThatHidesASelectedAlbum_DropsItFromTheSelection()
+    {
+        var vm = CreateWithAlbums("Alpha", "Beta");
+        vm.Grid.Select(Album(vm, "Alpha"));
+        vm.Grid.ToggleSelected(Album(vm, "Beta"));
+
+        vm.Search.Query = "Beta";
+        await vm.Search.DebounceTask;
+
+        await Assert.That(Selected(vm)).IsEqualTo("Beta");
+        await Assert.That(Album(vm, "Alpha").IsSelected).IsFalse();
+    }
+
+    [Test]
+    public async Task ALibraryChange_KeepsTheSelection_OnTheRebuiltAlbumToo()
+    {
+        var vm = CreateWithAlbums("A", "B");
+        vm.Grid.Select(Album(vm, "A"));
+        vm.Grid.ToggleSelected(Album(vm, "B"));
+
+        AddTrack(vm, TestPaths.Music("A2.mp3"), "A");
+
+        await Assert.That(Selected(vm)).IsEqualTo("A|B");
+        await Assert.That(Album(vm, "A").IsSelected).IsTrue();
+        await Assert.That(Album(vm, "A").Tracks.Count).IsEqualTo(2);
+    }
+    [Test]
+    [Arguments(347, 1)]
+    [Arguments(348, 2)]
+    public async Task ColumnCount_CountsEachTilesPaddingAndTheGapsBetweenThem(double viewportWidth, int columns)
+    {
+        // Two 160 px tiles, 6 px padding on each side, one 4 px gap: 2 * 172 + 4 = 348.
+        var vm = CreateWithAlbums("A", "B", "C");
+
+        vm.Grid.SetViewportWidth(viewportWidth);
+
+        await Assert.That(vm.Grid.Rows[0].Tiles.Count).IsEqualTo(columns);
+    }
 }

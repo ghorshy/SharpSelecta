@@ -6,5 +6,5 @@ namespace SharpSelecta.Tests;
 internal static class TestThemeLayout
 {
     public static readonly ThemeLayout Default = new(
-        TileSizeDefault: 160, TileSizeMin: 144, TileSizeMax: 320, TileSizeStep: 10, TileSpacing: 16, RightColumnWidth: 220);
+        TileSizeDefault: 160, TileSizeMin: 144, TileSizeMax: 320, TileSizeStep: 10, TileSpacing: 4, TilePadding: 6, RightColumnWidth: 220);
 }

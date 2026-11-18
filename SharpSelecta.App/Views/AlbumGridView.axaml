@@ -27,6 +27,37 @@
         <Style Selector="Button.plain:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="Transparent" />
         </Style>
+        <!-- Set here, not on the element, so the selected/dragging tint below can replace it. The
+             padding is the gap between tiles moved inside, so the tint has room around the cover. -->
+        <Style Selector="Border.album-tile">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="{styles:Spacing Uniform=S}" />
+        </Style>
+
+        <!-- Selected tiles, and the tile being dragged to the queue: the whole tile tinted, over the cover too. -->
+        <Style Selector="Border.drag-highlight">
+            <Setter Property="IsVisible" Value="False" />
+            <Setter Property="Background" Value="{DynamicResource Brush.DragHighlight}" />
+        </Style>
+        <Style Selector="Border.album-tile.dragging Border.drag-highlight, Border.album-tile.selected Border.drag-highlight">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+        <Style Selector="Border.album-tile.dragging, Border.album-tile.selected">
+            <Setter Property="Background" Value="{DynamicResource Brush.DragHighlight}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource Radius.Control}" />
+        </Style>
+        <!-- BackEaseOut overshoots a little on the way back: a half bounce, on the cover only. -->
+        <Style Selector="Border.album-cover">
+            <Setter Property="RenderTransform" Value="{StaticResource Transform.CoverRest}" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="{StaticResource Duration.CoverPress}" Easing="BackEaseOut" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.album-tile.pressed Border.album-cover">
+            <Setter Property="RenderTransform" Value="{StaticResource Transform.CoverPressed}" />
+        </Style>
         <Style Selector="ListBox.album-tracks">
             <Setter Property="Background" Value="Transparent" />
         </Style>
@@ -74,11 +105,11 @@
             <ItemsRepeater x:Name="RowsRepeater" ItemsSource="{Binding Rows}">
                 <ItemsRepeater.ItemTemplate>
                     <DataTemplate x:DataType="vm:AlbumRowViewModel">
-                        <StackPanel Margin="{styles:Spacing Bottom=L}">
+                        <StackPanel Margin="{styles:Spacing Bottom=XS}">
                             <ItemsControl ItemsSource="{Binding Tiles}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
-                                        <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue L}" />
+                                        <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue XS}" />
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
@@ -89,8 +120,7 @@
                                              OnTilePointerPressed silently never fired. Border has no competing click
                                              machinery, so the handler gets every press. Background="Transparent" makes
                                              the whole tile (not just its Image/text children) hit-test-visible. -->
-                                        <Border Background="Transparent"
-                                                Width="{Binding #Root.((vm:AlbumGridViewModel)DataContext).TileSize}"
+                                        <Border Classes="album-tile" Classes.selected="{Binding IsSelected}"
                                                 Tapped="OnTileTapped"
                                                 DoubleTapped="OnTileDoubleTapped">
                                             <Border.ContextMenu>
@@ -119,7 +149,7 @@
                                                 </ContextMenu>
                                             </Border.ContextMenu>
                                             <StackPanel Spacing="{styles:SpacingValue XXS}">
-                                                <Border Width="{Binding #Root.((vm:AlbumGridViewModel)DataContext).TileSize}"
+                                                <Border Classes="album-cover" Width="{Binding #Root.((vm:AlbumGridViewModel)DataContext).TileSize}"
                                                         Height="{Binding #Root.((vm:AlbumGridViewModel)DataContext).TileSize}"
                                                         ClipToBounds="True"
                                                         CornerRadius="{DynamicResource Radius.Control}"
@@ -129,6 +159,7 @@
                                                                IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
                                                                Stretch="UniformToFill" />
                                                         <views:AlbumCoverPlaceholderIcon IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNull}}" />
+                                                        <Border Classes="drag-highlight" />
                                                     </Panel>
                                                 </Border>
                                                 <TextBlock Text="{Binding Title}" Classes="strong" TextTrimming="CharacterEllipsis"

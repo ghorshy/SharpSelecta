@@ -2,7 +2,7 @@ using Avalonia.Controls;
 
 namespace SharpSelecta.App.Styles;
 
-// The layout sizes the view models need as numbers (album tile zoom range, the grid's tile gap, the
+// The layout sizes the view models need as numbers (album tile zoom range, the grid's tile gap and padding, the
 // right column's initial width). They live in the theme like every other size - this just reads them
 // once at startup and hands them down, so a custom theme overriding a token needs a restart to apply.
 public sealed record ThemeLayout(
@@ -11,6 +11,7 @@ public sealed record ThemeLayout(
     double TileSizeMax,
     double TileSizeStep,
     double TileSpacing,
+    double TilePadding,
     double RightColumnWidth)
 {
     public static ThemeLayout From(IResourceHost host) => new(
@@ -18,8 +19,9 @@ public sealed record ThemeLayout(
         Number(host, "Size.Album.TileMin"),
         Number(host, "Size.Album.TileMax"),
         Number(host, "Size.Album.TileStep"),
-        // The same token the tiles' XAML spacing uses, so the column count always matches what's drawn.
-        Number(host, SpacingScale.KeyFor(Spacing.L)),
+        // The same tokens the tiles' XAML spacing and padding use, so the column count always matches what's drawn.
+        Number(host, SpacingScale.KeyFor(Spacing.XS)),
+        Number(host, SpacingScale.KeyFor(Spacing.S)),
         Number(host, "Size.MainWindow.RightColumnWidth"));
 
     private static double Number(IResourceHost host, string key) =>

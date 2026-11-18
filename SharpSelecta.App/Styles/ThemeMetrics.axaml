@@ -17,6 +17,11 @@
     <x:Double x:Key="FontSize.Small">11</x:Double>
     <FontWeight x:Key="FontWeight.Strong">Bold</FontWeight>
 
+    <!-- Motion: an album cover shrinks a little while its tile is pressed and springs back on release -->
+    <x:TimeSpan x:Key="Duration.CoverPress">0:0:0.2</x:TimeSpan>
+    <TransformOperations x:Key="Transform.CoverRest">scale(1)</TransformOperations>
+    <TransformOperations x:Key="Transform.CoverPressed">scale(0.97)</TransformOperations>
+
     <!-- Shape -->
     <CornerRadius x:Key="Radius.Control">4</CornerRadius>
     <Thickness x:Key="Border.All">1</Thickness>

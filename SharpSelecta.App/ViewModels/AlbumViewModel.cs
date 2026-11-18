@@ -29,6 +29,8 @@ public sealed partial class AlbumViewModel(
 
     [ObservableProperty] public partial byte[]? ArtworkBytes { get; set; }
 
+    [ObservableProperty] public partial bool IsSelected { get; set; }
+
     private static IReadOnlyList<AlbumTrackRowViewModel> BuildTrackRows(IReadOnlyList<LibraryTrackViewModel> tracks)
     {
         var distinctArtistCount = tracks

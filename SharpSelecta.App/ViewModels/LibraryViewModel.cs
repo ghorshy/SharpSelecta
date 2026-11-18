@@ -610,6 +610,8 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         }
     });
 
+    public void ReportDragFailure(Exception exception) => _logger.LogError(exception, "Dragging tracks failed");
+
     public event EventHandler<LibraryTrackViewModel>? RevealTrackRequested;
 
     // Stays in the section on screen when it shows the playing track; otherwise goes to the whole library,

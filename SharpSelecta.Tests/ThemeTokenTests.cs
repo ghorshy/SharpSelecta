@@ -176,7 +176,8 @@ public partial class ThemeTokenTests
         await Assert.That(layout.TileSizeMin).IsLessThanOrEqualTo(layout.TileSizeDefault);
         await Assert.That(layout.TileSizeDefault).IsLessThanOrEqualTo(layout.TileSizeMax);
         await Assert.That(layout.TileSizeStep).IsGreaterThan(0);
-        await Assert.That(layout.TileSpacing).IsEqualTo(16); // Spacing.L
+        await Assert.That(layout.TileSpacing).IsEqualTo(4); // Spacing.XS
+        await Assert.That(layout.TilePadding).IsEqualTo(6); // Spacing.S
         await Assert.That(layout.RightColumnWidth).IsGreaterThan(0);
     }
 

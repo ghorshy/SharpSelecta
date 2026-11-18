@@ -440,4 +440,79 @@ public class PlaybackQueueTests
         await Assert.That(queue.Entries.Select(e => e.Track)).IsEquivalentTo([TrackC, TrackB, TrackC]);
         await Assert.That(queue.CurrentIndex).IsEqualTo(0);
     }
+    private static readonly Track TrackD = new(TestPaths.Music("d.mp3"), "d.mp3");
+    private static readonly Track TrackE = new(TestPaths.Music("e.mp3"), "e.mp3");
+
+    private static string Names(PlaybackQueue queue) =>
+        string.Join("|", queue.Entries.Select(e => Path.GetFileNameWithoutExtension(e.Track.FilePath)));
+
+    [Test]
+    public async Task InsertAt_PutsTheTracksAtThatIndex_InOrder_AsManualEntries()
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow([TrackA, TrackB, TrackC]);
+        queue.JumpTo(0);
+
+        queue.InsertAt(2, [TrackD, TrackE]);
+
+        await Assert.That(Names(queue)).IsEqualTo("a|b|d|e|c");
+        await Assert.That(queue.Entries.Skip(2).Take(2).All(e => e.Source == QueueEntrySource.Manual)).IsTrue();
+        await Assert.That(queue.CurrentIndex).IsEqualTo(0);
+    }
+
+    [Test]
+    [Arguments(0)]
+    [Arguments(1)]
+    public async Task InsertAt_AtOrBeforeTheCurrentEntry_KeepsPlayingTheSameTrack(int index)
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow([TrackA, TrackB, TrackC]);
+        queue.JumpTo(1);
+
+        queue.InsertAt(index, [TrackD, TrackE]);
+
+        await Assert.That(queue.Entries[queue.CurrentIndex].Track).IsEqualTo(TrackB);
+        await Assert.That(queue.CurrentIndex).IsEqualTo(3);
+    }
+
+    [Test]
+    public async Task InsertAt_RightAfterTheCurrentEntry_LeavesItCurrent()
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow([TrackA, TrackB]);
+        queue.JumpTo(0);
+
+        queue.InsertAt(1, [TrackD]);
+
+        await Assert.That(Names(queue)).IsEqualTo("a|d|b");
+        await Assert.That(queue.CurrentIndex).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task InsertAt_PastTheEndOrIntoAnEmptyQueue_Appends()
+    {
+        var queue = new PlaybackQueue();
+        queue.InsertAt(5, [TrackA]);
+        await Assert.That(Names(queue)).IsEqualTo("a");
+        await Assert.That(queue.CurrentIndex).IsEqualTo(-1);
+
+        queue.InsertAt(99, [TrackB]);
+        queue.InsertAt(-3, [TrackC]);
+
+        await Assert.That(Names(queue)).IsEqualTo("c|a|b");
+    }
+
+    [Test]
+    public async Task InsertAt_AmongAutoDjEntries_StaysWhereItWasDropped()
+    {
+        var queue = new PlaybackQueue();
+        queue.PlayNow(TrackA);
+        queue.AddAutoDjEntry(TrackB);
+        queue.AddAutoDjEntry(TrackC);
+
+        queue.InsertAt(2, [TrackD]);
+
+        await Assert.That(Names(queue)).IsEqualTo("a|b|d|c");
+        await Assert.That(queue.Entries[2].Source).IsEqualTo(QueueEntrySource.Manual);
+    }
 }

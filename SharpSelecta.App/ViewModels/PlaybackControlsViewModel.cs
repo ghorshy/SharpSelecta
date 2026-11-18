@@ -211,6 +211,14 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         await ResumeIfQueueWasFinishedAsync();
     }
 
+    // Before targetEntry, or at the end when there is none (dropped below the last entry).
+    public async Task InsertIntoQueue(IReadOnlyList<Track> tracks, QueueEntry? targetEntry)
+    {
+        var index = targetEntry is null ? -1 : _queue.IndexOf(targetEntry);
+        _queue.InsertAt(index < 0 ? _queue.Entries.Count : index, tracks);
+        await ResumeIfQueueWasFinishedAsync();
+    }
+
     private async Task ResumeIfQueueWasFinishedAsync()
     {
         if (TransportState != TransportState.Finished)

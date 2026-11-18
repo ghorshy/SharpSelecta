@@ -20,6 +20,7 @@
             <SolidColorBrush x:Key="Brush.CoverWindowBackground" Color="#FF000000" />
             <SolidColorBrush x:Key="Brush.ToolbarHover" Color="#28808080" />
             <SolidColorBrush x:Key="Brush.ToolbarPressed" Color="#40808080" />
+            <SolidColorBrush x:Key="Brush.DragHighlight" Color="{DynamicResource SystemAccentColor}" Opacity="0.3" />
 
             <SolidColorBrush x:Key="Brush.WaveformPlayed" Color="{DynamicResource SystemAccentColor}" />
             <SolidColorBrush x:Key="Brush.WaveformPreview" Color="{DynamicResource SystemAccentColor}" Opacity="0.5" />
@@ -44,6 +45,7 @@
             <SolidColorBrush x:Key="Brush.CoverWindowBackground" Color="#FF000000" />
             <SolidColorBrush x:Key="Brush.ToolbarHover" Color="#28808080" />
             <SolidColorBrush x:Key="Brush.ToolbarPressed" Color="#40808080" />
+            <SolidColorBrush x:Key="Brush.DragHighlight" Color="{DynamicResource SystemAccentColor}" Opacity="0.3" />
 
             <SolidColorBrush x:Key="Brush.WaveformPlayed" Color="{DynamicResource SystemAccentColor}" />
             <SolidColorBrush x:Key="Brush.WaveformPreview" Color="{DynamicResource SystemAccentColor}" Opacity="0.5" />

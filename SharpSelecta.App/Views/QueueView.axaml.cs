@@ -95,13 +95,13 @@ public partial class QueueView : UserControl
 
     private void OnDragOver(object? sender, DragEventArgs e)
     {
-        if (!e.DataTransfer.Contains(DragEntryFormat))
+        if (!e.DataTransfer.Contains(DragEntryFormat) && !e.DataTransfer.Contains(TrackDrag.Format))
         {
             e.DragEffects = DragDropEffects.None;
             return;
         }
 
-        e.DragEffects = DragDropEffects.Move;
+        e.DragEffects = e.DataTransfer.Contains(DragEntryFormat) ? DragDropEffects.Move : DragDropEffects.Copy;
 
         var container = e.Source is Visual source ? source.FindAncestorOfType<ListBoxItem>(includeSelf: true) : null;
         var isEnd = false;
@@ -134,15 +134,12 @@ public partial class QueueView : UserControl
         _dragOverIsEnd = false;
     }
 
-    private void OnDrop(object? sender, DragEventArgs e)
+    // Dropped on an entry: before it. Below the last one or into an empty queue: at the end.
+    private async void OnDrop(object? sender, DragEventArgs e)
     {
         ClearDragOverHighlight();
 
-        if (DataContext is not QueueViewModel vm || !e.DataTransfer.Contains(DragEntryFormat))
-            return;
-
-        var draggedItem = e.DataTransfer.TryGetValue(DragEntryFormat);
-        if (draggedItem is null)
+        if (DataContext is not QueueViewModel vm)
             return;
 
         QueueEntryViewModel? targetItem = null;
@@ -151,7 +148,21 @@ public partial class QueueView : UserControl
             targetItem = targetContainer.DataContext as QueueEntryViewModel;
         }
 
-        vm.MoveEntry(draggedItem, targetItem);
+        if (e.DataTransfer.TryGetValue(DragEntryFormat) is { } draggedItem)
+        {
+            vm.MoveEntry(draggedItem, targetItem);
+        }
+        else if (e.DataTransfer.TryGetValue(TrackDrag.Format) is { Count: > 0 } tracks)
+        {
+            try
+            {
+                await vm.InsertTracks(tracks, targetItem);
+            }
+            catch (Exception ex)
+            {
+                vm.ReportDragReorderFailure(ex);
+            }
+        }
     }
 
     // The queue has no library of its own; the window's MainWindowViewModel owns it.

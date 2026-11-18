@@ -49,6 +49,7 @@ public sealed partial class TrackListView : UserControl
     private bool _columnWidthsDirty;
     private readonly List<LibraryTrackViewModel> _orderedSelection = [];
     private LibraryTrackViewModel? _rowBeingDragged;
+    private LibraryTrackViewModel? _collapseSelectionTo;
 
     public TrackListView()
     {
@@ -64,6 +65,14 @@ public sealed partial class TrackListView : UserControl
         TracksGrid.AddHandler(InputElement.PointerReleasedEvent, OnPointerReleased, handledEventsToo: true);
         TracksGrid.AddHandler(InputElement.PointerPressedEvent, OnRowReorderPointerPressed, handledEventsToo: true);
         TracksGrid.AddHandler(InputElement.PointerReleasedEvent, OnRowReorderPointerReleased, handledEventsToo: true);
+        TracksGrid.AddHandler(InputElement.PointerPressedEvent, OnPressedKeepSelection, RoutingStrategies.Tunnel);
+        TracksGrid.AddHandler(InputElement.PointerReleasedEvent, OnReleasedCollapseSelection, handledEventsToo: true);
+        var drag = new TrackDragSource(TracksGrid, DraggedTracks)
+        {
+            StartWhenLeaving = () => AllowRowReorder,
+            OnError = ex => (DataContext as LibraryViewModel)?.ReportDragFailure(ex),
+        };
+        drag.Starting += (_, _) => _collapseSelectionTo = null;
         TracksGrid.Sorting += (_, _) => Dispatcher.UIThread.Post(SaveCurrentSort, DispatcherPriority.Background);
         TracksGrid.SelectionChanged += OnTracksGridSelectionChanged;
     }
@@ -76,6 +85,45 @@ public sealed partial class TrackListView : UserControl
         {
             column.Width = new DataGridLength(pixels);
         }
+    }
+
+    private static LibraryTrackViewModel? RowItem(object? source) =>
+        (source as Visual)?.FindAncestorOfType<DataGridRow>(includeSelf: true)?.DataContext as LibraryTrackViewModel;
+
+    // A press normally collapses a multi-selection to the pressed row, which would leave only that
+    // row to drag; on a selected row it waits for the release instead, and a drag keeps them all.
+    private void OnPressedKeepSelection(object? sender, PointerPressedEventArgs e)
+    {
+        _collapseSelectionTo = null;
+        if (!e.GetCurrentPoint(TracksGrid).Properties.IsLeftButtonPressed || e.KeyModifiers != KeyModifiers.None ||
+            e.ClickCount > 1 || TracksGrid.SelectedItems.Count < 2)
+            return;
+
+        if (RowItem(e.Source) is { } item && TracksGrid.SelectedItems.Contains(item))
+        {
+            _collapseSelectionTo = item;
+            e.Handled = true;
+        }
+    }
+
+    private void OnReleasedCollapseSelection(object? sender, PointerReleasedEventArgs e)
+    {
+        if (_collapseSelectionTo is { } item)
+        {
+            _collapseSelectionTo = null;
+            TracksGrid.SelectedItem = item;
+        }
+    }
+
+    // The selection in click order when the pressed row is part of it, else just that row.
+    private IReadOnlyList<Track>? DraggedTracks(Visual source)
+    {
+        if (source.FindAncestorOfType<DataGridColumnHeader>(includeSelf: true) is not null || RowItem(source) is not { IsMissing: false } item)
+            return null;
+
+        return TracksGrid.SelectedItems.Contains(item) && _orderedSelection.Count > 1
+            ? [.. _orderedSelection.Where(t => !t.IsMissing).Select(t => t.Track)]
+            : [item.Track];
     }
 
     private void OnLoadingRow(object? sender, DataGridRowEventArgs e) =>
