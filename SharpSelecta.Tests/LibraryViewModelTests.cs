@@ -97,6 +97,25 @@ public class LibraryViewModelTests : IDisposable
     }
 
     [Test]
+    public async Task RescanCommand_AfterAFileWasRenamed_PointsTheQueueAndNowPlayingAtTheNewPath()
+    {
+        var vm = CreateViewModel(out _, out var filePickerService, out var playbackControls);
+        var root = _temp.NewSubdirectory();
+        var oldPath = Path.Combine(root.FullName, "old.mp3");
+        var newPath = Path.Combine(root.FullName, "new.mp3");
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), oldPath);
+        filePickerService.PickLibraryFolderAsync().Returns(root.FullName);
+        await vm.Folders.AddFolderCommand.ExecuteAsync(null);
+        await playbackControls.PlayNowAsync(vm.Tracks[0].Track);
+
+        File.Move(oldPath, newPath);
+        await vm.RescanCommand.ExecuteAsync(null);
+
+        await Assert.That(playbackControls.QueueEntries.Single().Track.FilePath).IsEqualTo(newPath);
+        await Assert.That(playbackControls.CurrentTrack!.FilePath).IsEqualTo(newPath);
+    }
+
+    [Test]
     public async Task ApplyPendingFolderChangesCommand_AfterRemovingAPendingFolder_RescansRemainingFolders()
     {
         var vm = CreateViewModel(out _, out var filePickerService, out _);
@@ -701,6 +720,8 @@ public class LibraryViewModelTests : IDisposable
 
         File.Delete(tracks[0].FilePath);
         File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "tagged-track.mp3"), Path.Combine(root.FullName, "brand-new.mp3"));
+        // Same size and time as the deleted copy would make it a rename.
+        File.SetLastWriteTimeUtc(Path.Combine(root.FullName, "brand-new.mp3"), DateTime.UtcNow.AddMinutes(1));
         await vm.RescanCommand.ExecuteAsync(null);
 
         await Assert.That(vm.Tracks.Count).IsEqualTo(3);

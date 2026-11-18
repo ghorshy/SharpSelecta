@@ -281,7 +281,7 @@ public partial class PlaybackControlsViewModel : ViewModelBase, IArtworkPreview
         CurrentTrackArtworkBytes = await Task.Run(() => MusicLibraryScanner.LoadArtwork(updated.FilePath));
     }
 
-    // The original of a converted track is gone: whatever referred to it now refers to the converted file.
+    // The file was renamed, moved or replaced by its converted copy: whatever referred to it now refers to the new one.
     public async Task ReplaceTrackFileAsync(string oldFilePath, Track replacement)
     {
         _queue.ReplaceFile(oldFilePath, replacement);

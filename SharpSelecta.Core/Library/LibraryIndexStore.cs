@@ -4,7 +4,11 @@ namespace SharpSelecta.Core.Library;
 
 public static class LibraryIndexStore
 {
-    public sealed record ReconcileResult(IReadOnlyList<Track> Tracks, IReadOnlyList<string> FailedFolders);
+    // Moves are files that were renamed or moved within the library folders since the last reconcile;
+    // Track is the moved track under its new path.
+    public sealed record ReconcileResult(IReadOnlyList<Track> Tracks, IReadOnlyList<string> FailedFolders, IReadOnlyList<TrackMove> Moves);
+
+    public sealed record TrackMove(string OldFilePath, Track Track);
 
     public sealed record PlaylistSummary(string Id, string Name, DateTime CreatedUtc);
 
@@ -51,78 +55,162 @@ public static class LibraryIndexStore
         using var connection = OpenConnection(indexFilePath);
         EnsureSchema(connection);
 
+        var scans = folderPaths.Select(folderPath => ScanFolder(connection, folderPath)).ToList();
+        var moves = FindMoves(scans);
+        var dateAddedUtcTicks = DateTime.UtcNow.Ticks;
+
         var tracks = new List<Track>();
-        var failedFolders = new List<string>();
-        foreach (var folderPath in folderPaths)
+        using (var transaction = connection.BeginTransaction())
         {
-            var (folderTracks, failed) = ReconcileFolder(connection, folderPath);
-            tracks.AddRange(folderTracks);
-            if (failed)
+            foreach (var move in moves.Values)
             {
-                failedFolders.Add(folderPath);
+                ApplyMove(connection, transaction, move);
             }
+
+            foreach (var scan in scans)
+            {
+                tracks.AddRange(scan.Files is null ? InScanOrder(scan.Existing) : ReconcileFolder(connection, transaction, scan, moves, dateAddedUtcTicks));
+            }
+
+            transaction.Commit();
         }
 
         PruneFoldersNotIn(connection, folderPaths);
 
-        return new ReconcileResult(tracks, failedFolders);
+        var failedFolders = scans.Where(scan => scan.Files is null).Select(scan => scan.FolderPath).ToList();
+        return new ReconcileResult(tracks, failedFolders, [.. moves.Values.Select(move => new TrackMove(move.OldFilePath, move.Track))]);
     }
 
-    private static List<Track> InScanOrder(Dictionary<string, (DateTime LastWriteTimeUtc, long FileSizeBytes, Track Track)> index) =>
+    private sealed record IndexedFile(DateTime LastWriteTimeUtc, long FileSizeBytes, Track Track);
+
+    private sealed record ScannedFile(string FilePath, DateTime LastWriteTimeUtc, long FileSizeBytes);
+
+    // Files is null when the folder couldn't be read; its indexed tracks are then kept as they are.
+    private sealed record FolderScan(string FolderPath, Dictionary<string, IndexedFile> Existing, List<ScannedFile>? Files);
+
+    private sealed record PendingMove(string OldFilePath, string FolderPath, Track Track);
+
+    private static List<Track> InScanOrder(Dictionary<string, IndexedFile> index) =>
         index.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase).Select(entry => entry.Value.Track).ToList();
 
-    private static (IReadOnlyList<Track> Tracks, bool Failed) ReconcileFolder(SqliteConnection connection, string folderPath)
+    private static FolderScan ScanFolder(SqliteConnection connection, string folderPath)
     {
         var existing = LoadFolderIndex(connection, folderPath);
-        var dateAddedUtcTicks = DateTime.UtcNow.Ticks;
-
-        List<(string FilePath, Track Track, DateTime LastWriteTimeUtc, long FileSizeBytes, bool Changed)> current;
         try
         {
-            current = MusicLibraryScanner.FindAudioFiles(folderPath)
+            var files = MusicLibraryScanner.FindAudioFiles(folderPath)
                 .AsParallel()
                 .AsOrdered()
                 .Select(path =>
                 {
                     var fileInfo = new FileInfo(path);
-                    var lastWriteTimeUtc = fileInfo.LastWriteTimeUtc;
-                    var fileSizeBytes = fileInfo.Length;
-
-                    var wasIndexed = existing.TryGetValue(path, out var indexed);
-                    if (wasIndexed
-                        && indexed.LastWriteTimeUtc == lastWriteTimeUtc
-                        && indexed.FileSizeBytes == fileSizeBytes)
-                    {
-                        return (path, indexed.Track, lastWriteTimeUtc, fileSizeBytes, Changed: false);
-                    }
-
-                    var track = MusicLibraryScanner.ReadTrack(path);
-                    track = track with { DateAddedUtc = wasIndexed ? indexed.Track.DateAddedUtc : new DateTime(dateAddedUtcTicks, DateTimeKind.Utc) };
-                    return (path, track, lastWriteTimeUtc, fileSizeBytes, Changed: true);
+                    return new ScannedFile(path, fileInfo.LastWriteTimeUtc, fileInfo.Length);
                 })
                 .ToList();
+            return new FolderScan(folderPath, existing, files);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            return (InScanOrder(existing), true);
+            return new FolderScan(folderPath, existing, null);
         }
+    }
 
-        using (var transaction = connection.BeginTransaction())
+    // A file that disappeared and a new one with the same extension, size and modification time are
+    // taken to be the same file renamed or moved (a rename or mv keeps both), but only when neither
+    // side has another candidate. Keyed by the new path.
+    private static Dictionary<string, PendingMove> FindMoves(IReadOnlyList<FolderScan> scans)
+    {
+        var scanned = scans.Where(scan => scan.Files is not null).ToList();
+        var allExisting = scans.SelectMany(scan => scan.Existing.Keys).ToHashSet();
+        var allCurrent = scanned.SelectMany(scan => scan.Files!).Select(file => file.FilePath).ToHashSet();
+
+        var gone = scanned
+            .SelectMany(scan => scan.Existing)
+            .Where(entry => !allCurrent.Contains(entry.Key))
+            .ToLookup(entry => MoveKey(entry.Key, entry.Value.LastWriteTimeUtc, entry.Value.FileSizeBytes));
+        var added = scanned
+            .SelectMany(scan => scan.Files!.Where(file => !allExisting.Contains(file.FilePath)).Select(file => (scan.FolderPath, File: file)))
+            .ToLookup(entry => MoveKey(entry.File.FilePath, entry.File.LastWriteTimeUtc, entry.File.FileSizeBytes));
+
+        var moves = new Dictionary<string, PendingMove>();
+        foreach (var candidates in added.Where(candidates => candidates.Count() == 1))
         {
-            var changedEntries = current
-                .Where(c => c.Changed)
-                .Select(c => (c.Track, c.LastWriteTimeUtc, c.FileSizeBytes))
-                .ToList();
-            UpsertAll(connection, transaction, folderPath, changedEntries, dateAddedUtcTicks);
+            var from = gone[candidates.Key].ToList();
+            if (from.Count != 1)
+                continue;
 
-            var currentPaths = current.Select(c => c.FilePath).ToHashSet();
-            var removedPaths = existing.Keys.Where(path => !currentPaths.Contains(path)).ToList();
-            DeleteAll(connection, transaction, removedPaths);
-
-            transaction.Commit();
+            var (folderPath, file) = candidates.Single();
+            var (oldPath, indexed) = from[0];
+            var track = indexed.Track with
+            {
+                FilePath = file.FilePath,
+                DisplayName = indexed.Track.Title ?? Path.GetFileNameWithoutExtension(file.FilePath),
+            };
+            moves[file.FilePath] = new PendingMove(oldPath, folderPath, track);
         }
 
-        return (current.Select(c => c.Track).ToList(), false);
+        return moves;
+    }
+
+    private static (string Extension, long LastWriteTimeUtcTicks, long FileSizeBytes) MoveKey(string path, DateTime lastWriteTimeUtc, long fileSizeBytes) =>
+        (Path.GetExtension(path).ToLowerInvariant(), lastWriteTimeUtc.Ticks, fileSizeBytes);
+
+    // Re-keys the row, so DateAddedUtc and waveform peaks stay, and points playlist entries at the new path.
+    private static void ApplyMove(SqliteConnection connection, SqliteTransaction transaction, PendingMove move)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            UPDATE OR REPLACE Tracks SET FilePath = @New, FolderPath = @FolderPath, DisplayName = @DisplayName WHERE FilePath = @Old;
+            UPDATE PlaylistTracks SET FilePath = @New WHERE FilePath = @Old;
+            """;
+        command.Parameters.AddWithValue("@New", move.Track.FilePath);
+        command.Parameters.AddWithValue("@Old", move.OldFilePath);
+        command.Parameters.AddWithValue("@FolderPath", move.FolderPath);
+        command.Parameters.AddWithValue("@DisplayName", move.Track.DisplayName);
+        command.ExecuteNonQuery();
+    }
+
+    private static List<Track> ReconcileFolder(
+        SqliteConnection connection, SqliteTransaction transaction, FolderScan scan, Dictionary<string, PendingMove> moves, long dateAddedUtcTicks)
+    {
+        var existing = scan.Existing;
+        var current = scan.Files!
+            .AsParallel()
+            .AsOrdered()
+            .Select(file =>
+            {
+                if (moves.TryGetValue(file.FilePath, out var move))
+                {
+                    return (File: file, Track: move.Track, Changed: false);
+                }
+
+                var wasIndexed = existing.TryGetValue(file.FilePath, out var indexed);
+                if (wasIndexed
+                    && indexed!.LastWriteTimeUtc == file.LastWriteTimeUtc
+                    && indexed.FileSizeBytes == file.FileSizeBytes)
+                {
+                    return (File: file, Track: indexed.Track, Changed: false);
+                }
+
+                var track = MusicLibraryScanner.ReadTrack(file.FilePath);
+                track = track with { DateAddedUtc = wasIndexed ? indexed!.Track.DateAddedUtc : new DateTime(dateAddedUtcTicks, DateTimeKind.Utc) };
+                return (File: file, Track: track, Changed: true);
+            })
+            .ToList();
+
+        var changedEntries = current
+            .Where(c => c.Changed)
+            .Select(c => (c.Track, c.File.LastWriteTimeUtc, c.File.FileSizeBytes))
+            .ToList();
+        UpsertAll(connection, transaction, scan.FolderPath, changedEntries, dateAddedUtcTicks);
+
+        var currentPaths = current.Select(c => c.File.FilePath).ToHashSet();
+        var movedAway = moves.Values.Select(move => move.OldFilePath).ToHashSet();
+        var removedPaths = existing.Keys.Where(path => !currentPaths.Contains(path) && !movedAway.Contains(path)).ToList();
+        DeleteAll(connection, transaction, removedPaths);
+
+        return current.Select(c => c.Track).ToList();
     }
 
     public static IReadOnlyList<float>? TryGetWaveformPeaks(string settingsFilePath, string filePath)
@@ -451,21 +539,20 @@ public static class LibraryIndexStore
         command.ExecuteNonQuery();
     }
 
-    private static Dictionary<string, (DateTime LastWriteTimeUtc, long FileSizeBytes, Track Track)> LoadFolderIndex(
-        SqliteConnection connection, string folderPath)
+    private static Dictionary<string, IndexedFile> LoadFolderIndex(SqliteConnection connection, string folderPath)
     {
         using var command = connection.CreateCommand();
         command.CommandText = $"SELECT {ColumnList} FROM Tracks WHERE FolderPath = @FolderPath";
         command.Parameters.AddWithValue("@FolderPath", folderPath);
 
-        var result = new Dictionary<string, (DateTime, long, Track)>();
+        var result = new Dictionary<string, IndexedFile>();
         using var reader = command.ExecuteReader();
         while (reader.Read())
         {
             var track = ReadIndexedTrack(reader, offset: 0);
             var lastWriteTimeUtc = new DateTime(reader.GetInt64(14), DateTimeKind.Utc);
             var fileSizeBytes = reader.GetInt64(15);
-            result[track.FilePath] = (lastWriteTimeUtc, fileSizeBytes, track);
+            result[track.FilePath] = new IndexedFile(lastWriteTimeUtc, fileSizeBytes, track);
         }
 
         return result;

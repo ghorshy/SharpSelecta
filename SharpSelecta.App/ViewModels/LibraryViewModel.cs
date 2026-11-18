@@ -332,6 +332,10 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
             _logger.LogInformation("Reconciled {TrackCount} tracks in {ElapsedMs} ms", result.Tracks.Count, reconcileMs);
             SyncTracks(result.Tracks);
+            foreach (var move in result.Moves)
+            {
+                await _playbackControls.ReplaceTrackFileAsync(move.OldFilePath, move.Track);
+            }
 
             // A playlist's rows depend on which of its files are in the index, which a rescan may have changed.
             Playlists.RefreshTracks();

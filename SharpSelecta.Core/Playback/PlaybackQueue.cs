@@ -123,7 +123,7 @@ public sealed class PlaybackQueue
         }
     }
 
-    // Swaps in a re-read Track (after a tag edit, or a converted file taking over) for every entry of
+    // Swaps in a re-read Track (after a tag edit, a rename, or a converted file taking over) for every entry of
     // the old file, keeping each entry's source and the current position.
     public void ReplaceFile(string oldFilePath, Track replacement)
     {

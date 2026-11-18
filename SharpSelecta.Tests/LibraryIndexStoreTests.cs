@@ -691,6 +691,135 @@ public class LibraryIndexStoreTests : IDisposable
     }
 
     [Test]
+    public async Task Reconcile_WhenAFileIsRenamed_ReportsTheMoveAndKeepsDateAddedAndWaveformPeaks()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        CopyFixtureInto(root.FullName, "old.mp3");
+        var oldPath = Path.Combine(root.FullName, "old.mp3");
+        var newPath = Path.Combine(root.FullName, "new.mp3");
+        var original = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]).Tracks[0];
+        LibraryIndexStore.SaveWaveformPeaks(settingsPath, oldPath, [0.25f, 0.75f]);
+
+        File.Move(oldPath, newPath);
+        var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+        await Assert.That(result.Tracks.Single().FilePath).IsEqualTo(newPath);
+        await Assert.That(result.Tracks.Single().DateAddedUtc).IsEqualTo(original.DateAddedUtc);
+        await Assert.That(result.Moves.Single().OldFilePath).IsEqualTo(oldPath);
+        await Assert.That(result.Moves.Single().Track).IsEqualTo(result.Tracks.Single());
+        await Assert.That(LibraryIndexStore.TryGetWaveformPeaks(settingsPath, newPath)).IsEquivalentTo([0.25f, 0.75f]);
+    }
+
+    [Test]
+    public async Task Reconcile_WhenAnUntitledFileIsRenamed_NamesItAfterTheNewFile()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "untagged-track.mp3"), Path.Combine(root.FullName, "old.mp3"));
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+        File.Move(Path.Combine(root.FullName, "old.mp3"), Path.Combine(root.FullName, "new.mp3"));
+        var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+        await Assert.That(result.Tracks.Single().DisplayName).IsEqualTo("new");
+    }
+
+    [Test]
+    public async Task Reconcile_WhenAFileIsRenamed_PointsItsPlaylistEntriesAtTheNewPath()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        CopyFixtureInto(root.FullName, "old.mp3");
+        var oldPath = Path.Combine(root.FullName, "old.mp3");
+        var newPath = Path.Combine(root.FullName, "new.mp3");
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var playlistId = LibraryIndexStore.CreatePlaylist(settingsPath, "P");
+        LibraryIndexStore.ReplacePlaylistTracks(settingsPath, playlistId, [oldPath]);
+
+        File.Move(oldPath, newPath);
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+        var entry = LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId).Single();
+        await Assert.That(entry.FilePath).IsEqualTo(newPath);
+        await Assert.That(entry.Track).IsNotNull();
+    }
+
+    [Test]
+    public async Task Reconcile_WhenAFolderIsRenamed_MovesEveryTrackInIt()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        var album = Directory.CreateDirectory(Path.Combine(root.FullName, "Album"));
+        CopyFixtureInto(album.FullName, "1.mp3");
+        CopyFixtureInto(album.FullName, "2.mp3");
+        File.SetLastWriteTimeUtc(Path.Combine(album.FullName, "1.mp3"), new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        File.SetLastWriteTimeUtc(Path.Combine(album.FullName, "2.mp3"), new DateTime(2024, 1, 2, 0, 0, 0, DateTimeKind.Utc));
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+        Directory.Move(album.FullName, Path.Combine(root.FullName, "Renamed"));
+        var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+        await Assert.That(result.Moves.Select(m => (Path.GetRelativePath(root.FullName, m.OldFilePath), Path.GetRelativePath(root.FullName, m.Track.FilePath))))
+            .IsEquivalentTo([(Path.Combine("Album", "1.mp3"), Path.Combine("Renamed", "1.mp3")), (Path.Combine("Album", "2.mp3"), Path.Combine("Renamed", "2.mp3"))]);
+    }
+
+    [Test]
+    public async Task Reconcile_WhenAFileMovesToAnotherLibraryFolder_KeepsItIndexedUnderTheNewFolder()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var folderA = _temp.NewSubdirectory();
+        var folderB = _temp.NewSubdirectory();
+        CopyFixtureInto(folderA.FullName, "song.mp3");
+        var original = LibraryIndexStore.Reconcile(settingsPath, [folderA.FullName, folderB.FullName]).Tracks[0];
+
+        File.Move(Path.Combine(folderA.FullName, "song.mp3"), Path.Combine(folderB.FullName, "song.mp3"));
+        var result = LibraryIndexStore.Reconcile(settingsPath, [folderA.FullName, folderB.FullName]);
+
+        await Assert.That(result.Moves.Single().Track.FilePath).IsEqualTo(Path.Combine(folderB.FullName, "song.mp3"));
+        await Assert.That(result.Moves.Single().Track.DateAddedUtc).IsEqualTo(original.DateAddedUtc);
+        await Assert.That(LibraryIndexStore.LoadIndexed(settingsPath, [folderB.FullName]).Single().FilePath)
+            .IsEqualTo(Path.Combine(folderB.FullName, "song.mp3"));
+    }
+
+    [Test]
+    public async Task Reconcile_WhenSeveralGoneFilesMatchTheSameSizeAndTime_TreatsThemAsDeletedAndAdded()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        var sameTime = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        foreach (var name in new[] { "a.mp3", "b.mp3" })
+        {
+            CopyFixtureInto(root.FullName, name);
+            File.SetLastWriteTimeUtc(Path.Combine(root.FullName, name), sameTime);
+        }
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+        File.Move(Path.Combine(root.FullName, "a.mp3"), Path.Combine(root.FullName, "c.mp3"));
+        File.Move(Path.Combine(root.FullName, "b.mp3"), Path.Combine(root.FullName, "d.mp3"));
+        var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+        await Assert.That(result.Moves).IsEmpty();
+        await Assert.That(result.Tracks.Select(t => Path.GetFileName(t.FilePath))).IsEquivalentTo(["c.mp3", "d.mp3"]);
+    }
+
+    [Test]
+    public async Task Reconcile_WhenARenamedFileWasAlsoRewritten_TreatsItAsDeletedAndAdded()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        CopyFixtureInto(root.FullName, "old.mp3");
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+        File.Move(Path.Combine(root.FullName, "old.mp3"), Path.Combine(root.FullName, "new.mp3"));
+        File.SetLastWriteTimeUtc(Path.Combine(root.FullName, "new.mp3"), DateTime.UtcNow.AddMinutes(1));
+        var result = LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+
+        await Assert.That(result.Moves).IsEmpty();
+        await Assert.That(result.Tracks.Single().FilePath).IsEqualTo(Path.Combine(root.FullName, "new.mp3"));
+    }
+
+    [Test]
     public async Task DeletePlaylist_RemovesItAndItsTracks()
     {
         var settingsPath = _temp.NewSettingsPath();
