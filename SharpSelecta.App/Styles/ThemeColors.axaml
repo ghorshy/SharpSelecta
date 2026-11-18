@@ -5,6 +5,16 @@
          color. A custom theme file is a ResourceDictionary that overrides any of them; Light/Dark
          follow the active theme variant. Brushes that alias a FluentTheme color (SystemAccentColor
          etc.) are the one place Fluent's own keys are allowed to appear. -->
+    <!-- Accent presets offered in Settings → Interface. -->
+    <SolidColorBrush x:Key="Brush.AccentPreset.Blue" Color="#FF0078D4" />
+    <SolidColorBrush x:Key="Brush.AccentPreset.Teal" Color="#FF038387" />
+    <SolidColorBrush x:Key="Brush.AccentPreset.Green" Color="#FF10893E" />
+    <SolidColorBrush x:Key="Brush.AccentPreset.Gold" Color="#FFC19C00" />
+    <SolidColorBrush x:Key="Brush.AccentPreset.Orange" Color="#FFF7630C" />
+    <SolidColorBrush x:Key="Brush.AccentPreset.Red" Color="#FFD13438" />
+    <SolidColorBrush x:Key="Brush.AccentPreset.Pink" Color="#FFE3008C" />
+    <SolidColorBrush x:Key="Brush.AccentPreset.Purple" Color="#FF8764B8" />
+
     <ResourceDictionary.ThemeDictionaries>
 
         <ResourceDictionary x:Key="Light">

@@ -35,6 +35,12 @@ public sealed record AppSettings
     public IReadOnlyDictionary<string, string>? ShortcutOverrides { get; init; }
     public AppTheme Theme { get; init; } = AppTheme.Dark;
     public string? CustomThemeFileName { get; init; }
+
+    // Content text size in px; null keeps the theme's. Other text and the icons next to it scale with it.
+    public int? FontSize { get; init; }
+
+    // #RRGGBB; null keeps the theme's (or the system's) accent.
+    public string? AccentColor { get; init; }
     public bool EqualizerEnabled { get; init; }
     public string? EqualizerPresetName { get; init; }
     public IReadOnlyList<float>? EqualizerBandGainsDb { get; init; }

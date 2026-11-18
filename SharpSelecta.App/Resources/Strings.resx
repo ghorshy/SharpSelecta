@@ -886,4 +886,22 @@
   <data name="FailedToCheckCompilationFlagsFormat" xml:space="preserve">
     <value>Could not check the compilation flags: {0}</value>
   </data>
+  <data name="TextSize" xml:space="preserve">
+    <value>Text size</value>
+  </data>
+  <data name="PixelsFormat" xml:space="preserve">
+    <value>{0} px</value>
+  </data>
+  <data name="FontSizeThemeDefault" xml:space="preserve">
+    <value>Theme default</value>
+  </data>
+  <data name="AccentColor" xml:space="preserve">
+    <value>Accent color</value>
+  </data>
+  <data name="UseThemeAccent" xml:space="preserve">
+    <value>Theme default</value>
+  </data>
+  <data name="AccentHexPlaceholder" xml:space="preserve">
+    <value>#RRGGBB</value>
+  </data>
 </root>

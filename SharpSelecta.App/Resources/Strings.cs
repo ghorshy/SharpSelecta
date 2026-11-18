@@ -50,6 +50,14 @@ public static class Strings
     public static string ThemeFilePickerTitle => Get(nameof(ThemeFilePickerTitle));
     public static string ThemeFileTypeName => Get(nameof(ThemeFileTypeName));
     public static string InvalidThemeFile => Get(nameof(InvalidThemeFile));
+    public static string TextSize => Get(nameof(TextSize));
+    public static string FontSizeThemeDefault => Get(nameof(FontSizeThemeDefault));
+    public static string AccentColor => Get(nameof(AccentColor));
+    public static string UseThemeAccent => Get(nameof(UseThemeAccent));
+    public static string AccentHexPlaceholder => Get(nameof(AccentHexPlaceholder));
+
+    public static string Pixels(int size) =>
+        string.Format(CultureInfo.CurrentCulture, Get("PixelsFormat"), size);
     public static string RestoreQueueOnStartup => Get(nameof(RestoreQueueOnStartup));
     public static string ResumePlaybackOnLaunch => Get(nameof(ResumePlaybackOnLaunch));
     public static string AppName => Get(nameof(AppName));

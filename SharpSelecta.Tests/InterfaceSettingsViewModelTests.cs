@@ -57,6 +57,100 @@ public class InterfaceSettingsViewModelTests : IDisposable
     }
 
     [Test]
+    public async Task Constructor_LoadsTheSavedAppearanceWithoutRewritingTheSettings()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        new SettingsStore(settingsPath).Update(s => s with
+        {
+            FontSize = 18, AccentColor = "#D13438",
+        });
+        var writtenAt = File.GetLastWriteTimeUtc(settingsPath);
+        File.SetLastWriteTimeUtc(settingsPath, writtenAt.AddMinutes(-1));
+
+        var vm = CreateViewModel(settingsPath);
+
+        await Assert.That(vm.SelectedFontSizeOption.Size).IsEqualTo(18);
+        await Assert.That(vm.AccentHex).IsEqualTo("#D13438");
+        await Assert.That(vm.HasCustomAccent).IsTrue();
+        await Assert.That(File.GetLastWriteTimeUtc(settingsPath)).IsEqualTo(writtenAt.AddMinutes(-1));
+    }
+
+    [Test]
+    public async Task ChoosingTextSize_Persists()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = CreateViewModel(settingsPath);
+
+        vm.SelectedFontSizeOption = vm.FontSizeOptions.Single(o => o.Size == 16);
+
+        var saved = new SettingsStore(settingsPath).Current;
+        await Assert.That(saved.FontSize).IsEqualTo(16);
+
+        vm.SelectedFontSizeOption = vm.FontSizeOptions[0];
+        await Assert.That(new SettingsStore(settingsPath).Current.FontSize).IsNull();
+    }
+
+    [Test]
+    public async Task ChoosingASwatch_SavesItsColorAndShowsItInTheHexFieldAndPicker()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = CreateViewModel(settingsPath);
+        var red = AppearanceService.ParseAccent("#D13438")!.Value;
+
+        vm.ChooseAccentSwatchCommand.Execute(new Avalonia.Media.Immutable.ImmutableSolidColorBrush(red));
+
+        await Assert.That(new SettingsStore(settingsPath).Current.AccentColor).IsEqualTo("#D13438");
+        await Assert.That(vm.AccentHex).IsEqualTo("#D13438");
+        await Assert.That(vm.AccentPickerColor).IsEqualTo(red);
+        await Assert.That(vm.UseThemeAccentCommand.CanExecute(null)).IsTrue();
+    }
+
+    [Test]
+    public async Task TypingAHexColor_SavesItOnlyOnceItIsComplete()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = CreateViewModel(settingsPath);
+
+        vm.AccentHex = "#10";
+        await Assert.That(vm.IsAccentHexInvalid).IsTrue();
+        await Assert.That(new SettingsStore(settingsPath).Current.AccentColor).IsNull();
+
+        vm.AccentHex = "#10893e";
+        await Assert.That(vm.IsAccentHexInvalid).IsFalse();
+        await Assert.That(new SettingsStore(settingsPath).Current.AccentColor).IsEqualTo("#10893E");
+        await Assert.That(vm.AccentPickerColor).IsEqualTo(AppearanceService.ParseAccent("#10893E")!.Value);
+    }
+
+    [Test]
+    public async Task PickingAColorInThePicker_SavesItWithoutAlpha()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = CreateViewModel(settingsPath);
+
+        vm.AccentPickerColor = new Avalonia.Media.Color(0x80, 0x87, 0x64, 0xB8);
+
+        await Assert.That(new SettingsStore(settingsPath).Current.AccentColor).IsEqualTo("#8764B8");
+        await Assert.That(vm.AccentHex).IsEqualTo("#8764B8");
+    }
+
+    [Test]
+    public async Task ThemeDefault_OrClearingTheHexField_DropsThePickedAccent()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        new SettingsStore(settingsPath).Update(s => s with { AccentColor = "#D13438" });
+        var vm = CreateViewModel(settingsPath);
+
+        vm.UseThemeAccentCommand.Execute(null);
+        await Assert.That(new SettingsStore(settingsPath).Current.AccentColor).IsNull();
+        await Assert.That(vm.AccentHex).IsEqualTo(string.Empty);
+        await Assert.That(vm.UseThemeAccentCommand.CanExecute(null)).IsFalse();
+
+        vm.AccentHex = "#D13438";
+        vm.AccentHex = "";
+        await Assert.That(new SettingsStore(settingsPath).Current.AccentColor).IsNull();
+    }
+
+    [Test]
     public async Task ImportTheme_WhenUserCancelsThePicker_DoesNothing()
     {
         var settingsPath = _temp.NewSettingsPath();

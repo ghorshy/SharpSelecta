@@ -54,6 +54,7 @@ public partial class App : Application
                 settings.Current.Theme,
                 settings.Current.CustomThemeFileName,
                 ThemeService.GetThemesDirectory(settings.FilePath));
+            AppearanceService.Apply(settings.Current);
 
             var mainWindow = new MainWindow();
 

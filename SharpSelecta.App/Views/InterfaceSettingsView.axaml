@@ -30,6 +30,49 @@
              dropped into this folder - either via "Import theme file..." above, or by hand followed by "Refresh". -->
         <TextBlock Text="{Binding CustomThemesFolderCaption}"
                     Classes="tertiary small" TextWrapping="Wrap" Margin="{styles:Spacing Top=M}" />
+
+        <TextBlock Text="{x:Static res:Strings.AccentColor}" Classes="secondary" Margin="{styles:Spacing Top=L}" />
+        <WrapPanel ItemSpacing="{styles:SpacingValue XS}" LineSpacing="{styles:SpacingValue XS}">
+            <WrapPanel.Styles>
+                <Style Selector="Button.accent-swatch">
+                    <Setter Property="Width" Value="{DynamicResource Size.Settings.AccentSwatch}" />
+                    <Setter Property="Height" Value="{DynamicResource Size.Settings.AccentSwatch}" />
+                    <Setter Property="Command" Value="{Binding ChooseAccentSwatchCommand}" />
+                    <Setter Property="CommandParameter" Value="{Binding $self.Background}" />
+                    <Setter Property="Template">
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="{DynamicResource Radius.Control}" />
+                        </ControlTemplate>
+                    </Setter>
+                </Style>
+            </WrapPanel.Styles>
+            <Button Classes="accent-swatch" Background="{DynamicResource Brush.AccentPreset.Blue}" />
+            <Button Classes="accent-swatch" Background="{DynamicResource Brush.AccentPreset.Teal}" />
+            <Button Classes="accent-swatch" Background="{DynamicResource Brush.AccentPreset.Green}" />
+            <Button Classes="accent-swatch" Background="{DynamicResource Brush.AccentPreset.Gold}" />
+            <Button Classes="accent-swatch" Background="{DynamicResource Brush.AccentPreset.Orange}" />
+            <Button Classes="accent-swatch" Background="{DynamicResource Brush.AccentPreset.Red}" />
+            <Button Classes="accent-swatch" Background="{DynamicResource Brush.AccentPreset.Pink}" />
+            <Button Classes="accent-swatch" Background="{DynamicResource Brush.AccentPreset.Purple}" />
+        </WrapPanel>
+        <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue S}" Margin="{styles:Spacing Top=XS}">
+            <ColorPicker Color="{Binding AccentPickerColor, Mode=TwoWay}" IsAlphaEnabled="False" IsAlphaVisible="False" />
+            <TextBox Text="{Binding AccentHex}" Classes.invalid="{Binding IsAccentHexInvalid}"
+                     PlaceholderText="{x:Static res:Strings.AccentHexPlaceholder}"
+                     Width="{DynamicResource Size.Settings.AccentHexWidth}" VerticalAlignment="Center" />
+            <Button Content="{x:Static res:Strings.UseThemeAccent}" Command="{Binding UseThemeAccentCommand}" />
+        </StackPanel>
+
+        <TextBlock Text="{x:Static res:Strings.TextSize}" Classes="secondary" Margin="{styles:Spacing Top=L}" />
+        <ComboBox ItemsSource="{Binding FontSizeOptions}" SelectedItem="{Binding SelectedFontSizeOption}"
+                  HorizontalAlignment="Left" MinWidth="{DynamicResource Size.Settings.FieldMinWidth}">
+            <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:FontSizeOption">
+                    <TextBlock Text="{Binding DisplayName}" />
+                </DataTemplate>
+            </ComboBox.ItemTemplate>
+        </ComboBox>
+
     </StackPanel>
 
 </UserControl>

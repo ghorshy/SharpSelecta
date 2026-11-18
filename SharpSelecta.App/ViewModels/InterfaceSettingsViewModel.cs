@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SharpSelecta.App.Resources;
@@ -32,6 +33,28 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
     [ObservableProperty]
     public partial string? StatusMessage { get; set; }
 
+    // A null size is the theme's own.
+    public IReadOnlyList<FontSizeOption> FontSizeOptions { get; } =
+    [
+        new(null, Strings.FontSizeThemeDefault),
+        .. AppearanceService.FontSizes.Select(size => new FontSizeOption(size, Strings.Pixels(size))),
+    ];
+
+    [ObservableProperty]
+    public partial FontSizeOption SelectedFontSizeOption { get; set; }
+
+    // What the color picker shows: the picked accent, or the one in effect when none is picked.
+    [ObservableProperty]
+    public partial Color AccentPickerColor { get; set; }
+
+    [ObservableProperty]
+    public partial string AccentHex { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsAccentHexInvalid { get; set; }
+
+    public bool HasCustomAccent => _settings.Current.AccentColor is not null;
+
     public string DisplayName => Strings.SettingsCategoryInterface;
 
     public bool HasPendingChanges => false;
@@ -45,6 +68,16 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
     public IRelayCommand RemoveCustomThemeCommand { get; }
 
     public ICommand RefreshThemesCommand { get; }
+
+    public IRelayCommand<IBrush?> ChooseAccentSwatchCommand { get; }
+
+    public IRelayCommand UseThemeAccentCommand { get; }
+
+    // Set while the accent controls are brought in line with each other, so that doesn't count as a new pick.
+    private bool _syncingAccent;
+
+    // The constructor loads the saved values through the same properties; that isn't a change to save.
+    private readonly bool _loaded;
 
     public InterfaceSettingsViewModel(SettingsStore settings, IFilePickerService filePickerService)
     {
@@ -62,6 +95,82 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
         ImportThemeCommand = new AsyncRelayCommand(ImportThemeAsync);
         RemoveCustomThemeCommand = new RelayCommand(RemoveCustomTheme, () => IsCustomThemeSelected);
         RefreshThemesCommand = new RelayCommand(RefreshThemes);
+
+        var saved = settings.Current;
+        SelectedFontSizeOption = FontSizeOptions.FirstOrDefault(o => o.Size == saved.FontSize) ?? FontSizeOptions[0];
+        AccentHex = saved.AccentColor ?? string.Empty;
+        ChooseAccentSwatchCommand = new RelayCommand<IBrush?>(brush =>
+        {
+            if (brush is ISolidColorBrush solid)
+                SetAccent(solid.Color);
+        });
+        UseThemeAccentCommand = new RelayCommand(() => SetAccent(null), () => HasCustomAccent);
+        SyncAccentControls();
+        _loaded = true;
+    }
+
+    partial void OnSelectedFontSizeOptionChanged(FontSizeOption value)
+    {
+        if (_loaded)
+            UpdateAppearance(s => s with { FontSize = value.Size });
+    }
+
+    partial void OnAccentPickerColorChanged(Color value)
+    {
+        if (_loaded && !_syncingAccent)
+            SetAccent(value);
+    }
+
+    // An empty field goes back to the theme's accent; a half-typed color waits until it's complete.
+    partial void OnAccentHexChanged(string value)
+    {
+        if (!_loaded || _syncingAccent)
+            return;
+
+        var text = value.Trim();
+        var color = AppearanceService.ParseAccent(text);
+        IsAccentHexInvalid = color is null && text.Length > 0;
+        if (color is not null || text.Length == 0)
+            SetAccent(color);
+    }
+
+    private void SetAccent(Color? color)
+    {
+        var hex = color is { } picked ? AppearanceService.FormatAccent(picked) : null;
+        if (hex == _settings.Current.AccentColor)
+            return;
+
+        UpdateAppearance(s => s with { AccentColor = hex });
+        SyncAccentControls();
+    }
+
+    // The swatch, picker and hex field all edit the same color; whichever was used, the others follow.
+    private void SyncAccentControls()
+    {
+        _syncingAccent = true;
+        try
+        {
+            var picked = AppearanceService.ParseAccent(_settings.Current.AccentColor);
+            AccentPickerColor = picked ?? AppearanceService.CurrentAccent() ?? AccentPickerColor;
+            if (picked is not null || !IsAccentHexInvalid)
+            {
+                AccentHex = _settings.Current.AccentColor ?? string.Empty;
+                IsAccentHexInvalid = false;
+            }
+        }
+        finally
+        {
+            _syncingAccent = false;
+        }
+
+        OnPropertyChanged(nameof(HasCustomAccent));
+        UseThemeAccentCommand.NotifyCanExecuteChanged();
+    }
+
+    private void UpdateAppearance(Func<AppSettings, AppSettings> change)
+    {
+        _settings.Update(change);
+        AppearanceService.Apply(_settings.Current);
     }
 
     partial void OnSelectedThemeDisplayNameChanged(string value)
@@ -77,12 +186,21 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
         {
             _settings.Update(s => s with { Theme = AppTheme.Custom, CustomThemeFileName = fileName });
             ThemeService.Apply(AppTheme.Custom, fileName, _themesDirectory);
+            ReapplyAppearance();
             return;
         }
 
         var theme = ThemeFor(value);
         _settings.Update(s => s with { Theme = theme });
         ThemeService.Apply(theme, null, _themesDirectory);
+        ReapplyAppearance();
+    }
+
+    // The overrides are computed from the theme's values, and the accent picker shows the theme's accent.
+    private void ReapplyAppearance()
+    {
+        AppearanceService.Apply(_settings.Current);
+        SyncAccentControls();
     }
 
     private async Task ImportThemeAsync()
@@ -214,3 +332,5 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
         _ => AppTheme.System,
     };
 }
+
+public sealed record FontSizeOption(int? Size, string DisplayName);
