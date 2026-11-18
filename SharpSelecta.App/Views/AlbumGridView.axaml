@@ -127,8 +127,7 @@
                                              machinery, so the handler gets every press. Background="Transparent" makes
                                              the whole tile (not just its Image/text children) hit-test-visible. -->
                                         <Border Classes="album-tile" Classes.selected="{Binding IsSelected}"
-                                                Tapped="OnTileTapped"
-                                                DoubleTapped="OnTileDoubleTapped">
+                                                Tapped="OnTileTapped">
                                             <Border.ContextMenu>
                                                 <ContextMenu Opening="OnAlbumMenuOpening">
                                                     <MenuItem Header="{x:Static res:Strings.PlayNow}"

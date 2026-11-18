@@ -17,6 +17,7 @@ public partial class AlbumGridView : UserControl
     public AlbumGridView()
     {
         InitializeComponent();
+        Scroller.AddHandler(InputElement.PointerPressedEvent, OnTileDoubleClickPressed, RoutingStrategies.Tunnel);
         Scroller.AddHandler(InputElement.PointerPressedEvent, OnTilePointerPressed, handledEventsToo: true);
         Scroller.AddHandler(InputElement.PointerReleasedEvent, (_, _) => ReleasePressedTile(), handledEventsToo: true);
         Scroller.AddHandler(InputElement.PointerCaptureLostEvent, (_, _) => ReleasePressedTile(), handledEventsToo: true);
@@ -113,6 +114,12 @@ public partial class AlbumGridView : UserControl
         if (sender is not Control { DataContext: AlbumViewModel album } tile || DataContext is not AlbumGridViewModel vm)
             return;
 
+        if (_ignoreNextTileTap)
+        {
+            _ignoreNextTileTap = false;
+            return;
+        }
+
         if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
         {
             vm.SelectRangeTo(album);
@@ -129,14 +136,33 @@ public partial class AlbumGridView : UserControl
         }
     }
 
-    private async void OnTileDoubleTapped(object? sender, TappedEventArgs e)
+    private AlbumViewModel? _firstClickAlbum;
+    private bool _ignoreNextTileTap;
+
+    // Not DoubleTapped: the first click expands the album, which can move the tiles (another album's
+    // panel closes, the view scrolls to the new one), so the second click lands on something else and
+    // DoubleTapped never fires. The platform's click count only looks at time and screen position, so
+    // the album the first click hit is the one that plays.
+    private async void OnTileDoubleClickPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (sender is Control { DataContext: AlbumViewModel album } tile)
+        if (!e.GetCurrentPoint(Scroller).Properties.IsLeftButtonPressed)
+            return;
+
+        if (e.ClickCount != 2 || _firstClickAlbum is not { } album)
         {
-            (DataContext as AlbumGridViewModel)?.ExpandAlbum(album);
-            ScrollExpandedPanelIntoView(tile);
-            await album.Library.StartTracksAsync(album.UnderlyingTracks);
+            _ignoreNextTileTap = false;
+            _firstClickAlbum = e.ClickCount == 1 && e.Source is Visual source && AlbumTile(source) is { DataContext: AlbumViewModel pressed }
+                ? pressed
+                : null;
+            return;
         }
+
+        // The second click's own tap may land on a tile that moved under the pointer; it isn't a click on it.
+        _firstClickAlbum = null;
+        _ignoreNextTileTap = true;
+        e.Handled = true;
+        (DataContext as AlbumGridViewModel)?.ExpandAlbum(album);
+        await album.Library.StartTracksAsync(album.UnderlyingTracks);
     }
 
     private static void ScrollExpandedPanelIntoView(Control tile)
