@@ -446,7 +446,7 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
 
     [RelayCommand]
     private void AddAlbumToPlaylist((AlbumViewModel Album, string PlaylistId) parameter) =>
-        AddTracksToPlaylist(parameter.Album.UnderlyingTracks, parameter.PlaylistId);
+        AddTracksToPlaylist(ResolveAlbumSelection(parameter.Album), parameter.PlaylistId);
 
     private void AddTracksToPlaylist(IReadOnlyList<Track> tracks, string playlistId)
     {
@@ -576,18 +576,26 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             ? _selectedTracksInOrder
             : [clickedTrack];
 
+    // Like ResolveSelection for tiles: a clicked album that is one of several selected stands for all of
+    // them, in click order; any other album only for itself.
+    public IReadOnlyList<Track> ResolveAlbumSelection(AlbumViewModel clicked)
+    {
+        var grid = new[] { Grid, RecentlyAddedGrid }.FirstOrDefault(g => g.SelectedAlbums.Count > 1 && g.SelectedAlbums.Contains(clicked));
+        return grid is null ? clicked.UnderlyingTracks : [.. grid.SelectedAlbums.SelectMany(a => a.UnderlyingTracks)];
+    }
+
     [RelayCommand]
     private Task PlayAlbumNowAsync(AlbumViewModel album)
     {
         SetAutoDjSource(null);
-        return _playbackControls.PlayNowAsync(album.UnderlyingTracks);
+        return _playbackControls.PlayNowAsync(ResolveAlbumSelection(album));
     }
 
     [RelayCommand]
-    private Task PlayAlbumNext(AlbumViewModel album) => _playbackControls.PlayNext(album.UnderlyingTracks);
+    private Task PlayAlbumNext(AlbumViewModel album) => _playbackControls.PlayNext(ResolveAlbumSelection(album));
 
     [RelayCommand]
-    private Task AddAlbumToQueue(AlbumViewModel album) => _playbackControls.AddToQueue(album.UnderlyingTracks);
+    private Task AddAlbumToQueue(AlbumViewModel album) => _playbackControls.AddToQueue(ResolveAlbumSelection(album));
 
     public Task<bool> AreAllCompilationsAsync(IReadOnlyList<Track> tracks) =>
         Task.Run(() => tracks.Count > 0 && tracks.All(t => CompilationFlag.IsSet(t.FilePath)));

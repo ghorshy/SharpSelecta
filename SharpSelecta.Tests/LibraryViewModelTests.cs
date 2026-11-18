@@ -1491,4 +1491,59 @@ public class LibraryViewModelTests : IDisposable
         await Assert.That(vm.HasPendingChanges).IsFalse();
         await Assert.That(new SettingsStore(settingsPath).Current.WatchLibraryFolders).IsFalse();
     }
+    private LibraryViewModel CreateWithThreeAlbums(out PlaybackControlsViewModel playback)
+    {
+        // An index file has to exist for playlists to be saved.
+        var settingsPath = _temp.NewSettingsPath();
+        LibraryIndexStore.Reconcile(settingsPath, [_temp.NewSubdirectory().FullName]);
+        var vm = CreateViewModel(out _, out _, out playback, settingsPath);
+        foreach (var album in new[] { "A", "B", "C" })
+        {
+            AddTrack(vm, TestPaths.Music($"{album}1.mp3"), album, "Artist", trackNumber: 1);
+            AddTrack(vm, TestPaths.Music($"{album}2.mp3"), album, "Artist", trackNumber: 2);
+        }
+
+        return vm;
+    }
+
+    private static AlbumViewModel GridAlbum(LibraryViewModel vm, string title) => vm.Grid.Albums.Single(a => a.Title == title);
+
+    [Test]
+    public async Task AlbumMenu_OnASelectedAlbum_ActsOnEverySelectedAlbum_InClickOrder()
+    {
+        var vm = CreateWithThreeAlbums(out var playback);
+        vm.Grid.Select(GridAlbum(vm, "C"));
+        vm.Grid.ToggleSelected(GridAlbum(vm, "A"));
+
+        await vm.AddAlbumToQueueCommand.ExecuteAsync(GridAlbum(vm, "A"));
+
+        await Assert.That(QueuedFileNames(playback)).IsEqualTo("C1.mp3|C2.mp3|A1.mp3|A2.mp3");
+    }
+
+    [Test]
+    public async Task AlbumMenu_OnAnAlbumOutsideTheSelection_ActsOnThatAlbumOnly()
+    {
+        var vm = CreateWithThreeAlbums(out var playback);
+        vm.Grid.Select(GridAlbum(vm, "A"));
+        vm.Grid.ToggleSelected(GridAlbum(vm, "C"));
+
+        await vm.PlayAlbumNextCommand.ExecuteAsync(GridAlbum(vm, "B"));
+
+        await Assert.That(QueuedFileNames(playback)).IsEqualTo("B1.mp3|B2.mp3");
+    }
+
+    [Test]
+    public async Task AlbumMenu_PlayNowAndAddToPlaylist_TakeTheSelectionToo()
+    {
+        var vm = CreateWithThreeAlbums(out var playback);
+        vm.Grid.Select(GridAlbum(vm, "B"));
+        vm.Grid.ToggleSelected(GridAlbum(vm, "C"));
+        var playlistId = vm.Playlists.CreatePlaylist("Mix");
+
+        await vm.PlayAlbumNowCommand.ExecuteAsync(GridAlbum(vm, "C"));
+        vm.AddAlbumToPlaylistCommand.Execute((GridAlbum(vm, "B"), playlistId));
+
+        await Assert.That(QueuedFileNames(playback)).IsEqualTo("B1.mp3|B2.mp3|C1.mp3|C2.mp3");
+        await Assert.That(LibraryIndexStore.GetPlaylistTracks(vm.Settings.FilePath, playlistId).Count).IsEqualTo(4);
+    }
 }

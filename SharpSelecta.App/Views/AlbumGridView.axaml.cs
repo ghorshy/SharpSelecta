@@ -62,17 +62,12 @@ public partial class AlbumGridView : UserControl
     }
 
     // A row of an expanded album drags that track; a tile its album, or every selected album when it is one of them.
-    private IReadOnlyList<Track>? DraggedTracks(Visual source)
+    private static IReadOnlyList<Track>? DraggedTracks(Visual source)
     {
         if (source.FindAncestorOfType<ListBoxItem>(includeSelf: true) is { DataContext: AlbumTrackRowViewModel row })
             return [row.Track.Track];
 
-        if (AlbumTile(source) is not { DataContext: AlbumViewModel album })
-            return null;
-
-        return album.IsSelected && DataContext is AlbumGridViewModel { SelectedAlbums.Count: > 1 } vm
-            ? [.. vm.SelectedAlbums.SelectMany(a => a.UnderlyingTracks)]
-            : album.UnderlyingTracks;
+        return AlbumTile(source) is { DataContext: AlbumViewModel album } ? album.Library.ResolveAlbumSelection(album) : null;
     }
 
     private static Border? AlbumTile(Visual source) =>
@@ -186,7 +181,7 @@ public partial class AlbumGridView : UserControl
     {
         if (sender is ContextMenu { DataContext: AlbumViewModel album } menu)
         {
-            CompilationFlagMenu.Refresh(menu, album.Library, album.UnderlyingTracks);
+            CompilationFlagMenu.Refresh(menu, album.Library, album.Library.ResolveAlbumSelection(album));
         }
     }
 
@@ -194,7 +189,7 @@ public partial class AlbumGridView : UserControl
     {
         if (sender is MenuItem { DataContext: AlbumViewModel album } item)
         {
-            await CompilationFlagMenu.ToggleAsync(item, album.Library, album.UnderlyingTracks);
+            await CompilationFlagMenu.ToggleAsync(item, album.Library, album.Library.ResolveAlbumSelection(album));
         }
     }
 
@@ -218,7 +213,7 @@ public partial class AlbumGridView : UserControl
     {
         if (sender is MenuItem { DataContext: AlbumViewModel album })
         {
-            await TrackPropertiesWindow.ShowAsync(this, album.Library, album.UnderlyingTracks);
+            await TrackPropertiesWindow.ShowAsync(this, album.Library, album.Library.ResolveAlbumSelection(album));
         }
     }
 
