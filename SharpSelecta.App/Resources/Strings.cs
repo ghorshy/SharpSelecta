@@ -114,6 +114,10 @@ public static class Strings
     public static string ShortcutNextTrack => Get(nameof(ShortcutNextTrack));
     public static string ShortcutClearQueue => Get(nameof(ShortcutClearQueue));
     public static string WatchLibraryFolders => Get(nameof(WatchLibraryFolders));
+    public static string MetaSeparator => Get(nameof(MetaSeparator));
+    public static string AlbumTrackCount(int count) => count == 1
+        ? Get("AlbumOneTrack")
+        : string.Format(CultureInfo.CurrentCulture, Get("AlbumTrackCountFormat"), count);
     public static string WatchLibraryFoldersHint => Get(nameof(WatchLibraryFoldersHint));
     public static string ShortcutVolumeUp => Get(nameof(ShortcutVolumeUp));
     public static string ShortcutVolumeDown => Get(nameof(ShortcutVolumeDown));

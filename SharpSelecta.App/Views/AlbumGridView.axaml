@@ -58,11 +58,17 @@
         <Style Selector="Border.album-tile.pressed Border.album-cover">
             <Setter Property="RenderTransform" Value="{StaticResource Transform.CoverPressed}" />
         </Style>
+        <Style Selector="Grid.playing TextBlock.track-title">
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeight.Strong}" />
+        </Style>
+        <Style Selector="svg|Svg.album-play-icon">
+            <Setter Property="svg:Svg.CurrentColor" Value="{DynamicResource Color.IconForeground}" />
+        </Style>
         <Style Selector="ListBox.album-tracks">
             <Setter Property="Background" Value="Transparent" />
         </Style>
         <Style Selector="ListBox.album-tracks ListBoxItem">
-            <Setter Property="Padding" Value="{styles:Spacing Left=XS, Right=XS, Top=XXS, Bottom=XXS}" />
+            <Setter Property="Padding" Value="{styles:Spacing Left=XS, Right=XS, Top=XS, Bottom=XS}" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="CornerRadius" Value="{DynamicResource Radius.Control}" />
         </Style>
@@ -175,7 +181,7 @@
                             <Border IsVisible="{Binding ExpandedAlbum, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
                                     Background="{DynamicResource Brush.Surface}"
                                     CornerRadius="{DynamicResource Radius.Control}"
-                                    Padding="{styles:Spacing Uniform=S}"
+                                    Padding="{styles:Spacing Uniform=M}"
                                     Margin="{styles:Spacing Top=XS}">
                                 <!-- ContentControl rather than DataContext="{Binding ExpandedAlbum}" directly on a
                                      static Grid: the latter briefly left children bound against the outer
@@ -185,67 +191,86 @@
                                 <ContentControl Content="{Binding ExpandedAlbum}">
                                     <ContentControl.ContentTemplate>
                                         <DataTemplate x:DataType="vm:AlbumViewModel">
-                                            <Grid ColumnDefinitions="*,Auto">
-                                                <DockPanel Grid.Column="0">
-                                                    <Button DockPanel.Dock="Top" Classes="plain" HorizontalAlignment="Right"
-                                                            Command="{Binding #Root.((vm:AlbumGridViewModel)DataContext).ToggleExpandCommand}"
-                                                            CommandParameter="{Binding}">
-                                                        <svg:Svg Classes="toolbar-icon" Width="{DynamicResource Size.Icon.XS}" Height="{DynamicResource Size.Icon.XS}" Path="{DynamicResource Icon.X}" />
-                                                    </Button>
+                                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                                <!-- Album page header: the cover, then title, artist and year · tracks · length. -->
+                                                <StackPanel Grid.Column="0" Width="{DynamicResource Size.Album.ExpandedCover}"
+                                                            Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Right=L}">
+                                                    <Border Width="{DynamicResource Size.Album.ExpandedCover}" Height="{DynamicResource Size.Album.ExpandedCover}"
+                                                            ClipToBounds="True" CornerRadius="{DynamicResource Radius.Control}"
+                                                            Background="{DynamicResource Brush.ThumbnailPlaceholder}"
+                                                            Margin="{styles:Spacing Bottom=S}"
+                                                            DoubleTapped="OnExpandedArtworkDoubleTapped">
+                                                        <Panel>
+                                                            <Image Source="{Binding ArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
+                                                                   IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
+                                                                   Stretch="UniformToFill" />
+                                                            <views:AlbumCoverPlaceholderIcon IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNull}}" />
+                                                        </Panel>
+                                                    </Border>
+                                                    <TextBlock Text="{Binding Title}" Classes="strong" TextWrapping="Wrap" />
+                                                    <TextBlock Text="{Binding Artist}" Classes="secondary" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="{Binding Summary}" Classes="tertiary small" TextWrapping="Wrap" />
+                                                </StackPanel>
 
-                                                    <!-- ListBox rather than ItemsControl for the theme's hover/selected row
-                                                         highlight, same as the Queue - otherwise rows don't look clickable. -->
-                                                    <ListBox ItemsSource="{Binding TrackRows}" Classes="album-tracks"
-                                                             ScrollViewer.VerticalScrollBarVisibility="Disabled">
-                                                        <ListBox.ItemTemplate>
-                                                            <DataTemplate x:DataType="vm:AlbumTrackRowViewModel">
-                                                                <Grid ColumnDefinitions="Auto,*,Auto" DoubleTapped="OnExpandedTrackDoubleTapped"
-                                                                      Background="Transparent">
-                                                                    <Grid.ContextMenu>
-                                                                        <ContextMenu Opening="OnTrackMenuOpening">
-                                                                            <MenuItem Header="{x:Static res:Strings.PlayNow}"
-                                                                                      Command="{Binding Track.Library.PlayNowCommand}"
-                                                                                      CommandParameter="{Binding Track.Track}" />
-                                                                            <MenuItem Header="{x:Static res:Strings.PlayNext}"
-                                                                                      Command="{Binding Track.Library.PlayNextCommand}"
-                                                                                      CommandParameter="{Binding Track.Track}" />
-                                                                            <MenuItem Header="{x:Static res:Strings.AddToQueue}"
-                                                                                      Command="{Binding Track.Library.AddToQueueCommand}"
-                                                                                      CommandParameter="{Binding Track.Track}" />
-                                                                            <MenuItem Header="{x:Static res:Strings.AddToPlaylist}"
-                                                                                      SubmenuOpened="OnTrackAddToPlaylistSubmenuOpened">
-                                                                                <MenuItem Header="{x:Static res:Strings.NewPlaylistEllipsis}" />
-                                                                            </MenuItem>
-                                                                            <MenuItem Header="{Binding Track.Library.ShowInFileManagerLabel}"
-                                                                                      Command="{Binding Track.Library.ShowInFileManagerCommand}"
-                                                                                      CommandParameter="{Binding Track.Track}" />
-                                                                            <Separator />
-                                                                            <MenuItem Header="{x:Static res:Strings.ITunesCompilation}" Classes="compilation-flag"
-                                                                                      ToggleType="CheckBox" Click="OnTrackCompilationClick" />
-                                                                            <MenuItem Header="{x:Static res:Strings.Properties}"
-                                                                                      Click="OnTrackPropertiesClick" />
-                                                                        </ContextMenu>
-                                                                    </Grid.ContextMenu>
-                                                                    <TextBlock Grid.Column="0" Text="{Binding TrackNumber}" Width="{DynamicResource Size.Album.TrackNumberWidth}" Classes="secondary" />
-                                                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{styles:SpacingValue XXS}">
-                                                                        <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-                                                                        <TextBlock Text="{Binding ArtistSuffix}" Classes="tertiary" TextTrimming="CharacterEllipsis"
-                                                                                   IsVisible="{Binding ArtistSuffix, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
-                                                                    </StackPanel>
-                                                                    <TextBlock Grid.Column="2" Text="{Binding LengthDisplay}" Classes="secondary" />
-                                                                </Grid>
-                                                            </DataTemplate>
-                                                        </ListBox.ItemTemplate>
-                                                    </ListBox>
-                                                </DockPanel>
+                                                <!-- ListBox rather than ItemsControl for the theme's hover/selected row
+                                                     highlight, same as the Queue - otherwise rows don't look clickable. -->
+                                                <ListBox Grid.Column="1" ItemsSource="{Binding TrackRows}" Classes="album-tracks"
+                                                         ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                                                    <ListBox.ItemTemplate>
+                                                        <DataTemplate x:DataType="vm:AlbumTrackRowViewModel">
+                                                            <Grid ColumnDefinitions="Auto,*,Auto" DoubleTapped="OnExpandedTrackDoubleTapped"
+                                                                  Background="Transparent" Classes.playing="{Binding IsPlaying}">
+                                                                <Grid.ContextMenu>
+                                                                    <ContextMenu Opening="OnTrackMenuOpening">
+                                                                        <MenuItem Header="{x:Static res:Strings.PlayNow}"
+                                                                                  Command="{Binding Track.Library.PlayNowCommand}"
+                                                                                  CommandParameter="{Binding Track.Track}" />
+                                                                        <MenuItem Header="{x:Static res:Strings.PlayNext}"
+                                                                                  Command="{Binding Track.Library.PlayNextCommand}"
+                                                                                  CommandParameter="{Binding Track.Track}" />
+                                                                        <MenuItem Header="{x:Static res:Strings.AddToQueue}"
+                                                                                  Command="{Binding Track.Library.AddToQueueCommand}"
+                                                                                  CommandParameter="{Binding Track.Track}" />
+                                                                        <MenuItem Header="{x:Static res:Strings.AddToPlaylist}"
+                                                                                  SubmenuOpened="OnTrackAddToPlaylistSubmenuOpened">
+                                                                            <MenuItem Header="{x:Static res:Strings.NewPlaylistEllipsis}" />
+                                                                        </MenuItem>
+                                                                        <MenuItem Header="{Binding Track.Library.ShowInFileManagerLabel}"
+                                                                                  Command="{Binding Track.Library.ShowInFileManagerCommand}"
+                                                                                  CommandParameter="{Binding Track.Track}" />
+                                                                        <Separator />
+                                                                        <MenuItem Header="{x:Static res:Strings.ITunesCompilation}" Classes="compilation-flag"
+                                                                                  ToggleType="CheckBox" Click="OnTrackCompilationClick" />
+                                                                        <MenuItem Header="{x:Static res:Strings.Properties}"
+                                                                                  Click="OnTrackPropertiesClick" />
+                                                                    </ContextMenu>
+                                                                </Grid.ContextMenu>
+                                                                <!-- The playing track swaps its number for a play icon and has a bold title. -->
+                                                                <Panel Grid.Column="0" Width="{DynamicResource Size.Album.TrackNumberWidth}" Margin="{styles:Spacing Right=M}">
+                                                                    <TextBlock Text="{Binding NumberDisplay}" Classes="tertiary" HorizontalAlignment="Right"
+                                                                               IsVisible="{Binding !IsPlaying}" />
+                                                                    <svg:Svg Classes="album-play-icon" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                                             Width="{DynamicResource Size.Icon.S}" Height="{DynamicResource Size.Icon.S}"
+                                                                             Path="{DynamicResource Icon.PlayerPlay}" IsVisible="{Binding IsPlaying}" />
+                                                                </Panel>
+                                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{styles:SpacingValue XS}">
+                                                                    <TextBlock Classes="track-title" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                                                                    <TextBlock Text="{Binding ArtistSuffix}" Classes="tertiary" TextTrimming="CharacterEllipsis"
+                                                                               IsVisible="{Binding ArtistSuffix, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+                                                                </StackPanel>
+                                                                <TextBlock Grid.Column="2" Text="{Binding LengthDisplay}" Classes="tertiary" Margin="{styles:Spacing Left=M}" />
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ListBox.ItemTemplate>
+                                                </ListBox>
 
-                                                <Panel Grid.Column="1" Width="{DynamicResource Size.Album.ExpandedCover}" Height="{DynamicResource Size.Album.ExpandedCover}" Margin="{styles:Spacing Left=S}"
-                                                       DoubleTapped="OnExpandedArtworkDoubleTapped">
-                                                    <Image Source="{Binding ArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
-                                                           IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
-                                                           Stretch="UniformToFill" />
-                                                    <views:AlbumCoverPlaceholderIcon IsVisible="{Binding ArtworkBytes, Converter={x:Static conv:ObjectConverters.IsNull}}" />
-                                                </Panel>
+                                                <Button Grid.Column="2" Classes="toolbar-button toolbar-button-hover" VerticalAlignment="Top"
+                                                        Padding="{styles:Spacing Uniform=XS}" Margin="{styles:Spacing Left=S}"
+                                                        ToolTip.Tip="{x:Static res:Strings.Close}"
+                                                        Command="{Binding #Root.((vm:AlbumGridViewModel)DataContext).ToggleExpandCommand}"
+                                                        CommandParameter="{Binding}">
+                                                    <svg:Svg Classes="toolbar-icon" Width="{DynamicResource Size.Icon.XS}" Height="{DynamicResource Size.Icon.XS}" Path="{DynamicResource Icon.X}" />
+                                                </Button>
                                             </Grid>
                                         </DataTemplate>
                                     </ContentControl.ContentTemplate>

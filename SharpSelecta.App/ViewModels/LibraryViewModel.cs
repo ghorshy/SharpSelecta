@@ -242,6 +242,15 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
             RefreshRecentlyAddedTracks();
         };
 
+        _playbackControls.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PlaybackControlsViewModel.CurrentTrack))
+            {
+                Grid.SetPlayingTrack(_playbackControls.CurrentTrack?.FilePath);
+                RecentlyAddedGrid.SetPlayingTrack(_playbackControls.CurrentTrack?.FilePath);
+            }
+        };
+
         Folders.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(LibraryFoldersViewModel.HasPendingChanges))

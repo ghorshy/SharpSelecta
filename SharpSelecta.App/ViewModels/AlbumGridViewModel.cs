@@ -215,9 +215,27 @@ public partial class AlbumGridViewModel : ViewModelBase
         return false;
     }
 
+    private string? _playingFilePath;
+
+    // Only the expanded album shows which track is playing, so only its rows are kept up to date.
+    public void SetPlayingTrack(string? filePath)
+    {
+        _playingFilePath = filePath;
+        MarkPlaying(ExpandedAlbum);
+    }
+
+    private void MarkPlaying(AlbumViewModel? album)
+    {
+        foreach (var row in album?.TrackRows ?? [])
+        {
+            row.IsPlaying = row.Track.Track.FilePath == _playingFilePath;
+        }
+    }
+
     private void SetExpandedAlbum(AlbumViewModel? album)
     {
         ExpandedAlbum = album;
+        MarkPlaying(album);
 
         foreach (var row in Rows)
         {

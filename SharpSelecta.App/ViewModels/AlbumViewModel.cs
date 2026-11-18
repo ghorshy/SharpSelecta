@@ -1,4 +1,6 @@
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using SharpSelecta.App.Formatting;
 using SharpSelecta.App.Resources;
 using SharpSelecta.Core.Library;
 
@@ -27,6 +29,14 @@ public sealed partial class AlbumViewModel(
 
     public LibraryViewModel Library { get; } = library;
 
+    // e.g. "2024 · 9 tracks · 32:15"; the year is left out when no track has one.
+    public string Summary => string.Join(Strings.MetaSeparator, new[]
+    {
+        Year?.ToString(CultureInfo.CurrentCulture),
+        Strings.AlbumTrackCount(Tracks.Count),
+        TrackFormatting.FormatDuration(TimeSpan.FromTicks(Tracks.Sum(t => t.Track.Duration.Ticks))),
+    }.OfType<string>());
+
     [ObservableProperty] public partial byte[]? ArtworkBytes { get; set; }
 
     [ObservableProperty] public partial bool IsSelected { get; set; }
@@ -43,7 +53,7 @@ public sealed partial class AlbumViewModel(
         return
         [
             .. tracks
-                .Select(t =>
+                .Select((t, index) =>
                 {
                     // Artists the whole album shares are already in its label, so a track only adds the
                     // others (the guests); with nobody in common it shows all of its artists.
@@ -53,7 +63,7 @@ public sealed partial class AlbumViewModel(
                             : !common.Contains(artist, StringComparer.OrdinalIgnoreCase))
                         .ToList();
                     var artistSuffix = shown.Count > 0 ? $"({string.Join(Strings.ArtistSeparator, shown)})" : null;
-                    return new AlbumTrackRowViewModel(t, artistSuffix);
+                    return new AlbumTrackRowViewModel(t, artistSuffix, index + 1);
                 })
         ];
     }

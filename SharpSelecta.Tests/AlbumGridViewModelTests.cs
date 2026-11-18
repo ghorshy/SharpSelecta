@@ -1,3 +1,4 @@
+using SharpSelecta.App.Resources;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using SharpSelecta.App.Services;
@@ -504,5 +505,54 @@ public class AlbumGridViewModelTests : IDisposable
         vm.Grid.SetViewportWidth(viewportWidth);
 
         await Assert.That(vm.Grid.Rows[0].Tiles.Count).IsEqualTo(columns);
+    }
+    [Test]
+    public async Task Album_Summary_ListsYearTrackCountAndTotalLength()
+    {
+        var vm = CreateLibraryViewModel();
+        vm.Tracks.Add(new LibraryTrackViewModel(new Track(TestPaths.Music("1.mp3"), "1") { Album = "A", Year = 2024, Duration = TimeSpan.FromMinutes(3) }, vm));
+        vm.Tracks.Add(new LibraryTrackViewModel(new Track(TestPaths.Music("2.mp3"), "2") { Album = "A", Duration = TimeSpan.FromSeconds(150) }, vm));
+
+        var album = vm.Grid.Albums.Single();
+
+        await Assert.That(album.Summary).IsEqualTo(string.Join(Strings.MetaSeparator, "2024", Strings.AlbumTrackCount(2), "5:30"));
+    }
+
+    [Test]
+    public async Task Album_Summary_LeavesOutAMissingYear_AndSaysOneTrack()
+    {
+        var vm = CreateLibraryViewModel();
+        vm.Tracks.Add(new LibraryTrackViewModel(new Track(TestPaths.Music("1.mp3"), "1") { Album = "A", Duration = TimeSpan.FromSeconds(59) }, vm));
+
+        await Assert.That(vm.Grid.Albums.Single().Summary).IsEqualTo(string.Join(Strings.MetaSeparator, Strings.AlbumTrackCount(1), "0:59"));
+    }
+
+    [Test]
+    public async Task TrackRows_WithoutATrackNumber_ShowTheirPositionInstead()
+    {
+        var vm = CreateLibraryViewModel();
+        vm.Tracks.Add(new LibraryTrackViewModel(new Track(TestPaths.Music("a.mp3"), "a") { Album = "A", Title = "a" }, vm));
+        vm.Tracks.Add(new LibraryTrackViewModel(new Track(TestPaths.Music("b.mp3"), "b") { Album = "A", Title = "b", TrackNumber = 7 }, vm));
+
+        var rows = vm.Grid.Albums.Single().TrackRows;
+
+        await Assert.That(rows.Select(r => r.NumberDisplay)).IsEquivalentTo(["7", "2"]);
+    }
+
+    [Test]
+    public async Task ThePlayingTrack_IsMarkedInTheExpandedAlbum_AndFollowsPlayback()
+    {
+        var vm = CreateWithAlbums("A", "B");
+        var albumA = Album(vm, "A");
+        vm.Grid.SetPlayingTrack(TestPaths.Music("A.mp3"));
+
+        vm.Grid.ExpandAlbum(albumA);
+        await Assert.That(albumA.TrackRows.Single().IsPlaying).IsTrue();
+
+        vm.Grid.SetPlayingTrack(TestPaths.Music("B.mp3"));
+        await Assert.That(albumA.TrackRows.Single().IsPlaying).IsFalse();
+
+        vm.Grid.ExpandAlbum(Album(vm, "B"));
+        await Assert.That(Album(vm, "B").TrackRows.Single().IsPlaying).IsTrue();
     }
 }

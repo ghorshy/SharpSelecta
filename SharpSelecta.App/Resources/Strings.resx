@@ -601,6 +601,15 @@
   <data name="SeekStepSeconds" xml:space="preserve">
     <value>Seek step (seconds)</value>
   </data>
+  <data name="MetaSeparator" xml:space="preserve">
+    <value> · </value>
+  </data>
+  <data name="AlbumOneTrack" xml:space="preserve">
+    <value>1 track</value>
+  </data>
+  <data name="AlbumTrackCountFormat" xml:space="preserve">
+    <value>{0} tracks</value>
+  </data>
   <data name="WatchLibraryFolders" xml:space="preserve">
     <value>Watch folders for changes</value>
   </data>
