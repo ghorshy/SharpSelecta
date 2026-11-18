@@ -62,7 +62,7 @@ public class AlbumGridViewModelTests : IDisposable
     }
 
     [Test]
-    public async Task ToggleExpand_SetsExpandedAlbumOnItsOwnRowOnly()
+    public async Task ExpandAlbum_SetsExpandedAlbumOnItsOwnRowOnly()
     {
         var vm = CreateLibraryViewModel();
         AddTrack(vm, TestPaths.Music("a.mp3"), "Album A");
@@ -70,37 +70,40 @@ public class AlbumGridViewModelTests : IDisposable
         vm.Grid.SetViewportWidth(400);
 
         var albumB = vm.Grid.Albums[1];
-        vm.Grid.ToggleExpandCommand.Execute(albumB);
+        vm.Grid.ExpandAlbum(albumB);
 
         await Assert.That(vm.Grid.ExpandedAlbum).IsEqualTo(albumB);
         await Assert.That(vm.Grid.Rows[0].ExpandedAlbum).IsEqualTo(albumB);
     }
 
     [Test]
-    public async Task ToggleExpand_CalledAgainOnTheSameAlbum_Collapses()
+    public async Task Close_CollapsesTheAlbumAndDeselectsIt()
     {
         var vm = CreateLibraryViewModel();
         AddTrack(vm, TestPaths.Music("a.mp3"), "Album A");
         vm.Grid.SetViewportWidth(400);
         var album = vm.Grid.Albums[0];
+        vm.Grid.Select(album);
+        vm.Grid.ExpandAlbum(album);
 
-        vm.Grid.ToggleExpandCommand.Execute(album);
-        vm.Grid.ToggleExpandCommand.Execute(album);
+        vm.Grid.CloseCommand.Execute(album);
 
         await Assert.That(vm.Grid.ExpandedAlbum).IsNull();
         await Assert.That(vm.Grid.Rows[0].ExpandedAlbum).IsNull();
+        await Assert.That(album.IsSelected).IsFalse();
+        await Assert.That(vm.Grid.SelectedAlbums).IsEmpty();
     }
 
     [Test]
-    public async Task ToggleExpand_ThenExpandingADifferentAlbum_MovesExpansionWithoutRequiringCollapseFirst()
+    public async Task ExpandAlbum_ThenExpandingADifferentAlbum_MovesExpansionWithoutRequiringCollapseFirst()
     {
         var vm = CreateLibraryViewModel();
         AddTrack(vm, TestPaths.Music("a.mp3"), "Album A");
         AddTrack(vm, TestPaths.Music("b.mp3"), "Album B");
         vm.Grid.SetViewportWidth(400);
 
-        vm.Grid.ToggleExpandCommand.Execute(vm.Grid.Albums[0]);
-        vm.Grid.ToggleExpandCommand.Execute(vm.Grid.Albums[1]);
+        vm.Grid.ExpandAlbum(vm.Grid.Albums[0]);
+        vm.Grid.ExpandAlbum(vm.Grid.Albums[1]);
 
         await Assert.That(vm.Grid.ExpandedAlbum).IsEqualTo(vm.Grid.Albums[1]);
         await Assert.That(vm.Grid.Rows[0].ExpandedAlbum).IsEqualTo(vm.Grid.Albums[1]);
@@ -113,7 +116,7 @@ public class AlbumGridViewModelTests : IDisposable
         AddTrack(vm, TestPaths.Music("a.mp3"), "Album A");
         AddTrack(vm, TestPaths.Music("b.mp3"), "Album B");
         vm.Grid.SetViewportWidth(400);
-        vm.Grid.ToggleExpandCommand.Execute(vm.Grid.Albums[0]);
+        vm.Grid.ExpandAlbum(vm.Grid.Albums[0]);
 
         vm.Grid.AdjustTileSize(160);
 
@@ -126,7 +129,7 @@ public class AlbumGridViewModelTests : IDisposable
         var vm = CreateLibraryViewModel();
         AddTrack(vm, TestPaths.Music("a.mp3"), "Album A");
         vm.Grid.SetViewportWidth(2000);
-        vm.Grid.ToggleExpandCommand.Execute(vm.Grid.Albums[0]);
+        vm.Grid.ExpandAlbum(vm.Grid.Albums[0]);
 
         vm.Grid.AdjustTileSize(2);
 

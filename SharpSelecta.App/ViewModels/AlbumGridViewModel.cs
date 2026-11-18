@@ -141,8 +141,15 @@ public partial class AlbumGridViewModel : ViewModelBase
     [RelayCommand]
     private void ToggleSortDirection() => SortDescending = !SortDescending;
 
+    // The expanded panel's close button: the album the click opened is let go of entirely.
     [RelayCommand]
-    private void ToggleExpand(AlbumViewModel album) => SetExpandedAlbum(ExpandedAlbum == album ? null : album);
+    private void Close(AlbumViewModel album)
+    {
+        if (ExpandedAlbum == album)
+            SetExpandedAlbum(null);
+
+        SetSelection(_selection.Where(a => a != album));
+    }
 
     public void ExpandAlbum(AlbumViewModel album) => SetExpandedAlbum(album);
 

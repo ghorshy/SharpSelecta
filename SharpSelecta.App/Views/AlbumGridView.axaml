@@ -266,7 +266,7 @@
                                                 <Button Grid.Column="2" Classes="toolbar-button toolbar-button-hover" VerticalAlignment="Top"
                                                         Padding="{styles:Spacing Uniform=XS}" Margin="{styles:Spacing Left=S}"
                                                         ToolTip.Tip="{x:Static res:Strings.Close}"
-                                                        Command="{Binding #Root.((vm:AlbumGridViewModel)DataContext).ToggleExpandCommand}"
+                                                        Command="{Binding #Root.((vm:AlbumGridViewModel)DataContext).CloseCommand}"
                                                         CommandParameter="{Binding}">
                                                     <svg:Svg Classes="toolbar-icon" Width="{DynamicResource Size.Icon.XS}" Height="{DynamicResource Size.Icon.XS}" Path="{DynamicResource Icon.X}" />
                                                 </Button>
