@@ -943,4 +943,40 @@
   <data name="DiscordPausedArtistsFormat" xml:space="preserve">
     <value>{0} · Paused</value>
   </data>
+  <data name="SettingsSectionFolders" xml:space="preserve">
+    <value>Library folders</value>
+  </data>
+  <data name="SettingsSectionMaintenance" xml:space="preserve">
+    <value>Maintenance</value>
+  </data>
+  <data name="SettingsSectionStartup" xml:space="preserve">
+    <value>On startup</value>
+  </data>
+  <data name="SettingsSectionPlayingTracks" xml:space="preserve">
+    <value>Playing tracks</value>
+  </data>
+  <data name="SettingsSectionOutput" xml:space="preserve">
+    <value>Output</value>
+  </data>
+  <data name="SettingsSectionVolume" xml:space="preserve">
+    <value>Volume</value>
+  </data>
+  <data name="SettingsSectionSeeking" xml:space="preserve">
+    <value>Seeking</value>
+  </data>
+  <data name="SettingsSectionAppearance" xml:space="preserve">
+    <value>Appearance</value>
+  </data>
+  <data name="SettingsSectionNotifications" xml:space="preserve">
+    <value>Notifications</value>
+  </data>
+  <data name="SettingsSectionTray" xml:space="preserve">
+    <value>System tray</value>
+  </data>
+  <data name="SettingsSectionDiscord" xml:space="preserve">
+    <value>Discord</value>
+  </data>
+  <data name="SettingsSectionAlbumArt" xml:space="preserve">
+    <value>Album art</value>
+  </data>
 </root>

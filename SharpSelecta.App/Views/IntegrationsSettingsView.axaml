@@ -9,13 +9,14 @@
              x:Class="SharpSelecta.App.Views.IntegrationsSettingsView"
              x:DataType="vm:IntegrationsSettingsViewModel">
 
-    <StackPanel Spacing="{styles:SpacingValue S}">
-        <StackPanel Spacing="{styles:SpacingValue XXS}">
-            <CheckBox Content="{x:Static res:Strings.DiscordPresenceToggle}" IsChecked="{Binding DiscordPresenceEnabled}" />
-            <TextBlock Text="{x:Static res:Strings.DiscordPresenceHint}" Classes="tertiary small" TextWrapping="Wrap"
-                       Margin="{styles:Spacing Left=L}" />
-            <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Left=L, Top=XS}"
-                        IsEnabled="{Binding DiscordPresenceEnabled}">
+    <StackPanel Classes="settings-page">
+        <StackPanel Classes="settings-section">
+            <TextBlock Text="{x:Static res:Strings.SettingsSectionDiscord}" Classes="settings-heading" />
+            <StackPanel Classes="settings-field">
+                <CheckBox Content="{x:Static res:Strings.DiscordPresenceToggle}" IsChecked="{Binding DiscordPresenceEnabled}" />
+                <TextBlock Text="{x:Static res:Strings.DiscordPresenceHint}" Classes="settings-hint indented" />
+            </StackPanel>
+            <StackPanel Classes="settings-field indented" IsEnabled="{Binding DiscordPresenceEnabled}">
                 <CheckBox Content="{x:Static res:Strings.DiscordShowArtist}" IsChecked="{Binding DiscordShowArtist}" />
                 <CheckBox Content="{x:Static res:Strings.DiscordShowAlbum}" IsChecked="{Binding DiscordShowAlbum}" />
                 <CheckBox Content="{x:Static res:Strings.DiscordShowElapsed}" IsChecked="{Binding DiscordShowElapsed}" />
@@ -23,11 +24,13 @@
             </StackPanel>
         </StackPanel>
 
-        <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}">
-            <TextBlock Text="{x:Static res:Strings.FanartApiKeyLabel}" Classes="secondary" />
-            <TextBox Text="{Binding FanartApiKey}" HorizontalAlignment="Stretch" />
-            <TextBlock Text="{x:Static res:Strings.FanartApiKeyHint}" Classes="tertiary small" TextWrapping="Wrap" />
+        <StackPanel Classes="settings-section">
+            <TextBlock Text="{x:Static res:Strings.SettingsSectionAlbumArt}" Classes="settings-heading" />
+            <StackPanel Classes="settings-field">
+                <TextBlock Text="{x:Static res:Strings.FanartApiKeyLabel}" Classes="settings-label" />
+                <TextBox Text="{Binding FanartApiKey}" HorizontalAlignment="Stretch" />
+                <TextBlock Text="{x:Static res:Strings.FanartApiKeyHint}" Classes="settings-hint" />
+            </StackPanel>
         </StackPanel>
     </StackPanel>
-
 </UserControl>

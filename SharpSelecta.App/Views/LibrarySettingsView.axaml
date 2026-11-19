@@ -10,30 +10,32 @@
              x:Class="SharpSelecta.App.Views.LibrarySettingsView"
              x:DataType="vm:LibraryViewModel">
 
-    <StackPanel Spacing="{styles:SpacingValue S}">
-        <ItemsControl ItemsSource="{Binding Folders.PendingPaths}">
-            <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="x:String">
-                    <Grid ColumnDefinitions="*,Auto" Margin="{styles:Spacing Bottom=XXS}">
-                        <TextBlock Grid.Column="0" Text="{Binding}" TextWrapping="Wrap" VerticalAlignment="Center" />
-                        <Button Grid.Column="1" Content="{x:Static res:Strings.Remove}" Click="OnRemoveFolderClick" />
-                    </Grid>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
-
-        <TextBlock Text="{x:Static res:Strings.NoLibraryFoldersAdded}" IsVisible="{Binding !Folders.HasPendingFolders}" />
-
-        <Button Content="{x:Static res:Strings.ChooseLibraryFolder}" Command="{Binding Folders.AddPendingFolderCommand}" HorizontalAlignment="Left" />
-        <TextBlock Text="{Binding StatusMessage}" Classes="error" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
-
-        <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}">
-            <CheckBox Content="{x:Static res:Strings.WatchLibraryFolders}" IsChecked="{Binding WatchFolders}" />
-            <TextBlock Text="{x:Static res:Strings.WatchLibraryFoldersHint}" Classes="tertiary small" TextWrapping="Wrap" />
+    <StackPanel Classes="settings-page">
+        <StackPanel Classes="settings-section">
+            <TextBlock Text="{x:Static res:Strings.SettingsSectionFolders}" Classes="settings-heading" />
+            <ItemsControl ItemsSource="{Binding Folders.PendingPaths}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                        <Grid ColumnDefinitions="*,Auto" Margin="{styles:Spacing Bottom=XXS}">
+                            <TextBlock Grid.Column="0" Text="{Binding}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Content="{x:Static res:Strings.Remove}" Click="OnRemoveFolderClick" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="{x:Static res:Strings.NoLibraryFoldersAdded}" IsVisible="{Binding !Folders.HasPendingFolders}" />
+            <Button Content="{x:Static res:Strings.ChooseLibraryFolder}" Command="{Binding Folders.AddPendingFolderCommand}" HorizontalAlignment="Left" />
+            <TextBlock Text="{Binding StatusMessage}" Classes="error" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+            <StackPanel Classes="settings-field">
+                <CheckBox Content="{x:Static res:Strings.WatchLibraryFolders}" IsChecked="{Binding WatchFolders}" />
+                <TextBlock Text="{x:Static res:Strings.WatchLibraryFoldersHint}" Classes="settings-hint indented" />
+            </StackPanel>
         </StackPanel>
 
-        <Button Content="{x:Static res:Strings.ClearArtworkCache}" Command="{Binding Grid.ClearArtworkCacheCommand}" HorizontalAlignment="Left" Margin="{styles:Spacing Top=S}" />
-        <Button Content="{x:Static res:Strings.FindInconsistentCompilationFlags}" Click="OnFindInconsistentCompilationFlagsClick" HorizontalAlignment="Left" />
+        <StackPanel Classes="settings-section">
+            <TextBlock Text="{x:Static res:Strings.SettingsSectionMaintenance}" Classes="settings-heading" />
+            <Button Content="{x:Static res:Strings.ClearArtworkCache}" Command="{Binding Grid.ClearArtworkCacheCommand}" HorizontalAlignment="Left" />
+            <Button Content="{x:Static res:Strings.FindInconsistentCompilationFlags}" Click="OnFindInconsistentCompilationFlagsClick" HorizontalAlignment="Left" />
+        </StackPanel>
     </StackPanel>
-
 </UserControl>

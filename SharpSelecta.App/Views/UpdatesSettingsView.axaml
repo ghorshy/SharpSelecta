@@ -10,14 +10,13 @@
              x:Class="SharpSelecta.App.Views.UpdatesSettingsView"
              x:DataType="vm:UpdatesViewModel">
 
-    <StackPanel Spacing="{styles:SpacingValue S}">
-        <TextBlock Text="{Binding CurrentVersionDisplay}" Classes="strong"
+    <StackPanel Classes="settings-section">
+        <TextBlock Text="{Binding CurrentVersionDisplay}" Classes="settings-heading"
                    IsVisible="{Binding CurrentVersionDisplay, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
 
-        <StackPanel Spacing="{styles:SpacingValue XXS}">
+        <StackPanel Classes="settings-field">
             <CheckBox Content="{x:Static res:Strings.CheckForUpdatesAutomatically}" IsChecked="{Binding CheckAutomatically}" />
-            <TextBlock Text="{x:Static res:Strings.CheckForUpdatesHint}" Classes="tertiary small" TextWrapping="Wrap"
-                       Margin="{styles:Spacing Left=L}" />
+            <TextBlock Text="{x:Static res:Strings.CheckForUpdatesHint}" Classes="settings-hint indented" />
         </StackPanel>
 
         <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue S}">

@@ -10,17 +10,17 @@
              x:Class="SharpSelecta.App.Views.KeyboardShortcutsSettingsView"
              x:DataType="vm:KeyboardShortcutsViewModel">
 
-    <StackPanel Spacing="{styles:SpacingValue XS}">
+    <StackPanel>
         <ItemsControl ItemsSource="{Binding Sections}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
-                    <StackPanel Spacing="{styles:SpacingValue M}" />
+                    <StackPanel Classes="settings-page" />
                 </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:ShortcutSectionViewModel">
-                    <StackPanel Spacing="{styles:SpacingValue XS}">
-                        <TextBlock Text="{Binding Title}" Classes="strong" />
+                    <StackPanel Classes="settings-section">
+                        <TextBlock Text="{Binding Title}" Classes="settings-heading" />
                         <ItemsControl ItemsSource="{Binding Rows}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:ShortcutRowViewModel">

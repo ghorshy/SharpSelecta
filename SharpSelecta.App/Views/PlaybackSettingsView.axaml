@@ -9,94 +9,90 @@
              x:Class="SharpSelecta.App.Views.PlaybackSettingsView"
              x:DataType="vm:PlaybackSettingsViewModel">
 
-    <StackPanel Spacing="{styles:SpacingValue S}">
-        <CheckBox Content="{x:Static res:Strings.RestoreQueueOnStartup}" IsChecked="{Binding RestoreQueueOnStartup}" />
-        <CheckBox Content="{x:Static res:Strings.ResumePlaybackOnLaunch}" IsChecked="{Binding ResumePlaybackOnLaunch}"
-                  IsEnabled="{Binding RestoreQueueOnStartup}" Margin="{styles:Spacing Left=L}" />
-
-        <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}">
-            <TextBlock Text="{x:Static res:Strings.TrackStartActionLabel}" Classes="secondary" />
-            <ComboBox ItemsSource="{Binding TrackStartActionOptions}"
-                      SelectedItem="{Binding SelectedTrackStartActionOption}"
-                      HorizontalAlignment="Stretch">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate x:DataType="vm:TrackStartActionOption">
-                        <TextBlock Text="{Binding DisplayName}" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
+    <StackPanel Classes="settings-page">
+        <StackPanel Classes="settings-section">
+            <TextBlock Text="{x:Static res:Strings.SettingsSectionStartup}" Classes="settings-heading" />
+            <CheckBox Content="{x:Static res:Strings.RestoreQueueOnStartup}" IsChecked="{Binding RestoreQueueOnStartup}" />
+            <CheckBox Content="{x:Static res:Strings.ResumePlaybackOnLaunch}" IsChecked="{Binding ResumePlaybackOnLaunch}"
+                      IsEnabled="{Binding RestoreQueueOnStartup}" Classes="indented" />
         </StackPanel>
 
-        <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}">
-            <TextBlock Text="{x:Static res:Strings.OpenedFilesActionLabel}" Classes="secondary" />
-            <ComboBox ItemsSource="{Binding OpenedFilesActionOptions}"
-                      SelectedItem="{Binding SelectedOpenedFilesActionOption}"
-                      HorizontalAlignment="Stretch">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate x:DataType="vm:OpenedFilesActionOption">
-                        <TextBlock Text="{Binding DisplayName}" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
+        <StackPanel Classes="settings-section">
+            <TextBlock Text="{x:Static res:Strings.SettingsSectionPlayingTracks}" Classes="settings-heading" />
+            <StackPanel Classes="settings-field">
+                <TextBlock Text="{x:Static res:Strings.TrackStartActionLabel}" Classes="settings-label" />
+                <ComboBox ItemsSource="{Binding TrackStartActionOptions}" SelectedItem="{Binding SelectedTrackStartActionOption}" HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:TrackStartActionOption">
+                            <TextBlock Text="{Binding DisplayName}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
+            <StackPanel Classes="settings-field">
+                <TextBlock Text="{x:Static res:Strings.OpenedFilesActionLabel}" Classes="settings-label" />
+                <ComboBox ItemsSource="{Binding OpenedFilesActionOptions}" SelectedItem="{Binding SelectedOpenedFilesActionOption}" HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:OpenedFilesActionOption">
+                            <TextBlock Text="{Binding DisplayName}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
         </StackPanel>
 
-        <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}">
-            <TextBlock Text="{x:Static res:Strings.OutputDevice}" Classes="secondary" />
-            <ComboBox ItemsSource="{Binding OutputDevices}"
-                      SelectedItem="{Binding SelectedOutputDevice}"
-                      HorizontalAlignment="Stretch">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate x:DataType="vm:OutputDeviceOption">
-                        <TextBlock Text="{Binding DisplayName}" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
+        <StackPanel Classes="settings-section">
+            <TextBlock Text="{x:Static res:Strings.SettingsSectionOutput}" Classes="settings-heading" />
+            <StackPanel Classes="settings-field">
+                <TextBlock Text="{x:Static res:Strings.OutputDevice}" Classes="settings-label" />
+                <ComboBox ItemsSource="{Binding OutputDevices}" SelectedItem="{Binding SelectedOutputDevice}" HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:OutputDeviceOption">
+                            <TextBlock Text="{Binding DisplayName}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
+            <CheckBox Content="{x:Static res:Strings.PauseOnDeviceDisconnect}" IsChecked="{Binding PauseOnDeviceDisconnect}" />
         </StackPanel>
 
-        <CheckBox Content="{x:Static res:Strings.PauseOnDeviceDisconnect}" IsChecked="{Binding PauseOnDeviceDisconnect}"
-                  Margin="{styles:Spacing Top=S}" />
-
-        <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}">
-            <TextBlock Text="{x:Static res:Strings.VolumeNormalizationLabel}" Classes="secondary" />
-            <ComboBox ItemsSource="{Binding VolumeNormalizationOptions}"
-                      SelectedItem="{Binding SelectedVolumeNormalizationOption}"
-                      HorizontalAlignment="Stretch">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate x:DataType="vm:VolumeNormalizationOption">
-                        <TextBlock Text="{Binding DisplayName}" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
-            <TextBlock Text="{x:Static res:Strings.VolumeNormalizationHint}" Classes="tertiary small" TextWrapping="Wrap" />
+        <StackPanel Classes="settings-section">
+            <TextBlock Text="{x:Static res:Strings.SettingsSectionVolume}" Classes="settings-heading" />
+            <StackPanel Classes="settings-field">
+                <TextBlock Text="{x:Static res:Strings.VolumeNormalizationLabel}" Classes="settings-label" />
+                <ComboBox ItemsSource="{Binding VolumeNormalizationOptions}" SelectedItem="{Binding SelectedVolumeNormalizationOption}" HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:VolumeNormalizationOption">
+                            <TextBlock Text="{Binding DisplayName}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Text="{x:Static res:Strings.VolumeNormalizationHint}" Classes="settings-hint" />
+            </StackPanel>
+            <StackPanel Classes="settings-field" IsEnabled="{Binding IsUntaggedGainEditable}">
+                <TextBlock Text="{x:Static res:Strings.UntaggedGainLabel}" Classes="settings-label" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{styles:SpacingValue S}">
+                    <Slider Minimum="-12" Maximum="0" TickFrequency="1" IsSnapToTickEnabled="True"
+                            Value="{Binding UntaggedGainDb}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding UntaggedGainText}" VerticalAlignment="Center" />
+                </Grid>
+            </StackPanel>
+            <CheckBox Content="{x:Static res:Strings.UseLogarithmicVolumeScale}" IsChecked="{Binding UseLogarithmicVolumeScale}" />
         </StackPanel>
 
-        <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}" IsEnabled="{Binding IsUntaggedGainEditable}">
-            <TextBlock Text="{x:Static res:Strings.UntaggedGainLabel}" Classes="secondary" />
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{styles:SpacingValue S}">
-                <Slider Minimum="-12" Maximum="0" TickFrequency="1" IsSnapToTickEnabled="True"
-                        Value="{Binding UntaggedGainDb}" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="1" Text="{Binding UntaggedGainText}" VerticalAlignment="Center" />
-            </Grid>
-        </StackPanel>
-
-        <CheckBox Content="{x:Static res:Strings.UseLogarithmicVolumeScale}"
-                  IsChecked="{Binding UseLogarithmicVolumeScale}"
-                  Margin="{styles:Spacing Top=S}" />
-
-        <CheckBox Content="{x:Static res:Strings.UseWaveformSlider}" IsChecked="{Binding UseWaveformSlider}"
-                  Margin="{styles:Spacing Top=S}" />
-
-        <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}">
-            <TextBlock Text="{x:Static res:Strings.SeekStepSeconds}" Classes="secondary" />
-            <NumericUpDown Value="{Binding SeekStepSeconds}" Minimum="1" Maximum="10" Increment="1"
-                            FormatString="0" HorizontalAlignment="Left" Width="{DynamicResource Size.Settings.NumberFieldWidth}" />
-        </StackPanel>
-
-        <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}">
-            <TextBlock Text="{x:Static res:Strings.PreviousRestartThresholdSeconds}" Classes="secondary" />
-            <NumericUpDown Value="{Binding PreviousRestartThresholdSeconds}" Minimum="0" Maximum="30" Increment="1"
-                            FormatString="0" HorizontalAlignment="Left" Width="{DynamicResource Size.Settings.NumberFieldWidth}" />
+        <StackPanel Classes="settings-section">
+            <TextBlock Text="{x:Static res:Strings.SettingsSectionSeeking}" Classes="settings-heading" />
+            <CheckBox Content="{x:Static res:Strings.UseWaveformSlider}" IsChecked="{Binding UseWaveformSlider}" />
+            <StackPanel Classes="settings-field">
+                <TextBlock Text="{x:Static res:Strings.SeekStepSeconds}" Classes="settings-label" />
+                <NumericUpDown Value="{Binding SeekStepSeconds}" Minimum="1" Maximum="10" Increment="1"
+                               FormatString="0" HorizontalAlignment="Left" Width="{DynamicResource Size.Settings.NumberFieldWidth}" />
+            </StackPanel>
+            <StackPanel Classes="settings-field">
+                <TextBlock Text="{x:Static res:Strings.PreviousRestartThresholdSeconds}" Classes="settings-label" />
+                <NumericUpDown Value="{Binding PreviousRestartThresholdSeconds}" Minimum="0" Maximum="30" Increment="1"
+                               FormatString="0" HorizontalAlignment="Left" Width="{DynamicResource Size.Settings.NumberFieldWidth}" />
+            </StackPanel>
         </StackPanel>
     </StackPanel>
-
 </UserControl>

@@ -76,6 +76,34 @@
         <Setter Property="Opacity" Value="{DynamicResource Opacity.TextSecondary}" />
     </Style>
 
+    <!-- Settings pages: a page is a stack of sections, each with a heading; a field is a label over its
+         control; a hint is the small note under a field or checkbox. -->
+    <Style Selector="StackPanel.settings-page">
+        <Setter Property="Spacing" Value="{DynamicResource Spacing.L}" />
+    </Style>
+    <Style Selector="StackPanel.settings-section">
+        <Setter Property="Spacing" Value="{DynamicResource Spacing.S}" />
+    </Style>
+    <Style Selector="StackPanel.settings-field">
+        <Setter Property="Spacing" Value="{DynamicResource Spacing.XXS}" />
+    </Style>
+    <Style Selector="TextBlock.settings-heading">
+        <Setter Property="Opacity" Value="{DynamicResource Opacity.TextSecondary}" />
+        <Setter Property="FontWeight" Value="{DynamicResource FontWeight.Strong}" />
+    </Style>
+    <Style Selector="TextBlock.settings-label">
+        <Setter Property="Opacity" Value="{DynamicResource Opacity.TextSecondary}" />
+    </Style>
+    <Style Selector="TextBlock.settings-hint">
+        <Setter Property="Opacity" Value="{DynamicResource Opacity.TextTertiary}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSize.Small}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <!-- Under a checkbox: lined up with the checkbox's text. -->
+    <Style Selector="TextBlock.settings-hint.indented, StackPanel.indented">
+        <Setter Property="Margin" Value="{styles:Spacing Left=L}" />
+    </Style>
+
     <!-- Labels of the read-only file info (Duration, Bitrate, ...): extra room before their value. -->
     <Style Selector="TextBlock.info-label">
         <Setter Property="Margin" Value="{styles:Spacing Right=M}" />
