@@ -88,7 +88,7 @@ public sealed class MprisRoot : IMediaPlayer2, IMediaPlayer2Player, IDisposable
         ["CanRaise"] = false,
         ["HasTrackList"] = false,
         ["Identity"] = "SharpSelecta",
-        ["DesktopEntry"] = "",
+        ["DesktopEntry"] = AppIdentity.Id,
         ["SupportedUriSchemes"] = Array.Empty<string>(),
         ["SupportedMimeTypes"] = Array.Empty<string>(),
     };

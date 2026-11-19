@@ -10,7 +10,7 @@ public sealed class DBusSingleInstanceGuard(string busName, string? address, ILo
 
     private Connection? _connection;
 
-    public ObjectPath ObjectPath { get; } = new("/io/github/sharpselecta/SingleInstance");
+    public ObjectPath ObjectPath { get; } = new(AppIdentity.SingleInstanceObjectPath);
 
     public event EventHandler<IReadOnlyList<string>>? ActivationRequested;
 

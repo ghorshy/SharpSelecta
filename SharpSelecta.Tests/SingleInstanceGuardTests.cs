@@ -45,7 +45,7 @@ public class SingleInstanceGuardTests
     private static DBusSingleInstanceGuard CreateDBusGuard(string busName, string? address = null) =>
         new(busName, address ?? Address.Session, NullLogger<DBusSingleInstanceGuard>.Instance);
 
-    private static string UniqueBusName() => $"io.github.sharpselecta.Test.T{Guid.NewGuid():N}";
+    private static string UniqueBusName() => $"io.github.ghorshy.SharpSelecta.Test.T{Guid.NewGuid():N}";
 
     [Test]
     public async Task DBus_SecondStart_ForwardsPathsToTheFirstInstance()

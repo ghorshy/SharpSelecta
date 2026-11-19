@@ -8,7 +8,6 @@ namespace SharpSelecta.App.Services.Notifications;
 // keeps trying on later tracks (a daemon may start after the app).
 public sealed class FreedesktopTrackNotifications(ILogger<FreedesktopTrackNotifications> logger) : ITrackNotifications, IDisposable
 {
-    private const string DesktopEntry = "io.github.sharpselecta.SharpSelecta";
     private static readonly ObjectPath NotificationsPath = new("/org/freedesktop/Notifications");
 
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -28,7 +27,7 @@ public sealed class FreedesktopTrackNotifications(ILogger<FreedesktopTrackNotifi
             if (await ConnectAsync() is not { } notifications)
                 return;
 
-            var hints = new Dictionary<string, object> { ["desktop-entry"] = DesktopEntry, ["category"] = "x-sharpselecta.track" };
+            var hints = new Dictionary<string, object> { ["desktop-entry"] = AppIdentity.Id, ["category"] = "x-sharpselecta.track" };
             if (WriteCover(notification.Artwork) is { } coverPath)
                 hints["image-path"] = new Uri(coverPath).AbsoluteUri;
 

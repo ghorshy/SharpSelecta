@@ -101,9 +101,13 @@ sealed class Program
             .WithInterFont()
             .LogToTrace();
 
-        if (OperatingSystem.IsLinux() && Environment.GetEnvironmentVariable("WAYLAND_DISPLAY") is { Length: > 0 })
+        if (OperatingSystem.IsLinux())
         {
-            builder = builder.UseWayland();
+            builder = builder.With(new X11PlatformOptions { WmClass = AppIdentity.Id });
+            if (Environment.GetEnvironmentVariable("WAYLAND_DISPLAY") is { Length: > 0 })
+            {
+                builder = builder.UseWayland().With(new WaylandPlatformOptions { AppId = AppIdentity.Id });
+            }
         }
 
         return builder;

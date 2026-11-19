@@ -24,7 +24,7 @@ public static class SingleInstanceGuard
     public static ISingleInstanceGuard CreateForCurrentPlatform(ILoggerFactory loggerFactory) =>
         OperatingSystem.IsLinux()
             ? new DBusSingleInstanceGuard(
-                "io.github.sharpselecta.SharpSelecta", Address.Session, loggerFactory.CreateLogger<DBusSingleInstanceGuard>())
+                AppIdentity.Id, Address.Session, loggerFactory.CreateLogger<DBusSingleInstanceGuard>())
             : new NamedPipeSingleInstanceGuard(
                 $"SharpSelecta-{Environment.UserName}", loggerFactory.CreateLogger<NamedPipeSingleInstanceGuard>());
 }
