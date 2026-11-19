@@ -34,6 +34,8 @@ SharpSelecta is a player for music you keep as files on your own disk. Point it 
 
 Every build is self-contained, so you don't need .NET installed. Download the file for your system from the [Releases page](https://github.com/ghorshy/SharpSelecta/releases).
 
+Packages for Arch (AUR), NixOS and Flathub are on the way, and a macOS version is planned.
+
 ### Windows
 
 Run `SharpSelecta-win-Setup.exe`. It adds SharpSelecta to the Start menu and updates itself from then on.
@@ -87,7 +89,7 @@ The app goes into `~/.local/share/SharpSelecta/app`. To update, run `install.sh`
 ~/.local/share/SharpSelecta/app/uninstall.sh
 ```
 
-Your settings and library stay where they are.
+Your settings and library stay where they are (see [Your data](#your-data)).
 
 ### FFmpeg (optional)
 
@@ -149,11 +151,31 @@ Converting between file types (the Convert tab) needs [FFmpeg](https://ffmpeg.or
   <img src=".github/assets/screenshots/light-theme.png" alt="SharpSelecta in the light theme with an orange accent and an expanded album" width="100%" />
 </p>
 
+## Your data
+
+Settings, the library index with your playlists, the saved queue, the cover cache and the logs are all kept in one folder:
+
+- Windows: `%LocalAppData%\SharpSelecta`
+- Linux: `~/.local/share/SharpSelecta`
+
+Back it up to keep your settings and playlists. Removing the app on Linux leaves the folder alone, so delete it yourself if you want everything gone.
+
+## What goes online
+
+SharpSelecta works offline and has no accounts or telemetry. It connects to the internet only when:
+
+- you search for a cover. The album and artist name go to Apple Music, Deezer, MusicBrainz with Cover Art Archive, and fanart.tv.
+- the Windows installer checks GitHub for a new version. You can turn that off in Settings → Updates.
+
+The Discord status goes to the Discord app on your computer, which shows it to your friends.
+
 ## Build from source
 
 You need the .NET 10 SDK.
 
 ```sh
+git clone https://github.com/ghorshy/SharpSelecta.git
+cd SharpSelecta
 dotnet build SharpSelecta.slnx
 dotnet run --project SharpSelecta.App
 ```
