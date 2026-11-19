@@ -2,6 +2,8 @@ using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using SharpSelecta.App.Formatting;
 using SharpSelecta.App.Resources;
 using SharpSelecta.App.ViewModels;
@@ -20,6 +22,8 @@ public sealed class TrayController : IDisposable
     private readonly TrayHostWatcher _host;
     private readonly TrayIcon _icon;
     private readonly NativeMenuItem _playPause;
+    private readonly Bitmap? _playIcon;
+    private readonly Bitmap? _pauseIcon;
 
     public TrayController(
         Window window, IClassicDesktopStyleApplicationLifetime desktop, PlaybackControlsViewModel playback,
@@ -32,20 +36,25 @@ public sealed class TrayController : IDisposable
         _settings = settings;
         _host = host;
 
-        _playPause = new NativeMenuItem(playback.PlayPauseLabel) { Command = playback.PlayPauseCommand };
+        var iconColor = TrayMenuIcons.IconColor();
+        Bitmap? MenuIcon(string key) => iconColor is { } color ? TrayMenuIcons.Render(key, color) : null;
+        _playIcon = MenuIcon("Icon.PlayerPlay");
+        _pauseIcon = MenuIcon("Icon.PlayerPause");
+
+        _playPause = new NativeMenuItem(playback.PlayPauseLabel) { Command = playback.PlayPauseCommand, Icon = PlayPauseIcon() };
         var menu = new NativeMenu();
         menu.Add(_playPause);
-        menu.Add(new NativeMenuItem(Strings.Previous) { Command = playback.PreviousTrackCommand });
-        menu.Add(new NativeMenuItem(Strings.Next) { Command = playback.NextTrackCommand });
+        menu.Add(new NativeMenuItem(Strings.Previous) { Command = playback.PreviousTrackCommand, Icon = MenuIcon("Icon.PlayerTrackPrev") });
+        menu.Add(new NativeMenuItem(Strings.Next) { Command = playback.NextTrackCommand, Icon = MenuIcon("Icon.PlayerTrackNext") });
         menu.Add(new NativeMenuItemSeparator());
-        var show = new NativeMenuItem(Strings.TrayShowWindow);
+        var show = new NativeMenuItem(Strings.TrayShowWindow) { Icon = MenuIcon("Icon.AppWindow") };
         show.Click += (_, _) => WindowActivation.BringToFront(_window);
         menu.Add(show);
-        var quit = new NativeMenuItem(Strings.TrayQuit);
+        var quit = new NativeMenuItem(Strings.TrayQuit) { Icon = MenuIcon("Icon.Power") };
         quit.Click += (_, _) => _desktop.Shutdown();
         menu.Add(quit);
 
-        _icon = new TrayIcon { Icon = window.Icon, Menu = menu, ToolTipText = ToolTip(), IsVisible = TrayPolicy.ShowsIcon(settings.Current) };
+        _icon = new TrayIcon { Icon = TrayIconImage(window), Menu = menu, ToolTipText = ToolTip(), IsVisible = TrayPolicy.ShowsIcon(settings.Current) };
         _icon.Clicked += (_, _) => WindowActivation.BringToFront(_window);
         if (Application.Current is { } app)
             TrayIcon.SetIcons(app, [_icon]);
@@ -75,7 +84,10 @@ public sealed class TrayController : IDisposable
     private void OnPlaybackPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(PlaybackControlsViewModel.PlayPauseLabel))
+        {
             _playPause.Header = _playback.PlayPauseLabel;
+            _playPause.Icon = PlayPauseIcon();
+        }
         else if (e.PropertyName == nameof(PlaybackControlsViewModel.CurrentTrack))
             _icon.ToolTipText = ToolTip();
     }
@@ -85,6 +97,15 @@ public sealed class TrayController : IDisposable
         if (e.PropertyName is nameof(InterfaceSettingsViewModel.MinimizeToTray) or nameof(InterfaceSettingsViewModel.CloseToTray))
             _icon.IsVisible = TrayPolicy.ShowsIcon(_settings.Current);
     }
+
+    private Bitmap? PlayPauseIcon() => _playback.IsPlaying ? _pauseIcon : _playIcon;
+
+    // Linux panels draw tray icons as flat white symbols, so the colored logo would vanish on a dark bar;
+    // the Windows tray shows full-color app icons.
+    private static WindowIcon? TrayIconImage(Window window) =>
+        OperatingSystem.IsLinux()
+            ? new WindowIcon(AssetLoader.Open(new Uri("avares://sharpselecta/Assets/sharpselecta-tray.png")))
+            : window.Icon;
 
     private string ToolTip() =>
         _playback.CurrentTrack is { } track ? TrackFormatting.ArtistTitleLabel(track.Artist, track.Title ?? track.DisplayName) : Strings.AppName;

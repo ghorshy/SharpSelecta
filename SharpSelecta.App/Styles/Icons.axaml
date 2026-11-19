@@ -21,5 +21,7 @@
     <x:String x:Key="Icon.Library">avares://sharpselecta/Assets/Icons/books.svg</x:String>
     <x:String x:Key="Icon.GripVertical">avares://sharpselecta/Assets/Icons/grip-vertical.svg</x:String>
     <x:String x:Key="Icon.RecentlyAdded">avares://sharpselecta/Assets/Icons/sparkle-2.svg</x:String>
+    <x:String x:Key="Icon.AppWindow">avares://sharpselecta/Assets/Icons/app-window.svg</x:String>
+    <x:String x:Key="Icon.Power">avares://sharpselecta/Assets/Icons/power.svg</x:String>
 
 </ResourceDictionary>

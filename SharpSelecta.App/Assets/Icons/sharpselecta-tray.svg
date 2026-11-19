@@ -1,0 +1,16 @@
+<!-- SharpSelecta tray icon: the logo as a monochrome symbol (a disc with the sharp cut out), for Linux panels whose tray icons are flat white glyphs. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <defs>
+    <mask id="cut">
+      <rect width="300" height="300" fill="#fff"/>
+      
+      <g fill="#000" transform="translate(150 150) scale(2.75) translate(-150 -150)">
+        <rect x="135.5" y="122" width="7" height="56"/>
+        <rect x="157.5" y="122" width="7" height="56"/>
+        <polygon points="126,144 174,129.5 174,138.5 126,153"/>
+        <polygon points="126,164 174,149.5 174,158.5 126,173"/>
+      </g>
+    </mask>
+  </defs>
+  <circle cx="150" cy="150" r="146" fill="#fff" mask="url(#cut)"/>
+</svg>
