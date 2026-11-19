@@ -97,6 +97,10 @@ jobs:
               goreleaser/nfpm:v2.43.0 package -f packaging/linux/nfpm.yaml -p "$packager" -t dist/
           done
 
+      # appimagetool refuses to run without desktop-file-validate.
+      - name: AppImage tools
+        run: sudo apt-get update && sudo apt-get install -y desktop-file-utils
+
       - name: AppImage
         env:
           APPIMAGETOOL_SHA256: 46fdd785094c7f6e545b61afcfb0f3d98d8eab243f644b4b17698c01d06083d1
