@@ -12,15 +12,20 @@ public partial class SettingsWindow : Window
         InitializeComponent();
     }
 
+    // OK applies every category with edits, not just the one on screen; closing any other way drops them
+    // all, including a theme or accent still being previewed.
     private async void OnOkClick(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is not SettingsWindowViewModel { SelectedCategory: { } category })
+        if (DataContext is not SettingsWindowViewModel vm)
             return;
 
-        if (category.ApplyCommand is IAsyncRelayCommand applyAsync)
-            await applyAsync.ExecuteAsync(null);
-        else
-            category.ApplyCommand.Execute(null);
+        foreach (var category in vm.Categories.Where(c => c.HasPendingChanges))
+        {
+            if (category.ApplyCommand is IAsyncRelayCommand applyAsync)
+                await applyAsync.ExecuteAsync(null);
+            else
+                category.ApplyCommand.Execute(null);
+        }
 
         Close();
     }
@@ -29,7 +34,10 @@ public partial class SettingsWindow : Window
 
     private void OnClosing(object? sender, WindowClosingEventArgs e)
     {
-        if (DataContext is SettingsWindowViewModel { SelectedCategory: { } category })
+        if (DataContext is not SettingsWindowViewModel vm)
+            return;
+
+        foreach (var category in vm.Categories)
         {
             category.CancelCommand.Execute(null);
         }

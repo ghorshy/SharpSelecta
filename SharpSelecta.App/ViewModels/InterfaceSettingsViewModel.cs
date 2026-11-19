@@ -9,9 +9,27 @@ using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.ViewModels;
 
+// Like the other categories, edits are saved only on Apply. The look (theme, accent, text size) is
+// previewed live while editing, and Cancel puts the applied one back.
 public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCategoryViewModel
 {
+    private sealed record Choices(
+        AppTheme Theme, string? CustomThemeFileName, int? FontSize, string? AccentColor,
+        bool TrackChangeNotifications, bool MinimizeToTray, bool CloseToTray)
+    {
+        public static Choices From(AppSettings s) =>
+            new(s.Theme, s.CustomThemeFileName, s.FontSize, s.AccentColor, s.TrackChangeNotifications, s.MinimizeToTray, s.CloseToTray);
+
+        public AppSettings ApplyTo(AppSettings s) => s with
+        {
+            Theme = Theme, CustomThemeFileName = CustomThemeFileName, FontSize = FontSize, AccentColor = AccentColor,
+            TrackChangeNotifications = TrackChangeNotifications, MinimizeToTray = MinimizeToTray, CloseToTray = CloseToTray,
+        };
+    }
+
     private readonly SettingsStore _settings;
+    private Choices _applied;
+    private Choices _edited;
     private readonly string _themesDirectory;
     private readonly IFilePickerService _filePickerService;
 
@@ -53,7 +71,7 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
     [ObservableProperty]
     public partial bool IsAccentHexInvalid { get; set; }
 
-    public bool HasCustomAccent => _settings.Current.AccentColor is not null;
+    public bool HasCustomAccent => _edited.AccentColor is not null;
 
     [ObservableProperty]
     public partial bool ShowTrackChangeNotifications { get; set; }
@@ -69,11 +87,13 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
 
     public string DisplayName => Strings.SettingsCategoryInterface;
 
-    public bool HasPendingChanges => false;
+    public bool HasPendingChanges => _edited != _applied;
 
-    public ICommand ApplyCommand { get; } = new RelayCommand(() => { });
+    public ICommand ApplyCommand { get; }
 
-    public ICommand CancelCommand { get; } = new RelayCommand(() => { });
+    public ICommand CancelCommand { get; }
+
+    public event EventHandler? Applied;
 
     public IAsyncRelayCommand ImportThemeCommand { get; }
 
@@ -88,13 +108,15 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
     // Set while the accent controls are brought in line with each other, so that doesn't count as a new pick.
     private bool _syncingAccent;
 
-    // The constructor loads the saved values through the same properties; that isn't a change to save.
-    private readonly bool _loaded;
+    // Set while the controls are loaded from a snapshot (constructor, Cancel); that isn't an edit.
+    private bool _loading = true;
 
     public InterfaceSettingsViewModel(SettingsStore settings, IFilePickerService filePickerService)
     {
         _settings = settings;
         _filePickerService = filePickerService;
+        _applied = Choices.From(settings.Current);
+        _edited = _applied;
         _themesDirectory = ThemeService.GetThemesDirectory(settings.FilePath);
 
         RefreshThemeDisplayNames();
@@ -108,56 +130,117 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
         RemoveCustomThemeCommand = new RelayCommand(RemoveCustomTheme, () => IsCustomThemeSelected);
         RefreshThemesCommand = new RelayCommand(RefreshThemes);
 
-        var saved = settings.Current;
-        SelectedFontSizeOption = FontSizeOptions.FirstOrDefault(o => o.Size == saved.FontSize) ?? FontSizeOptions[0];
-        ShowTrackChangeNotifications = saved.TrackChangeNotifications;
-        MinimizeToTray = saved.MinimizeToTray;
-        CloseToTray = saved.CloseToTray;
-        AccentHex = saved.AccentColor ?? string.Empty;
+        AccentHex = string.Empty;
         ChooseAccentSwatchCommand = new RelayCommand<IBrush?>(brush =>
         {
             if (brush is ISolidColorBrush solid)
                 SetAccent(solid.Color);
         });
         UseThemeAccentCommand = new RelayCommand(() => SetAccent(null), () => HasCustomAccent);
+        ApplyCommand = new RelayCommand(Apply);
+        CancelCommand = new RelayCommand(Cancel);
+        ShowChoices(_applied);
+        _loading = false;
+    }
+
+    private void Apply()
+    {
+        if (!HasPendingChanges)
+            return;
+
+        var edited = _edited;
+        _settings.Update(edited.ApplyTo);
+        _applied = edited;
+        OnPropertyChanged(nameof(HasPendingChanges));
+        Applied?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void Cancel()
+    {
+        var hadPreview = _edited.Theme != _applied.Theme || _edited.CustomThemeFileName != _applied.CustomThemeFileName
+            || _edited.FontSize != _applied.FontSize || _edited.AccentColor != _applied.AccentColor;
+        _edited = _applied;
+        ShowChoices(_applied);
+        OnPropertyChanged(nameof(HasPendingChanges));
+        if (hadPreview)
+            Preview(themeChanged: true);
+    }
+
+    private void ShowChoices(Choices choices)
+    {
+        var wasLoading = _loading;
+        _loading = true;
+        try
+        {
+            SelectedThemeDisplayName = choices.Theme == AppTheme.Custom
+                ? DisplayNameForCustomFileOrFallback(choices.CustomThemeFileName)
+                : DisplayNameFor(choices.Theme);
+            SelectedFontSizeOption = FontSizeOptions.FirstOrDefault(o => o.Size == choices.FontSize) ?? FontSizeOptions[0];
+            ShowTrackChangeNotifications = choices.TrackChangeNotifications;
+            MinimizeToTray = choices.MinimizeToTray;
+            CloseToTray = choices.CloseToTray;
+            IsAccentHexInvalid = false;
+            SyncAccentControls();
+        }
+        finally
+        {
+            _loading = wasLoading;
+        }
+    }
+
+    private void Edit(Func<Choices, Choices> change)
+    {
+        _edited = change(_edited);
+        OnPropertyChanged(nameof(HasPendingChanges));
+    }
+
+    // The overrides are computed from the theme's values, and the accent picker shows the theme's accent.
+    private void Preview(bool themeChanged)
+    {
+        if (themeChanged)
+            ThemeService.Apply(_edited.Theme, _edited.CustomThemeFileName, _themesDirectory);
+
+        AppearanceService.Apply(_edited.ApplyTo(_settings.Current));
         SyncAccentControls();
-        _loaded = true;
     }
 
     partial void OnSelectedFontSizeOptionChanged(FontSizeOption value)
     {
-        if (_loaded)
-            UpdateAppearance(s => s with { FontSize = value.Size });
+        if (_loading)
+            return;
+
+        Edit(c => c with { FontSize = value.Size });
+        Preview(themeChanged: false);
     }
 
     partial void OnShowTrackChangeNotificationsChanged(bool value)
     {
-        if (_loaded)
-            _settings.Update(s => s with { TrackChangeNotifications = value });
+        if (!_loading)
+            Edit(c => c with { TrackChangeNotifications = value });
     }
 
     partial void OnMinimizeToTrayChanged(bool value)
     {
-        if (_loaded)
-            _settings.Update(s => s with { MinimizeToTray = value });
+        if (!_loading)
+            Edit(c => c with { MinimizeToTray = value });
     }
 
     partial void OnCloseToTrayChanged(bool value)
     {
-        if (_loaded)
-            _settings.Update(s => s with { CloseToTray = value });
+        if (!_loading)
+            Edit(c => c with { CloseToTray = value });
     }
 
     partial void OnAccentPickerColorChanged(Color value)
     {
-        if (_loaded && !_syncingAccent)
+        if (!_loading && !_syncingAccent)
             SetAccent(value);
     }
 
     // An empty field goes back to the theme's accent; a half-typed color waits until it's complete.
     partial void OnAccentHexChanged(string value)
     {
-        if (!_loaded || _syncingAccent)
+        if (_loading || _syncingAccent)
             return;
 
         var text = value.Trim();
@@ -170,11 +253,11 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
     private void SetAccent(Color? color)
     {
         var hex = color is { } picked ? AppearanceService.FormatAccent(picked) : null;
-        if (hex == _settings.Current.AccentColor)
+        if (hex == _edited.AccentColor)
             return;
 
-        UpdateAppearance(s => s with { AccentColor = hex });
-        SyncAccentControls();
+        Edit(c => c with { AccentColor = hex });
+        Preview(themeChanged: false);
     }
 
     // The swatch, picker and hex field all edit the same color; whichever was used, the others follow.
@@ -183,11 +266,11 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
         _syncingAccent = true;
         try
         {
-            var picked = AppearanceService.ParseAccent(_settings.Current.AccentColor);
+            var picked = AppearanceService.ParseAccent(_edited.AccentColor);
             AccentPickerColor = picked ?? AppearanceService.CurrentAccent() ?? AccentPickerColor;
             if (picked is not null || !IsAccentHexInvalid)
             {
-                AccentHex = _settings.Current.AccentColor ?? string.Empty;
+                AccentHex = _edited.AccentColor ?? string.Empty;
                 IsAccentHexInvalid = false;
             }
         }
@@ -200,40 +283,21 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
         UseThemeAccentCommand.NotifyCanExecuteChanged();
     }
 
-    private void UpdateAppearance(Func<AppSettings, AppSettings> change)
-    {
-        _settings.Update(change);
-        AppearanceService.Apply(_settings.Current);
-    }
-
     partial void OnSelectedThemeDisplayNameChanged(string value)
     {
         RemoveCustomThemeCommand.NotifyCanExecuteChanged();
 
         // Clearing ThemeDisplayNames mid-refresh transiently nulls the bound ComboBox selection.
         // The caller always sets a real value right after, so just ignore this.
-        if (value is null)
+        if (value is null || _loading)
             return;
 
         if (_customThemeFileNamesByDisplayName.TryGetValue(value, out var fileName))
-        {
-            _settings.Update(s => s with { Theme = AppTheme.Custom, CustomThemeFileName = fileName });
-            ThemeService.Apply(AppTheme.Custom, fileName, _themesDirectory);
-            ReapplyAppearance();
-            return;
-        }
+            Edit(c => c with { Theme = AppTheme.Custom, CustomThemeFileName = fileName });
+        else
+            Edit(c => c with { Theme = ThemeFor(value) });
 
-        var theme = ThemeFor(value);
-        _settings.Update(s => s with { Theme = theme });
-        ThemeService.Apply(theme, null, _themesDirectory);
-        ReapplyAppearance();
-    }
-
-    // The overrides are computed from the theme's values, and the accent picker shows the theme's accent.
-    private void ReapplyAppearance()
-    {
-        AppearanceService.Apply(_settings.Current);
-        SyncAccentControls();
+        Preview(themeChanged: true);
     }
 
     private async Task ImportThemeAsync()

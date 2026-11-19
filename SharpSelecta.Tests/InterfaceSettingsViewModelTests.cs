@@ -15,6 +15,12 @@ public class InterfaceSettingsViewModelTests : IDisposable
     private static string ThemesDirectoryFor(string settingsPath) =>
         Path.Combine(Path.GetDirectoryName(settingsPath)!, "Themes");
 
+    private static AppSettings Saved(string settingsPath) => new SettingsStore(settingsPath).Current;
+
+    private static void Apply(ISettingsCategoryViewModel vm) => vm.ApplyCommand.Execute(null);
+
+    private static void Cancel(ISettingsCategoryViewModel vm) => vm.CancelCommand.Execute(null);
+
     private static InterfaceSettingsViewModel CreateViewModel(string settingsPath, IFilePickerService? filePickerService = null) =>
         new(new SettingsStore(settingsPath), filePickerService ?? Substitute.For<IFilePickerService>());
 
@@ -35,14 +41,60 @@ public class InterfaceSettingsViewModelTests : IDisposable
     }
 
     [Test]
-    public async Task SettingSelectedThemeDisplayName_Persists()
+    public async Task ChoosingATheme_IsPendingUntilApply_ThenSaved()
     {
         var settingsPath = _temp.NewSettingsPath();
         var vm = CreateViewModel(settingsPath);
+        var applied = 0;
+        vm.Applied += (_, _) => applied++;
 
         vm.SelectedThemeDisplayName = Strings.ThemeLight;
+        await Assert.That(vm.HasPendingChanges).IsTrue();
+        await Assert.That(Saved(settingsPath).Theme).IsEqualTo(AppTheme.Dark);
 
-        await Assert.That(new SettingsStore(settingsPath).Current.Theme).IsEqualTo(AppTheme.Light);
+        Apply(vm);
+
+        await Assert.That(Saved(settingsPath).Theme).IsEqualTo(AppTheme.Light);
+        await Assert.That(vm.HasPendingChanges).IsFalse();
+        await Assert.That(applied).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task Cancel_PutsEveryControlBackToWhatWasApplied_AndSavesNothing()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        new SettingsStore(settingsPath).Update(s => s with { FontSize = 16, AccentColor = "#D13438" });
+        var vm = CreateViewModel(settingsPath);
+
+        vm.SelectedThemeDisplayName = Strings.ThemeLight;
+        vm.SelectedFontSizeOption = vm.FontSizeOptions.Single(o => o.Size == 20);
+        vm.AccentHex = "#10893E";
+        vm.UseThemeAccentCommand.Execute(null);
+        vm.CloseToTray = true;
+        Cancel(vm);
+
+        await Assert.That(vm.HasPendingChanges).IsFalse();
+        await Assert.That(vm.SelectedThemeDisplayName).IsEqualTo(Strings.ThemeDark);
+        await Assert.That(vm.SelectedFontSizeOption.Size).IsEqualTo(16);
+        await Assert.That(vm.AccentHex).IsEqualTo("#D13438");
+        await Assert.That(vm.HasCustomAccent).IsTrue();
+        await Assert.That(vm.CloseToTray).IsFalse();
+        var saved = Saved(settingsPath);
+        await Assert.That(saved.Theme).IsEqualTo(AppTheme.Dark);
+        await Assert.That(saved.FontSize).IsEqualTo(16);
+        await Assert.That(saved.AccentColor).IsEqualTo("#D13438");
+        await Assert.That(saved.CloseToTray).IsFalse();
+    }
+
+    [Test]
+    public async Task EditingBackToTheAppliedValue_LeavesNothingPending()
+    {
+        var vm = CreateViewModel(_temp.NewSettingsPath());
+
+        vm.SelectedThemeDisplayName = Strings.ThemeLight;
+        vm.SelectedThemeDisplayName = Strings.ThemeDark;
+
+        await Assert.That(vm.HasPendingChanges).IsFalse();
     }
 
     [Test]
@@ -84,13 +136,16 @@ public class InterfaceSettingsViewModelTests : IDisposable
 
         vm.SelectedFontSizeOption = vm.FontSizeOptions.Single(o => o.Size == 16);
         vm.ShowTrackChangeNotifications = true;
+        await Assert.That(Saved(settingsPath).FontSize).IsNull();
+        Apply(vm);
 
-        var saved = new SettingsStore(settingsPath).Current;
+        var saved = Saved(settingsPath);
         await Assert.That(saved.FontSize).IsEqualTo(16);
         await Assert.That(saved.TrackChangeNotifications).IsTrue();
 
         vm.SelectedFontSizeOption = vm.FontSizeOptions[0];
-        await Assert.That(new SettingsStore(settingsPath).Current.FontSize).IsNull();
+        Apply(vm);
+        await Assert.That(Saved(settingsPath).FontSize).IsNull();
     }
 
     [Test]
@@ -101,6 +156,7 @@ public class InterfaceSettingsViewModelTests : IDisposable
 
         vm.MinimizeToTray = true;
         vm.CloseToTray = true;
+        Apply(vm);
 
         var reloaded = CreateViewModel(settingsPath);
         await Assert.That(reloaded.MinimizeToTray).IsTrue();
@@ -115,8 +171,9 @@ public class InterfaceSettingsViewModelTests : IDisposable
         var red = AppearanceService.ParseAccent("#D13438")!.Value;
 
         vm.ChooseAccentSwatchCommand.Execute(new Avalonia.Media.Immutable.ImmutableSolidColorBrush(red));
+        Apply(vm);
 
-        await Assert.That(new SettingsStore(settingsPath).Current.AccentColor).IsEqualTo("#D13438");
+        await Assert.That(Saved(settingsPath).AccentColor).IsEqualTo("#D13438");
         await Assert.That(vm.AccentHex).IsEqualTo("#D13438");
         await Assert.That(vm.AccentPickerColor).IsEqualTo(red);
         await Assert.That(vm.UseThemeAccentCommand.CanExecute(null)).IsTrue();
@@ -130,11 +187,12 @@ public class InterfaceSettingsViewModelTests : IDisposable
 
         vm.AccentHex = "#10";
         await Assert.That(vm.IsAccentHexInvalid).IsTrue();
-        await Assert.That(new SettingsStore(settingsPath).Current.AccentColor).IsNull();
+        await Assert.That(vm.HasPendingChanges).IsFalse();
 
         vm.AccentHex = "#10893e";
         await Assert.That(vm.IsAccentHexInvalid).IsFalse();
-        await Assert.That(new SettingsStore(settingsPath).Current.AccentColor).IsEqualTo("#10893E");
+        Apply(vm);
+        await Assert.That(Saved(settingsPath).AccentColor).IsEqualTo("#10893E");
         await Assert.That(vm.AccentPickerColor).IsEqualTo(AppearanceService.ParseAccent("#10893E")!.Value);
     }
 
@@ -145,8 +203,9 @@ public class InterfaceSettingsViewModelTests : IDisposable
         var vm = CreateViewModel(settingsPath);
 
         vm.AccentPickerColor = new Avalonia.Media.Color(0x80, 0x87, 0x64, 0xB8);
+        Apply(vm);
 
-        await Assert.That(new SettingsStore(settingsPath).Current.AccentColor).IsEqualTo("#8764B8");
+        await Assert.That(Saved(settingsPath).AccentColor).IsEqualTo("#8764B8");
         await Assert.That(vm.AccentHex).IsEqualTo("#8764B8");
     }
 
@@ -158,13 +217,14 @@ public class InterfaceSettingsViewModelTests : IDisposable
         var vm = CreateViewModel(settingsPath);
 
         vm.UseThemeAccentCommand.Execute(null);
-        await Assert.That(new SettingsStore(settingsPath).Current.AccentColor).IsNull();
+        Apply(vm);
+        await Assert.That(Saved(settingsPath).AccentColor).IsNull();
         await Assert.That(vm.AccentHex).IsEqualTo(string.Empty);
         await Assert.That(vm.UseThemeAccentCommand.CanExecute(null)).IsFalse();
 
         vm.AccentHex = "#D13438";
         vm.AccentHex = "";
-        await Assert.That(new SettingsStore(settingsPath).Current.AccentColor).IsNull();
+        await Assert.That(vm.HasPendingChanges).IsFalse();
     }
 
     [Test]
@@ -212,7 +272,8 @@ public class InterfaceSettingsViewModelTests : IDisposable
         var expectedDisplayName = Path.GetFileNameWithoutExtension(themePath);
         await Assert.That(vm.SelectedThemeDisplayName).IsEqualTo(expectedDisplayName);
         await Assert.That(vm.ThemeDisplayNames).Contains(expectedDisplayName);
-        await Assert.That(new SettingsStore(settingsPath).Current.Theme).IsEqualTo(AppTheme.Custom);
+        Apply(vm);
+        await Assert.That(Saved(settingsPath).Theme).IsEqualTo(AppTheme.Custom);
         await Assert.That(File.Exists(Path.Combine(ThemesDirectoryFor(settingsPath), Path.GetFileName(themePath)))).IsTrue();
     }
 
@@ -229,6 +290,7 @@ public class InterfaceSettingsViewModelTests : IDisposable
         var importedFileName = Path.GetFileName(themePath);
 
         vm.RemoveCustomThemeCommand.Execute(null);
+        Apply(vm);
 
         await Assert.That(vm.SelectedThemeDisplayName).IsEqualTo(Strings.ThemeDark);
         await Assert.That(File.Exists(Path.Combine(ThemesDirectoryFor(settingsPath), importedFileName))).IsFalse();

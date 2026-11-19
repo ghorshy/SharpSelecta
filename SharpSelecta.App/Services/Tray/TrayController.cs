@@ -62,7 +62,7 @@ public sealed class TrayController : IDisposable
         _window.Closing += OnWindowClosing;
         _window.PropertyChanged += OnWindowPropertyChanged;
         _playback.PropertyChanged += OnPlaybackPropertyChanged;
-        _interfaceSettings.PropertyChanged += OnInterfaceSettingsPropertyChanged;
+        _interfaceSettings.Applied += OnInterfaceSettingsApplied;
     }
 
     private void OnWindowClosing(object? sender, WindowClosingEventArgs e)
@@ -92,11 +92,7 @@ public sealed class TrayController : IDisposable
             _icon.ToolTipText = ToolTip();
     }
 
-    private void OnInterfaceSettingsPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName is nameof(InterfaceSettingsViewModel.MinimizeToTray) or nameof(InterfaceSettingsViewModel.CloseToTray))
-            _icon.IsVisible = TrayPolicy.ShowsIcon(_settings.Current);
-    }
+    private void OnInterfaceSettingsApplied(object? sender, EventArgs e) => _icon.IsVisible = TrayPolicy.ShowsIcon(_settings.Current);
 
     private Bitmap? PlayPauseIcon() => _playback.IsPlaying ? _pauseIcon : _playIcon;
 
@@ -115,7 +111,7 @@ public sealed class TrayController : IDisposable
         _window.Closing -= OnWindowClosing;
         _window.PropertyChanged -= OnWindowPropertyChanged;
         _playback.PropertyChanged -= OnPlaybackPropertyChanged;
-        _interfaceSettings.PropertyChanged -= OnInterfaceSettingsPropertyChanged;
+        _interfaceSettings.Applied -= OnInterfaceSettingsApplied;
         _icon.Dispose();
     }
 }
