@@ -21,18 +21,18 @@ public sealed class FfmpegAudioConverter : IAudioConverter
         {
             var analysis = await FFProbe.AnalyseAsync(path, cancellationToken: cancellationToken);
             var stream = analysis.PrimaryAudioStream;
-            if (stream is null)
+            if (stream is not { CodecName: { } codecName, SampleRateHz: { } sampleRate, Channels: { } channels })
                 return null;
 
-            var codec = stream.CodecName.ToLowerInvariant();
-            var bitrate = stream.BitRate > 0 ? stream.BitRate : analysis.Format.BitRate;
+            var codec = codecName.ToLowerInvariant();
+            var bitrate = stream.BitRate is > 0 ? stream.BitRate : analysis.Format.BitRate;
             return new SourceInfo(
                 codec,
                 ConversionRules.IsPcm(codec) || LosslessCodecs.Contains(codec),
-                bitrate > 0 ? (int)Math.Round(bitrate / 1000.0) : null,
-                stream.SampleRateHz,
+                bitrate is > 0 ? (int)Math.Round(bitrate.Value / 1000.0) : null,
+                sampleRate,
                 stream.BitDepth is > 0 ? stream.BitDepth : null,
-                stream.Channels,
+                channels,
                 analysis.Duration);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
@@ -43,16 +43,16 @@ public sealed class FfmpegAudioConverter : IAudioConverter
 
     public async Task ConvertAsync(ConversionRequest request, IProgress<double> progress, CancellationToken cancellationToken)
     {
-        var succeeded = await FFMpegArguments
+        var result = await FFMpegArguments
             .FromFileInput(request.SourcePath)
             .OutputToFile(request.TargetPath, overwrite: false, options => options
                 .WithCustomArgument("-vn -map_metadata -1")
                 .WithCustomArgument(CodecArguments(request)))
-            .NotifyOnProgress(percent => progress.Report(percent / 100.0), request.Source.Duration)
-            .CancellableThrough(cancellationToken)
+            .NotifyOnPercentageProgress(percent => progress.Report(percent / 100.0), request.Source.Duration)
+            .CancellableThrough(cancellationToken, TimeSpan.Zero)
             .ProcessAsynchronously();
 
-        if (!succeeded)
+        if (!result.Success)
             throw new InvalidOperationException($"FFmpeg failed to convert '{request.SourcePath}'.");
 
         progress.Report(1);
