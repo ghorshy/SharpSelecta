@@ -1,44 +1,122 @@
+<div align="center">
+
+<img src="SharpSelecta.App/Assets/Icons/sharpselecta-logo.svg" alt="SharpSelecta logo" width="128" />
+
 # SharpSelecta
 
-Cross-platform, open-source music player built on .NET 10 + Avalonia.
+**An open-source music player for your local library, on Windows and Linux.**
 
-## Status
+[![Build & tests](https://img.shields.io/github/actions/workflow/status/ghorshy/SharpSelecta/ci.yml?branch=main&label=build%20%26%20tests&logo=github)](https://github.com/ghorshy/SharpSelecta/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/ghorshy/SharpSelecta?include_prereleases&label=release)](https://github.com/ghorshy/SharpSelecta/releases)
+[![Downloads](https://img.shields.io/github/downloads/ghorshy/SharpSelecta/total?label=downloads)](https://github.com/ghorshy/SharpSelecta/releases)
+[![License: MIT](https://img.shields.io/github/license/ghorshy/SharpSelecta)](LICENSE)
+<br />
+[![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![Avalonia](https://img.shields.io/badge/UI-Avalonia-8B44AC)](https://avaloniaui.net/)
+[![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux-lightgrey)](#install)
 
-Early stage, but already usable day to day:
+[Download](https://github.com/ghorshy/SharpSelecta/releases) ·
+[Features](#features) ·
+[Build from source](#build-from-source) ·
+[Report a bug](https://github.com/ghorshy/SharpSelecta/issues)
 
-- Point it at one or more folders and it scans your library (MP3, FLAC, WAV, AIFF, Ogg Vorbis, M4A — including AAC and ALAC), then remembers it in a local index so later launches start instantly and only re-check what actually changed on disk
-- Browse as a sortable, column-configurable table, or as an album grid with cover art (zoomable, sortable by title/artist/year)
-- Click an album tile to expand its tracklist in place; double-click to queue and play the whole album
-- A Recently Added section showing the newest additions to your library first
-- Fuzzy search across track title, artist, and album, filtering both views live as you type
-- Double-click any cover art for a full-resolution preview
-- Playlists you can create, rename, reorder by dragging, and import from or export to M3U/M3U8
-- Queue with drag-to-reorder, play-next, and repeat modes (off/all/one)
-- Auto DJ: a toggle on the queue that keeps it topped up with random tracks from the playlist you started playing from (or the whole library), without repeating anything until the pool is used up
-- Play/pause, seek (with an optional waveform seek bar), volume (linear or logarithmic), and a toggle between elapsed and remaining time
-- 10-band graphic equalizer, with named presets or manual per-band gain
-- Playback device selection, and the queue/current track/volume all persist across restarts
-- Rebindable keyboard shortcuts, plus light, dark, or custom themes
-- Edit tags (title, artist, album artist, album, genre, year, track number, comments) and cover art from the Properties window (Alt+Enter) for one track, a selection of tracks, or a whole album, with the cover stored embedded in the files or as a separate cover.jpg. Tracks can have several artists, plus remixer, composer, conductor and lyricist credits
-- Find a cover online for an album from Apple Music, Deezer, Cover Art Archive or fanart.tv (fanart.tv needs your own free API key), compare them side by side, and use the one you like
-- Jump from any track or album straight to its file in your file manager
-- On Linux, integrates with playerctl and desktop media-key bindings (MPRIS)
-- Optional Discord Rich Presence: shows the playing track as a "Listening to" status with a progress bar (off by default, enable it in Settings → Integrations)
-- Convert tracks to MP3, FLAC, M4A (ALAC or AAC), Ogg Vorbis, WAV or AIFF from the Properties window's Convert tab, singly or in batches. Tags and embedded cover art carry over (WAV keeps only title, artist and album), a lossy file is never converted to a lossless format or to a higher bitrate, and the original is kept unless you untick "Keep original file" - then it goes to the trash
+</div>
 
-## Requirements
+---
 
-- .NET 10 SDK
-- Optional: [FFmpeg](https://ffmpeg.org/) on your PATH, needed only for the Convert tab
+SharpSelecta is a player for music you keep as files on your own disk. Point it at your folders and it builds a library you can browse as a table or as an album grid with covers.
 
-## Build & run
+<p align="center">
+  <img src=".github/assets/screenshots/main-window.png" alt="SharpSelecta showing the album grid, the queue and the playing track's cover" width="100%" />
+</p>
+
+## Install
+
+Download the latest version from the [Releases page](https://github.com/ghorshy/SharpSelecta/releases). Releases are self-contained, so you don't need .NET installed.
+
+**Windows:** run the installer (`SharpSelecta-win-Setup.exe`). It adds SharpSelecta to the Start menu and keeps it up to date by itself. There is also a portable `.zip` if you'd rather not install anything; it doesn't update itself.
+
+**Linux:** extract the `.tar.gz` and run `sharpselecta` from the extracted folder. To add it to your application menu:
+
+```sh
+tar xzf SharpSelecta-<version>-linux-x64.tar.gz
+mkdir -p ~/.local/bin ~/.local/share/applications ~/.local/share/icons/hicolor/scalable/apps
+mv SharpSelecta-<version>-linux-x64 ~/.local/share/sharpselecta
+ln -s ~/.local/share/sharpselecta/sharpselecta ~/.local/bin/sharpselecta
+cp ~/.local/share/sharpselecta/io.github.sharpselecta.SharpSelecta.desktop ~/.local/share/applications/
+cp ~/.local/share/sharpselecta/io.github.sharpselecta.SharpSelecta.svg ~/.local/share/icons/hicolor/scalable/apps/
+```
+
+`~/.local/bin` has to be on your `PATH`. Packages for Linux distributions are planned.
+
+To convert between file types (the Convert tab), install [FFmpeg](https://ffmpeg.org/) and make sure it's on your `PATH`. Everything else works without it.
+
+## Features
+
+### Library
+
+- Plays MP3, FLAC, WAV, AIFF, Ogg Vorbis and M4A (AAC and ALAC) from one or more folders.
+- The library lives in a local index, so it opens instantly and only re-reads files that changed.
+- While the app runs it watches your folders and picks up new, edited and deleted files. F5 rescans by hand.
+- Renamed or moved files stay in your playlists and queue, and keep their date added.
+- Two views: a table where you choose, sort and rearrange the columns, and an album grid you can zoom and sort by title, artist or year. Click an album to open its tracks in the grid; double-click to play it.
+- Recently Added lists the newest tracks first.
+- Fuzzy search over title, artist and album filters as you type.
+- Playlists can be renamed, reordered by dragging, and imported from or exported to M3U/M3U8.
+
+<p align="center">
+  <img src=".github/assets/screenshots/track-list.png" alt="The library as a table, filtered by a search" width="100%" />
+</p>
+
+### Playback
+
+- Drag tracks or whole albums onto the queue, reorder it by dragging, or play something next. Repeat one track or the whole queue.
+- Auto DJ tops up the queue with random tracks from the current playlist or the whole library, and doesn't repeat any until it has played them all.
+- ReplayGain normalization, per track or per album. Files without the tags get a gain you set.
+- 10-band equalizer with presets.
+- Optional waveform seek bar. Click the time to switch between elapsed and remaining. The volume slider can be linear or logarithmic.
+- Pick the output device. If it disconnects, playback pauses instead of moving to your speakers.
+- The next launch brings back the queue, the track and position, the volume and the repeat mode, and can start playing right away.
+- A double-click on a track can play it right away, play the list from that point, play just that track or add it to the queue. You choose which, and after how many seconds Previous restarts the track instead of going back.
+
+### Tags and covers
+
+- Edit the usual tags (title, artists, album, album artist, genre, year, track and disc number, comment) and the cover in the Properties window (Alt+Enter), for one track, a selection or a whole album. Covers go into the files or into a cover.jpg next to them.
+- A track can have several artists, plus remixer, composer, conductor and lyricist credits.
+- Mark albums as compilations with the iTunes flag, and find albums where only some tracks have it.
+- Search Apple Music, Deezer, Cover Art Archive and fanart.tv for a cover and compare the results side by side. fanart.tv needs your own free API key.
+- Convert to MP3, FLAC, M4A (ALAC or AAC), Ogg Vorbis, WAV or AIFF, one file or a batch at a time. Tags and covers are copied over, except that WAV keeps only title, artist and album. A lossy file can't be converted to a lossless format or to a higher bitrate, and the original stays unless you tell it to go to the trash.
+- Show any track or album in your file manager.
+
+<p align="center">
+  <img src=".github/assets/screenshots/tag-editor.png" alt="The tag editor in the Properties window" width="49%" />
+  <img src=".github/assets/screenshots/cover-search.png" alt="Online cover search comparing results from several sources" width="49%" />
+</p>
+
+### Desktop integration
+
+- Open audio files, folders and M3U playlists from your file manager. If SharpSelecta is already running, they go to that window.
+- Minimize or close to the tray. The tray menu has playback controls.
+- On Linux, media keys and playerctl work through MPRIS, and you can get a notification with the cover when the track changes.
+- A Discord "Listening to" status, off by default. You decide whether it shows the artist, the album and the elapsed time, and whether it stays up while paused.
+- Every keyboard shortcut can be rebound.
+- Light, dark or custom themes, your own accent color, and adjustable text size.
+- The Windows installer keeps itself up to date.
+
+<p align="center">
+  <img src=".github/assets/screenshots/light-theme.png" alt="SharpSelecta in the light theme with an orange accent and an expanded album" width="100%" />
+</p>
+
+## Build from source
+
+You need the .NET 10 SDK.
 
 ```sh
 dotnet build SharpSelecta.slnx
 dotnet run --project SharpSelecta.App
 ```
 
-## Tests
+Run the tests with:
 
 ```sh
 dotnet test
@@ -49,12 +127,15 @@ dotnet test
 - [Avalonia](https://github.com/AvaloniaUI/Avalonia) — cross-platform UI
 - [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) — MVVM (observable properties, commands)
 - [OwnAudioSharp](https://github.com/ModernMube/OwnAudioSharp) — audio engine (decode, mix, output)
-- [ATL.NET](https://github.com/Zeugma440/atldotnet) — reading audio tags and properties
+- [ATL.NET](https://github.com/Zeugma440/atldotnet) — reading and writing audio tags
 - [Microsoft.Data.Sqlite](https://github.com/dotnet/efcore) — local library index
+- [FFMpegCore](https://github.com/rosenbjerg/FFMpegCore) — file type conversion
+- [Velopack](https://github.com/velopack/velopack) — Windows installer and updates
+- [DiscordRichPresence](https://github.com/Lachee/discord-rpc-csharp) — Discord status
+- [Tmds.DBus](https://github.com/tmds/Tmds.DBus) — MPRIS, notifications and tray integration on Linux
 - [Serilog](https://github.com/serilog/serilog) — logging
-- [Tmds.DBus](https://github.com/tmds/Tmds.DBus) — MPRIS/playerctl integration on Linux
 - [Svg.Skia](https://github.com/wieslawsoltes/Svg.Skia) — SVG icon rendering
-- [Tabler Icons](https://tabler.io/icons) — toolbar icon set
+- [Tabler Icons](https://tabler.io/icons) — icon set
 - [TUnit](https://github.com/thomhurst/TUnit) + [NSubstitute](https://github.com/nsubstitute/NSubstitute) — testing
 
 ## License
