@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.ghorshy.SharpSelecta</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>SharpSelecta</name>
+  <summary>Music player for your local library</summary>
+  <developer id="io.github.ghorshy">
+    <name>ghorshy</name>
+  </developer>
+  <description>
+    <p>SharpSelecta plays the music you keep as files on your own disk. Point it at your folders and it builds a library you can browse as a table or as an album grid with covers.</p>
+    <ul>
+      <li>MP3, FLAC, WAV, AIFF, Ogg Vorbis and M4A (AAC and ALAC), with a library that updates as files change on disk</li>
+      <li>A queue with Auto DJ, ReplayGain normalization and a 10-band equalizer</li>
+      <li>A tag editor with online cover search, and conversion between file types</li>
+      <li>Media keys and playerctl through MPRIS, notifications, a tray icon and an optional Discord status</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">io.github.ghorshy.SharpSelecta.desktop</launchable>
+  <url type="homepage">https://github.com/ghorshy/SharpSelecta</url>
+  <url type="bugtracker">https://github.com/ghorshy/SharpSelecta/issues</url>
+  <url type="vcs-browser">https://github.com/ghorshy/SharpSelecta</url>
+  <screenshots>
+    <screenshot type="default">
+      <caption>The album grid with the queue</caption>
+      <image>https://raw.githubusercontent.com/ghorshy/SharpSelecta/main/.github/assets/screenshots/main-window.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The library as a table</caption>
+      <image>https://raw.githubusercontent.com/ghorshy/SharpSelecta/main/.github/assets/screenshots/track-list.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The light theme</caption>
+      <image>https://raw.githubusercontent.com/ghorshy/SharpSelecta/main/.github/assets/screenshots/light-theme.png</image>
+    </screenshot>
+  </screenshots>
+  <categories>
+    <category>AudioVideo</category>
+    <category>Audio</category>
+    <category>Player</category>
+  </categories>
+  <keywords>
+    <keyword>music</keyword>
+    <keyword>player</keyword>
+    <keyword>library</keyword>
+    <keyword>flac</keyword>
+  </keywords>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="1.0.0" date="2026-11-19" />
+  </releases>
+</component>

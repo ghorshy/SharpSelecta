@@ -32,22 +32,18 @@ SharpSelecta is a player for music you keep as files on your own disk. Point it 
 
 ## Install
 
-Download the latest version from the [Releases page](https://github.com/ghorshy/SharpSelecta/releases). Releases are self-contained, so you don't need .NET installed.
+Download the file for your system from the [Releases page](https://github.com/ghorshy/SharpSelecta/releases). Every build is self-contained, so you don't need .NET installed.
 
-**Windows:** run the installer (`SharpSelecta-win-Setup.exe`). It adds SharpSelecta to the Start menu and keeps it up to date by itself. There is also a portable `.zip` if you'd rather not install anything; it doesn't update itself.
+| System | File | How to install |
+|---|---|---|
+| Windows | `SharpSelecta-win-Setup.exe` | Run it. It updates itself from then on. |
+| Windows, portable | `SharpSelecta-<version>-win-x64.zip` | Extract it and run `sharpselecta.exe`. No updates. |
+| Debian, Ubuntu, Mint | `sharpselecta_<version>_amd64.deb` | Open it, or `sudo apt install ./sharpselecta_*.deb` |
+| Fedora | `sharpselecta-<version>-1.x86_64.rpm` | Open it, or `sudo dnf install ./sharpselecta-*.rpm` |
+| Any Linux | `SharpSelecta-<version>-x86_64.AppImage` | `chmod +x` it and run it. Nothing gets installed. |
+| Any Linux, without root | `SharpSelecta-<version>-linux-x64.tar.gz` | Extract it and run `./install.sh` |
 
-**Linux:** extract the `.tar.gz` and run `sharpselecta` from the extracted folder. To add it to your application menu:
-
-```sh
-tar xzf SharpSelecta-<version>-linux-x64.tar.gz
-mkdir -p ~/.local/bin ~/.local/share/applications ~/.local/share/icons/hicolor/scalable/apps
-mv SharpSelecta-<version>-linux-x64 ~/.local/share/sharpselecta
-ln -s ~/.local/share/sharpselecta/sharpselecta ~/.local/bin/sharpselecta
-cp ~/.local/share/sharpselecta/io.github.sharpselecta.SharpSelecta.desktop ~/.local/share/applications/
-cp ~/.local/share/sharpselecta/io.github.sharpselecta.SharpSelecta.svg ~/.local/share/icons/hicolor/scalable/apps/
-```
-
-`~/.local/bin` has to be on your `PATH`. Packages for Linux distributions are planned.
+To update on Linux, install the newer file the same way: a newer `.deb` or `.rpm` replaces the old version, a newer AppImage replaces the old file, and `install.sh` from a newer `.tar.gz` replaces the old install. To remove a `.tar.gz` install, run `~/.local/share/SharpSelecta/app/uninstall.sh`. Your settings and library are kept either way.
 
 To convert between file types (the Convert tab), install [FFmpeg](https://ffmpeg.org/) and make sure it's on your `PATH`. Everything else works without it.
 

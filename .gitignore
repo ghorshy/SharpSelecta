@@ -1,6 +1,7 @@
 bin/
 obj/
 /packages/
+/build/
 riderModule.iml
 /_ReSharper.Caches/
 node_modules/

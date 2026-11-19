@@ -1,0 +1,4 @@
+#!/bin/sh
+# Entry point of the AppImage: runs the bundled self-contained build.
+here=$(dirname "$(readlink -f "$0")")
+exec "$here/usr/lib/sharpselecta/sharpselecta" "$@"

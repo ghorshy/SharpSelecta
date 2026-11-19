@@ -1,0 +1,59 @@
+# .deb and .rpm, built in the release workflow from the self-contained publish in build/linux-x64/app
+# (nfpm expands environment variables in `version`, not in paths), run from the repo root:
+#   VERSION=1.2.3 nfpm package -f packaging/linux/nfpm.yaml -p deb   (and -p rpm)
+name: sharpselecta
+arch: amd64
+platform: linux
+version: ${VERSION}
+section: sound
+priority: optional
+maintainer: ghorshy
+vendor: ghorshy
+homepage: https://github.com/ghorshy/SharpSelecta
+license: MIT
+description: |-
+  Music player for your local library.
+  Plays music you keep as files on your own disk and shows it as a table or as an
+  album grid with covers. It has a queue with Auto DJ, ReplayGain, an equalizer, a
+  tag editor with online cover search, and a file converter.
+
+contents:
+  - src: build/linux-x64/app
+    dst: /usr/lib/sharpselecta
+    type: tree
+  - src: /usr/lib/sharpselecta/sharpselecta
+    dst: /usr/bin/sharpselecta
+    type: symlink
+  - src: packaging/linux/io.github.ghorshy.SharpSelecta.desktop
+    dst: /usr/share/applications/io.github.ghorshy.SharpSelecta.desktop
+  - src: SharpSelecta.App/Assets/Icons/sharpselecta-logo.svg
+    dst: /usr/share/icons/hicolor/scalable/apps/io.github.ghorshy.SharpSelecta.svg
+  - src: packaging/linux/io.github.ghorshy.SharpSelecta.metainfo.xml
+    dst: /usr/share/metainfo/io.github.ghorshy.SharpSelecta.metainfo.xml
+
+overrides:
+  deb:
+    depends:
+      - libicu76 | libicu74 | libicu72 | libicu70
+      - libssl3t64 | libssl3
+      - libfontconfig1
+      - libx11-6
+      - libice6
+      - libsm6
+      - libasound2t64 | libasound2
+    recommends:
+      - ffmpeg
+      - pulseaudio-utils
+      - libglib2.0-bin
+  rpm:
+    depends:
+      - libicu
+      - openssl-libs
+      - fontconfig
+      - libX11
+      - libICE
+      - libSM
+      - alsa-lib
+    recommends:
+      - ffmpeg
+      - pulseaudio-utils

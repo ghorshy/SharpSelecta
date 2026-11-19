@@ -76,14 +76,49 @@ jobs:
       - name: Version from tag
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
 
+      # One self-contained build; the tarball, .deb, .rpm and AppImage are all made from it.
       - name: Publish
-        run: dotnet publish SharpSelecta.App -c Release -r linux-x64 --self-contained -p:Version="$VERSION" -o "SharpSelecta-$VERSION-linux-x64"
+        run: dotnet publish SharpSelecta.App -c Release -r linux-x64 --self-contained -p:Version="$VERSION" -o build/linux-x64/app
 
-      - name: Attach the tarball
+      - name: Tarball
+        run: |
+          dir="SharpSelecta-$VERSION-linux-x64"
+          mkdir -p dist
+          cp -a build/linux-x64/app "$dir"
+          cp packaging/linux/io.github.ghorshy.SharpSelecta.desktop packaging/linux/install.sh packaging/linux/uninstall.sh "$dir/"
+          cp SharpSelecta.App/Assets/Icons/sharpselecta-logo.svg "$dir/io.github.ghorshy.SharpSelecta.svg"
+          chmod +x "$dir/install.sh" "$dir/uninstall.sh"
+          tar czf "dist/$dir.tar.gz" "$dir"
+
+      - name: .deb and .rpm
+        run: |
+          for packager in deb rpm; do
+            docker run --rm -u "$(id -u):$(id -g)" -v "$PWD":/src -w /src -e VERSION="$VERSION" \
+              goreleaser/nfpm:v2.43.0 package -f packaging/linux/nfpm.yaml -p "$packager" -t dist/
+          done
+
+      - name: AppImage
+        env:
+          APPIMAGETOOL_SHA256: 46fdd785094c7f6e545b61afcfb0f3d98d8eab243f644b4b17698c01d06083d1
+        run: |
+          curl -sSfL -o appimagetool https://github.com/AppImage/appimagetool/releases/download/1.9.0/appimagetool-x86_64.AppImage
+          echo "$APPIMAGETOOL_SHA256  appimagetool" | sha256sum -c -
+          chmod +x appimagetool
+          id=io.github.ghorshy.SharpSelecta
+          appdir=build/SharpSelecta.AppDir
+          mkdir -p "$appdir/usr/lib" "$appdir/usr/share/applications" "$appdir/usr/share/metainfo" "$appdir/usr/share/icons/hicolor/scalable/apps"
+          cp -a build/linux-x64/app "$appdir/usr/lib/sharpselecta"
+          cp packaging/linux/AppRun "$appdir/AppRun"
+          chmod +x "$appdir/AppRun"
+          cp packaging/linux/$id.desktop "$appdir/"
+          cp packaging/linux/$id.desktop "$appdir/usr/share/applications/"
+          cp packaging/linux/$id.metainfo.xml "$appdir/usr/share/metainfo/"
+          cp SharpSelecta.App/Assets/Icons/sharpselecta-logo.svg "$appdir/$id.svg"
+          cp SharpSelecta.App/Assets/Icons/sharpselecta-logo.svg "$appdir/usr/share/icons/hicolor/scalable/apps/$id.svg"
+          ln -s "$id.svg" "$appdir/.DirIcon"
+          ARCH=x86_64 ./appimagetool --appimage-extract-and-run "$appdir" "dist/SharpSelecta-$VERSION-x86_64.AppImage"
+
+      - name: Attach the Linux builds
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          cp packaging/linux/io.github.sharpselecta.SharpSelecta.desktop "SharpSelecta-$VERSION-linux-x64/"
-          cp SharpSelecta.App/Assets/Icons/sharpselecta-logo.svg "SharpSelecta-$VERSION-linux-x64/io.github.sharpselecta.SharpSelecta.svg"
-          tar czf "SharpSelecta-$VERSION-linux-x64.tar.gz" "SharpSelecta-$VERSION-linux-x64"
-          gh release upload "$GITHUB_REF_NAME" "SharpSelecta-$VERSION-linux-x64.tar.gz"
+        run: gh release upload "$GITHUB_REF_NAME" dist/*
