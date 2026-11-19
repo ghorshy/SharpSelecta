@@ -207,6 +207,10 @@ dotnet test
 
 Bug reports and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first: a pull request needs tests and has to be tried in the running app.
 
+## AI disclosure
+
+SharpSelecta is built with a lot of help from AI coding assistants, mainly Claude. Every change still goes through a person: it has to pass the tests and get tried in the running app before it's committed.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
