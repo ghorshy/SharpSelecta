@@ -4,6 +4,7 @@ Name=SharpSelecta
 GenericName=Music Player
 Comment=Play and organize your music library
 Exec=sharpselecta %F
+Icon=io.github.sharpselecta.SharpSelecta
 Terminal=false
 Categories=AudioVideo;Audio;Player;
 MimeType=audio/mpeg;audio/flac;audio/x-flac;audio/wav;audio/x-wav;audio/vnd.wave;audio/mp4;audio/x-m4a;audio/ogg;audio/x-vorbis+ogg;audio/x-flac+ogg;audio/aiff;audio/x-aiff;audio/x-mpegurl;audio/mpegurl;

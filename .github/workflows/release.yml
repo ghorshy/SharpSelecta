@@ -51,6 +51,7 @@ jobs:
         run: >
           vpk pack --packId SharpSelecta --packVersion "$VERSION" --packDir publish
           --mainExe sharpselecta.exe --packTitle SharpSelecta --packAuthors ghorshy
+          --icon SharpSelecta.App/Assets/sharpselecta.ico
           --runtime win-x64 --noPortable -o releases
 
       - name: Create the release
@@ -83,5 +84,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cp packaging/linux/io.github.sharpselecta.SharpSelecta.desktop "SharpSelecta-$VERSION-linux-x64/"
+          cp SharpSelecta.App/Assets/Icons/sharpselecta-logo.svg "SharpSelecta-$VERSION-linux-x64/io.github.sharpselecta.SharpSelecta.svg"
           tar czf "SharpSelecta-$VERSION-linux-x64.tar.gz" "SharpSelecta-$VERSION-linux-x64"
           gh release upload "$GITHUB_REF_NAME" "SharpSelecta-$VERSION-linux-x64.tar.gz"

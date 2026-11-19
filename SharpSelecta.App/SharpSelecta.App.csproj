@@ -4,6 +4,7 @@
         <AssemblyName>sharpselecta</AssemblyName>
         <RootNamespace>SharpSelecta.App</RootNamespace>
         <ApplicationManifest>app.manifest</ApplicationManifest>
+        <ApplicationIcon>Assets\sharpselecta.ico</ApplicationIcon>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     </PropertyGroup>
 
