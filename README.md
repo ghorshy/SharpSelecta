@@ -32,20 +32,66 @@ SharpSelecta is a player for music you keep as files on your own disk. Point it 
 
 ## Install
 
-Download the file for your system from the [Releases page](https://github.com/ghorshy/SharpSelecta/releases). Every build is self-contained, so you don't need .NET installed.
+Every build is self-contained, so you don't need .NET installed. Download the file for your system from the [Releases page](https://github.com/ghorshy/SharpSelecta/releases).
 
-| System | File | How to install |
-|---|---|---|
-| Windows | `SharpSelecta-win-Setup.exe` | Run it. It updates itself from then on. |
-| Windows, portable | `SharpSelecta-<version>-win-x64.zip` | Extract it and run `sharpselecta.exe`. No updates. |
-| Debian, Ubuntu, Mint | `sharpselecta_<version>_amd64.deb` | Open it, or `sudo apt install ./sharpselecta_*.deb` |
-| Fedora | `sharpselecta-<version>-1.x86_64.rpm` | Open it, or `sudo dnf install ./sharpselecta-*.rpm` |
-| Any Linux | `SharpSelecta-<version>-x86_64.AppImage` | `chmod +x` it and run it. Nothing gets installed. |
-| Any Linux, without root | `SharpSelecta-<version>-linux-x64.tar.gz` | Extract it and run `./install.sh` |
+### Windows
 
-To update on Linux, install the newer file the same way: a newer `.deb` or `.rpm` replaces the old version, a newer AppImage replaces the old file, and `install.sh` from a newer `.tar.gz` replaces the old install. To remove a `.tar.gz` install, run `~/.local/share/SharpSelecta/app/uninstall.sh`. Your settings and library are kept either way.
+Run `SharpSelecta-win-Setup.exe`. It adds SharpSelecta to the Start menu and updates itself from then on.
 
-To convert between file types (the Convert tab), install [FFmpeg](https://ffmpeg.org/) and make sure it's on your `PATH`. Everything else works without it.
+If you'd rather not install anything, extract `SharpSelecta-<version>-win-x64.zip` and run `sharpselecta.exe`. This version doesn't update itself.
+
+### Debian, Ubuntu and Mint
+
+Open the `.deb` in your software center, or install it from a terminal:
+
+```sh
+sudo apt install ./sharpselecta_<version>_amd64.deb
+```
+
+To update, install the newer `.deb` the same way.
+
+### Fedora
+
+Open the `.rpm` in your software center, or install it from a terminal:
+
+```sh
+sudo dnf install ./sharpselecta-<version>-1.x86_64.rpm
+```
+
+To update, install the newer `.rpm` the same way.
+
+### AppImage (any Linux)
+
+Nothing gets installed; the file is the whole app:
+
+```sh
+chmod +x SharpSelecta-<version>-x86_64.AppImage
+./SharpSelecta-<version>-x86_64.AppImage
+```
+
+To update, download the newer AppImage and delete the old one.
+
+### Any Linux, without root
+
+The `.tar.gz` comes with a script that installs SharpSelecta just for you, with a menu entry and a `sharpselecta` command:
+
+```sh
+tar xzf SharpSelecta-<version>-linux-x64.tar.gz
+cd SharpSelecta-<version>-linux-x64
+./install.sh
+```
+
+The app goes into `~/.local/share/SharpSelecta/app`. To update, run `install.sh` from a newer release. To remove it:
+
+```sh
+~/.local/share/SharpSelecta/app/uninstall.sh
+```
+
+Your settings and library stay where they are.
+
+### FFmpeg (optional)
+
+Converting between file types (the Convert tab) needs [FFmpeg](https://ffmpeg.org/) on your `PATH`. Everything else works without it. The `.deb` and `.rpm` suggest it, so your package manager may already offer to install it.
 
 ## Features
 
