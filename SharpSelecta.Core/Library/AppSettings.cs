@@ -10,6 +10,11 @@ public sealed record AppSettings
     public IReadOnlyDictionary<string, bool>? Columns { get; init; }
     public IReadOnlyList<string>? ColumnOrder { get; init; }
     public double? RightColumnWidth { get; init; }
+
+    // The main window's size when it was last closed (its restored size if it was maximized); null until then.
+    public double? WindowWidth { get; init; }
+    public double? WindowHeight { get; init; }
+    public bool WindowMaximized { get; init; }
     public IReadOnlyDictionary<string, double>? ColumnWidths { get; init; }
     public string? SortPropertyPath { get; init; }
     public bool SortDescending { get; init; }

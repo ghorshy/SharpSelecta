@@ -59,6 +59,7 @@ public partial class App : Application
             AppearanceService.Apply(settings.Current);
 
             var mainWindow = new MainWindow();
+            var windowSize = new WindowSizeKeeper(mainWindow, settings.Current);
 
             var services = new ServiceCollection();
             services.AddLogging(builder => builder.AddSerilog(dispose: false));
@@ -115,12 +116,14 @@ public partial class App : Application
 
             mainWindowViewModel.Updates.RestartingToUpdate += (_, _) =>
             {
+                windowSize.Persist(settings);
                 mainWindowViewModel.PersistQueueStateIfEnabled();
                 mainWindowViewModel.PlaybackControls.Volume.Persist();
             };
 
             desktop.Exit += (_, _) =>
             {
+                windowSize.Persist(settings);
                 mainWindowViewModel.PersistQueueStateIfEnabled();
                 mainWindowViewModel.PlaybackControls.Volume.Persist();
                 mainWindowViewModel.Updates.InstallPendingUpdateOnExit();
