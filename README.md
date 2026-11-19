@@ -138,6 +138,10 @@ dotnet test
 - [Tabler Icons](https://tabler.io/icons) — icon set
 - [TUnit](https://github.com/thomhurst/TUnit) + [NSubstitute](https://github.com/nsubstitute/NSubstitute) — testing
 
+## Contributing
+
+Bug reports and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first: a pull request needs tests and has to be tried in the running app.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
