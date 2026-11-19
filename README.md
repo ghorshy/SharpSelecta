@@ -209,7 +209,7 @@ Bug reports and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.m
 
 ## AI disclosure
 
-SharpSelecta is built with a lot of help from AI coding assistants, mainly Claude. Every change still goes through a person: it has to pass the tests and get tried in the running app before it's committed.
+SharpSelecta is built with a lot of help from AI coding assistants, mainly Claude. Every change still goes through a person before it's committed: the code is read and checked by hand, and it has to pass the tests and work in the running app.
 
 ## License
 
