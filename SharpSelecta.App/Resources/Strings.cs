@@ -62,6 +62,14 @@ public static class Strings
     public static string TrayHint => Get(nameof(TrayHint));
     public static string TrayShowWindow => Get(nameof(TrayShowWindow));
     public static string TrayQuit => Get(nameof(TrayQuit));
+    public static string DiscordShowArtist => Get(nameof(DiscordShowArtist));
+    public static string DiscordShowAlbum => Get(nameof(DiscordShowAlbum));
+    public static string DiscordShowElapsed => Get(nameof(DiscordShowElapsed));
+    public static string DiscordShowWhilePaused => Get(nameof(DiscordShowWhilePaused));
+    public static string DiscordPaused => Get(nameof(DiscordPaused));
+
+    public static string DiscordPausedArtists(string artists) =>
+        string.Format(CultureInfo.CurrentCulture, Get("DiscordPausedArtistsFormat"), artists);
 
     public static string Pixels(int size) =>
         string.Format(CultureInfo.CurrentCulture, Get("PixelsFormat"), size);

@@ -169,6 +169,15 @@ public class RichPresenceTests : IDisposable
             ((SharpSelecta.App.ViewModels.ISettingsCategoryViewModel)Settings).ApplyCommand.Execute(null);
         }
 
+        public void SetOptions(bool artist = true, bool album = true, bool elapsed = true, bool whilePaused = false)
+        {
+            Settings.DiscordShowArtist = artist;
+            Settings.DiscordShowAlbum = album;
+            Settings.DiscordShowElapsed = elapsed;
+            Settings.DiscordShowWhilePaused = whilePaused;
+            ((SharpSelecta.App.ViewModels.ISettingsCategoryViewModel)Settings).ApplyCommand.Execute(null);
+        }
+
         public async Task SetPositionAsync(double position, double duration = 200)
         {
             Engine.Position.Returns(position);
@@ -205,6 +214,63 @@ public class RichPresenceTests : IDisposable
 
         await Assert.That(f.Playback.IsPlaying).IsFalse();
         await Assert.That(f.Presence.Calls.Last()).IsEqualTo("clear");
+    }
+
+    [Test]
+    public async Task Coordinator_KeptWhilePaused_ShowsThePausedStateWithoutProgress()
+    {
+        var f = new Fixture(_temp.NewSettingsPath());
+        f.SetOptions(whilePaused: true);
+        await f.Playback.PlayNowAsync(Fixture.Song());
+
+        f.Playback.PlayPauseCommand.Execute(null); // pause
+
+        var shown = f.Presence.Shown.Last();
+        await Assert.That(f.Presence.Calls.Last()).IsEqualTo("show");
+        await Assert.That(shown.Title).IsEqualTo("Song");
+        await Assert.That(shown.Artists).IsEqualTo(SharpSelecta.App.Resources.Strings.DiscordPausedArtists("A, B"));
+        await Assert.That(shown.StartedAtUtc).IsNull();
+        await Assert.That(shown.EndsAtUtc).IsNull();
+    }
+
+    [Test]
+    public async Task Coordinator_LeavesOutWhatTheOptionsHide()
+    {
+        var f = new Fixture(_temp.NewSettingsPath());
+        f.SetOptions(artist: false, album: false, elapsed: false, whilePaused: true);
+        await f.Playback.PlayNowAsync(Fixture.Song());
+
+        var playing = f.Presence.Shown.Last();
+        await Assert.That(playing.Artists).IsNull();
+        await Assert.That(playing.Album).IsNull();
+        await Assert.That(playing.StartedAtUtc).IsNull();
+
+        f.Playback.PlayPauseCommand.Execute(null);
+        await Assert.That(f.Presence.Shown.Last().Artists).IsEqualTo(SharpSelecta.App.Resources.Strings.DiscordPaused);
+    }
+
+    [Test]
+    public async Task Coordinator_WithoutElapsedTime_ASeekDoesNotResend()
+    {
+        var f = new Fixture(_temp.NewSettingsPath());
+        f.SetOptions(elapsed: false);
+        await f.Playback.PlayNowAsync(Fixture.Song());
+        var before = f.Presence.Shown.Count;
+
+        await f.SetPositionAsync(120);
+
+        await Assert.That(f.Presence.Shown.Count).IsEqualTo(before);
+    }
+
+    [Test]
+    public async Task Coordinator_ChangingAnOptionWhilePlaying_UpdatesTheStatusAtOnce()
+    {
+        var f = new Fixture(_temp.NewSettingsPath());
+        await f.Playback.PlayNowAsync(Fixture.Song());
+
+        f.SetOptions(album: false);
+
+        await Assert.That(f.Presence.Shown.Last().Album).IsNull();
     }
 
     [Test]

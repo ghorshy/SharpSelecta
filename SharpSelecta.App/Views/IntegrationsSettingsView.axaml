@@ -14,6 +14,13 @@
             <CheckBox Content="{x:Static res:Strings.DiscordPresenceToggle}" IsChecked="{Binding DiscordPresenceEnabled}" />
             <TextBlock Text="{x:Static res:Strings.DiscordPresenceHint}" Classes="tertiary small" TextWrapping="Wrap"
                        Margin="{styles:Spacing Left=L}" />
+            <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Left=L, Top=XS}"
+                        IsEnabled="{Binding DiscordPresenceEnabled}">
+                <CheckBox Content="{x:Static res:Strings.DiscordShowArtist}" IsChecked="{Binding DiscordShowArtist}" />
+                <CheckBox Content="{x:Static res:Strings.DiscordShowAlbum}" IsChecked="{Binding DiscordShowAlbum}" />
+                <CheckBox Content="{x:Static res:Strings.DiscordShowElapsed}" IsChecked="{Binding DiscordShowElapsed}" />
+                <CheckBox Content="{x:Static res:Strings.DiscordShowWhilePaused}" IsChecked="{Binding DiscordShowWhilePaused}" />
+            </StackPanel>
         </StackPanel>
 
         <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=S}">

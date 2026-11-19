@@ -416,7 +416,7 @@
     <value>Show what I'm listening to on Discord</value>
   </data>
   <data name="DiscordPresenceHint" xml:space="preserve">
-    <value>While a track is playing and Discord is running, it shows as your Discord status. It is cleared when you pause or stop.</value>
+    <value>While a track is playing and Discord is running, it shows as your Discord status. It is cleared when playback stops.</value>
   </data>
   <data name="FanartApiKeyLabel" xml:space="preserve">
     <value>fanart.tv API key</value>
@@ -924,5 +924,23 @@
   </data>
   <data name="TrayQuit" xml:space="preserve">
     <value>Quit</value>
+  </data>
+  <data name="DiscordShowArtist" xml:space="preserve">
+    <value>Show the artist</value>
+  </data>
+  <data name="DiscordShowAlbum" xml:space="preserve">
+    <value>Show the album</value>
+  </data>
+  <data name="DiscordShowElapsed" xml:space="preserve">
+    <value>Show the elapsed time</value>
+  </data>
+  <data name="DiscordShowWhilePaused" xml:space="preserve">
+    <value>Keep the status while paused</value>
+  </data>
+  <data name="DiscordPaused" xml:space="preserve">
+    <value>Paused</value>
+  </data>
+  <data name="DiscordPausedArtistsFormat" xml:space="preserve">
+    <value>{0} · Paused</value>
   </data>
 </root>

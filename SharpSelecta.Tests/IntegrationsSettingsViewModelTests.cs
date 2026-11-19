@@ -27,7 +27,7 @@ public class IntegrationsSettingsViewModelTests : IDisposable
         var path = _temp.NewSettingsPath();
         var vm = new IntegrationsSettingsViewModel(new SettingsStore(path));
         var raised = 0;
-        vm.DiscordPresenceEnabledChanged += (_, _) => raised++;
+        vm.DiscordPresenceChanged += (_, _) => raised++;
 
         vm.DiscordPresenceEnabled = true;
         await Assert.That(vm.HasPendingChanges).IsTrue();
@@ -55,11 +55,45 @@ public class IntegrationsSettingsViewModelTests : IDisposable
     }
 
     [Test]
+    public async Task TheDiscordOptions_DefaultToTodaysStatus_AndAnEditAppliesPersistsAndRaisesTheEvent()
+    {
+        var path = _temp.NewSettingsPath();
+        var vm = new IntegrationsSettingsViewModel(new SettingsStore(path));
+        var raised = 0;
+        vm.DiscordPresenceChanged += (_, _) => raised++;
+        await Assert.That(vm.AppliedDiscordOptions).IsEqualTo(new DiscordPresenceOptions(true, true, true, false));
+
+        vm.DiscordShowAlbum = false;
+        vm.DiscordShowWhilePaused = true;
+        await Assert.That(vm.HasPendingChanges).IsTrue();
+        await Assert.That(vm.AppliedDiscordOptions.ShowAlbum).IsTrue();
+
+        Apply(vm);
+
+        var expected = new DiscordPresenceOptions(ShowArtist: true, ShowAlbum: false, ShowElapsed: true, ShowWhilePaused: true);
+        await Assert.That(vm.AppliedDiscordOptions).IsEqualTo(expected);
+        await Assert.That(raised).IsEqualTo(1);
+        await Assert.That(new IntegrationsSettingsViewModel(new SettingsStore(path)).AppliedDiscordOptions).IsEqualTo(expected);
+    }
+
+    [Test]
+    public async Task CancelRevertsUnappliedDiscordOptions()
+    {
+        var vm = new IntegrationsSettingsViewModel(new SettingsStore(_temp.NewSettingsPath()));
+        vm.DiscordShowArtist = false;
+
+        ((ISettingsCategoryViewModel)vm).CancelCommand.Execute(null);
+
+        await Assert.That(vm.DiscordShowArtist).IsTrue();
+        await Assert.That(vm.HasPendingChanges).IsFalse();
+    }
+
+    [Test]
     public async Task ApplyingWithoutAChange_DoesNotRaiseTheEvent()
     {
         var vm = new IntegrationsSettingsViewModel(new SettingsStore(_temp.NewSettingsPath()));
         var raised = 0;
-        vm.DiscordPresenceEnabledChanged += (_, _) => raised++;
+        vm.DiscordPresenceChanged += (_, _) => raised++;
 
         Apply(vm);
 

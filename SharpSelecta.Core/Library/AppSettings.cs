@@ -57,6 +57,10 @@ public sealed record AppSettings
     public RepeatMode RepeatMode { get; init; } = RepeatMode.Off;
 
     public bool DiscordPresenceEnabled { get; init; }
+    public bool DiscordShowArtist { get; init; } = true;
+    public bool DiscordShowAlbum { get; init; } = true;
+    public bool DiscordShowElapsed { get; init; } = true;
+    public bool DiscordShowWhilePaused { get; init; }
     public bool CheckForUpdatesAutomatically { get; init; } = true;
 
     public string? FanartApiKey

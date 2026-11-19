@@ -23,7 +23,9 @@ public sealed class DiscordPresenceService(string applicationId) : IRichPresence
             Details = Text(activity.Title),
             State = Text(activity.Artists),
             Assets = new Assets { LargeImageKey = LogoAssetKey, LargeImageText = Text(activity.Album) },
-            Timestamps = new Timestamps { Start = activity.StartedAtUtc.UtcDateTime, End = activity.EndsAtUtc?.UtcDateTime },
+            Timestamps = activity.StartedAtUtc is { } started
+                ? new Timestamps { Start = started.UtcDateTime, End = activity.EndsAtUtc?.UtcDateTime }
+                : null,
         });
     }
 
