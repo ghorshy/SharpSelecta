@@ -1,0 +1,47 @@
+# AGENTS.md
+
+This file provides guidance to coding agents when working with code in this repository.
+
+## What this is
+
+SharpSelecta is a cross-platform (Linux/Windows, macOS later) open-source music player on .NET 10 + Avalonia.
+
+Current state: a full desktop player — folder-based library indexed in SQLite (list and album-grid views, fuzzy search), M3U playlists, a play queue with Auto DJ and persisted state, 10-band EQ, output-device picker, waveform seek bar, tag editor (credits, cover art, online cover search), file-type converter, MPRIS, Discord Rich Presence, rebindable shortcuts and theming. Crossfade was considered and dropped. All new code, comments, and UI text should be written in English.
+
+## Commands
+
+Solution file is `SharpSelecta.slnx` (new slnx format, not `.sln`).
+
+- Build: `dotnet build SharpSelecta.slnx`
+- Run the app: `dotnet run --project SharpSelecta.App`
+- Run all tests: `dotnet test` (TUnit runs on Microsoft.Testing.Platform; MTP mode is enabled via `global.json` — without it, plain `dotnet test` fails on .NET 10 SDK since the old VSTest bridge is no longer supported)
+- Run a single test project: `dotnet test --project SharpSelecta.Tests`
+- Run a single test: `dotnet test --project SharpSelecta.Tests -- --treenode-filter "/*/*/*/TestMethodName"`
+
+## Architecture
+
+Five projects, dependencies flow one way: `App` → `Audio`/`Integrations`/`Core`, and `Audio`/`Integrations` → `Core`. Never the reverse.
+
+- **`SharpSelecta.Core`** — domain layer: `Audio/` (`IAudioEngine` — load/play/pause/seek, volume, EQ, output devices, waveform peaks — plus `IOutputDeviceService`, volume curve), `Library/` (`Track`, `MusicLibraryScanner`, `LibraryIndexStore`, `SettingsStore`, `QueueStateStore`, `TrackTagEditor`, `TrackCredits`, M3U, fuzzy search), `Playback/` (`PlaybackQueue`, `AutoDj`), and the seams for Integrations (`AlbumArt/`, `Conversion/`, `Presence/`, `Updates/`). Owns SQLite (`Microsoft.Data.Sqlite`) and ATL (`z440.atl.core`) for tags directly — used as-is, not hidden behind repository interfaces (see mock-vs-real rule below).
+- **`SharpSelecta.Audio`** — the *only* project allowed to reference OwnAudioSharp. `OwnAudioEngine : IAudioEngine` wraps `OwnAudioSharp.Basic` (pinned to `4.0.7`, on the stable Rust-rewrite 4.x line). `ServiceCollectionExtensions.AddAudioEngine(IServiceCollection)` is the DI composition entry point App calls; it also registers `IOutputDeviceService` (`PipeWireOutputDeviceService` via `pactl` on Linux, `EngineOutputDeviceService` fallback).
+  - **Mixer construction:** use the plain `new AudioMixer(engine.UnderlyingEngine)` constructor, not the static `AudioMixer.Create()` factory — `Create()` is the "Heavy Load" path (8+ sources or 2+ VST master effects) and caused single-track playback to run many times faster than real time when used here.
+  - **`FileSource` must be `AttachToClock(mixer.MasterClock)`** before playback — without it, playback isn't paced to real time at all (a 10s file finished in ~0.2s in testing).
+  - **No FFmpeg dependency** — as of 4.0.0, OwnAudioSharp's own native Rust/Symphonia decoder handles mp3/flac/wav/aac/alac/m4a/ogg/aiff on its own (its old managed decoders and FFmpeg fallback are gone), which covers every extension `MusicLibraryScanner` scans for. `Load()` used to catch `AudioException` and shell out to a system `ffmpeg` binary for ALAC specifically; that fallback was removed since it had become dead code.
+  - OwnAudioSharp is obscure and its public docs site gets paraphrased inaccurately by web tools — check API questions against the source of the version pinned in `SharpSelecta.Audio.csproj` rather than trusting a summary.
+- **`SharpSelecta.Integrations`** — the adapters for external services, the only project that talks to them. Same pattern as `Audio`: the seam lives in Core, the implementation here, and a DI extension that App calls.
+  - `AlbumArt/` — online cover art (Apple Music via the iTunes Search API, Deezer, Cover Art Archive via MusicBrainz, fanart.tv). Seam: `Core/AlbumArt` (`IAlbumArtProvider`, `AlbumArtQuery`, `AlbumArtCandidate`); entry `AddAlbumArtProviders(...)` (the fanart.tv API key is the user's own, stored via `SettingsStore`). Tests run the providers against a stub `HttpMessageHandler`, never the network.
+  - `Discord/` — Rich Presence (the `DiscordRichPresence` NuGet package over Discord's local IPC socket). Seam: `Core/Presence` (`IRichPresence`, `PresenceActivity`, plus `ThrottledRichPresence`, which coalesces updates to stay within Discord's rate limit); entry `AddDiscordRichPresence()`. The application id is public (not a secret) and lives in that extension. App's `RichPresenceCoordinator` turns playback state into presence updates; off by default (Settings → Integrations).
+  - `Conversion/` — `FfmpegAudioConverter` (FFMpegCore over an *optional external* FFmpeg/FFprobe found on PATH; not bundled) behind `Core/Conversion/IAudioConverter`; entry `AddAudioConverter()`. The rules that must survive swapping the encoder live in Core: `ConversionRules` (lossy→lossless blocked, same-format blocked, lossy source never offered a bitrate above its own), `TrackConversionService` (probe, convert to a temp file with metadata stripped, write tags/credits/embedded cover via `TrackTagEditor` — only title/artist/album for WAV —, verify duration/tags, rename, then optionally `ITrashService.MoveToTrash` the original; unique `" (1)"` names). `FileTrashService` (App) implements the trash: `gio trash` / XDG trash spec on Linux, `SHFileOperation` on Windows. FFmpeg is meant to be replaced by an own tool later. Tests that need ffmpeg skip when it isn't installed.
+  - `Updates/` — `VelopackUpdateService` (Velopack, GitHub Releases as the feed) behind `Core/Updates/IUpdateService`; entry `AddUpdates()`. **Windows installer only**: `IsSupported` is false on Linux and for the portable zip (Linux updates come from distro package managers). `VelopackApp.Build().Run()` must stay directly in `Program.Main` (vpk pack refuses the build otherwise). App's `UpdatesViewModel` drives the Updates settings category (hidden when unsupported) and the "ready to install" bar. Releases: push a `v*` tag → `.github/workflows/release.yml` (vpk pack/upload for Windows, tarball for Linux).
+- **`SharpSelecta.App`** — Avalonia UI only (MVVM, CommunityToolkit.Mvvm). Must never reference OwnAudioSharp types directly — only consumes `IAudioEngine` and calls `Audio`'s DI extension to compose it. `App.axaml.cs` is the composition root: applies the theme, builds a `ServiceCollection` (`AddAudioEngine()`, `AddDiscordRichPresence()`, `AddAudioConverter()`, `AddUpdates()`, `AddAlbumArtProviders(...)`, file picker/manager/trash services), constructs `MainWindowViewModel` by hand, starts MPRIS and `RichPresenceCoordinator`, persists queue/volume on exit, then kicks off `IAudioEngine.InitializeAsync()` via `Task.Run` (followed by output-device, EQ and queue restore) — never `.GetAwaiter().GetResult()` it synchronously here, since `OnFrameworkInitializationCompleted` runs before Avalonia's dispatcher loop starts and a blocking wait on an async continuation that expects that loop deadlocks the whole app. `IFilePickerService`/`AvaloniaFilePickerService` wraps Avalonia's `StorageProvider` behind an interface purely so `MainWindowViewModel` stays testable without a real file dialog.
+- **`SharpSelecta.Tests`** — TUnit + NSubstitute, written test-first against `IAudioEngine` and other seams before implementation exists.
+
+**Mock-vs-real rule for tests:** don't reflexively wrap every dependency in an interface. Mock behind an interface only when the real thing is slow, non-deterministic, or hardware-dependent (this is why `IAudioEngine` and `IFilePickerService` exist — plus OwnAudioSharp's small adoption/bus-factor and in-progress Rust rewrite make the seam a hedge for a plan-B engine swap). When the real dependency is fast and deterministic (SQLite in-memory, ATL against test fixture files), test against it directly instead of adding an abstraction.
+
+**Threading note:** `IAudioEngine`'s blocking calls (`InitializeAsync`, `Load`, `SetOutputDevice`/`GetOutputDevices`, `GetWaveformPeaks`) must run off the UI thread (`Task.Run`, or the async `IOutputDeviceService`) — see the `OnFrameworkInitializationCompleted` deadlock note above for why.
+
+**i18n:** no hardcoded UI strings — everything goes through `SharpSelecta.App/Resources/Strings.resx` + the hand-written `Strings.cs` wrapper (`public`, not `internal` — Avalonia's `{x:Static}` can't resolve internal members). English is the base/neutral resource. Static XAML text uses `{x:Static res:Strings.X}`; dynamic/state-dependent text is resolved in the ViewModel and exposed as a bindable property (e.g. `PlayPauseLabel`, `DisplayFileName`).
+
+**Logging:** `Microsoft.Extensions.Logging` + Serilog, configured in `Program.cs` before Avalonia starts (so startup crashes get logged too) and wired into DI in `App.axaml.cs` via `AddLogging(b => b.AddSerilog())`. Writes rolling daily files to `%LocalAppData%/SharpSelecta/logs` on Windows / `~/.local/share/SharpSelecta/logs` on Linux (`Environment.SpecialFolder.LocalApplicationData`), 14-day retention. Inject `ILogger<T>` via constructor (e.g. `OwnAudioEngine`, `MainWindowViewModel`) — don't `Console.WriteLine`.
+
+**Bit-perfect playback is explicitly out of scope for v1** — don't design DSP/EQ code to accommodate it now; it will need a separate low-level output backend later.
