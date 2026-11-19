@@ -16,6 +16,7 @@ using SharpSelecta.App.Services;
 using SharpSelecta.App.Styles;
 using SharpSelecta.App.Services.Mpris;
 using SharpSelecta.App.Services.Notifications;
+using SharpSelecta.App.Services.Tray;
 using SharpSelecta.App.Services.SingleInstance;
 using SharpSelecta.App.ViewModels;
 using SharpSelecta.App.Views;
@@ -107,6 +108,11 @@ public partial class App : Application
                 mainWindowViewModel.PlaybackControls, desktopNotifications, settings, () => mainWindow.IsActive,
                 provider.GetRequiredService<ILogger<TrackChangeNotifier>>());
 
+            var trayHost = new TrayHostWatcher(provider.GetRequiredService<ILogger<TrayHostWatcher>>());
+            _ = trayHost.StartAsync();
+            var tray = new TrayController(mainWindow, desktop, mainWindowViewModel.PlaybackControls,
+                mainWindowViewModel.InterfaceSettings, settings, trayHost);
+
             mainWindowViewModel.Updates.RestartingToUpdate += (_, _) =>
             {
                 mainWindowViewModel.PersistQueueStateIfEnabled();
@@ -121,6 +127,8 @@ public partial class App : Application
                 richPresence.Dispose();
                 trackNotifier?.Dispose();
                 desktopNotifications?.Dispose();
+                tray.Dispose();
+                trayHost.Dispose();
                 libraryWatch.Dispose();
                 libraryChanges.Dispose();
 
@@ -142,7 +150,7 @@ public partial class App : Application
             Activations?.Attach(paths =>
             {
                 _filesRequested = true;
-                Dispatcher.UIThread.Post(() => BringToFront(mainWindow));
+                Dispatcher.UIThread.Post(() => WindowActivation.BringToFront(mainWindow));
                 openedFiles.Add(paths);
             });
 
@@ -178,17 +186,6 @@ public partial class App : Application
     {
         await library.InitializeAsync();
         libraryWatch.Start();
-    }
-
-    private static void BringToFront(Window window)
-    {
-        if (window.WindowState == WindowState.Minimized)
-        {
-            window.WindowState = WindowState.Normal;
-        }
-
-        window.Show();
-        window.Activate();
     }
 
     private async Task InitializeAudioEngineAndRestoreStateAsync(IAudioEngine audioEngine, MainWindowViewModel mainWindowViewModel)

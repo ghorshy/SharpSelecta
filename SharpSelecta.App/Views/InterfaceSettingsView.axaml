@@ -79,6 +79,13 @@
             <TextBlock Text="{x:Static res:Strings.TrackChangeNotificationsHint}" Classes="tertiary small" TextWrapping="Wrap"
                        Margin="{styles:Spacing Left=L}" />
         </StackPanel>
+
+        <StackPanel Spacing="{styles:SpacingValue XXS}" Margin="{styles:Spacing Top=L}">
+            <CheckBox Content="{x:Static res:Strings.MinimizeToTray}" IsChecked="{Binding MinimizeToTray}" />
+            <CheckBox Content="{x:Static res:Strings.CloseToTray}" IsChecked="{Binding CloseToTray}" />
+            <TextBlock Text="{x:Static res:Strings.TrayHint}" Classes="tertiary small" TextWrapping="Wrap"
+                       Margin="{styles:Spacing Left=L}" />
+        </StackPanel>
     </StackPanel>
 
 </UserControl>

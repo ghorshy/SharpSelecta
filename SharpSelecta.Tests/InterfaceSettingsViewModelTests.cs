@@ -94,6 +94,20 @@ public class InterfaceSettingsViewModelTests : IDisposable
     }
 
     [Test]
+    public async Task TheTrayOptions_PersistAndAreLoadedBack()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = CreateViewModel(settingsPath);
+
+        vm.MinimizeToTray = true;
+        vm.CloseToTray = true;
+
+        var reloaded = CreateViewModel(settingsPath);
+        await Assert.That(reloaded.MinimizeToTray).IsTrue();
+        await Assert.That(reloaded.CloseToTray).IsTrue();
+    }
+
+    [Test]
     public async Task ChoosingASwatch_SavesItsColorAndShowsItInTheHexFieldAndPicker()
     {
         var settingsPath = _temp.NewSettingsPath();

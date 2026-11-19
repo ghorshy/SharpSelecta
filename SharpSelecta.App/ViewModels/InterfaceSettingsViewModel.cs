@@ -61,6 +61,12 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
     // Only the freedesktop (Linux) notifications exist so far.
     public bool AreTrackChangeNotificationsSupported => OperatingSystem.IsLinux();
 
+    [ObservableProperty]
+    public partial bool MinimizeToTray { get; set; }
+
+    [ObservableProperty]
+    public partial bool CloseToTray { get; set; }
+
     public string DisplayName => Strings.SettingsCategoryInterface;
 
     public bool HasPendingChanges => false;
@@ -105,6 +111,8 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
         var saved = settings.Current;
         SelectedFontSizeOption = FontSizeOptions.FirstOrDefault(o => o.Size == saved.FontSize) ?? FontSizeOptions[0];
         ShowTrackChangeNotifications = saved.TrackChangeNotifications;
+        MinimizeToTray = saved.MinimizeToTray;
+        CloseToTray = saved.CloseToTray;
         AccentHex = saved.AccentColor ?? string.Empty;
         ChooseAccentSwatchCommand = new RelayCommand<IBrush?>(brush =>
         {
@@ -126,6 +134,18 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
     {
         if (_loaded)
             _settings.Update(s => s with { TrackChangeNotifications = value });
+    }
+
+    partial void OnMinimizeToTrayChanged(bool value)
+    {
+        if (_loaded)
+            _settings.Update(s => s with { MinimizeToTray = value });
+    }
+
+    partial void OnCloseToTrayChanged(bool value)
+    {
+        if (_loaded)
+            _settings.Update(s => s with { CloseToTray = value });
     }
 
     partial void OnAccentPickerColorChanged(Color value)

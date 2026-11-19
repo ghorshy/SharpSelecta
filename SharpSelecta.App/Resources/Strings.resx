@@ -910,4 +910,19 @@
   <data name="TrackChangeNotificationsHint" xml:space="preserve">
     <value>Not shown while the SharpSelecta window is focused.</value>
   </data>
+  <data name="MinimizeToTray" xml:space="preserve">
+    <value>Minimize to the system tray</value>
+  </data>
+  <data name="CloseToTray" xml:space="preserve">
+    <value>Close to the system tray</value>
+  </data>
+  <data name="TrayHint" xml:space="preserve">
+    <value>Playback keeps going; the tray icon brings the window back. Without a system tray (on Linux, a panel that shows tray icons) the window minimizes and closes as usual.</value>
+  </data>
+  <data name="TrayShowWindow" xml:space="preserve">
+    <value>Show SharpSelecta</value>
+  </data>
+  <data name="TrayQuit" xml:space="preserve">
+    <value>Quit</value>
+  </data>
 </root>

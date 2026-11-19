@@ -43,6 +43,8 @@ public sealed record AppSettings
     public string? AccentColor { get; init; }
 
     public bool TrackChangeNotifications { get; init; }
+    public bool MinimizeToTray { get; init; }
+    public bool CloseToTray { get; init; }
     public bool EqualizerEnabled { get; init; }
     public string? EqualizerPresetName { get; init; }
     public IReadOnlyList<float>? EqualizerBandGainsDb { get; init; }
