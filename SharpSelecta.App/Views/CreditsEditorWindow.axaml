@@ -47,7 +47,7 @@
                             </Border>
                             <TextBox Grid.Column="1" Text="{Binding Name}" />
                             <ComboBox Grid.Column="2" Width="{DynamicResource Size.CreditsEditor.RoleWidth}"
-                                      ItemsSource="{Binding $parent[ItemsControl].((vm:CreditsEditorViewModel)DataContext).Roles}"
+                                      ItemsSource="{Binding Roles}"
                                       SelectedItem="{Binding Role}">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate x:DataType="vm:RoleOption">

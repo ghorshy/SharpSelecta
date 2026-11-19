@@ -137,7 +137,7 @@ public class CreditsEditorViewModelTests
         var vm = Editor(("A", CreditRole.Artist), ("B", CreditRole.Artist));
 
         vm.Move(vm.Credits[0], vm.Credits[0]);
-        vm.Move(vm.Credits[0], new CreditEntryViewModel("Stranger", vm.Roles[0]));
+        vm.Move(vm.Credits[0], new CreditEntryViewModel("Stranger", vm.Roles[0], vm.Roles));
 
         await Assert.That(Names(vm)).IsEqualTo("A:Artist|B:Artist");
     }
@@ -162,6 +162,33 @@ public class CreditsEditorViewModelTests
         vm.Credits[3].Name = "b";
 
         await Assert.That(ResultText(vm.Result)).IsEqualTo("B:Artist|Alpha:Composer|b:Conductor");
+    }
+
+    // A row's role dropdown clears its selection while the row is moved or rebuilt; that mustn't lose the role.
+    [Test]
+    public async Task ARowsRoleOrNameClearedByTheView_IsIgnored_AndOkStillReturnsTheList()
+    {
+        var vm = Editor(("A", CreditRole.Remixer));
+        IReadOnlyList<CreditEntry>? result = null;
+        vm.CloseRequested += (_, list) => result = list;
+
+        vm.Credits[0].Role = null!;
+        vm.Credits[0].Name = null!;
+        vm.OkCommand.Execute(null);
+
+        await Assert.That(vm.Credits[0].Role.Role).IsEqualTo(CreditRole.Remixer);
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result!).IsEmpty();
+    }
+
+    [Test]
+    public async Task EveryRow_OffersTheSameRolesAsTheEditor()
+    {
+        var vm = Editor(("A", CreditRole.Artist));
+        vm.NewCreditName = "B";
+        vm.AddCommand.Execute(null);
+
+        await Assert.That(vm.Credits.All(c => ReferenceEquals(c.Roles, vm.Roles))).IsTrue();
     }
 
     [Test]

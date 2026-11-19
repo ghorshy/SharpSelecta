@@ -9,13 +9,28 @@ namespace SharpSelecta.App.ViewModels;
 // A role as the dropdown shows it.
 public sealed record RoleOption(CreditRole Role, string DisplayName);
 
-public sealed partial class CreditEntryViewModel(string name, RoleOption role) : ObservableObject
+// The row's role dropdown clears its selection (pushes null) while the row is moved or rebuilt, and a
+// cleared name box can push null too; neither counts as an edit.
+public sealed partial class CreditEntryViewModel(string name, RoleOption role, IReadOnlyList<RoleOption> roles) : ObservableObject
 {
-    [ObservableProperty]
-    public partial string Name { get; set; } = name;
+    // On the row itself, so the dropdown's items never depend on finding the editor up the tree.
+    public IReadOnlyList<RoleOption> Roles { get; } = roles;
 
-    [ObservableProperty]
-    public partial RoleOption Role { get; set; } = role;
+    public string Name
+    {
+        get;
+        set => SetProperty(ref field, value ?? "");
+    } = name;
+
+    public RoleOption Role
+    {
+        get;
+        set
+        {
+            if (value is not null)
+                SetProperty(ref field, value);
+        }
+    } = role;
 }
 
 public sealed partial class CreditsEditorViewModel : ViewModelBase
@@ -34,7 +49,7 @@ public sealed partial class CreditsEditorViewModel : ViewModelBase
 
         foreach (var credit in credits)
         {
-            Credits.Add(new CreditEntryViewModel(credit.Name, RoleOptionFor(credit.Role)));
+            Credits.Add(new CreditEntryViewModel(credit.Name, RoleOptionFor(credit.Role), Roles));
         }
     }
 
@@ -73,7 +88,7 @@ public sealed partial class CreditsEditorViewModel : ViewModelBase
                 && string.Equals(c.Name.Trim(), name, StringComparison.OrdinalIgnoreCase));
             if (!alreadyThere)
             {
-                Credits.Add(new CreditEntryViewModel(name, NewCreditRole));
+                Credits.Add(new CreditEntryViewModel(name, NewCreditRole, Roles));
             }
         }
 
