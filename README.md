@@ -4,7 +4,7 @@
 
 # SharpSelecta
 
-**An open-source music player for your local library, on Windows and Linux.**
+**An open-source music player for Windows and Linux.**
 
 [![Build & tests](https://img.shields.io/github/actions/workflow/status/ghorshy/SharpSelecta/ci.yml?branch=main&label=build%20%26%20tests&logo=github)](https://github.com/ghorshy/SharpSelecta/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/ghorshy/SharpSelecta?include_prereleases&label=release)](https://github.com/ghorshy/SharpSelecta/releases)
@@ -13,7 +13,8 @@
 <br />
 [![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![Avalonia](https://img.shields.io/badge/UI-Avalonia-8B44AC)](https://avaloniaui.net/)
-[![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux-lightgrey)](#install)
+[![Windows](https://img.shields.io/badge/Windows-0078D4?logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTAgMGgxMS4zNzd2MTEuMzcySDB6bTEyLjYyMyAwSDI0djExLjM3MkgxMi42MjN6TTAgMTIuNjIzaDExLjM3N1YyNEgwem0xMi42MjMgMEgyNFYyNEgxMi42MjN6Ii8%2BPC9zdmc%2B)](#windows)
+[![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)](#install)
 
 [Download](https://github.com/ghorshy/SharpSelecta/releases) ·
 [Features](#features) ·
@@ -24,7 +25,7 @@
 
 ---
 
-SharpSelecta is a player for music you keep as files on your own disk. Point it at your folders and it builds a library you can browse as a table or as an album grid with covers.
+SharpSelecta is a music player for your local library. It plays MP3, FLAC, ALAC, WAV and more, and lets you fix their tags and covers along the way.
 
 <p align="center">
   <img src=".github/assets/screenshots/main-window.png" alt="SharpSelecta showing the album grid, the queue and the playing track's cover" width="100%" />
