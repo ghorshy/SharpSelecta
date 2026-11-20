@@ -18,6 +18,9 @@
     <!-- Icons in the Linux tray menu, which the panel draws in its own (usually dark) style, not the app's theme. -->
     <Color x:Key="Color.TrayMenuIcon">#FFE0E0E0</Color>
 
+    <!-- Library column headers: the window's background, not the Fluent DataGrid's pure black/white. -->
+    <SolidColorBrush x:Key="DataGridColumnHeaderBackgroundBrush" Color="Transparent" />
+
     <ResourceDictionary.ThemeDictionaries>
 
         <ResourceDictionary x:Key="Light">
