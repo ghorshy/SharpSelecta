@@ -35,11 +35,6 @@ jobs:
       - name: Publish
         run: dotnet publish SharpSelecta.App -c Release -r win-x64 --self-contained -p:Version="$VERSION" -o publish
 
-      - name: Portable zip
-        run: |
-          mkdir dist
-          (cd publish && 7z a "../dist/SharpSelecta-$VERSION-win-x64.zip" .)
-
       - run: dotnet tool install -g vpk --version "$VPK_VERSION"
 
       # The previous release lets vpk build a delta package, so updates download only what changed.
@@ -47,22 +42,18 @@ jobs:
         continue-on-error: true
         run: vpk download github --repoUrl "https://github.com/${{ github.repository }}" --token "${{ secrets.GITHUB_TOKEN }}" -o releases
 
+      # Also builds the portable zip: sharpselecta.exe on top, the app's files in current\.
       - name: Installer
         run: >
           vpk pack --packId SharpSelecta --packVersion "$VERSION" --packDir publish
           --mainExe sharpselecta.exe --packTitle SharpSelecta --packAuthors ghorshy
           --icon SharpSelecta.App/Assets/sharpselecta.ico
-          --runtime win-x64 --noPortable -o releases
+          --runtime win-x64 -o releases
 
       - name: Create the release
         run: >
           vpk upload github --repoUrl "https://github.com/${{ github.repository }}" --token "${{ secrets.GITHUB_TOKEN }}"
           -o releases --publish $PRE --tag "$GITHUB_REF_NAME" --releaseName "SharpSelecta $VERSION"
-
-      - name: Attach the portable zip
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "$GITHUB_REF_NAME" dist/*.zip
 
   linux:
     needs: windows

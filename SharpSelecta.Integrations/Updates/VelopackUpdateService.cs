@@ -18,7 +18,7 @@ public sealed class VelopackUpdateService : IUpdateService
             return;
 
         var manager = new UpdateManager(new GithubSource(RepositoryUrl, null, false));
-        if (manager.IsInstalled && !manager.IsPortable)
+        if (manager.IsInstalled)
         {
             _manager = manager;
         }

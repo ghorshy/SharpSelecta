@@ -41,7 +41,7 @@ Packages for Arch (AUR), NixOS and Flathub are on the way, and a macOS version i
 
 Run `SharpSelecta-win-Setup.exe`. It adds SharpSelecta to the Start menu and updates itself from then on.
 
-If you'd rather not install anything, extract `SharpSelecta-<version>-win-x64.zip` and run `sharpselecta.exe`. This version doesn't update itself.
+If you'd rather not install anything, extract `SharpSelecta-win-Portable.zip` anywhere and run `sharpselecta.exe` from it. It updates itself too.
 
 ### Debian, Ubuntu and Mint
 
@@ -166,7 +166,7 @@ Back it up to keep your settings and playlists. Removing the app on Linux leaves
 SharpSelecta works offline and has no accounts or telemetry. It connects to the internet only when:
 
 - you search for a cover. The album and artist name go to Apple Music, Deezer, MusicBrainz with Cover Art Archive, and fanart.tv.
-- the Windows installer checks GitHub for a new version. You can turn that off in Settings → Updates.
+- the Windows app checks GitHub for a new version. You can turn that off in Settings → Updates.
 
 The Discord status goes to the Discord app on your computer, which shows it to your friends.
 
