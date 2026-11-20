@@ -12,7 +12,7 @@ public partial class ThemeTokenTests
     private static readonly Dictionary<string, string[]> CodeExemptions = new()
     {
         ["SpacingExtension.cs"] = ["new Thickness(Resolve(Left,"],
-        ["MainWindowViewModel.cs"] = ["new GridLength(settings.Current.RightColumnWidth ?? layout.RightColumnWidth)"],
+        ["SidePanelLayoutViewModel.cs"] = ["new GridLength(settings.Current.RightColumnWidth ?? layout.RightColumnWidth)"],
     };
 
     private static bool IsExemptCallSite(string path, string text, int index) =>

@@ -30,24 +30,49 @@
 
         <views:PlaybackControlsView DockPanel.Dock="Bottom" Margin="{styles:Spacing Top=M}" DataContext="{Binding PlaybackControls}" />
 
+        <!-- Side panel | splitter | library | splitter | side panel: the panel takes the outer column on its
+             side (Settings → Interface), the other one and its splitter collapse to nothing. -->
         <Grid>
+            <Grid.Styles>
+                <Style Selector="GridSplitter.side-panel">
+                    <Setter Property="Width" Value="{DynamicResource Size.Splitter.Width}" />
+                    <Setter Property="ResizeDirection" Value="Columns" />
+                    <Setter Property="ResizeBehavior" Value="PreviousAndNext" />
+                    <Setter Property="Background" Value="Transparent" />
+                </Style>
+                <Style Selector="Border.now-playing">
+                    <Setter Property="Margin" Value="{styles:Spacing Top=M}" />
+                </Style>
+                <Style Selector="Border.now-playing.above-queue">
+                    <Setter Property="Margin" Value="{styles:Spacing Bottom=M}" />
+                </Style>
+            </Grid.Styles>
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="{Binding SidePanel.LeftWidth, Mode=TwoWay}" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="{DynamicResource Size.Splitter.Width}" />
-                <ColumnDefinition Width="{Binding RightColumnWidth, Mode=TwoWay}" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="{Binding SidePanel.RightWidth, Mode=TwoWay}" />
             </Grid.ColumnDefinitions>
 
-            <views:LibraryView Grid.Column="0" DataContext="{Binding Library}" />
+            <views:LibraryView Grid.Column="2" DataContext="{Binding Library}" />
 
-            <GridSplitter Grid.Column="1"
-                          ResizeDirection="Columns"
-                          ResizeBehavior="PreviousAndNext"
-                          Background="Transparent"
-                          HorizontalAlignment="Stretch"
+            <GridSplitter Grid.Column="1" Classes="side-panel" IsVisible="{Binding SidePanel.IsOnLeft}"
+                          DragCompleted="OnSplitterDragCompleted" />
+            <GridSplitter Grid.Column="3" Classes="side-panel" IsVisible="{Binding SidePanel.IsOnRight}"
                           DragCompleted="OnSplitterDragCompleted" />
 
-            <DockPanel Grid.Column="2" LastChildFill="True">
-                <views:NowPlayingView DockPanel.Dock="Bottom" Margin="{styles:Spacing Top=M}" DataContext="{Binding PlaybackControls}" />
+            <DockPanel Grid.Column="{Binding SidePanel.Column}" IsVisible="{Binding SidePanel.IsVisible}" LastChildFill="True">
+                <!-- The wrapper carries the layout bindings: on NowPlayingView itself they would resolve
+                     against its own DataContext (PlaybackControls). -->
+                <Border Classes="now-playing"
+                        Classes.above-queue="{Binding SidePanel.IsQueueAtBottom}"
+                        Classes.hide-artwork="{Binding !SidePanel.ShowsArtwork}"
+                        Classes.hide-details="{Binding !SidePanel.ShowsDetails}"
+                        DockPanel.Dock="{Binding SidePanel.NowPlayingDock}"
+                        IsVisible="{Binding SidePanel.ShowsNowPlaying}">
+                    <views:NowPlayingView DataContext="{Binding PlaybackControls}" />
+                </Border>
                 <views:QueueView DataContext="{Binding Queue}" />
             </DockPanel>
         </Grid>

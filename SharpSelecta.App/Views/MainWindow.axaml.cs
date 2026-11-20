@@ -92,7 +92,7 @@ public partial class MainWindow : Window
     }
 
     private void OnSplitterDragCompleted(object? sender, VectorEventArgs e) =>
-        (DataContext as MainWindowViewModel)?.PersistRightColumnWidth();
+        (DataContext as MainWindowViewModel)?.SidePanel.PersistWidth();
 
     private void OnGotFocus(object? sender, FocusChangedEventArgs e)
     {

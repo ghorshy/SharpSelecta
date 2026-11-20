@@ -164,6 +164,27 @@ public class InterfaceSettingsViewModelTests : IDisposable
     }
 
     [Test]
+    public async Task TheSidePanelOptions_ArePendingUntilApply_ThenSavedAndLoadedBack()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var vm = CreateViewModel(settingsPath);
+
+        vm.SelectedSidePanelPositionOption = vm.SidePanelPositionOptions.Single(o => o.Position == SidePanelPosition.Left);
+        vm.SelectedQueuePositionOption = vm.QueuePositionOptions.Single(o => o.Position == QueuePosition.Bottom);
+        vm.ShowNowPlayingArtwork = false;
+        vm.ShowNowPlayingDetails = false;
+        await Assert.That(vm.HasPendingChanges).IsTrue();
+        await Assert.That(Saved(settingsPath).SidePanelPosition).IsEqualTo(SidePanelPosition.Right);
+        Apply(vm);
+
+        var reloaded = CreateViewModel(settingsPath);
+        await Assert.That(reloaded.SelectedSidePanelPositionOption.Position).IsEqualTo(SidePanelPosition.Left);
+        await Assert.That(reloaded.SelectedQueuePositionOption.Position).IsEqualTo(QueuePosition.Bottom);
+        await Assert.That(reloaded.ShowNowPlayingArtwork).IsFalse();
+        await Assert.That(reloaded.ShowNowPlayingDetails).IsFalse();
+    }
+
+    [Test]
     public async Task ChoosingASwatch_SavesItsColorAndShowsItInTheHexFieldAndPicker()
     {
         var settingsPath = _temp.NewSettingsPath();

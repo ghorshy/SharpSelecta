@@ -72,6 +72,16 @@ public static class Strings
     public static string SettingsSectionAppearance => Get(nameof(SettingsSectionAppearance));
     public static string SettingsSectionNotifications => Get(nameof(SettingsSectionNotifications));
     public static string SettingsSectionTray => Get(nameof(SettingsSectionTray));
+    public static string SettingsSectionSidePanel => Get(nameof(SettingsSectionSidePanel));
+    public static string SidePanelPositionLabel => Get(nameof(SidePanelPositionLabel));
+    public static string SidePanelRight => Get(nameof(SidePanelRight));
+    public static string SidePanelLeft => Get(nameof(SidePanelLeft));
+    public static string SidePanelHidden => Get(nameof(SidePanelHidden));
+    public static string QueuePositionLabel => Get(nameof(QueuePositionLabel));
+    public static string QueueOnTop => Get(nameof(QueueOnTop));
+    public static string QueueAtTheBottom => Get(nameof(QueueAtTheBottom));
+    public static string ShowNowPlayingArtwork => Get(nameof(ShowNowPlayingArtwork));
+    public static string ShowNowPlayingDetails => Get(nameof(ShowNowPlayingDetails));
     public static string SettingsSectionDiscord => Get(nameof(SettingsSectionDiscord));
     public static string SettingsSectionAlbumArt => Get(nameof(SettingsSectionAlbumArt));
     public static string DiscordShowArtist => Get(nameof(DiscordShowArtist));

@@ -9,6 +9,7 @@ public sealed record AppSettings
     public bool WatchLibraryFolders { get; init; } = true;
     public IReadOnlyDictionary<string, bool>? Columns { get; init; }
     public IReadOnlyList<string>? ColumnOrder { get; init; }
+    // The side panel's width, on whichever side it is (named from when it could only be on the right).
     public double? RightColumnWidth { get; init; }
 
     // The main window's size when it was last closed (its restored size if it was maximized); null until then.
@@ -50,6 +51,10 @@ public sealed record AppSettings
     public bool TrackChangeNotifications { get; init; }
     public bool MinimizeToTray { get; init; }
     public bool CloseToTray { get; init; }
+    public SidePanelPosition SidePanelPosition { get; init; } = SidePanelPosition.Right;
+    public QueuePosition QueuePosition { get; init; } = QueuePosition.Top;
+    public bool ShowNowPlayingArtwork { get; init; } = true;
+    public bool ShowNowPlayingDetails { get; init; } = true;
     public bool EqualizerEnabled { get; init; }
     public string? EqualizerPresetName { get; init; }
     public IReadOnlyList<float>? EqualizerBandGainsDb { get; init; }

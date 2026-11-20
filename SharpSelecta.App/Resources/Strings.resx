@@ -979,6 +979,36 @@
   <data name="SettingsSectionNotifications" xml:space="preserve">
     <value>Notifications</value>
   </data>
+  <data name="SettingsSectionSidePanel" xml:space="preserve">
+    <value>Side panel</value>
+  </data>
+  <data name="SidePanelPositionLabel" xml:space="preserve">
+    <value>Position</value>
+  </data>
+  <data name="SidePanelRight" xml:space="preserve">
+    <value>Right</value>
+  </data>
+  <data name="SidePanelLeft" xml:space="preserve">
+    <value>Left</value>
+  </data>
+  <data name="SidePanelHidden" xml:space="preserve">
+    <value>Hidden</value>
+  </data>
+  <data name="QueuePositionLabel" xml:space="preserve">
+    <value>Queue</value>
+  </data>
+  <data name="QueueOnTop" xml:space="preserve">
+    <value>Above Now Playing</value>
+  </data>
+  <data name="QueueAtTheBottom" xml:space="preserve">
+    <value>Below Now Playing</value>
+  </data>
+  <data name="ShowNowPlayingArtwork" xml:space="preserve">
+    <value>Show the cover</value>
+  </data>
+  <data name="ShowNowPlayingDetails" xml:space="preserve">
+    <value>Show the track details</value>
+  </data>
   <data name="SettingsSectionTray" xml:space="preserve">
     <value>System tray</value>
   </data>

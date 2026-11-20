@@ -11,16 +11,34 @@
              x:Class="SharpSelecta.App.Views.NowPlayingView"
              x:DataType="vm:PlaybackControlsViewModel">
 
+    <!-- Settings → Interface can hide either part; the main window sets these classes on an ancestor. -->
+    <UserControl.Styles>
+        <Style Selector="Panel#Artwork">
+            <Setter Property="Margin" Value="{styles:Spacing Top=S}" />
+        </Style>
+        <Style Selector=".hide-details Panel#Artwork">
+            <Setter Property="Margin" Value="0" />
+        </Style>
+        <Style Selector=".hide-artwork Panel#Artwork">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector=".hide-details StackPanel#Details">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+    </UserControl.Styles>
+
     <StackPanel Spacing="{styles:SpacingValue XS}" IsVisible="{Binding CurrentTrack, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
-        <TextBlock Text="{Binding CurrentTrack.Title}" Classes="strong" TextWrapping="Wrap" />
-        <TextBlock Text="{Binding CurrentTrack.Artist, Converter={x:Static converters:ArtistsDisplayConverter.Instance}}" TextWrapping="Wrap" />
-        <TextBlock Text="{Binding CurrentTrack.Album}" TextWrapping="Wrap" />
-        <TextBlock Text="{Binding CurrentTrack.Year}" />
-        <TextBlock Text="{Binding CurrentTrackTechnicalSummary}" Classes="secondary small" TextWrapping="Wrap" />
+        <StackPanel x:Name="Details" Spacing="{styles:SpacingValue XS}">
+            <TextBlock Text="{Binding CurrentTrack.Title}" Classes="strong" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding CurrentTrack.Artist, Converter={x:Static converters:ArtistsDisplayConverter.Instance}}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding CurrentTrack.Album}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding CurrentTrack.Year}" />
+            <TextBlock Text="{Binding CurrentTrackTechnicalSummary}" Classes="secondary small" TextWrapping="Wrap" />
+        </StackPanel>
         <!-- Double-tap opens the cover at its real resolution in its own window (AlbumCoverWindow) -
              only meaningful when there's actual artwork, hence the guard in the handler rather than
              gating this Panel's own visibility. -->
-        <Panel Margin="{styles:Spacing Top=S}" DoubleTapped="OnArtworkDoubleTapped">
+        <Panel x:Name="Artwork" DoubleTapped="OnArtworkDoubleTapped">
             <Image Source="{Binding CurrentTrackArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
                    Stretch="Uniform"
                    HorizontalAlignment="Stretch"

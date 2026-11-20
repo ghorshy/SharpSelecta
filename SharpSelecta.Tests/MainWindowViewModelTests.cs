@@ -1,4 +1,3 @@
-using Avalonia.Controls;
 using NSubstitute;
 using SharpSelecta.App.ViewModels;
 using SharpSelecta.Core.Audio;
@@ -50,27 +49,6 @@ public class MainWindowViewModelTests : IDisposable
         audioEngine.Received(1).Load(TestPaths.Music("song.mp3"));
         await Assert.That(vm.Queue.Entries.Count).IsEqualTo(1);
         await Assert.That(vm.Queue.CurrentIndex).IsEqualTo(0);
-    }
-
-    [Test]
-    public async Task RightColumnWidth_DefaultsTo220WhenNothingIsSaved()
-    {
-        var vm = CreateViewModel(out _);
-
-        await Assert.That(vm.RightColumnWidth.Value).IsEqualTo(220);
-    }
-
-    [Test]
-    public async Task RightColumnWidth_PersistsAcrossInstancesForTheSameSettingsFile()
-    {
-        var settingsPath = _temp.NewSettingsPath();
-        var vm = CreateViewModel(out _, settingsPath);
-
-        vm.RightColumnWidth = new GridLength(300);
-        vm.PersistRightColumnWidth();
-
-        var restarted = CreateViewModel(out _, settingsPath);
-        await Assert.That(restarted.RightColumnWidth.Value).IsEqualTo(300);
     }
 
     [Test]

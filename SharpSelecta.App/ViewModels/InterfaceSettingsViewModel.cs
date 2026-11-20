@@ -10,21 +10,25 @@ using SharpSelecta.Core.Library;
 
 namespace SharpSelecta.App.ViewModels;
 
-// Like the other categories, edits are saved only on Apply. The look (theme, accent, text size) is
-// previewed live while editing, and Cancel puts the applied one back.
+// Like the other categories, edits are saved only on Apply. The look (theme, accent, text size) and the
+// side panel's layout are previewed live while editing, and Cancel puts the applied ones back.
 public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCategoryViewModel
 {
     private sealed record Choices(
         AppTheme Theme, string? CustomThemeFileName, int? FontSize, string? AccentColor,
-        bool TrackChangeNotifications, bool MinimizeToTray, bool CloseToTray)
+        bool TrackChangeNotifications, bool MinimizeToTray, bool CloseToTray,
+        SidePanelPosition SidePanelPosition, QueuePosition QueuePosition, bool ShowNowPlayingArtwork, bool ShowNowPlayingDetails)
     {
         public static Choices From(AppSettings s) =>
-            new(s.Theme, s.CustomThemeFileName, s.FontSize, s.AccentColor, s.TrackChangeNotifications, s.MinimizeToTray, s.CloseToTray);
+            new(s.Theme, s.CustomThemeFileName, s.FontSize, s.AccentColor, s.TrackChangeNotifications, s.MinimizeToTray, s.CloseToTray,
+                s.SidePanelPosition, s.QueuePosition, s.ShowNowPlayingArtwork, s.ShowNowPlayingDetails);
 
         public AppSettings ApplyTo(AppSettings s) => s with
         {
             Theme = Theme, CustomThemeFileName = CustomThemeFileName, FontSize = FontSize, AccentColor = AccentColor,
             TrackChangeNotifications = TrackChangeNotifications, MinimizeToTray = MinimizeToTray, CloseToTray = CloseToTray,
+            SidePanelPosition = SidePanelPosition, QueuePosition = QueuePosition,
+            ShowNowPlayingArtwork = ShowNowPlayingArtwork, ShowNowPlayingDetails = ShowNowPlayingDetails,
         };
     }
 
@@ -85,6 +89,35 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
 
     [ObservableProperty]
     public partial bool CloseToTray { get; set; }
+
+    public IReadOnlyList<SidePanelPositionOption> SidePanelPositionOptions { get; } =
+    [
+        new(SidePanelPosition.Right, Strings.SidePanelRight),
+        new(SidePanelPosition.Left, Strings.SidePanelLeft),
+        new(SidePanelPosition.Hidden, Strings.SidePanelHidden),
+    ];
+
+    // The side panel's controls show the edited layout, which the main window previews.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSidePanelShown))]
+    public partial SidePanelPositionOption SelectedSidePanelPositionOption { get; set; }
+
+    public bool IsSidePanelShown => SelectedSidePanelPositionOption.Position != SidePanelPosition.Hidden;
+
+    public IReadOnlyList<QueuePositionOption> QueuePositionOptions { get; } =
+    [
+        new(QueuePosition.Top, Strings.QueueOnTop),
+        new(QueuePosition.Bottom, Strings.QueueAtTheBottom),
+    ];
+
+    [ObservableProperty]
+    public partial QueuePositionOption SelectedQueuePositionOption { get; set; }
+
+    [ObservableProperty]
+    public partial bool ShowNowPlayingArtwork { get; set; }
+
+    [ObservableProperty]
+    public partial bool ShowNowPlayingDetails { get; set; }
 
     public string DisplayName => Strings.SettingsCategoryInterface;
 
@@ -167,7 +200,7 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
             Preview(themeChanged: true);
     }
 
-    [MemberNotNull(nameof(SelectedFontSizeOption))]
+    [MemberNotNull(nameof(SelectedFontSizeOption), nameof(SelectedSidePanelPositionOption), nameof(SelectedQueuePositionOption))]
     private void ShowChoices(Choices choices)
     {
         var wasLoading = _loading;
@@ -181,6 +214,10 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
             ShowTrackChangeNotifications = choices.TrackChangeNotifications;
             MinimizeToTray = choices.MinimizeToTray;
             CloseToTray = choices.CloseToTray;
+            SelectedSidePanelPositionOption = SidePanelPositionOptions.First(o => o.Position == choices.SidePanelPosition);
+            SelectedQueuePositionOption = QueuePositionOptions.First(o => o.Position == choices.QueuePosition);
+            ShowNowPlayingArtwork = choices.ShowNowPlayingArtwork;
+            ShowNowPlayingDetails = choices.ShowNowPlayingDetails;
             IsAccentHexInvalid = false;
             SyncAccentControls();
         }
@@ -231,6 +268,30 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
     {
         if (!_loading)
             Edit(c => c with { CloseToTray = value });
+    }
+
+    partial void OnSelectedSidePanelPositionOptionChanged(SidePanelPositionOption value)
+    {
+        if (!_loading)
+            Edit(c => c with { SidePanelPosition = value.Position });
+    }
+
+    partial void OnSelectedQueuePositionOptionChanged(QueuePositionOption value)
+    {
+        if (!_loading)
+            Edit(c => c with { QueuePosition = value.Position });
+    }
+
+    partial void OnShowNowPlayingArtworkChanged(bool value)
+    {
+        if (!_loading)
+            Edit(c => c with { ShowNowPlayingArtwork = value });
+    }
+
+    partial void OnShowNowPlayingDetailsChanged(bool value)
+    {
+        if (!_loading)
+            Edit(c => c with { ShowNowPlayingDetails = value });
     }
 
     partial void OnAccentPickerColorChanged(Color value)
@@ -433,3 +494,7 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
 }
 
 public sealed record FontSizeOption(int? Size, string DisplayName);
+
+public sealed record SidePanelPositionOption(SidePanelPosition Position, string DisplayName);
+
+public sealed record QueuePositionOption(QueuePosition Position, string DisplayName);

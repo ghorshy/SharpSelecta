@@ -76,6 +76,36 @@
             </StackPanel>
         </StackPanel>
 
+        <StackPanel Classes="settings-section">
+            <TextBlock Text="{x:Static res:Strings.SettingsSectionSidePanel}" Classes="settings-heading" />
+            <StackPanel Classes="settings-field">
+                <TextBlock Text="{x:Static res:Strings.SidePanelPositionLabel}" Classes="settings-label" />
+                <ComboBox ItemsSource="{Binding SidePanelPositionOptions}" SelectedItem="{Binding SelectedSidePanelPositionOption}"
+                          HorizontalAlignment="Left" MinWidth="{DynamicResource Size.Settings.FieldMinWidth}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:SidePanelPositionOption">
+                            <TextBlock Text="{Binding DisplayName}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
+            <StackPanel Classes="settings-field" IsEnabled="{Binding IsSidePanelShown}">
+                <TextBlock Text="{x:Static res:Strings.QueuePositionLabel}" Classes="settings-label" />
+                <ComboBox ItemsSource="{Binding QueuePositionOptions}" SelectedItem="{Binding SelectedQueuePositionOption}"
+                          HorizontalAlignment="Left" MinWidth="{DynamicResource Size.Settings.FieldMinWidth}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:QueuePositionOption">
+                            <TextBlock Text="{Binding DisplayName}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
+            <StackPanel Classes="settings-field" IsEnabled="{Binding IsSidePanelShown}">
+                <CheckBox Content="{x:Static res:Strings.ShowNowPlayingArtwork}" IsChecked="{Binding ShowNowPlayingArtwork}" />
+                <CheckBox Content="{x:Static res:Strings.ShowNowPlayingDetails}" IsChecked="{Binding ShowNowPlayingDetails}" />
+            </StackPanel>
+        </StackPanel>
+
         <StackPanel Classes="settings-section" IsVisible="{Binding AreTrackChangeNotificationsSupported}">
             <TextBlock Text="{x:Static res:Strings.SettingsSectionNotifications}" Classes="settings-heading" />
             <StackPanel Classes="settings-field">

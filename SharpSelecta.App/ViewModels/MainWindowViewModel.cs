@@ -1,4 +1,3 @@
-using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SharpSelecta.App.Services;
@@ -29,8 +28,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public EqualizerViewModel Equalizer { get; }
 
-    [ObservableProperty]
-    public partial GridLength RightColumnWidth { get; set; }
+    public SidePanelLayoutViewModel SidePanel { get; }
 
     public MainWindowViewModel(
         SettingsStore settings,
@@ -55,7 +53,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Updates = updates;
         ShortcutSettings = shortcutSettings;
         Equalizer = equalizer;
-        RightColumnWidth = new GridLength(settings.Current.RightColumnWidth ?? layout.RightColumnWidth);
+        SidePanel = new SidePanelLayoutViewModel(settings, layout, interfaceSettings);
     }
 
     // Which track "the selected one" is depends on what has focus (a grid, an expanded album, the
@@ -69,9 +67,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [RelayCommand]
     private void ToggleFullScreen() => ToggleFullScreenRequested?.Invoke(this, EventArgs.Empty);
-
-    public void PersistRightColumnWidth() =>
-        _settings.Update(s => s with { RightColumnWidth = RightColumnWidth.Value });
 
     public async Task RestoreQueueIfEnabledAsync()
     {

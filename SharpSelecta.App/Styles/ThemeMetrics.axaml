@@ -41,7 +41,7 @@
     <!-- Main window -->
     <x:Double x:Key="Size.MainWindow.Width">1280</x:Double>
     <x:Double x:Key="Size.MainWindow.Height">720</x:Double>
-    <GridLength x:Key="Size.Splitter.Width">10</GridLength>
+    <x:Double x:Key="Size.Splitter.Width">10</x:Double>
     <x:Double x:Key="Size.MainWindow.RightColumnWidth">220</x:Double>
 
     <!-- Library -->
