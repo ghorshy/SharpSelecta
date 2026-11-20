@@ -41,7 +41,7 @@ Packages for Arch (AUR), NixOS and Flathub are on the way, and a macOS version i
 
 Run `SharpSelecta-win-Setup.exe`. It adds SharpSelecta to the Start menu and updates itself from then on.
 
-To install it for every user of the computer (into Program Files), use `SharpSelecta-win-DeploymentTool.msi` instead. It asks whether to install just for you or for everyone, and updates itself the same way.
+To install it for every user of the computer (into Program Files), use `SharpSelecta-win.msi` instead. It asks whether to install just for you or for everyone, and updates itself the same way.
 
 If you'd rather not install anything, extract `SharpSelecta-win-Portable.zip` anywhere and run `sharpselecta.exe` from it. It updates itself too.
 
