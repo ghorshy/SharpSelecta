@@ -68,6 +68,7 @@ public sealed partial class TrackListView : UserControl
         TracksGrid.AddHandler(InputElement.PointerPressedEvent, OnRowReorderPointerPressed, handledEventsToo: true);
         TracksGrid.AddHandler(InputElement.PointerReleasedEvent, OnRowReorderPointerReleased, handledEventsToo: true);
         TracksGrid.AddHandler(InputElement.PointerPressedEvent, OnPressedKeepSelection, RoutingStrategies.Tunnel);
+        TracksGrid.AddHandler(InputElement.PointerPressedEvent, OnColumnBorderDoubleClick, RoutingStrategies.Tunnel, handledEventsToo: true);
         TracksGrid.AddHandler(InputElement.PointerReleasedEvent, OnReleasedCollapseSelection, handledEventsToo: true);
         var drag = new TrackDragSource(TracksGrid, DraggedTracks)
         {
@@ -199,6 +200,28 @@ public sealed partial class TrackListView : UserControl
     }
 
     public static bool IsUsableWidth(double width, double minimum) => double.IsFinite(width) && width >= minimum;
+
+    // How far either side of a header border the DataGrid's own resize grip reaches.
+    private const double ColumnBorderGrip = 5;
+
+    // As in Excel: a double-click on a column's right border fits it to its widest text. The left border
+    // belongs to the column before it. The width is saved on release, like a drag.
+    private void OnColumnBorderDoubleClick(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.ClickCount != 2 || (e.Source as Visual)?.FindAncestorOfType<DataGridColumnHeader>(includeSelf: true) is not { } header ||
+            DataGridColumn.GetColumnContainingElement(header) is not { } column)
+            return;
+
+        var x = e.GetPosition(header).X;
+        var target = x >= header.Bounds.Width - ColumnBorderGrip ? column
+            : x <= ColumnBorderGrip ? TracksGrid.Columns.Where(c => c.IsVisible && c.DisplayIndex < column.DisplayIndex).MaxBy(c => c.DisplayIndex)
+            : null;
+        if (target is null || DataGridColumnFitter.FitWidth(TracksGrid, target) is not { } width)
+            return;
+
+        target.Width = new DataGridLength(Math.Max(width, TracksGrid.MinColumnWidth));
+        e.Handled = true;
+    }
 
     private void ApplyToTaggedColumns<T>(IReadOnlyDictionary<string, T> valuesByKey, Action<DataGridColumn, T> apply)
     {
