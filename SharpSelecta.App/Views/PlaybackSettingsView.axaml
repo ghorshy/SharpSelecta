@@ -39,6 +39,11 @@
                     </ComboBox.ItemTemplate>
                 </ComboBox>
             </StackPanel>
+            <StackPanel Classes="settings-field">
+                <TextBlock Text="{x:Static res:Strings.PreviousRestartThresholdSeconds}" Classes="settings-label" />
+                <NumericUpDown Value="{Binding PreviousRestartThresholdSeconds}" Minimum="0" Maximum="30" Increment="1"
+                               FormatString="0" HorizontalAlignment="Left" Width="{DynamicResource Size.Settings.NumberFieldWidth}" />
+            </StackPanel>
         </StackPanel>
 
         <StackPanel Classes="settings-section">
@@ -86,11 +91,6 @@
             <StackPanel Classes="settings-field">
                 <TextBlock Text="{x:Static res:Strings.SeekStepSeconds}" Classes="settings-label" />
                 <NumericUpDown Value="{Binding SeekStepSeconds}" Minimum="1" Maximum="10" Increment="1"
-                               FormatString="0" HorizontalAlignment="Left" Width="{DynamicResource Size.Settings.NumberFieldWidth}" />
-            </StackPanel>
-            <StackPanel Classes="settings-field">
-                <TextBlock Text="{x:Static res:Strings.PreviousRestartThresholdSeconds}" Classes="settings-label" />
-                <NumericUpDown Value="{Binding PreviousRestartThresholdSeconds}" Minimum="0" Maximum="30" Increment="1"
                                FormatString="0" HorizontalAlignment="Left" Width="{DynamicResource Size.Settings.NumberFieldWidth}" />
             </StackPanel>
         </StackPanel>
