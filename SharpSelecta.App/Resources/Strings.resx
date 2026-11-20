@@ -530,7 +530,7 @@
     <value>Loading library…</value>
   </data>
   <data name="ClearArtworkCache" xml:space="preserve">
-    <value>Clear Artwork Cache</value>
+    <value>Clear artwork cache</value>
   </data>
   <data name="SortBy" xml:space="preserve">
     <value>Sort by</value>
