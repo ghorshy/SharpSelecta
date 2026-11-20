@@ -36,6 +36,16 @@
         <PackageReference Include="Tmds.DBus" />
     </ItemGroup>
 
+    <!-- OwnAudioSharp brings ONNX Runtime (22 MB on Linux, 15 on Windows) for its chord detection, which the
+         app doesn't use; the native library is only loaded when an ONNX model is. The small managed
+         Microsoft.ML.OnnxRuntime.dll stays, so OwnAudio's types still load. -->
+    <Target Name="DropOnnxRuntime" AfterTargets="ComputeResolvedFilesToPublishList">
+        <ItemGroup>
+            <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+                                   Condition="$([System.String]::Copy('%(Filename)').StartsWith('onnxruntime')) Or $([System.String]::Copy('%(Filename)').StartsWith('libonnxruntime'))" />
+        </ItemGroup>
+    </Target>
+
     <ItemGroup>
         <ProjectReference Include="..\SharpSelecta.Audio\SharpSelecta.Audio.csproj" />
         <ProjectReference Include="..\SharpSelecta.Integrations\SharpSelecta.Integrations.csproj" />
