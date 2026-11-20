@@ -26,6 +26,7 @@
 
             <SolidColorBrush x:Key="Brush.Accent" Color="{DynamicResource SystemAccentColor}" />
             <SolidColorBrush x:Key="Brush.Surface" Color="{DynamicResource SystemChromeMediumLowColor}" />
+            <SolidColorBrush x:Key="Brush.Text" Color="{DynamicResource SystemBaseHighColor}" />
             <SolidColorBrush x:Key="Brush.Separator" Color="{DynamicResource SystemBaseLowColor}" />
             <SolidColorBrush x:Key="Brush.ThumbnailPlaceholder" Color="{DynamicResource SystemBaseLowColor}" />
             <SolidColorBrush x:Key="Brush.Error" Color="#FFFF4500" />
@@ -51,6 +52,7 @@
 
             <SolidColorBrush x:Key="Brush.Accent" Color="{DynamicResource SystemAccentColor}" />
             <SolidColorBrush x:Key="Brush.Surface" Color="{DynamicResource SystemChromeMediumLowColor}" />
+            <SolidColorBrush x:Key="Brush.Text" Color="{DynamicResource SystemBaseHighColor}" />
             <SolidColorBrush x:Key="Brush.Separator" Color="{DynamicResource SystemBaseLowColor}" />
             <SolidColorBrush x:Key="Brush.ThumbnailPlaceholder" Color="{DynamicResource SystemBaseLowColor}" />
             <SolidColorBrush x:Key="Brush.Error" Color="#FFFF4500" />

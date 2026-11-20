@@ -63,7 +63,7 @@ public class SettingsWindowViewModelTests : IDisposable
         await Assert.That(vm.Categories[4]).IsSameReferenceAs(vm.KeyboardShortcuts);
         await Assert.That(string.Join("|", vm.Categories.Select(c => c.DisplayName))).IsEqualTo(string.Join("|",
             Strings.SettingsCategoryLibrary, Strings.SettingsCategoryPlayback, Strings.SettingsCategoryInterface,
-            Strings.SettingsCategoryIntegrations, Strings.SettingsCategoryKeyboardShortcuts));
+            Strings.SettingsCategoryIntegrations, Strings.SettingsCategoryKeyboardShortcuts, Strings.SettingsCategoryAbout));
     }
 
     [Test]
@@ -86,13 +86,24 @@ public class SettingsWindowViewModelTests : IDisposable
         var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel(), CreateInterfaceSettingsViewModel(),
             CreateIntegrationsSettingsViewModel(), CreateShortcutSettingsService(), updates);
 
-        await Assert.That(vm.Categories[^1]).IsSameReferenceAs(updates);
+        await Assert.That(vm.Categories[^2]).IsSameReferenceAs(updates);
         await Assert.That(updates.DisplayName).IsEqualTo(Strings.SettingsCategoryUpdates);
 
         var unsupported = new SettingsWindowViewModel(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel(), CreateInterfaceSettingsViewModel(),
             CreateIntegrationsSettingsViewModel(), CreateShortcutSettingsService(), new UpdatesViewModel(new SettingsStore(_temp.NewSettingsPath()), null, NullLogger.Instance));
 
         await Assert.That(unsupported.Categories.OfType<UpdatesViewModel>().Any()).IsFalse();
+    }
+
+    [Test]
+    public async Task Categories_EndWithAbout()
+    {
+        var vm = new SettingsWindowViewModel(CreateLibraryViewModel(), CreatePlaybackSettingsViewModel(), CreateInterfaceSettingsViewModel(),
+            CreateIntegrationsSettingsViewModel(), CreateShortcutSettingsService());
+
+        await Assert.That(vm.Categories[^1]).IsTypeOf<AboutViewModel>();
+        await Assert.That(vm.Categories[^1].DisplayName).IsEqualTo(Strings.SettingsCategoryAbout);
+        await Assert.That(vm.Categories[^1].HasPendingChanges).IsFalse();
     }
 
     [Test]

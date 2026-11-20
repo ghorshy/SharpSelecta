@@ -979,4 +979,40 @@
   <data name="SettingsSectionAlbumArt" xml:space="preserve">
     <value>Album art</value>
   </data>
+  <data name="SettingsCategoryAbout" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="AboutTagline" xml:space="preserve">
+    <value>An open-source music player for Windows and Linux.</value>
+  </data>
+  <data name="AboutCopyright" xml:space="preserve">
+    <value>© 2026 ghorshy</value>
+  </data>
+  <data name="AboutLicense" xml:space="preserve">
+    <value>MIT License</value>
+  </data>
+  <data name="AboutSystemFormat" xml:space="preserve">
+    <value>{0} on {1} ({2})</value>
+  </data>
+  <data name="AboutCopyInfo" xml:space="preserve">
+    <value>Copy version info</value>
+  </data>
+  <data name="AboutCopied" xml:space="preserve">
+    <value>Copied to the clipboard.</value>
+  </data>
+  <data name="AboutSourceCode" xml:space="preserve">
+    <value>Source code</value>
+  </data>
+  <data name="AboutReportBug" xml:space="preserve">
+    <value>Report a bug</value>
+  </data>
+  <data name="AboutOpenLogs" xml:space="preserve">
+    <value>Open the logs folder</value>
+  </data>
+  <data name="AboutLogsHint" xml:space="preserve">
+    <value>Attach the newest log to a bug report, along with the version info above.</value>
+  </data>
+  <data name="AboutLibraries" xml:space="preserve">
+    <value>Open-source libraries it uses</value>
+  </data>
 </root>

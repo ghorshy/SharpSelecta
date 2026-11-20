@@ -23,9 +23,7 @@ sealed class Program
                 .Run();
         }
 
-        var logDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "SharpSelecta", "logs");
+        var logDirectory = AppPaths.LogsDirectory;
         Directory.CreateDirectory(logDirectory);
 
         Log.Logger = new LoggerConfiguration()

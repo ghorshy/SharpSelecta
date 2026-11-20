@@ -1,6 +1,7 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
+    <x:String x:Key="Icon.AppLogo">avares://sharpselecta/Assets/Icons/sharpselecta-logo.svg</x:String>
     <x:String x:Key="Icon.PlayerTrackPrev">avares://sharpselecta/Assets/Icons/player-track-prev.svg</x:String>
     <x:String x:Key="Icon.PlayerTrackNext">avares://sharpselecta/Assets/Icons/player-track-next.svg</x:String>
     <x:String x:Key="Icon.PlayerPlay">avares://sharpselecta/Assets/Icons/player-play.svg</x:String>

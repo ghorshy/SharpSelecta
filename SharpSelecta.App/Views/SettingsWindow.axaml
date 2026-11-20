@@ -53,6 +53,9 @@
                     <DataTemplate DataType="vm:UpdatesViewModel">
                         <views:UpdatesSettingsView />
                     </DataTemplate>
+                    <DataTemplate DataType="vm:AboutViewModel">
+                        <views:AboutSettingsView />
+                    </DataTemplate>
                 </ContentControl.DataTemplates>
             </ContentControl>
         </ScrollViewer>

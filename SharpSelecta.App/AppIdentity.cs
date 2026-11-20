@@ -10,4 +10,6 @@ public static class AppIdentity
     public const string SingleInstanceInterface = Id + ".SingleInstance";
 
     public const string SingleInstanceObjectPath = "/io/github/ghorshy/SharpSelecta/SingleInstance";
+
+    public const string RepositoryUrl = "https://github.com/ghorshy/SharpSelecta";
 }

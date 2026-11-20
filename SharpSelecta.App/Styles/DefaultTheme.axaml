@@ -99,6 +99,18 @@
         <Setter Property="FontSize" Value="{DynamicResource FontSize.Small}" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
+    <!-- A link lined up with the text around it. -->
+    <Style Selector="HyperlinkButton.settings-link">
+        <Setter Property="Padding" Value="0" />
+    </Style>
+    <!-- The text color in every state, instead of Fluent's blue link that turns purple once visited. -->
+    <Style Selector="HyperlinkButton.settings-link /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text}" />
+    </Style>
+    <Style Selector="TextBlock.about-title">
+        <Setter Property="FontSize" Value="{DynamicResource FontSize.Title}" />
+        <Setter Property="FontWeight" Value="{DynamicResource FontWeight.Strong}" />
+    </Style>
     <!-- Under a checkbox: lined up with the checkbox's text. -->
     <Style Selector="TextBlock.settings-hint.indented, StackPanel.indented">
         <Setter Property="Margin" Value="{styles:Spacing Left=L}" />

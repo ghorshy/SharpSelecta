@@ -48,9 +48,7 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var settings = new SettingsStore(Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "SharpSelecta", "library-settings.json"));
+            var settings = new SettingsStore(Path.Combine(AppPaths.DataDirectory, "library-settings.json"));
 
             ThemeService.Apply(
                 settings.Current.Theme,

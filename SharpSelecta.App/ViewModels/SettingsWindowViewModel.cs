@@ -22,6 +22,7 @@ public partial class SettingsWindowViewModel : ViewModelBase
         // Updates is only listed where this install can update itself.
         if (updates is { IsSupported: true })
             categories.Add(updates);
+        categories.Add(new AboutViewModel());
 
         Categories = categories;
         SelectedCategory = Categories[0];

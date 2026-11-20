@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SharpSelecta.App.ViewModels"
+             xmlns:res="using:SharpSelecta.App.Resources"
+             xmlns:styles="using:SharpSelecta.App.Styles"
+             xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Svg.Controls.Skia.Avalonia"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
+             x:Class="SharpSelecta.App.Views.AboutSettingsView"
+             x:DataType="vm:AboutViewModel">
+
+    <StackPanel Classes="settings-page">
+        <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue M}">
+            <svg:Svg Path="{DynamicResource Icon.AppLogo}"
+                     Width="{DynamicResource Size.Settings.AboutLogo}" Height="{DynamicResource Size.Settings.AboutLogo}" />
+            <StackPanel VerticalAlignment="Center" Spacing="{styles:SpacingValue XXS}">
+                <TextBlock Text="{x:Static res:Strings.AppName}" Classes="about-title" />
+                <TextBlock Text="{Binding VersionDisplay}" Classes="settings-label" />
+                <TextBlock Text="{x:Static res:Strings.AboutTagline}" TextWrapping="Wrap" />
+            </StackPanel>
+        </StackPanel>
+
+        <StackPanel Classes="settings-section">
+            <TextBlock Text="{Binding SystemDisplay}" Classes="settings-hint" />
+            <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue S}">
+                <Button Content="{x:Static res:Strings.AboutCopyInfo}" Click="OnCopyVersionInfoClick" />
+                <TextBlock Text="{x:Static res:Strings.AboutCopied}" Classes="settings-hint" VerticalAlignment="Center"
+                           IsVisible="{Binding IsVersionInfoCopied}" />
+            </StackPanel>
+        </StackPanel>
+
+        <StackPanel Classes="settings-section">
+            <HyperlinkButton Content="{x:Static res:Strings.AboutSourceCode}" NavigateUri="{Binding RepositoryUri}" Classes="settings-link" />
+            <HyperlinkButton Content="{x:Static res:Strings.AboutReportBug}" NavigateUri="{Binding IssuesUri}" Classes="settings-link" />
+            <StackPanel Classes="settings-field">
+                <HyperlinkButton Content="{x:Static res:Strings.AboutOpenLogs}" NavigateUri="{Binding LogsFolderUri}" Classes="settings-link" />
+                <TextBlock Text="{x:Static res:Strings.AboutLogsHint}" Classes="settings-hint" />
+            </StackPanel>
+        </StackPanel>
+
+        <StackPanel Classes="settings-section">
+            <TextBlock Text="{x:Static res:Strings.AboutCopyright}" Classes="settings-label" />
+            <HyperlinkButton Content="{x:Static res:Strings.AboutLicense}" NavigateUri="{Binding LicenseUri}" Classes="settings-link" />
+            <HyperlinkButton Content="{x:Static res:Strings.AboutLibraries}" NavigateUri="{Binding LibrariesUri}" Classes="settings-link" />
+        </StackPanel>
+    </StackPanel>
+
+</UserControl>

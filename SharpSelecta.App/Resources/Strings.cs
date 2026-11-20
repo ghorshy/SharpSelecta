@@ -162,6 +162,17 @@ public static class Strings
     public static string ShortcutRevealPlayingTrack => Get(nameof(ShortcutRevealPlayingTrack));
     public static string SettingsCategoryIntegrations => Get(nameof(SettingsCategoryIntegrations));
     public static string SettingsCategoryUpdates => Get(nameof(SettingsCategoryUpdates));
+    public static string SettingsCategoryAbout => Get(nameof(SettingsCategoryAbout));
+    public static string AboutTagline => Get(nameof(AboutTagline));
+    public static string AboutCopyright => Get(nameof(AboutCopyright));
+    public static string AboutLicense => Get(nameof(AboutLicense));
+    public static string AboutCopyInfo => Get(nameof(AboutCopyInfo));
+    public static string AboutCopied => Get(nameof(AboutCopied));
+    public static string AboutSourceCode => Get(nameof(AboutSourceCode));
+    public static string AboutReportBug => Get(nameof(AboutReportBug));
+    public static string AboutOpenLogs => Get(nameof(AboutOpenLogs));
+    public static string AboutLogsHint => Get(nameof(AboutLogsHint));
+    public static string AboutLibraries => Get(nameof(AboutLibraries));
     public static string CheckForUpdatesAutomatically => Get(nameof(CheckForUpdatesAutomatically));
     public static string CheckForUpdatesHint => Get(nameof(CheckForUpdatesHint));
     public static string CheckForUpdatesNow => Get(nameof(CheckForUpdatesNow));
@@ -383,6 +394,9 @@ public static class Strings
 
     public static string SkippedTracksNotInLibrary(int count) =>
         string.Format(CultureInfo.CurrentCulture, Get("SkippedTracksNotInLibraryFormat"), count);
+
+    public static string AboutSystem(string runtime, string os, string architecture) =>
+        string.Format(CultureInfo.CurrentCulture, Get("AboutSystemFormat"), runtime, os, architecture);
 
     private static string Get(string name) => ResourceManager.GetString(name, CultureInfo.CurrentUICulture)!;
 }
