@@ -11,42 +11,6 @@
 
     <StackPanel Classes="settings-page">
         <StackPanel Classes="settings-section">
-            <TextBlock Text="{x:Static res:Strings.SettingsSectionStartup}" Classes="settings-heading" />
-            <CheckBox Content="{x:Static res:Strings.RestoreQueueOnStartup}" IsChecked="{Binding RestoreQueueOnStartup}" />
-            <CheckBox Content="{x:Static res:Strings.ResumePlaybackOnLaunch}" IsChecked="{Binding ResumePlaybackOnLaunch}"
-                      IsEnabled="{Binding RestoreQueueOnStartup}" Classes="indented" />
-        </StackPanel>
-
-        <StackPanel Classes="settings-section">
-            <TextBlock Text="{x:Static res:Strings.SettingsSectionPlayingTracks}" Classes="settings-heading" />
-            <StackPanel Classes="settings-field">
-                <TextBlock Text="{x:Static res:Strings.TrackStartActionLabel}" Classes="settings-label" />
-                <ComboBox ItemsSource="{Binding TrackStartActionOptions}" SelectedItem="{Binding SelectedTrackStartActionOption}" HorizontalAlignment="Stretch">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate x:DataType="vm:TrackStartActionOption">
-                            <TextBlock Text="{Binding DisplayName}" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </StackPanel>
-            <StackPanel Classes="settings-field">
-                <TextBlock Text="{x:Static res:Strings.OpenedFilesActionLabel}" Classes="settings-label" />
-                <ComboBox ItemsSource="{Binding OpenedFilesActionOptions}" SelectedItem="{Binding SelectedOpenedFilesActionOption}" HorizontalAlignment="Stretch">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate x:DataType="vm:OpenedFilesActionOption">
-                            <TextBlock Text="{Binding DisplayName}" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </StackPanel>
-            <StackPanel Classes="settings-field">
-                <TextBlock Text="{x:Static res:Strings.PreviousRestartThresholdSeconds}" Classes="settings-label" />
-                <NumericUpDown Value="{Binding PreviousRestartThresholdSeconds}" Minimum="0" Maximum="30" Increment="1"
-                               FormatString="0" HorizontalAlignment="Left" Width="{DynamicResource Size.Settings.NumberFieldWidth}" />
-            </StackPanel>
-        </StackPanel>
-
-        <StackPanel Classes="settings-section">
             <TextBlock Text="{x:Static res:Strings.SettingsSectionOutput}" Classes="settings-heading" />
             <StackPanel Classes="settings-field">
                 <TextBlock Text="{x:Static res:Strings.OutputDevice}" Classes="settings-label" />
@@ -86,6 +50,35 @@
         </StackPanel>
 
         <StackPanel Classes="settings-section">
+            <TextBlock Text="{x:Static res:Strings.SettingsSectionPlayingTracks}" Classes="settings-heading" />
+            <StackPanel Classes="settings-field">
+                <TextBlock Text="{x:Static res:Strings.TrackStartActionLabel}" Classes="settings-label" />
+                <ComboBox ItemsSource="{Binding TrackStartActionOptions}" SelectedItem="{Binding SelectedTrackStartActionOption}" HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:TrackStartActionOption">
+                            <TextBlock Text="{Binding DisplayName}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
+            <StackPanel Classes="settings-field">
+                <TextBlock Text="{x:Static res:Strings.OpenedFilesActionLabel}" Classes="settings-label" />
+                <ComboBox ItemsSource="{Binding OpenedFilesActionOptions}" SelectedItem="{Binding SelectedOpenedFilesActionOption}" HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:OpenedFilesActionOption">
+                            <TextBlock Text="{Binding DisplayName}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
+            <StackPanel Classes="settings-field">
+                <TextBlock Text="{x:Static res:Strings.PreviousRestartThresholdSeconds}" Classes="settings-label" />
+                <NumericUpDown Value="{Binding PreviousRestartThresholdSeconds}" Minimum="0" Maximum="30" Increment="1"
+                               FormatString="0" HorizontalAlignment="Left" Width="{DynamicResource Size.Settings.NumberFieldWidth}" />
+            </StackPanel>
+        </StackPanel>
+
+        <StackPanel Classes="settings-section">
             <TextBlock Text="{x:Static res:Strings.SettingsSectionSeeking}" Classes="settings-heading" />
             <CheckBox Content="{x:Static res:Strings.UseWaveformSlider}" IsChecked="{Binding UseWaveformSlider}" />
             <StackPanel Classes="settings-field">
@@ -93,6 +86,13 @@
                 <NumericUpDown Value="{Binding SeekStepSeconds}" Minimum="1" Maximum="10" Increment="1"
                                FormatString="0" HorizontalAlignment="Left" Width="{DynamicResource Size.Settings.NumberFieldWidth}" />
             </StackPanel>
+        </StackPanel>
+
+        <StackPanel Classes="settings-section">
+            <TextBlock Text="{x:Static res:Strings.SettingsSectionStartup}" Classes="settings-heading" />
+            <CheckBox Content="{x:Static res:Strings.RestoreQueueOnStartup}" IsChecked="{Binding RestoreQueueOnStartup}" />
+            <CheckBox Content="{x:Static res:Strings.ResumePlaybackOnLaunch}" IsChecked="{Binding ResumePlaybackOnLaunch}"
+                      IsEnabled="{Binding RestoreQueueOnStartup}" Classes="indented" />
         </StackPanel>
     </StackPanel>
 </UserControl>
