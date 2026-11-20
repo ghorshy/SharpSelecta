@@ -59,8 +59,10 @@ public sealed partial class TrackListView : UserControl
         foreach (var column in TracksGrid.Columns)
         {
             column.PropertyChanged += OnColumnPropertyChanged;
-            ApplyThemeWidth(column);
         }
+
+        // The theme's widths can only be looked up once the view is in a window.
+        AttachedToLogicalTree += (_, _) => ApplyColumnLayout(DataContext as LibraryViewModel);
 
         TracksGrid.AddHandler(InputElement.PointerReleasedEvent, OnPointerReleased, handledEventsToo: true);
         TracksGrid.AddHandler(InputElement.PointerPressedEvent, OnRowReorderPointerPressed, handledEventsToo: true);
@@ -75,16 +77,6 @@ public sealed partial class TrackListView : UserControl
         drag.Starting += (_, _) => _collapseSelectionTo = null;
         TracksGrid.Sorting += (_, _) => Dispatcher.UIThread.Post(SaveCurrentSort, DispatcherPriority.Background);
         TracksGrid.SelectionChanged += OnTracksGridSelectionChanged;
-    }
-
-    // Default column widths come from the theme (Size.Column.<Tag>); a width the user dragged to is
-    // restored over this afterwards by ApplyColumnLayout.
-    private void ApplyThemeWidth(DataGridColumn column)
-    {
-        if (column.Tag is string key && this.TryFindResource($"Size.Column.{key}", out var width) && width is double pixels)
-        {
-            column.Width = new DataGridLength(pixels);
-        }
     }
 
     private static LibraryTrackViewModel? RowItem(object? source) =>
@@ -181,21 +173,32 @@ public sealed partial class TrackListView : UserControl
         TracksGrid.Focus();
     }
 
-    private void ApplyColumnLayout(LibraryViewModel vm)
+    // Each column gets the width the user dragged it to, else the theme's (Size.Column.<Tag>). A saved
+    // width too small to show anything is ignored, so a bad settings file can't collapse the list.
+    private void ApplyColumnLayout(LibraryViewModel? vm)
     {
-        var order = vm.Settings.Current.ColumnOrder;
-        if (order is not null)
+        var saved = vm?.Settings.Current;
+        if (saved?.ColumnOrder is { } order)
         {
             var displayIndexByKey = order.Select((key, index) => (key, index)).ToDictionary(x => x.key, x => x.index);
             ApplyToTaggedColumns(displayIndexByKey, (column, index) => column.DisplayIndex = index);
         }
 
-        var widths = vm.Settings.Current.ColumnWidths;
-        if (widths is not null)
+        foreach (var column in TracksGrid.Columns)
         {
-            ApplyToTaggedColumns(widths, (column, width) => column.Width = new DataGridLength(width));
+            if (column.Tag is not string key)
+                continue;
+
+            if (saved?.ColumnWidths is { } widths && widths.TryGetValue(key, out var width) && IsUsableWidth(width, TracksGrid.MinColumnWidth))
+                column.Width = new DataGridLength(width);
+            else if (this.TryFindResource($"Size.Column.{key}", out var themeWidth) && themeWidth is double pixels)
+                column.Width = new DataGridLength(pixels);
         }
+
+        _columnWidthsDirty = false;
     }
+
+    public static bool IsUsableWidth(double width, double minimum) => double.IsFinite(width) && width >= minimum;
 
     private void ApplyToTaggedColumns<T>(IReadOnlyDictionary<string, T> valuesByKey, Action<DataGridColumn, T> apply)
     {
@@ -254,9 +257,14 @@ public sealed partial class TrackListView : UserControl
         {
             _columnWidthsDirty = false;
 
-            var widths = TracksGrid.Columns
-                .Where(c => c.Tag is string)
-                .ToDictionary(c => (string)c.Tag!, c => c.Width.Value);
+            // An Auto column's Width.Value is 1, not its width; what's drawn is ActualWidth.
+            var widths = new Dictionary<string, double>(vm.Settings.Current.ColumnWidths ?? new Dictionary<string, double>());
+            foreach (var column in TracksGrid.Columns)
+            {
+                var width = column.Width.IsAbsolute ? column.Width.Value : column.ActualWidth;
+                if (column.Tag is string key && IsUsableWidth(width, TracksGrid.MinColumnWidth))
+                    widths[key] = width;
+            }
 
             vm.Settings.Update(s => s with { ColumnWidths = widths });
             vm.Columns.NotifyLayoutChanged();
