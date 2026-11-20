@@ -108,7 +108,6 @@
     </Style>
     <Style Selector="TextBlock.settings-heading">
         <Setter Property="FontSize" Value="{DynamicResource FontSize.Heading}" />
-        <Setter Property="Opacity" Value="{DynamicResource Opacity.TextSecondary}" />
         <Setter Property="FontWeight" Value="{DynamicResource FontWeight.Strong}" />
     </Style>
     <Style Selector="TextBlock.settings-label">
