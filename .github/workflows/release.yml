@@ -38,9 +38,10 @@ jobs:
       - run: dotnet tool install -g vpk --version "$VPK_VERSION"
 
       # The previous release lets vpk build a delta package, so updates download only what changed.
+      # --pre: the newest release of any kind, so 1.0.0 gets a delta from the last rc too.
       - name: Previous release
         continue-on-error: true
-        run: vpk download github --repoUrl "https://github.com/${{ github.repository }}" --token "${{ secrets.GITHUB_TOKEN }}" -o releases
+        run: vpk download github --repoUrl "https://github.com/${{ github.repository }}" --token "${{ secrets.GITHUB_TOKEN }}" --pre -o releases
 
       # Builds the one-click Setup.exe, the MSI (a wizard: license, then just for me or for everyone)
       # and the portable zip (sharpselecta.exe on top, the app's files in current\).
