@@ -1,23 +1,19 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:SharpSelecta.App.ViewModels"
+        xmlns:res="using:SharpSelecta.App.Resources"
         xmlns:converters="using:SharpSelecta.App.Converters"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="400"
         x:Class="SharpSelecta.App.Views.AlbumCoverWindow"
         x:DataType="vm:IArtworkPreview"
-        WindowDecorations="None"
-        CanResize="False"
+        Title="{x:Static res:Strings.AlbumCoverWindowTitle}"
         ShowInTaskbar="False"
-        SizeToContent="WidthAndHeight"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterOwner">
 
-    <!-- No title bar to drag by, so the whole cover acts as one instead — ElementRole="TitleBar"
-         hands the actual drag-move to the OS/window manager, which is what makes this work
-         consistently across desktop environments instead of a hand-rolled position tracker. -->
-    <Border Background="{DynamicResource Brush.CoverWindowBackground}" WindowDecorationProperties.ElementRole="TitleBar">
-        <Image Source="{Binding ArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}" />
+    <Border Background="{DynamicResource Brush.CoverWindowBackground}">
+        <Image x:Name="Cover" Source="{Binding ArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}" />
     </Border>
 
 </Window>

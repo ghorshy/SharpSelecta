@@ -143,6 +143,7 @@ public static class Strings
     public static string ShortcutSectionAlbumGrid => Get(nameof(ShortcutSectionAlbumGrid));
     public static string ShortcutSectionQueue => Get(nameof(ShortcutSectionQueue));
     public static string ShortcutSectionWindow => Get(nameof(ShortcutSectionWindow));
+    public static string AlbumCoverWindowTitle => Get(nameof(AlbumCoverWindowTitle));
     public static string ShortcutToggleFullScreen => Get(nameof(ShortcutToggleFullScreen));
     public static string ShortcutSeekBackward => Get(nameof(ShortcutSeekBackward));
     public static string ShortcutSeekForward => Get(nameof(ShortcutSeekForward));

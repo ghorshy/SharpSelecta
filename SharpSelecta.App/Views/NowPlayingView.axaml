@@ -17,9 +17,9 @@
         <TextBlock Text="{Binding CurrentTrack.Album}" TextWrapping="Wrap" />
         <TextBlock Text="{Binding CurrentTrack.Year}" />
         <TextBlock Text="{Binding CurrentTrackTechnicalSummary}" Classes="secondary small" TextWrapping="Wrap" />
-        <!-- Double-tap opens the cover at its real resolution in a separate borderless window
-             (AlbumCoverWindow) - only meaningful when there's actual artwork, hence the guard in
-             the handler rather than gating this Panel's own visibility. -->
+        <!-- Double-tap opens the cover at its real resolution in its own window (AlbumCoverWindow) -
+             only meaningful when there's actual artwork, hence the guard in the handler rather than
+             gating this Panel's own visibility. -->
         <Panel Margin="{styles:Spacing Top=S}" DoubleTapped="OnArtworkDoubleTapped">
             <Image Source="{Binding CurrentTrackArtworkBytes, Converter={x:Static converters:ArtworkConverter.Instance}}"
                    Stretch="Uniform"

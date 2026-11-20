@@ -562,6 +562,9 @@
   <data name="ShortcutSectionQueue" xml:space="preserve">
     <value>Queue</value>
   </data>
+  <data name="AlbumCoverWindowTitle" xml:space="preserve">
+    <value>Cover</value>
+  </data>
   <data name="ShortcutSectionWindow" xml:space="preserve">
     <value>Window</value>
   </data>
