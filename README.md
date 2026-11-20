@@ -156,10 +156,10 @@ Converting between file types (the Convert tab) needs [FFmpeg](https://ffmpeg.or
 
 Settings, the library index with your playlists, the saved queue, the cover cache and the logs are all kept in one folder:
 
-- Windows: `%LocalAppData%\SharpSelecta`
+- Windows: `%AppData%\SharpSelecta`
 - Linux: `~/.local/share/SharpSelecta`
 
-Back it up to keep your settings and playlists. Removing the app on Linux leaves the folder alone, so delete it yourself if you want everything gone.
+Back it up to keep your settings and playlists. Uninstalling the app leaves the folder alone, so delete it yourself if you want everything gone.
 
 ## What goes online
 

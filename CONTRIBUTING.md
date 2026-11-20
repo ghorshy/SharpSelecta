@@ -6,7 +6,7 @@ Thanks for wanting to help. These rules hold for everyone, people and AI assista
 
 - Search the open issues first. If one already covers it, add to that one: one problem is one issue.
 - For a bug, say what you did, what you expected and what happened instead, plus your OS and the SharpSelecta version.
-- Attach the log from around the time it happened. It's in `%LocalAppData%\SharpSelecta\logs` on Windows and `~/.local/share/SharpSelecta/logs` on Linux, one file per day.
+- Attach the log from around the time it happened. It's in `%AppData%\SharpSelecta\logs` on Windows and `~/.local/share/SharpSelecta/logs` on Linux, one file per day.
 - Leave out anything private: your music paths, API keys (such as a fanart.tv key) and personal names.
 
 ## Before you start
