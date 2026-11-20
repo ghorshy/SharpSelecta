@@ -18,6 +18,8 @@
     <x:String x:Key="Icon.Search">avares://sharpselecta/Assets/Icons/search.svg</x:String>
     <x:String x:Key="Icon.X">avares://sharpselecta/Assets/Icons/x.svg</x:String>
     <x:String x:Key="Icon.ChevronDown">avares://sharpselecta/Assets/Icons/chevron-down.svg</x:String>
+    <!-- chevron-right.svg's shape: Fluent's menu template draws its submenu arrow as a Path, not an image. -->
+    <StreamGeometry x:Key="Geometry.MenuChevron">M9 6l6 6l-6 6</StreamGeometry>
     <x:String x:Key="Icon.View">avares://sharpselecta/Assets/Icons/binoculars.svg</x:String>
     <x:String x:Key="Icon.Library">avares://sharpselecta/Assets/Icons/books.svg</x:String>
     <x:String x:Key="Icon.GripVertical">avares://sharpselecta/Assets/Icons/grip-vertical.svg</x:String>

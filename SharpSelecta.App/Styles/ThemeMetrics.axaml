@@ -30,11 +30,13 @@
     <Thickness x:Key="Border.Top.Thick">0,2,0,0</Thickness>
     <Thickness x:Key="Border.Bottom.Thick">0,0,0,2</Thickness>
     <x:Double x:Key="Stroke.PlaceholderGroove">0.75</x:Double>
+    <x:Double x:Key="Stroke.MenuChevron">1.5</x:Double>
 
     <!-- Icons -->
     <x:Double x:Key="Size.Icon.XS">12</x:Double>
     <x:Double x:Key="Size.Icon.S">14</x:Double>
     <x:Double x:Key="Size.Icon.M">18</x:Double>
+    <x:Double x:Key="Size.Icon.MenuChevron">10</x:Double>
 
     <!-- Main window -->
     <x:Double x:Key="Size.MainWindow.Width">1280</x:Double>

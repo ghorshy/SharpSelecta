@@ -19,7 +19,7 @@ public static class AppearanceService
     private static readonly string[] ScaledKeys =
     [
         "FontSize.Small", "FontSize.Title", "ControlContentThemeFontSize", "ToolTipContentThemeFontSize",
-        "Size.Icon.XS", "Size.Icon.S", "Size.Icon.M",
+        "Size.Icon.XS", "Size.Icon.S", "Size.Icon.M", "Size.Icon.MenuChevron",
     ];
 
     private static readonly string[] AccentKeys =
