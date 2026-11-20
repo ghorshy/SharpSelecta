@@ -54,7 +54,18 @@
                              Path="{DynamicResource Icon.Search}" Margin="{styles:Spacing Right=XXS}" />
                     <TextBox Grid.Column="1" x:Name="SearchBox" Text="{Binding Search.Query, Mode=TwoWay}"
                              PlaceholderText="{x:Static res:Strings.Search}" BorderThickness="0" Background="Transparent"
-                             MinWidth="{DynamicResource Size.Library.SearchMinWidth}" VerticalAlignment="Center" />
+                             MinWidth="{DynamicResource Size.Library.SearchMinWidth}" VerticalAlignment="Center">
+                        <!-- The Border around the search row is the box; Fluent's hover/focus look would draw a
+                             second one inside it. Fluent paints that look onto a template part straight from
+                             these keys, past the TextBox's own Background/BorderBrush, so they're blanked here. -->
+                        <TextBox.Resources>
+                            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver">Transparent</SolidColorBrush>
+                            <SolidColorBrush x:Key="TextControlBorderBrushFocused">Transparent</SolidColorBrush>
+                            <SolidColorBrush x:Key="TextControlBackgroundPointerOver">Transparent</SolidColorBrush>
+                            <SolidColorBrush x:Key="TextControlBackgroundFocused">Transparent</SolidColorBrush>
+                            <Thickness x:Key="TextControlBorderThemeThicknessFocused">0</Thickness>
+                        </TextBox.Resources>
+                    </TextBox>
                     <Button Grid.Column="2" Classes="toolbar-button toolbar-button-hover" Command="{Binding Search.ClearCommand}"
                             IsVisible="{Binding Search.Query, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}">
                         <svg:Svg Classes="toolbar-icon" Width="{DynamicResource Size.Icon.XS}" Height="{DynamicResource Size.Icon.XS}" Path="{DynamicResource Icon.X}" />
