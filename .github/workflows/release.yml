@@ -42,18 +42,32 @@ jobs:
         continue-on-error: true
         run: vpk download github --repoUrl "https://github.com/${{ github.repository }}" --token "${{ secrets.GITHUB_TOKEN }}" -o releases
 
-      # Also builds the portable zip: sharpselecta.exe on top, the app's files in current\.
-      - name: Installer
-        run: >
-          vpk pack --packId SharpSelecta --packVersion "$VERSION" --packDir publish
-          --mainExe sharpselecta.exe --packTitle SharpSelecta --packAuthors ghorshy
-          --icon SharpSelecta.App/Assets/sharpselecta.ico
-          --runtime win-x64 -o releases
+      # Builds the one-click Setup.exe, the MSI (a wizard: license, then just for me or for everyone)
+      # and the portable zip (sharpselecta.exe on top, the app's files in current\).
+      # The MSI's license page takes only .txt, .md or .rtf files, and its version only x.x.x.x
+      # (1.0.0-rc.2 becomes 1.0.0.0; updates go by the package version, not this one).
+      - name: Installers
+        run: |
+          cp LICENSE LICENSE.txt
+          vpk pack --packId SharpSelecta --packVersion "$VERSION" --packDir publish \
+            --mainExe sharpselecta.exe --packTitle SharpSelecta --packAuthors ghorshy \
+            --icon SharpSelecta.App/Assets/sharpselecta.ico \
+            --msi --msiVersion "${VERSION%%-*}.0" --instLicense LICENSE.txt \
+            --runtime win-x64 -o releases
 
       - name: Create the release
         run: >
           vpk upload github --repoUrl "https://github.com/${{ github.repository }}" --token "${{ secrets.GITHUB_TOKEN }}"
           -o releases --publish $PRE --tag "$GITHUB_REF_NAME" --releaseName "SharpSelecta $VERSION"
+
+      # vpk upload may leave the MSI out of the release.
+      - name: Attach the MSI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh release view "$GITHUB_REF_NAME" --json assets -q '.assets[].name' | grep -q '\.msi$'; then
+            gh release upload "$GITHUB_REF_NAME" releases/*.msi
+          fi
 
   linux:
     needs: windows
