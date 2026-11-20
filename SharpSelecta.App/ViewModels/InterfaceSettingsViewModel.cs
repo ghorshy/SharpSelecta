@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Windows.Input;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -166,6 +167,7 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
             Preview(themeChanged: true);
     }
 
+    [MemberNotNull(nameof(SelectedFontSizeOption))]
     private void ShowChoices(Choices choices)
     {
         var wasLoading = _loading;
