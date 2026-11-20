@@ -65,6 +65,11 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private void OpenProperties() => OpenPropertiesRequested?.Invoke(this, EventArgs.Empty);
 
+    public event EventHandler? ToggleFullScreenRequested;
+
+    [RelayCommand]
+    private void ToggleFullScreen() => ToggleFullScreenRequested?.Invoke(this, EventArgs.Empty);
+
     public void PersistRightColumnWidth() =>
         _settings.Update(s => s with { RightColumnWidth = RightColumnWidth.Value });
 

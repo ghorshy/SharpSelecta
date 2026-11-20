@@ -52,6 +52,20 @@ public class ShortcutRegistryTests : IDisposable
     }
 
     [Test]
+    public async Task FullScreenShortcut_DefaultsToF11_AndAsksTheWindowToToggle()
+    {
+        var mainWindowViewModel = CreateMainWindowViewModel();
+        var fullScreen = ShortcutRegistry.All.Single(s => s.Id == "Window.ToggleFullScreen");
+        var requested = 0;
+        mainWindowViewModel.ToggleFullScreenRequested += (_, _) => requested++;
+
+        fullScreen.Command(mainWindowViewModel).Execute(null);
+
+        await Assert.That(fullScreen.DefaultGesture).IsEqualTo("F11");
+        await Assert.That(requested).IsEqualTo(1);
+    }
+
+    [Test]
     public async Task IncreaseTileSizeShortcut_TargetsWhicheverGridIsActiveAtTheTimeItFires()
     {
         var mainWindowViewModel = CreateMainWindowViewModel();

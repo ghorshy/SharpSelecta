@@ -9,4 +9,5 @@ public sealed record ShortcutSection(Func<string> Title, ShortcutScope HomeScope
     public static ShortcutSection Library { get; } = new(() => Strings.ShortcutSectionLibrary);
     public static ShortcutSection AlbumGrid { get; } = new(() => Strings.ShortcutSectionAlbumGrid, ShortcutScope.AlbumGrid);
     public static ShortcutSection Queue { get; } = new(() => Strings.ShortcutSectionQueue, ShortcutScope.Queue);
+    public static ShortcutSection Window { get; } = new(() => Strings.ShortcutSectionWindow);
 }

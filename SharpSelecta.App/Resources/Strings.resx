@@ -562,6 +562,12 @@
   <data name="ShortcutSectionQueue" xml:space="preserve">
     <value>Queue</value>
   </data>
+  <data name="ShortcutSectionWindow" xml:space="preserve">
+    <value>Window</value>
+  </data>
+  <data name="ShortcutToggleFullScreen" xml:space="preserve">
+    <value>Toggle full screen</value>
+  </data>
   <data name="ShortcutSeekBackward" xml:space="preserve">
     <value>Seek backward</value>
   </data>

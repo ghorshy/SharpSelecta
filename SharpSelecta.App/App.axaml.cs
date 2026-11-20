@@ -79,6 +79,7 @@ public partial class App : Application
             var audioEngine = provider.GetRequiredService<IAudioEngine>();
             var mainWindowViewModel = provider.GetRequiredService<MainWindowViewModel>();
             mainWindow.DataContext = mainWindowViewModel;
+            mainWindowViewModel.ToggleFullScreenRequested += (_, _) => windowSize.ToggleFullScreen();
             desktop.MainWindow = mainWindow;
 
             var mprisServiceTask = MprisService.TryStartAsync(

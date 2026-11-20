@@ -45,5 +45,6 @@ public static class ShortcutRegistry
         new("Library.IncreaseTileSizeWheel", "Ctrl+WheelUp", () => Strings.ShortcutIncreaseTileSize, IncreaseTileSize, ShortcutSection.AlbumGrid, ShortcutScope.AlbumGrid),
         new("Library.DecreaseTileSizeWheel", "Ctrl+WheelDown", () => Strings.ShortcutDecreaseTileSize, DecreaseTileSize, ShortcutSection.AlbumGrid, ShortcutScope.AlbumGrid),
         new("Queue.ClearQueue", "", () => Strings.ShortcutClearQueue, vm => vm.Queue.ClearQueueCommand, ShortcutSection.Queue, ShortcutScope.Queue),
+        new("Window.ToggleFullScreen", "F11", () => Strings.ShortcutToggleFullScreen, vm => vm.ToggleFullScreenCommand, ShortcutSection.Window),
     ];
 }

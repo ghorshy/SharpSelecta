@@ -224,7 +224,7 @@ public class KeyboardShortcutsViewModelTests : IDisposable
     {
         var vm = CreateViewModel(out _);
 
-        await Assert.That(string.Join("|", vm.Sections.Select(s => s.Title))).IsEqualTo("Playback|Library|Album grid|Queue");
+        await Assert.That(string.Join("|", vm.Sections.Select(s => s.Title))).IsEqualTo("Playback|Library|Album grid|Queue|Window");
         await Assert.That(vm.Sections.SelectMany(s => s.Rows)).IsEquivalentTo(vm.Rows);
         await Assert.That(vm.Sections.Single(s => s.Title == "Album grid").Rows.Select(r => r.Id))
             .IsEquivalentTo(["Library.IncreaseTileSize", "Library.DecreaseTileSize", "Library.IncreaseTileSizeWheel", "Library.DecreaseTileSizeWheel"]);

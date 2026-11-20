@@ -5,12 +5,13 @@ using SharpSelecta.Core.Library;
 namespace SharpSelecta.App.Services;
 
 // Opens the main window at the size it had when it was last closed, and maximized if it was. The theme's
-// starting size applies only the first time. The position isn't kept: Wayland doesn't let an app place
+// starting size applies only the first time. Full screen isn't kept: it reopens in the state it left. The position isn't kept: Wayland doesn't let an app place
 // its window, and a saved spot on a monitor that's since gone helps no one.
 public sealed class WindowSizeKeeper
 {
     private readonly Window _window;
     private Size? _normalSize;
+    private WindowState _stateBeforeFullScreen = WindowState.Normal;
 
     public WindowSizeKeeper(Window window, AppSettings saved)
     {
@@ -30,8 +31,17 @@ public sealed class WindowSizeKeeper
         {
             if (e.Property == TopLevel.ClientSizeProperty && _window.WindowState == WindowState.Normal)
                 _normalSize = _window.ClientSize;
+            else if (e.Property == Window.WindowStateProperty && e.GetNewValue<WindowState>() == WindowState.FullScreen)
+                _stateBeforeFullScreen = RestoredState(e.GetOldValue<WindowState>());
         };
     }
+
+    public void ToggleFullScreen() =>
+        _window.WindowState = _window.WindowState == WindowState.FullScreen ? _stateBeforeFullScreen : WindowState.FullScreen;
+
+    // Leaving full screen into a minimized window would make the window vanish.
+    public static WindowState RestoredState(WindowState before) =>
+        before is WindowState.Maximized ? WindowState.Maximized : WindowState.Normal;
 
     public void Persist(SettingsStore settings)
     {
@@ -42,7 +52,8 @@ public sealed class WindowSizeKeeper
         {
             WindowWidth = size.Width,
             WindowHeight = size.Height,
-            WindowMaximized = _window.WindowState == WindowState.Maximized,
+            WindowMaximized = (_window.WindowState == WindowState.FullScreen ? _stateBeforeFullScreen : _window.WindowState)
+                == WindowState.Maximized,
         });
     }
 
