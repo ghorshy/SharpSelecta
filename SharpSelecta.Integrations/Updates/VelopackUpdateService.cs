@@ -17,11 +17,14 @@ public sealed class VelopackUpdateService : IUpdateService
         if (!OperatingSystem.IsWindows())
             return;
 
-        var manager = new UpdateManager(new GithubSource(RepositoryUrl, null, false));
-        if (manager.IsInstalled)
-        {
-            _manager = manager;
-        }
+        var manager = new UpdateManager(new GithubSource(RepositoryUrl, null, prerelease: false));
+        if (!manager.IsInstalled)
+            return;
+
+        // A release candidate moves on to the next one (or the release); a release sees only releases.
+        _manager = manager.CurrentVersion?.IsPrerelease == true
+            ? new UpdateManager(new GithubSource(RepositoryUrl, null, prerelease: true))
+            : manager;
     }
 
     public bool IsSupported => _manager is not null;
