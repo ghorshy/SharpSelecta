@@ -98,13 +98,13 @@
     <!-- Settings pages: a page is a stack of sections, each with a heading; a field is a label over its
          control; a hint is the small note under a field or checkbox. -->
     <Style Selector="StackPanel.settings-page">
-        <Setter Property="Spacing" Value="{DynamicResource Spacing.L}" />
+        <Setter Property="Spacing" Value="{DynamicResource Spacing.XL}" />
     </Style>
     <Style Selector="StackPanel.settings-section">
-        <Setter Property="Spacing" Value="{DynamicResource Spacing.S}" />
+        <Setter Property="Spacing" Value="{DynamicResource Spacing.M}" />
     </Style>
     <Style Selector="StackPanel.settings-field">
-        <Setter Property="Spacing" Value="{DynamicResource Spacing.XXS}" />
+        <Setter Property="Spacing" Value="{DynamicResource Spacing.XS}" />
     </Style>
     <Style Selector="TextBlock.settings-heading">
         <Setter Property="FontSize" Value="{DynamicResource FontSize.Heading}" />

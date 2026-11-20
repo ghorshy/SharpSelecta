@@ -10,6 +10,8 @@ public enum Spacing
     S,
     M,
     L,
+    // ReSharper disable once InconsistentNaming
+    XL,
 }
 
 public static class SpacingScale
