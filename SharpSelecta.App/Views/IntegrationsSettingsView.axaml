@@ -11,6 +11,15 @@
 
     <StackPanel Classes="settings-page">
         <StackPanel Classes="settings-section">
+            <TextBlock Text="{x:Static res:Strings.SettingsSectionAlbumArt}" Classes="settings-heading" />
+            <StackPanel Classes="settings-field">
+                <TextBlock Text="{x:Static res:Strings.FanartApiKeyLabel}" Classes="settings-label" />
+                <TextBox Text="{Binding FanartApiKey}" HorizontalAlignment="Stretch" />
+                <TextBlock Text="{x:Static res:Strings.FanartApiKeyHint}" Classes="settings-hint" />
+            </StackPanel>
+        </StackPanel>
+
+        <StackPanel Classes="settings-section">
             <TextBlock Text="{x:Static res:Strings.SettingsSectionDiscord}" Classes="settings-heading" />
             <StackPanel Classes="settings-field">
                 <CheckBox Content="{x:Static res:Strings.DiscordPresenceToggle}" IsChecked="{Binding DiscordPresenceEnabled}" />
@@ -21,15 +30,6 @@
                 <CheckBox Content="{x:Static res:Strings.DiscordShowAlbum}" IsChecked="{Binding DiscordShowAlbum}" />
                 <CheckBox Content="{x:Static res:Strings.DiscordShowElapsed}" IsChecked="{Binding DiscordShowElapsed}" />
                 <CheckBox Content="{x:Static res:Strings.DiscordShowWhilePaused}" IsChecked="{Binding DiscordShowWhilePaused}" />
-            </StackPanel>
-        </StackPanel>
-
-        <StackPanel Classes="settings-section">
-            <TextBlock Text="{x:Static res:Strings.SettingsSectionAlbumArt}" Classes="settings-heading" />
-            <StackPanel Classes="settings-field">
-                <TextBlock Text="{x:Static res:Strings.FanartApiKeyLabel}" Classes="settings-label" />
-                <TextBox Text="{Binding FanartApiKey}" HorizontalAlignment="Stretch" />
-                <TextBlock Text="{x:Static res:Strings.FanartApiKeyHint}" Classes="settings-hint" />
             </StackPanel>
         </StackPanel>
     </StackPanel>
