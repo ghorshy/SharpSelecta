@@ -21,6 +21,9 @@
     <ResourceDictionary.ThemeDictionaries>
 
         <ResourceDictionary x:Key="Light">
+            <!-- Every window's background (Fluent's own white). -->
+            <SolidColorBrush x:Key="SystemRegionBrush" Color="#FFFFFFFF" />
+
             <Color x:Key="Color.IconForeground">#FF1A1A1A</Color>
             <Color x:Key="Color.IconDisabled">#FFA0A0A0</Color>
 
@@ -47,6 +50,9 @@
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
+            <!-- Every window's background: a little lighter than Fluent's pure black. -->
+            <SolidColorBrush x:Key="SystemRegionBrush" Color="#FF161616" />
+
             <Color x:Key="Color.IconForeground">#FFEDEDED</Color>
             <Color x:Key="Color.IconDisabled">#FF808080</Color>
 
