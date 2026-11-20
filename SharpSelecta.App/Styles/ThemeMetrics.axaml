@@ -15,6 +15,7 @@
     <!-- Typography -->
     <x:Double x:Key="FontSize.Content">14</x:Double>
     <x:Double x:Key="FontSize.Small">11</x:Double>
+    <x:Double x:Key="FontSize.Heading">16</x:Double>
     <x:Double x:Key="FontSize.Title">20</x:Double>
     <FontWeight x:Key="FontWeight.Strong">Bold</FontWeight>
 

@@ -18,7 +18,7 @@ public static class AppearanceService
     // Scaled by the same factor as the content text: the rest of the text, and the icons that sit next to it.
     private static readonly string[] ScaledKeys =
     [
-        "FontSize.Small", "FontSize.Title", "ControlContentThemeFontSize", "ToolTipContentThemeFontSize",
+        "FontSize.Small", "FontSize.Heading", "FontSize.Title", "ControlContentThemeFontSize", "ToolTipContentThemeFontSize",
         "Size.Icon.XS", "Size.Icon.S", "Size.Icon.M", "Size.Icon.MenuChevron",
     ];
 
