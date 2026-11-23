@@ -59,6 +59,13 @@ public sealed record AppSettings
     public string? EqualizerPresetName { get; init; }
     public IReadOnlyList<float>? EqualizerBandGainsDb { get; init; }
     public bool UseWaveformSlider { get; init; }
+
+    public PlaybackBarLayout PlaybackBar
+    {
+        get;
+        init => field = value?.Normalize() ?? PlaybackBarLayout.Default;
+    } = PlaybackBarLayout.Default;
+
     public bool AutoDjEnabled { get; init; }
 
     // The playlist Auto DJ draws from; null means the whole library.

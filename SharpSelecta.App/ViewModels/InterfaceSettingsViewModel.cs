@@ -17,11 +17,12 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
     private sealed record Choices(
         AppTheme Theme, string? CustomThemeFileName, int? FontSize, string? AccentColor,
         bool TrackChangeNotifications, bool MinimizeToTray, bool CloseToTray,
-        SidePanelPosition SidePanelPosition, QueuePosition QueuePosition, bool ShowNowPlayingArtwork, bool ShowNowPlayingDetails)
+        SidePanelPosition SidePanelPosition, QueuePosition QueuePosition, bool ShowNowPlayingArtwork, bool ShowNowPlayingDetails,
+        PlaybackBarLayout PlaybackBar)
     {
         public static Choices From(AppSettings s) =>
             new(s.Theme, s.CustomThemeFileName, s.FontSize, s.AccentColor, s.TrackChangeNotifications, s.MinimizeToTray, s.CloseToTray,
-                s.SidePanelPosition, s.QueuePosition, s.ShowNowPlayingArtwork, s.ShowNowPlayingDetails);
+                s.SidePanelPosition, s.QueuePosition, s.ShowNowPlayingArtwork, s.ShowNowPlayingDetails, s.PlaybackBar);
 
         public AppSettings ApplyTo(AppSettings s) => s with
         {
@@ -29,6 +30,7 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
             TrackChangeNotifications = TrackChangeNotifications, MinimizeToTray = MinimizeToTray, CloseToTray = CloseToTray,
             SidePanelPosition = SidePanelPosition, QueuePosition = QueuePosition,
             ShowNowPlayingArtwork = ShowNowPlayingArtwork, ShowNowPlayingDetails = ShowNowPlayingDetails,
+            PlaybackBar = PlaybackBar,
         };
     }
 
@@ -119,6 +121,9 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
     [ObservableProperty]
     public partial bool ShowNowPlayingDetails { get; set; }
 
+    // The bottom bar as edited; the main window previews it.
+    public PlaybackBarLayout PlaybackBar => _edited.PlaybackBar;
+
     public string DisplayName => Strings.SettingsCategoryInterface;
 
     public bool HasPendingChanges => _edited != _applied;
@@ -193,7 +198,10 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
     {
         var hadPreview = _edited.Theme != _applied.Theme || _edited.CustomThemeFileName != _applied.CustomThemeFileName
             || _edited.FontSize != _applied.FontSize || _edited.AccentColor != _applied.AccentColor;
+        var barChanged = _edited.PlaybackBar != _applied.PlaybackBar;
         _edited = _applied;
+        if (barChanged)
+            OnPropertyChanged(nameof(PlaybackBar));
         ShowChoices(_applied);
         OnPropertyChanged(nameof(HasPendingChanges));
         if (hadPreview)
@@ -229,8 +237,11 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
 
     private void Edit(Func<Choices, Choices> change)
     {
+        var bar = _edited.PlaybackBar;
         _edited = change(_edited);
         OnPropertyChanged(nameof(HasPendingChanges));
+        if (_edited.PlaybackBar != bar)
+            OnPropertyChanged(nameof(PlaybackBar));
     }
 
     // The overrides are computed from the theme's values, and the accent picker shows the theme's accent.

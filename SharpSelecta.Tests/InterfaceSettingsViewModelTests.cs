@@ -379,4 +379,35 @@ public class InterfaceSettingsViewModelTests : IDisposable
             <SolidColorBrush x:Key="SystemAccentColor">#FF9D4EDD</SolidColorBrush>
         </ResourceDictionary>
         """;
+
+    [Test]
+    public async Task PlaybackBar_IsTheSavedLayout()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var layout = new PlaybackBarLayout
+        {
+            Components = [PlaybackBarComponent.SeekBar, PlaybackBarComponent.PlayPause, PlaybackBarComponent.Settings],
+            ShowTitle = false,
+        };
+        new SettingsStore(settingsPath).Update(s => s with { PlaybackBar = layout });
+
+        var vm = CreateViewModel(settingsPath);
+
+        await Assert.That(vm.PlaybackBar).IsEqualTo(layout);
+        await Assert.That(vm.HasPendingChanges).IsFalse();
+    }
+
+    [Test]
+    public async Task ApplyingAnotherSetting_KeepsTheSavedPlaybackBar()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var layout = new PlaybackBarLayout { SeekBarWidth = SeekBarWidth.Fixed, SeekBarPercent = 40 };
+        new SettingsStore(settingsPath).Update(s => s with { PlaybackBar = layout });
+        var vm = CreateViewModel(settingsPath);
+
+        vm.MinimizeToTray = !vm.MinimizeToTray;
+        Apply(vm);
+
+        await Assert.That(Saved(settingsPath).PlaybackBar).IsEqualTo(layout);
+    }
 }

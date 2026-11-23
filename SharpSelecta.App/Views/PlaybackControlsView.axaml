@@ -14,54 +14,50 @@
              x:DataType="vm:PlaybackControlsViewModel">
 
     <StackPanel Spacing="{styles:SpacingValue M}">
-        <TextBlock Text="{Binding DisplayTrackLabel}" />
+        <TextBlock x:Name="TitleLine" Text="{Binding DisplayTrackLabel}" />
         <TextBlock Text="{Binding StatusMessage}" Classes="error" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
 
-        <Grid ColumnSpacing="{styles:SpacingValue M}">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="{DynamicResource Size.Playback.VolumeColumn}" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <Button Grid.Column="0" Classes="toolbar-button toolbar-button-hover" Command="{Binding PreviousTrackCommand}" ToolTip.Tip="{x:Static res:Strings.Previous}">
+        <!-- Columns, order and which components show come from the saved layout (PlaybackControlsView.axaml.cs). -->
+        <Grid x:Name="BarRow" ColumnSpacing="{styles:SpacingValue M}">
+            <Button x:Name="PreviousButton" Classes="toolbar-button toolbar-button-hover" Command="{Binding PreviousTrackCommand}" ToolTip.Tip="{x:Static res:Strings.Previous}">
                 <svg:Svg Classes="toolbar-icon" Width="{DynamicResource Size.Icon.M}" Height="{DynamicResource Size.Icon.M}" Path="{DynamicResource Icon.PlayerTrackPrev}" />
             </Button>
-            <Button Grid.Column="1" Classes="toolbar-button toolbar-button-hover" Command="{Binding PlayPauseCommand}" ToolTip.Tip="{Binding PlayPauseLabel}">
+            <Button x:Name="PlayPauseButton" Classes="toolbar-button toolbar-button-hover" Command="{Binding PlayPauseCommand}" ToolTip.Tip="{Binding PlayPauseLabel}">
                 <svg:Svg Classes="toolbar-icon" Width="{DynamicResource Size.Icon.M}" Height="{DynamicResource Size.Icon.M}" Path="{Binding IsPlaying, Converter={x:Static converters:PlayPauseIconConverter.Instance}}" />
             </Button>
-            <Button Grid.Column="2" Classes="toolbar-button toolbar-button-hover" Command="{Binding NextTrackCommand}" ToolTip.Tip="{x:Static res:Strings.Next}">
+            <Button x:Name="NextButton" Classes="toolbar-button toolbar-button-hover" Command="{Binding NextTrackCommand}" ToolTip.Tip="{x:Static res:Strings.Next}">
                 <svg:Svg Classes="toolbar-icon" Width="{DynamicResource Size.Icon.M}" Height="{DynamicResource Size.Icon.M}" Path="{DynamicResource Icon.PlayerTrackNext}" />
             </Button>
-            <TextBlock Grid.Column="3" Text="{Binding PositionDisplay}" VerticalAlignment="Center"
+            <TextBlock x:Name="ElapsedText" Text="{Binding PositionDisplay}" VerticalAlignment="Center"
                        Width="{DynamicResource Size.Playback.TimeWidth}" TextAlignment="Right" />
-            <Slider Grid.Column="4" VerticalAlignment="Center" Minimum="0" Maximum="{Binding DurationSeconds}"
-                    Value="{Binding PositionSeconds}" IsVisible="{Binding !Waveform.UseSlider}" />
-            <controls:WaveformSliderView Grid.Column="4" VerticalAlignment="Stretch"
-                    Peaks="{Binding Waveform.Peaks}" Maximum="{Binding DurationSeconds}"
-                    Value="{Binding PositionSeconds}" IsVisible="{Binding Waveform.UseSlider}"
-                    IsLoading="{Binding Waveform.IsLoading}"
-                    BarWidth="{DynamicResource Size.Waveform.BarWidth}" BarGap="{DynamicResource Size.Waveform.BarGap}" />
-            <Button Grid.Column="5" Classes="toolbar-button" Content="{Binding DurationDisplay}" Command="{Binding ToggleDurationDisplayCommand}"
+            <Panel x:Name="SeekBar">
+                <Slider VerticalAlignment="Center" Minimum="0" Maximum="{Binding DurationSeconds}"
+                        Value="{Binding PositionSeconds}" IsVisible="{Binding !Waveform.UseSlider}" />
+                <controls:WaveformSliderView VerticalAlignment="Stretch"
+                        Peaks="{Binding Waveform.Peaks}" Maximum="{Binding DurationSeconds}"
+                        Value="{Binding PositionSeconds}" IsVisible="{Binding Waveform.UseSlider}"
+                        IsLoading="{Binding Waveform.IsLoading}"
+                        BarWidth="{DynamicResource Size.Waveform.BarWidth}" BarGap="{DynamicResource Size.Waveform.BarGap}" />
+            </Panel>
+            <Button x:Name="LengthButton" Classes="toolbar-button" Content="{Binding DurationDisplay}" Command="{Binding ToggleDurationDisplayCommand}"
                     Width="{DynamicResource Size.Playback.TimeWidth}" HorizontalContentAlignment="Left" />
-            <svg:Svg Classes="toolbar-icon" Grid.Column="6" Width="{DynamicResource Size.Icon.M}" Height="{DynamicResource Size.Icon.M}" VerticalAlignment="Center"
-                     Path="{Binding Volume.Level, Converter={x:Static converters:VolumeIconConverter.Instance}}"
-                     ToolTip.Tip="{x:Static res:Strings.Volume}" />
-            <Slider x:Name="VolumeSlider" Grid.Column="7" VerticalAlignment="Center" Minimum="0" Maximum="1" Value="{Binding Volume.Level}" />
-            <Button Grid.Column="8" Classes="toolbar-button toolbar-button-hover" Command="{Binding ToggleRepeatModeCommand}" ToolTip.Tip="{Binding RepeatModeLabel}">
+            <Grid x:Name="VolumeControls" ColumnSpacing="{styles:SpacingValue M}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="{DynamicResource Size.Playback.VolumeColumn}" />
+                </Grid.ColumnDefinitions>
+                <svg:Svg Classes="toolbar-icon" Grid.Column="0" Width="{DynamicResource Size.Icon.M}" Height="{DynamicResource Size.Icon.M}" VerticalAlignment="Center"
+                         Path="{Binding Volume.Level, Converter={x:Static converters:VolumeIconConverter.Instance}}"
+                         ToolTip.Tip="{x:Static res:Strings.Volume}" />
+                <Slider x:Name="VolumeSlider" Grid.Column="1" VerticalAlignment="Center" Minimum="0" Maximum="1" Value="{Binding Volume.Level}" />
+            </Grid>
+            <Button x:Name="RepeatButton" Classes="toolbar-button toolbar-button-hover" Command="{Binding ToggleRepeatModeCommand}" ToolTip.Tip="{Binding RepeatModeLabel}">
                 <svg:Svg Classes="toolbar-icon" Width="{DynamicResource Size.Icon.M}" Height="{DynamicResource Size.Icon.M}" Path="{Binding RepeatMode, Converter={x:Static converters:RepeatModeIconConverter.Instance}}" />
             </Button>
-            <Button Grid.Column="9" Classes="toolbar-button toolbar-button-hover" Click="OnEqualizerClick" ToolTip.Tip="{x:Static res:Strings.Equalizer}">
+            <Button x:Name="EqualizerButton" Classes="toolbar-button toolbar-button-hover" Click="OnEqualizerClick" ToolTip.Tip="{x:Static res:Strings.Equalizer}">
                 <svg:Svg Classes="toolbar-icon" Width="{DynamicResource Size.Icon.M}" Height="{DynamicResource Size.Icon.M}" Path="{DynamicResource Icon.Equalizer}" />
             </Button>
-            <Button Grid.Column="10" Classes="toolbar-button toolbar-button-hover" Click="OnSettingsClick" ToolTip.Tip="{x:Static res:Strings.Settings}">
+            <Button x:Name="SettingsButton" Classes="toolbar-button toolbar-button-hover" Click="OnSettingsClick" ToolTip.Tip="{x:Static res:Strings.Settings}">
                 <svg:Svg Classes="toolbar-icon" Width="{DynamicResource Size.Icon.M}" Height="{DynamicResource Size.Icon.M}" Path="{DynamicResource Icon.Settings}" />
             </Button>
         </Grid>
