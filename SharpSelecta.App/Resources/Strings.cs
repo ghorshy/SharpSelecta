@@ -445,5 +445,32 @@ public static class Strings
     public static string PlaybackBarLockedTile(string name) =>
         string.Format(CultureInfo.CurrentCulture, Get("PlaybackBarLockedTileFormat"), name);
 
+    public static string ThemeErrorRoot => Get(nameof(ThemeErrorRoot));
+    public static string ThemeErrorThemeDictionary => Get(nameof(ThemeErrorThemeDictionary));
+
+    public static string ThemeErrorNotXml(string reason) =>
+        string.Format(CultureInfo.CurrentCulture, Get("ThemeErrorNotXmlFormat"), reason);
+
+    public static string ThemeErrorMissingKey(string element) =>
+        string.Format(CultureInfo.CurrentCulture, Get("ThemeErrorMissingKeyFormat"), element);
+
+    public static string ThemeErrorDuplicateKey(string key) =>
+        string.Format(CultureInfo.CurrentCulture, Get("ThemeErrorDuplicateKeyFormat"), key);
+
+    public static string ThemeErrorUnsupportedElement(string element) =>
+        string.Format(CultureInfo.CurrentCulture, Get("ThemeErrorUnsupportedElementFormat"), element);
+
+    public static string ThemeErrorBadValue(string value, string type) =>
+        string.Format(CultureInfo.CurrentCulture, Get("ThemeErrorBadValueFormat"), value, type);
+
+    public static string ThemeErrorUnknownKey(string key) =>
+        string.Format(CultureInfo.CurrentCulture, Get("ThemeErrorUnknownKeyFormat"), key);
+
+    public static string ThemeErrorWrongType(string key, string expected, string actual) =>
+        string.Format(CultureInfo.CurrentCulture, Get("ThemeErrorWrongTypeFormat"), key, expected, actual);
+
+    public static string InvalidThemeFileAt(int line, string reason) =>
+        string.Format(CultureInfo.CurrentCulture, Get("InvalidThemeFileAtFormat"), line, reason);
+
     private static string Get(string name) => ResourceManager.GetString(name, CultureInfo.CurrentUICulture)!;
 }

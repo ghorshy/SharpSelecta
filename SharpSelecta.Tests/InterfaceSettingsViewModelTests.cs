@@ -274,7 +274,7 @@ public class InterfaceSettingsViewModelTests : IDisposable
 
         await vm.ImportThemeCommand.ExecuteAsync(null);
 
-        await Assert.That(vm.StatusMessage).IsEqualTo(Strings.InvalidThemeFile);
+        await Assert.That(vm.StatusMessage).StartsWith(Strings.InvalidThemeFileAt(1, ""));
         await Assert.That(vm.ThemeDisplayNames).IsEquivalentTo([Strings.ThemeSystem, Strings.ThemeLight, Strings.ThemeDark]);
     }
 

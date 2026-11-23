@@ -1141,4 +1141,34 @@
   <data name="RevertOrder" xml:space="preserve">
     <value>Revert</value>
   </data>
+  <data name="ThemeErrorRoot" xml:space="preserve">
+    <value>The file must be an Avalonia ResourceDictionary.</value>
+  </data>
+  <data name="ThemeErrorThemeDictionary" xml:space="preserve">
+    <value>A theme dictionary must be a ResourceDictionary with x:Key="Light" or "Dark".</value>
+  </data>
+  <data name="ThemeErrorNotXmlFormat" xml:space="preserve">
+    <value>It isn't valid XML: {0}</value>
+  </data>
+  <data name="ThemeErrorMissingKeyFormat" xml:space="preserve">
+    <value>&lt;{0}&gt; needs an x:Key.</value>
+  </data>
+  <data name="ThemeErrorDuplicateKeyFormat" xml:space="preserve">
+    <value>"{0}" is defined twice.</value>
+  </data>
+  <data name="ThemeErrorUnsupportedElementFormat" xml:space="preserve">
+    <value>&lt;{0}&gt; can't be used in a theme.</value>
+  </data>
+  <data name="ThemeErrorBadValueFormat" xml:space="preserve">
+    <value>"{0}" isn't a valid {1}.</value>
+  </data>
+  <data name="ThemeErrorUnknownKeyFormat" xml:space="preserve">
+    <value>There's no theme resource called "{0}".</value>
+  </data>
+  <data name="ThemeErrorWrongTypeFormat" xml:space="preserve">
+    <value>"{0}" is a {1}, not a {2}.</value>
+  </data>
+  <data name="InvalidThemeFileAtFormat" xml:space="preserve">
+    <value>That file isn't a usable theme (line {0}): {1}</value>
+  </data>
 </root>

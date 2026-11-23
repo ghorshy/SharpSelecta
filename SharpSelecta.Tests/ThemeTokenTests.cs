@@ -13,6 +13,7 @@ public partial class ThemeTokenTests
     {
         ["SpacingExtension.cs"] = ["new Thickness(Resolve(Left,"],
         ["SidePanelLayoutViewModel.cs"] = ["new GridLength(settings.Current.RightColumnWidth ?? layout.RightColumnWidth)"],
+        ["ThemeFileParser.cs"] = ["new SolidColorBrush()"],
     };
 
     private static bool IsExemptCallSite(string path, string text, int index) =>
@@ -156,7 +157,7 @@ public partial class ThemeTokenTests
     {
         var xaml = File.ReadAllText(Path.Combine(AppDir(), "Styles", fileName));
 
-        var loaded = SerializedXamlLoader.Load(xaml);
+        var loaded = ReferenceXamlLoader.Load(xaml);
 
         await Assert.That(loaded).IsNotNull();
     }
@@ -167,7 +168,7 @@ public partial class ThemeTokenTests
         var host = new Avalonia.Controls.Border();
         foreach (var fileName in new[] { "ThemeMetrics.axaml", "Spacing.axaml" })
         {
-            var dictionary = (Avalonia.Controls.ResourceDictionary)SerializedXamlLoader.Load(File.ReadAllText(Path.Combine(AppDir(), "Styles", fileName)));
+            var dictionary = (Avalonia.Controls.ResourceDictionary)ReferenceXamlLoader.Load(File.ReadAllText(Path.Combine(AppDir(), "Styles", fileName)));
             host.Resources.MergedDictionaries.Add(dictionary);
         }
 

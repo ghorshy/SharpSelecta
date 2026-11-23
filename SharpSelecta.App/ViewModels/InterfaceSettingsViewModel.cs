@@ -409,9 +409,9 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
 
         StatusMessage = null;
 
-        if (!ThemeService.IsValidThemeFile(pickedPath))
+        if (ThemeService.ValidateThemeFile(pickedPath) is { } error)
         {
-            StatusMessage = Strings.InvalidThemeFile;
+            StatusMessage = error;
             return;
         }
 
