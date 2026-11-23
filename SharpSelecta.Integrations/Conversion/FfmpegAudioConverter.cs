@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using FFMpegCore;
 using SharpSelecta.Core.Conversion;
 
@@ -6,8 +7,6 @@ namespace SharpSelecta.Integrations.Conversion;
 // FFmpeg is an optional external tool found on PATH - it isn't bundled.
 public sealed class FfmpegAudioConverter : IAudioConverter
 {
-    private static readonly HashSet<string> LosslessCodecs = ["flac", "alac", "wavpack", "ape", "tta", "mlp", "truehd"];
-
     private readonly Lazy<bool> _isAvailable = new(() => IsOnPath("ffmpeg") && IsOnPath("ffprobe"));
 
     public bool IsAvailable => _isAvailable.Value;
@@ -17,27 +16,44 @@ public sealed class FfmpegAudioConverter : IAudioConverter
         if (!IsAvailable)
             return null;
 
+        var startInfo = new ProcessStartInfo("ffprobe")
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        foreach (var argument in (string[])["-loglevel", "error", "-print_format", "json", "-show_format", "-show_streams", path])
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
         try
         {
-            var analysis = await FFProbe.AnalyseAsync(path, cancellationToken: cancellationToken);
-            var stream = analysis.PrimaryAudioStream;
-            if (stream is not { CodecName: { } codecName, SampleRateHz: { } sampleRate, Channels: { } channels })
+            using var process = Process.Start(startInfo);
+            if (process is null)
                 return null;
 
-            var codec = codecName.ToLowerInvariant();
-            var bitrate = stream.BitRate is > 0 ? stream.BitRate : analysis.Format.BitRate;
-            return new SourceInfo(
-                codec,
-                ConversionRules.IsPcm(codec) || LosslessCodecs.Contains(codec),
-                bitrate is > 0 ? (int)Math.Round(bitrate.Value / 1000.0) : null,
-                sampleRate,
-                stream.BitDepth is > 0 ? stream.BitDepth : null,
-                channels,
-                analysis.Duration);
+            using var kill = cancellationToken.Register(() => Kill(process));
+            var output = process.StandardOutput.ReadToEndAsync(cancellationToken);
+            _ = process.StandardError.ReadToEndAsync(cancellationToken);
+            await process.WaitForExitAsync(cancellationToken);
+            return process.ExitCode == 0 ? FfprobeOutput.ToSourceInfo(await output) : null;
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             return null;
+        }
+    }
+
+    private static void Kill(Process process)
+    {
+        try
+        {
+            process.Kill(entireProcessTree: true);
+        }
+        catch (InvalidOperationException)
+        {
         }
     }
 
