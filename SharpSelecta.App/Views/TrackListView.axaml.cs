@@ -40,7 +40,7 @@ public sealed partial class TrackListView : UserControl
     }
 
     // Independent of AllowReorderAndSort: a playlist has a fixed manual order (no column sort)
-    // but still allows the user to drag rows to reorder it.
+    // but its rows can be dragged to a new place.
     public bool AllowRowReorder
     {
         get => GetValue(AllowRowReorderProperty);
@@ -49,7 +49,7 @@ public sealed partial class TrackListView : UserControl
 
     private bool _columnWidthsDirty;
     private readonly List<LibraryTrackViewModel> _orderedSelection = [];
-    private LibraryTrackViewModel? _rowBeingDragged;
+    private IReadOnlyList<LibraryTrackViewModel>? _draggedRows;
     private LibraryTrackViewModel? _collapseSelectionTo;
 
     // The grid sorts by property path (Track.Title, ...) through reflection, which NativeAOT would trim away.
@@ -69,17 +69,27 @@ public sealed partial class TrackListView : UserControl
         AttachedToLogicalTree += (_, _) => ApplyColumnLayout(DataContext as LibraryViewModel);
 
         TracksGrid.AddHandler(InputElement.PointerReleasedEvent, OnPointerReleased, handledEventsToo: true);
-        TracksGrid.AddHandler(InputElement.PointerPressedEvent, OnRowReorderPointerPressed, handledEventsToo: true);
-        TracksGrid.AddHandler(InputElement.PointerReleasedEvent, OnRowReorderPointerReleased, handledEventsToo: true);
         TracksGrid.AddHandler(InputElement.PointerPressedEvent, OnPressedKeepSelection, RoutingStrategies.Tunnel);
         TracksGrid.AddHandler(InputElement.PointerPressedEvent, OnColumnBorderDoubleClick, RoutingStrategies.Tunnel, handledEventsToo: true);
         TracksGrid.AddHandler(InputElement.PointerReleasedEvent, OnReleasedCollapseSelection, handledEventsToo: true);
         var drag = new TrackDragSource(TracksGrid, DraggedTracks)
         {
-            StartWhenLeaving = () => AllowRowReorder,
             OnError = ex => (DataContext as LibraryViewModel)?.ReportDragFailure(ex),
         };
-        drag.Starting += (_, _) => _collapseSelectionTo = null;
+        drag.Starting += (_, source) =>
+        {
+            _collapseSelectionTo = null;
+            _draggedRows = AllowRowReorder ? DraggedRows(source) : null;
+        };
+        drag.Finished += (_, _) =>
+        {
+            _draggedRows = null;
+            RowDropIndicator.IsVisible = false;
+        };
+        DragDrop.SetAllowDrop(TracksGrid, true);
+        TracksGrid.AddHandler(DragDrop.DragOverEvent, OnRowDragOver);
+        TracksGrid.AddHandler(DragDrop.DragLeaveEvent, OnRowDragLeave);
+        TracksGrid.AddHandler(DragDrop.DropEvent, OnRowDrop);
         TracksGrid.Sorting += (_, _) => Dispatcher.UIThread.Post(SaveCurrentSort, DispatcherPriority.Background);
         TracksGrid.SelectionChanged += OnTracksGridSelectionChanged;
     }
@@ -325,42 +335,95 @@ public sealed partial class TrackListView : UserControl
         }
     }
 
-    private void OnRowReorderPointerPressed(object? sender, PointerPressedEventArgs e)
+    private IReadOnlyList<LibraryTrackViewModel>? DraggedRows(Visual source) =>
+        RowItem(source) is not { } item ? null
+        : TracksGrid.SelectedItems.Contains(item) && _orderedSelection.Count > 1 ? [.. _orderedSelection]
+        : [item];
+
+    // Only a playlist's own rows dropped back onto it: the line goes above or below the row under the
+    // pointer, or after the last row below them, and the list scrolls when the pointer nears an edge.
+    private void OnRowDragOver(object? sender, DragEventArgs e)
     {
-        if (!AllowRowReorder)
+        if (_draggedRows is null || DataContext is not LibraryViewModel vm)
+        {
+            e.DragEffects = DragDropEffects.None;
+            return;
+        }
+
+        e.DragEffects = DragDropEffects.Move;
+        e.Handled = true;
+        if (DropTarget(e, vm.Playlists.Tracks) is not var (row, after, _))
+        {
+            RowDropIndicator.IsVisible = false;
+            return;
+        }
+
+        ShowRowDropIndicator(row, after);
+        ScrollNearEdge(row, vm.Playlists.Tracks);
+    }
+
+    private void OnRowDragLeave(object? sender, DragEventArgs e) => RowDropIndicator.IsVisible = false;
+
+    private void OnRowDrop(object? sender, DragEventArgs e)
+    {
+        RowDropIndicator.IsVisible = false;
+        if (_draggedRows is not { } rows || DataContext is not LibraryViewModel vm
+            || DropTarget(e, vm.Playlists.Tracks) is not var (_, _, index))
             return;
 
-        if (e.Source is Visual source && source.FindAncestorOfType<DataGridRow>() is { DataContext: LibraryTrackViewModel item })
+        e.DragEffects = DragDropEffects.Move;
+        e.Handled = true;
+        if (!vm.Playlists.MoveTracks(rows, index))
+            return;
+
+        TracksGrid.SelectedItems.Clear();
+        foreach (var row in rows)
         {
-            _rowBeingDragged = item;
+            TracksGrid.SelectedItems.Add(row);
         }
     }
 
-    private void OnRowReorderPointerReleased(object? sender, PointerReleasedEventArgs e)
+    // The row the line is drawn at, whether it goes below it, and the index the rows are put before.
+    private (DataGridRow Row, bool After, int Index)? DropTarget(DragEventArgs e, IList<LibraryTrackViewModel> tracks)
     {
-        if (!AllowRowReorder)
+        if ((e.Source as Visual)?.FindAncestorOfType<DataGridRow>(includeSelf: true) is { DataContext: LibraryTrackViewModel item } row)
+        {
+            var after = e.GetPosition(row).Y > row.Bounds.Height / 2;
+            return (row, after, tracks.IndexOf(item) + (after ? 1 : 0));
+        }
+
+        // Below the rows: after the last one, if it's on screen.
+        if (tracks.Count > 0 && RealizedRows().FirstOrDefault(r => ReferenceEquals(r.DataContext, tracks[^1])) is { } last
+            && e.GetPosition(last).Y > 0)
+            return (last, true, tracks.Count);
+
+        return null;
+    }
+
+    private IEnumerable<DataGridRow> RealizedRows() => TracksGrid.GetVisualDescendants().OfType<DataGridRow>().Where(r => r.IsVisible);
+
+    private void ShowRowDropIndicator(DataGridRow row, bool after)
+    {
+        if (row.TranslatePoint(new Point(0, after ? row.Bounds.Height : 0), GridPanel) is not { } point)
             return;
 
-        var dragged = _rowBeingDragged;
-        _rowBeingDragged = null;
-        if (dragged is null)
+        Canvas.SetLeft(RowDropIndicator, 0);
+        Canvas.SetTop(RowDropIndicator, point.Y - RowDropIndicator.Height / 2);
+        RowDropIndicator.Width = GridPanel.Bounds.Width;
+        RowDropIndicator.IsVisible = true;
+    }
+
+    // A row's height from the top (under the headers) or the bottom: bring the next row into view.
+    private void ScrollNearEdge(DataGridRow row, IList<LibraryTrackViewModel> tracks)
+    {
+        if (row.DataContext is not LibraryTrackViewModel item || row.TranslatePoint(default, TracksGrid) is not { } top)
             return;
 
-        if (e.Source is not Visual source || source.FindAncestorOfType<DataGridRow>() is not { DataContext: LibraryTrackViewModel target } || ReferenceEquals(target, dragged))
-            return;
-
-        if (DataContext is not LibraryViewModel vm || ItemsSource?.ToList() is not { } items)
-            return;
-
-        var fromIndex = items.IndexOf(dragged);
-        var toIndex = items.IndexOf(target);
-        if (fromIndex < 0 || toIndex < 0)
-            return;
-
-        items.RemoveAt(fromIndex);
-        items.Insert(toIndex, dragged);
-
-        vm.Playlists.ReorderSelectedPlaylist(items.Select(t => t.Track.FilePath).ToList());
+        var index = tracks.IndexOf(item);
+        if (top.Y < row.Bounds.Height * 2 && index > 0)
+            TracksGrid.ScrollIntoView(tracks[index - 1], null);
+        else if (top.Y + row.Bounds.Height * 2 > TracksGrid.Bounds.Height && index < tracks.Count - 1)
+            TracksGrid.ScrollIntoView(tracks[index + 1], null);
     }
 
     private void OnAddToPlaylistSubmenuOpened(object? sender, RoutedEventArgs e)

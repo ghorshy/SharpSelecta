@@ -105,10 +105,22 @@
                               ItemsSource="{Binding RecentlyAddedTracks}"
                               AllowReorderAndSort="False" />
 
-        <views:TrackListView IsVisible="{Binding IsPlaylistViewVisible}"
-                              ItemsSource="{Binding Playlists.Tracks}"
-                              AllowReorderAndSort="False"
-                              AllowRowReorder="True" />
+        <DockPanel IsVisible="{Binding IsPlaylistViewVisible}">
+            <!-- A drag only rearranges the list; the order is saved here, so a stray drag can't. -->
+            <Border DockPanel.Dock="Top" IsVisible="{Binding Playlists.HasPendingOrder}"
+                    Margin="{styles:Spacing Bottom=S}" Padding="{styles:Spacing Uniform=S}"
+                    CornerRadius="{DynamicResource Radius.Control}" Background="{DynamicResource Brush.Surface}">
+                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{styles:SpacingValue S}">
+                    <TextBlock Grid.Column="0" Text="{x:Static res:Strings.PlaylistOrderChanged}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                    <Button Grid.Column="1" Content="{x:Static res:Strings.SaveOrder}" ToolTip.Tip="{x:Static res:Strings.SaveOrderShortcut}"
+                            Command="{Binding Playlists.SaveOrderCommand}" />
+                    <Button Grid.Column="2" Content="{x:Static res:Strings.RevertOrder}" Command="{Binding Playlists.RevertOrderCommand}" />
+                </Grid>
+            </Border>
+            <views:TrackListView ItemsSource="{Binding Playlists.Tracks}"
+                                  AllowReorderAndSort="False"
+                                  AllowRowReorder="True" />
+        </DockPanel>
 
     </Grid>
     </DockPanel>

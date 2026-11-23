@@ -155,7 +155,10 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     {
         _settings.Update(s => s with { LibrarySection = value });
         NotifyViewVisibilityChanged();
+        if (value != LibrarySection.Playlist && Playlists.HasPendingOrder)
+            Playlists.RevertOrderCommand.Execute(null);
     }
+
 
     partial void OnRecentlyAddedViewModeChanged(LibraryViewMode value)
     {

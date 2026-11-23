@@ -191,4 +191,140 @@ public class PlaylistsViewModelTests : IDisposable
         await Assert.That(vm.Tracks[0].IsMissing).IsTrue();
         await Assert.That(vm.Tracks[0].Track.FilePath).IsEqualTo(aPath);
     }
+
+    // A playlist of the given names (files copied from the fixture, so duplicates are allowed), selected.
+    private (PlaylistsViewModel Vm, string SettingsPath, string PlaylistId) CreatePlaylistOf(params string[] names)
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        foreach (var name in names.Distinct())
+        {
+            File.Copy(TaggedTrackFixturePath, Path.Combine(root.FullName, name));
+        }
+
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var vm = CreateViewModel(settingsPath, out _);
+        var id = vm.CreatePlaylist("Moves");
+        vm.ReorderSelectedPlaylist([.. names.Select(name => Path.Combine(root.FullName, name))]);
+        return (vm, settingsPath, id);
+    }
+
+    private static IEnumerable<string> Names(PlaylistsViewModel vm) => vm.Tracks.Select(t => Path.GetFileName(t.Track.FilePath));
+
+    [Test]
+    [Arguments(0, 3, "b.mp3,c.mp3,a.mp3,d.mp3")]
+    [Arguments(0, 4, "b.mp3,c.mp3,d.mp3,a.mp3")]
+    [Arguments(3, 0, "d.mp3,a.mp3,b.mp3,c.mp3")]
+    [Arguments(2, 1, "a.mp3,c.mp3,b.mp3,d.mp3")]
+    public async Task MoveTracks_PutsTheRowBeforeTheOneAtTheIndex(int from, int index, string expected)
+    {
+        var (vm, settingsPath, id) = CreatePlaylistOf("a.mp3", "b.mp3", "c.mp3", "d.mp3");
+
+        var moved = vm.MoveTracks([vm.Tracks[from]], index);
+
+        await Assert.That(moved).IsTrue();
+        await Assert.That(string.Join(",", Names(vm))).IsEqualTo(expected);
+        await Assert.That(vm.HasPendingOrder).IsTrue();
+        await Assert.That(string.Join(",", Saved(settingsPath, id))).IsEqualTo("a.mp3,b.mp3,c.mp3,d.mp3");
+
+        vm.SaveOrderCommand.Execute(null);
+
+        await Assert.That(vm.HasPendingOrder).IsFalse();
+        await Assert.That(string.Join(",", Saved(settingsPath, id))).IsEqualTo(expected);
+    }
+
+    private static IEnumerable<string> Saved(string settingsPath, string playlistId) =>
+        LibraryIndexStore.GetPlaylistTracks(settingsPath, playlistId).Select(e => Path.GetFileName(e.FilePath));
+
+    [Test]
+    public async Task RevertOrder_PutsTheSavedOrderBack()
+    {
+        var (vm, settingsPath, id) = CreatePlaylistOf("a.mp3", "b.mp3", "c.mp3");
+        var rows = vm.Tracks.ToList();
+        vm.MoveTracks([rows[0]], 3);
+
+        vm.RevertOrderCommand.Execute(null);
+
+        await Assert.That(vm.Tracks.ToList()).IsEquivalentTo(rows, TUnit.Assertions.Enums.CollectionOrdering.Matching);
+        await Assert.That(vm.HasPendingOrder).IsFalse();
+        await Assert.That(string.Join(",", Saved(settingsPath, id))).IsEqualTo("a.mp3,b.mp3,c.mp3");
+    }
+
+    [Test]
+    public async Task MovingBackToTheSavedOrder_LeavesNothingPending()
+    {
+        var (vm, _, _) = CreatePlaylistOf("a.mp3", "b.mp3", "c.mp3");
+        var a = vm.Tracks[0];
+
+        vm.MoveTracks([a], 3);
+        vm.MoveTracks([a], 0);
+
+        await Assert.That(vm.HasPendingOrder).IsFalse();
+        await Assert.That(vm.SaveOrderCommand.CanExecute(null)).IsFalse();
+    }
+
+    [Test]
+    public async Task LeavingThePlaylistSection_DropsAnUnsavedOrder()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        var root = _temp.NewSubdirectory();
+        foreach (var name in new[] { "a.mp3", "b.mp3" })
+            File.Copy(TaggedTrackFixturePath, Path.Combine(root.FullName, name));
+        LibraryIndexStore.Reconcile(settingsPath, [root.FullName]);
+        var vm = CreateViewModel(settingsPath, out var library);
+        var id = vm.CreatePlaylist("Leave");
+        vm.ReorderSelectedPlaylist([Path.Combine(root.FullName, "a.mp3"), Path.Combine(root.FullName, "b.mp3")]);
+        library.LibrarySection = LibrarySection.Playlist;
+        vm.MoveTracks([vm.Tracks[0]], 2);
+
+        library.LibrarySection = LibrarySection.Library;
+
+        await Assert.That(vm.HasPendingOrder).IsFalse();
+        await Assert.That(string.Join(",", Names(vm))).IsEqualTo("a.mp3,b.mp3");
+        await Assert.That(string.Join(",", Saved(settingsPath, id))).IsEqualTo("a.mp3,b.mp3");
+    }
+
+    [Test]
+    public async Task SaveOrder_WithNothingMoved_CantRun()
+    {
+        var (vm, _, _) = CreatePlaylistOf("a.mp3", "b.mp3");
+
+        await Assert.That(vm.SaveOrderCommand.CanExecute(null)).IsFalse();
+        await Assert.That(vm.RevertOrderCommand.CanExecute(null)).IsFalse();
+    }
+
+    [Test]
+    public async Task MoveTracks_KeepsSeveralRowsInTheirPlaylistOrder()
+    {
+        var (vm, _, _) = CreatePlaylistOf("a.mp3", "b.mp3", "c.mp3", "d.mp3", "e.mp3");
+
+        vm.MoveTracks([vm.Tracks[3], vm.Tracks[0]], 2);
+
+        await Assert.That(string.Join(",", Names(vm))).IsEqualTo("b.mp3,a.mp3,d.mp3,c.mp3,e.mp3");
+    }
+
+    [Test]
+    [Arguments(1, 1)]
+    [Arguments(1, 2)]
+    public async Task MoveTracks_OntoItsOwnPlace_ChangesNothing(int from, int index)
+    {
+        var (vm, _, _) = CreatePlaylistOf("a.mp3", "b.mp3", "c.mp3");
+
+        var moved = vm.MoveTracks([vm.Tracks[from]], index);
+
+        await Assert.That(moved).IsFalse();
+        await Assert.That(string.Join(",", Names(vm))).IsEqualTo("a.mp3,b.mp3,c.mp3");
+    }
+
+    [Test]
+    public async Task MoveTracks_MovesTheDraggedRowOfADuplicate_AndKeepsTheRows()
+    {
+        var (vm, _, _) = CreatePlaylistOf("a.mp3", "b.mp3", "a.mp3");
+        var rows = vm.Tracks.ToList();
+
+        vm.MoveTracks([rows[2]], 1);
+
+        await Assert.That(string.Join(",", Names(vm))).IsEqualTo("a.mp3,a.mp3,b.mp3");
+        await Assert.That(vm.Tracks.ToList()).IsEquivalentTo([rows[0], rows[2], rows[1]], TUnit.Assertions.Enums.CollectionOrdering.Matching);
+    }
 }

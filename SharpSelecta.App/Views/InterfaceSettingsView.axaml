@@ -173,7 +173,7 @@
                         <!-- Where a dragged tile will land: a line in the gap between two tiles. -->
                         <Canvas IsHitTestVisible="False">
                             <Border x:Name="DropIndicator" IsVisible="False" Background="{DynamicResource Brush.Accent}"
-                                    Width="{DynamicResource Size.Settings.BarDropIndicatorWidth}" />
+                                    Width="{DynamicResource Size.DropIndicator.Thickness}" />
                         </Canvas>
                     </Panel>
                 </Border>

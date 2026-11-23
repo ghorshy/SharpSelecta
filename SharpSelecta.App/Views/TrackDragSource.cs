@@ -32,11 +32,7 @@ internal sealed class TrackDragSource
         control.AddHandler(InputElement.PointerPressedEvent, OnPressed, handledEventsToo: true);
         control.AddHandler(InputElement.PointerMovedEvent, OnMoved, handledEventsToo: true);
         control.AddHandler(InputElement.PointerReleasedEvent, (_, _) => Clear(), handledEventsToo: true);
-        control.PointerExited += OnExited;
     }
-
-    // For a list that reorders its own rows by press-and-release: dragging inside it stays a reorder.
-    public Func<bool> StartWhenLeaving { get; init; } = () => false;
 
     public Action<Exception>? OnError { get; init; }
 
@@ -58,7 +54,7 @@ internal sealed class TrackDragSource
 
     private void OnMoved(object? sender, PointerEventArgs e)
     {
-        if (_pressedArgs is null || StartWhenLeaving())
+        if (_pressedArgs is null)
             return;
 
         if (!e.GetCurrentPoint(_control).Properties.IsLeftButtonPressed)
@@ -68,12 +64,6 @@ internal sealed class TrackDragSource
         }
 
         if (Point.Distance(e.GetPosition(_control), _pressedPoint) >= DragThreshold)
-            _ = StartAsync();
-    }
-
-    private void OnExited(object? sender, PointerEventArgs e)
-    {
-        if (_pressedArgs is not null && StartWhenLeaving() && e.GetCurrentPoint(_control).Properties.IsLeftButtonPressed)
             _ = StartAsync();
     }
 
@@ -91,7 +81,8 @@ internal sealed class TrackDragSource
         {
             var dataTransfer = new DataTransfer();
             dataTransfer.Add(DataTransferItem.Create(TrackDrag.Format, tracks));
-            await DragDrop.DoDragDropAsync(pressedArgs, dataTransfer, DragDropEffects.Copy);
+            // Copy into the queue; Move within a playlist reordering its own rows.
+            await DragDrop.DoDragDropAsync(pressedArgs, dataTransfer, DragDropEffects.Copy | DragDropEffects.Move);
         }
         catch (Exception ex)
         {

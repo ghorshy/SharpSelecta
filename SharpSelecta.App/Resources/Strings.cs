@@ -433,6 +433,10 @@ public static class Strings
     public static string ShowTrackTitleAboveBar => Get(nameof(ShowTrackTitleAboveBar));
     public static string TrackTitleAlignment => Get(nameof(TrackTitleAlignment));
     public static string CustomizeBar => Get(nameof(CustomizeBar));
+    public static string PlaylistOrderChanged => Get(nameof(PlaylistOrderChanged));
+    public static string SaveOrder => Get(nameof(SaveOrder));
+    public static string SaveOrderShortcut => Get(nameof(SaveOrderShortcut));
+    public static string RevertOrder => Get(nameof(RevertOrder));
     public static string RestoreDefaultLayout => Get(nameof(RestoreDefaultLayout));
 
     public static string Percent(int percent) =>

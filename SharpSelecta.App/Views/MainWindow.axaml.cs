@@ -65,6 +65,9 @@ public partial class MainWindow : Window
         {
             KeyBindings.Add(new KeyBinding { Gesture = gesture, Command = command });
         }
+
+        // Fixed, not rebindable: saves a playlist's rearranged order (does nothing without one).
+        KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Control), Command = vm.Library.Playlists.SaveOrderCommand });
     }
 
     private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)

@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using SharpSelecta.App.Collections;
 using SharpSelecta.Core.Library;
 
@@ -15,6 +16,13 @@ public partial class PlaylistsViewModel : ObservableObject
 
     [ObservableProperty]
     private string? selectedPlaylistId;
+
+    // The rows in their saved order; a drag only rearranges Tracks until Save order.
+    private List<LibraryTrackViewModel> _savedOrder = [];
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveOrderCommand), nameof(RevertOrderCommand))]
+    public partial bool HasPendingOrder { get; private set; }
 
     public PlaylistsViewModel(LibraryViewModel library, SettingsStore settings)
     {
@@ -39,7 +47,15 @@ public partial class PlaylistsViewModel : ObservableObject
     partial void OnSelectedPlaylistIdChanged(string? value) =>
         _settings.Update(s => s with { SelectedPlaylistId = value });
 
+    // Reloading from the index drops an unsaved order.
     public void RefreshTracks()
+    {
+        LoadTracks();
+        _savedOrder = [.. Tracks];
+        HasPendingOrder = false;
+    }
+
+    private void LoadTracks()
     {
         if (SelectedPlaylistId is not { } playlistId)
         {
@@ -125,6 +141,47 @@ public partial class PlaylistsViewModel : ObservableObject
 
         LibraryIndexStore.ReplacePlaylistTracks(_settings.FilePath, playlistId, filePathsInOrder);
         RefreshTracks();
+    }
+
+    // Puts the rows (in their playlist order) before the row now at index, Tracks.Count being the end;
+    // rows, not paths, so the right copy of a track that's in the playlist twice moves. Saved only by
+    // SaveOrder, so a stray drag can't rearrange a playlist.
+    public bool MoveTracks(IReadOnlyCollection<LibraryTrackViewModel> rows, int index)
+    {
+        if (SelectedPlaylistId is null)
+            return false;
+
+        var moving = new HashSet<LibraryTrackViewModel>(rows, ReferenceEqualityComparer.Instance);
+        var moved = Tracks.Where(moving.Contains).ToList();
+        if (moved.Count == 0)
+            return false;
+
+        var order = Tracks.Where(row => !moving.Contains(row)).ToList();
+        order.InsertRange(Tracks.Take(Math.Clamp(index, 0, Tracks.Count)).Count(row => !moving.Contains(row)), moved);
+        if (order.SequenceEqual(Tracks))
+            return false;
+
+        Tracks.SyncTo(order);
+        HasPendingOrder = !order.SequenceEqual(_savedOrder);
+        return true;
+    }
+
+    [RelayCommand(CanExecute = nameof(HasPendingOrder))]
+    private void SaveOrder()
+    {
+        if (SelectedPlaylistId is not { } playlistId)
+            return;
+
+        LibraryIndexStore.ReplacePlaylistTracks(_settings.FilePath, playlistId, [.. Tracks.Select(row => row.Track.FilePath)]);
+        _savedOrder = [.. Tracks];
+        HasPendingOrder = false;
+    }
+
+    [RelayCommand(CanExecute = nameof(HasPendingOrder))]
+    private void RevertOrder()
+    {
+        Tracks.SyncTo(_savedOrder);
+        HasPendingOrder = false;
     }
 
     // Creates a new playlist from an M3U's paths, keeping only those already in the library

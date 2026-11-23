@@ -1129,4 +1129,16 @@
   <data name="CustomizeBar" xml:space="preserve">
     <value>Customize the bar…</value>
   </data>
+  <data name="PlaylistOrderChanged" xml:space="preserve">
+    <value>The playlist's order has changed.</value>
+  </data>
+  <data name="SaveOrder" xml:space="preserve">
+    <value>Save order</value>
+  </data>
+  <data name="SaveOrderShortcut" xml:space="preserve">
+    <value>Ctrl+S</value>
+  </data>
+  <data name="RevertOrder" xml:space="preserve">
+    <value>Revert</value>
+  </data>
 </root>
