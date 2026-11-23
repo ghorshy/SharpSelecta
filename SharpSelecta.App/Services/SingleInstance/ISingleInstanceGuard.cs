@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging;
-using Tmds.DBus;
+using Tmds.DBus.Protocol;
 
 namespace SharpSelecta.App.Services.SingleInstance;
 
@@ -24,7 +24,7 @@ public static class SingleInstanceGuard
     public static ISingleInstanceGuard CreateForCurrentPlatform(ILoggerFactory loggerFactory) =>
         OperatingSystem.IsLinux()
             ? new DBusSingleInstanceGuard(
-                AppIdentity.Id, Address.Session, loggerFactory.CreateLogger<DBusSingleInstanceGuard>())
+                AppIdentity.Id, DBusAddress.Session, loggerFactory.CreateLogger<DBusSingleInstanceGuard>())
             : new NamedPipeSingleInstanceGuard(
                 $"SharpSelecta-{Environment.UserName}", loggerFactory.CreateLogger<NamedPipeSingleInstanceGuard>());
 }

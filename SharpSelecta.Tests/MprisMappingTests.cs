@@ -41,11 +41,11 @@ public class MprisMappingTests
 
         var metadata = MprisMapping.BuildMetadata(track);
 
-        await Assert.That(metadata["xesam:title"]).IsEqualTo("Song Title");
-        await Assert.That((string[])metadata["xesam:artist"]).IsEquivalentTo(["The Artist"]);
-        await Assert.That(metadata["xesam:album"]).IsEqualTo("The Album");
-        await Assert.That(metadata["mpris:length"]).IsEqualTo(200_000_000L);
-        await Assert.That(metadata["mpris:trackid"]).IsEqualTo(MprisMapping.TrackId(track));
+        await Assert.That(metadata["xesam:title"].GetString()).IsEqualTo("Song Title");
+        await Assert.That(metadata["xesam:artist"].GetArray<string>()).IsEquivalentTo(["The Artist"]);
+        await Assert.That(metadata["xesam:album"].GetString()).IsEqualTo("The Album");
+        await Assert.That(metadata["mpris:length"].GetInt64()).IsEqualTo(200_000_000L);
+        await Assert.That(metadata["mpris:trackid"].GetObjectPathAsString()).IsEqualTo(MprisMapping.TrackId(track).ToString());
     }
 
     [Test]
@@ -55,7 +55,7 @@ public class MprisMappingTests
 
         var metadata = MprisMapping.BuildMetadata(track);
 
-        await Assert.That(metadata["xesam:title"]).IsEqualTo("untagged.mp3");
+        await Assert.That(metadata["xesam:title"].GetString()).IsEqualTo("untagged.mp3");
     }
 
     [Test]
@@ -86,7 +86,7 @@ public class MprisMappingTests
 
         var metadata = MprisMapping.BuildMetadata(track, heartbeatTick: 42);
 
-        await Assert.That(metadata["x-sharpselecta:heartbeat"]).IsEqualTo(42L);
+        await Assert.That(metadata["x-sharpselecta:heartbeat"].GetInt64()).IsEqualTo(42L);
     }
 
     [Test]
@@ -123,6 +123,6 @@ public class MprisMappingTests
 
         var metadata = MprisMapping.BuildMetadata(track);
 
-        await Assert.That((string[])metadata["xesam:artist"]).IsEquivalentTo(["TRC", "Trilla Jermaine Trilloski"]);
+        await Assert.That(metadata["xesam:artist"].GetArray<string>()).IsEquivalentTo(["TRC", "Trilla Jermaine Trilloski"]);
     }
 }

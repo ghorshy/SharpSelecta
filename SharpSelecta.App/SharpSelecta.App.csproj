@@ -13,6 +13,13 @@
     </ItemGroup>
 
     <ItemGroup>
+        <AdditionalFiles Include="DBus\org.mpris.MediaPlayer2.xml" Namespace="SharpSelecta.App.DBus" DBusGeneratorMode="Handler" />
+        <AdditionalFiles Include="DBus\org.freedesktop.Notifications.xml" Namespace="SharpSelecta.App.DBus" DBusGeneratorMode="Proxy" />
+        <AdditionalFiles Include="DBus\org.freedesktop.FileManager1.xml" Namespace="SharpSelecta.App.DBus" DBusGeneratorMode="Proxy" />
+        <AdditionalFiles Include="DBus\io.github.ghorshy.SharpSelecta.SingleInstance.xml" Namespace="SharpSelecta.App.DBus" DBusGeneratorMode="Handler" />
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="Avalonia" />
         <PackageReference Include="Avalonia.Controls.ItemsRepeater" />
         <PackageReference Include="Avalonia.Desktop" />
@@ -33,7 +40,8 @@
         <PackageReference Include="Serilog.Extensions.Logging" />
         <PackageReference Include="Serilog.Sinks.File" />
         <PackageReference Include="Svg.Controls.Skia.Avalonia" />
-        <PackageReference Include="Tmds.DBus" />
+        <PackageReference Include="Tmds.DBus.Generator" PrivateAssets="all" />
+        <PackageReference Include="Tmds.DBus.Protocol" />
     </ItemGroup>
 
     <!-- OwnAudioSharp brings ONNX Runtime (22 MB on Linux, 15 on Windows) for its chord detection, which the

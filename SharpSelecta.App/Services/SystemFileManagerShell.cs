@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
-using Tmds.DBus;
+using SharpSelecta.App.DBus;
+using Tmds.DBus.Protocol;
 
 namespace SharpSelecta.App.Services;
 
@@ -10,19 +11,19 @@ public sealed class SystemFileManagerShell : IFileManagerShell
 
     public async Task<bool> TryShowViaFileManager1Async(string filePath)
     {
-        if (Address.Session is not { } sessionAddress)
+        if (DBusAddress.Session is not { } sessionAddress)
             return false;
 
         try
         {
-            using var connection = new Connection(sessionAddress);
+            using var connection = new DBusConnection(sessionAddress);
             await connection.ConnectAsync();
 
-            var fileManager = connection.CreateProxy<IFileManager1>("org.freedesktop.FileManager1", FileManager1Path);
+            var fileManager = new FileManager1(connection, FileManager1.DBusInterfaceName, FileManager1Path);
             await fileManager.ShowItemsAsync([new Uri(filePath).AbsoluteUri], string.Empty);
             return true;
         }
-        catch (Exception ex) when (ex is DBusException or ConnectException)
+        catch (Exception ex) when (ex is DBusMessageException or DBusConnectionException)
         {
             return false;
         }

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- https://www.freedesktop.org/wiki/Specifications/file-manager-interface/ (only the method the app calls) -->
+<node>
+  <interface name="org.freedesktop.FileManager1">
+    <method name="ShowItems">
+      <arg name="uris" type="as" direction="in" />
+      <arg name="startupId" type="s" direction="in" />
+    </method>
+  </interface>
+</node>

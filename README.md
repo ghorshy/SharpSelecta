@@ -199,7 +199,7 @@ dotnet test
 - [FFMpegCore](https://github.com/rosenbjerg/FFMpegCore) — file type conversion
 - [Velopack](https://github.com/velopack/velopack) — Windows installer and updates
 - [DiscordRichPresence](https://github.com/Lachee/discord-rpc-csharp) — Discord status
-- [Tmds.DBus](https://github.com/tmds/Tmds.DBus) — MPRIS, notifications and tray integration on Linux
+- [Tmds.DBus.Protocol](https://github.com/tmds/Tmds.DBus) — MPRIS, notifications and tray integration on Linux
 - [Serilog](https://github.com/serilog/serilog) — logging
 - [Svg.Skia](https://github.com/wieslawsoltes/Svg.Skia) — SVG icon rendering
 - [Tabler Icons](https://tabler.io/icons) — icon set

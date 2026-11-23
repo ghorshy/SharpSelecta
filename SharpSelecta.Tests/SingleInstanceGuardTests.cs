@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using SharpSelecta.App.Services.SingleInstance;
-using Tmds.DBus;
+using Tmds.DBus.Protocol;
 
 namespace SharpSelecta.Tests;
 
@@ -43,14 +43,14 @@ public class SingleInstanceGuardTests
     }
 
     private static DBusSingleInstanceGuard CreateDBusGuard(string busName, string? address = null) =>
-        new(busName, address ?? Address.Session, NullLogger<DBusSingleInstanceGuard>.Instance);
+        new(busName, address ?? DBusAddress.Session, NullLogger<DBusSingleInstanceGuard>.Instance);
 
     private static string UniqueBusName() => $"io.github.ghorshy.SharpSelecta.Test.T{Guid.NewGuid():N}";
 
     [Test]
     public async Task DBus_SecondStart_ForwardsPathsToTheFirstInstance()
     {
-        Skip.When(!OperatingSystem.IsLinux() || Address.Session is null, "needs a D-Bus session bus");
+        Skip.When(!OperatingSystem.IsLinux() || DBusAddress.Session is null, "needs a D-Bus session bus");
         var busName = UniqueBusName();
         using var first = CreateDBusGuard(busName);
         var received = new TaskCompletionSource<IReadOnlyList<string>>(TaskCreationOptions.RunContinuationsAsynchronously);

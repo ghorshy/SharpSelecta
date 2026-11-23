@@ -1,6 +1,7 @@
 using System.Net;
 using Microsoft.Extensions.Logging;
-using Tmds.DBus;
+using NotificationsProxy = SharpSelecta.App.DBus.Notifications;
+using Tmds.DBus.Protocol;
 
 namespace SharpSelecta.App.Services.Notifications;
 
@@ -12,8 +13,8 @@ public sealed class FreedesktopTrackNotifications(ILogger<FreedesktopTrackNotifi
 
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly string _coverDirectory = Path.Combine(Path.GetTempPath(), $"sharpselecta-{Environment.UserName}-notifications");
-    private Connection? _connection;
-    private INotifications? _notifications;
+    private DBusConnection? _connection;
+    private NotificationsProxy? _notifications;
     private bool _bodyMarkup;
     private uint _lastId;
     private string? _lastCoverPath;
@@ -27,14 +28,14 @@ public sealed class FreedesktopTrackNotifications(ILogger<FreedesktopTrackNotifi
             if (await ConnectAsync() is not { } notifications)
                 return;
 
-            var hints = new Dictionary<string, object> { ["desktop-entry"] = AppIdentity.Id, ["category"] = "x-sharpselecta.track" };
+            var hints = new Dictionary<string, VariantValue> { ["desktop-entry"] = AppIdentity.Id, ["category"] = "x-sharpselecta.track" };
             if (WriteCover(notification.Artwork) is { } coverPath)
                 hints["image-path"] = new Uri(coverPath).AbsoluteUri;
 
             var body = _bodyMarkup ? WebUtility.HtmlEncode(notification.Body) : notification.Body;
             _lastId = await notifications.NotifyAsync("SharpSelecta", _lastId, string.Empty, notification.Title, body, [], hints, -1);
         }
-        catch (Exception ex) when (ex is DBusException or IOException or ConnectException or DisconnectedException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is DBusMessageException or DBusConnectionException or IOException or UnauthorizedAccessException)
         {
             LogFailureOnce(ex);
             Disconnect();
@@ -45,20 +46,20 @@ public sealed class FreedesktopTrackNotifications(ILogger<FreedesktopTrackNotifi
         }
     }
 
-    private async Task<INotifications?> ConnectAsync()
+    private async Task<NotificationsProxy?> ConnectAsync()
     {
         if (_notifications is not null)
             return _notifications;
 
-        if (Address.Session is not { } address)
+        if (DBusAddress.Session is not { } address)
         {
             LogFailureOnce(null);
             return null;
         }
 
-        _connection = new Connection(address);
+        _connection = new DBusConnection(address);
         await _connection.ConnectAsync();
-        var notifications = _connection.CreateProxy<INotifications>("org.freedesktop.Notifications", NotificationsPath);
+        var notifications = new NotificationsProxy(_connection, NotificationsProxy.DBusInterfaceName, NotificationsPath);
         _bodyMarkup = (await notifications.GetCapabilitiesAsync()).Contains("body-markup");
         _notifications = notifications;
         return notifications;

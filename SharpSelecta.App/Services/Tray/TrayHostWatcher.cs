@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging;
-using Tmds.DBus;
+using Tmds.DBus.Protocol;
 
 namespace SharpSelecta.App.Services.Tray;
 
@@ -9,26 +9,23 @@ public sealed class TrayHostWatcher(ILogger<TrayHostWatcher> logger) : IDisposab
 {
     private const string WatcherName = "org.kde.StatusNotifierWatcher";
 
-    private Connection? _connection;
-    private IDisposable? _subscription;
-    private volatile bool _isAvailable = !OperatingSystem.IsLinux();
+    private DBusConnection? _connection;
+    private NameOwnerWatcher? _watcher;
 
-    public bool IsAvailable => _isAvailable;
+    public bool IsAvailable => !OperatingSystem.IsLinux() || _watcher?.GetCurrentOwner() is not null;
 
     public async Task StartAsync()
     {
-        if (!OperatingSystem.IsLinux() || Address.Session is not { } address)
+        if (!OperatingSystem.IsLinux() || DBusAddress.Session is not { } address)
             return;
 
         try
         {
-            _connection = new Connection(address);
+            _connection = new DBusConnection(address);
             await _connection.ConnectAsync();
-            _subscription = await _connection.ResolveServiceOwnerAsync(WatcherName, e => _isAvailable = e.NewOwner is not null,
-                ex => logger.LogWarning(ex, "Lost track of the system tray"));
-            _isAvailable = await _connection.IsServiceActiveAsync(WatcherName);
+            _watcher = await _connection.WatchNameOwnerAsync(WatcherName);
         }
-        catch (Exception ex) when (ex is DBusException or ConnectException or DisconnectedException or IOException)
+        catch (Exception ex) when (ex is DBusMessageException or DBusConnectionException or IOException)
         {
             logger.LogWarning(ex, "Can't look for a system tray; the window won't hide to one");
         }
@@ -36,7 +33,7 @@ public sealed class TrayHostWatcher(ILogger<TrayHostWatcher> logger) : IDisposab
 
     public void Dispose()
     {
-        _subscription?.Dispose();
+        _watcher?.Dispose();
         _connection?.Dispose();
     }
 }

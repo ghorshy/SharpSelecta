@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 using SharpSelecta.App.ViewModels;
-using Tmds.DBus;
+using Tmds.DBus.Protocol;
 
 namespace SharpSelecta.App.Services.Mpris;
 
@@ -8,10 +8,10 @@ public sealed class MprisService : IAsyncDisposable
 {
     private const string BusName = "org.mpris.MediaPlayer2.sharpselecta";
 
-    private readonly Connection _connection;
+    private readonly DBusConnection _connection;
     private readonly MprisRoot _root;
 
-    private MprisService(Connection connection, MprisRoot root)
+    private MprisService(DBusConnection connection, MprisRoot root)
     {
         _connection = connection;
         _root = root;
@@ -24,21 +24,22 @@ public sealed class MprisService : IAsyncDisposable
             return null;
         }
 
-        Connection? connection = null;
+        DBusConnection? connection = null;
+        MprisRoot? root = null;
         try
         {
-            if (Address.Session is not { } sessionAddress)
+            if (DBusAddress.Session is not { } sessionAddress)
             {
                 logger.LogWarning("No D-Bus session bus address available - MPRIS/playerctl integration will be unavailable");
                 return null;
             }
 
-            connection = new Connection(sessionAddress);
+            connection = new DBusConnection(sessionAddress);
             await connection.ConnectAsync();
 
-            var root = new MprisRoot(playbackControls);
-            await connection.RegisterObjectAsync(root);
-            await connection.RegisterServiceAsync(BusName, new ServiceRegistrationOptions());
+            root = new MprisRoot(connection, playbackControls);
+            connection.AddMethodHandler(root);
+            await connection.RequestNameAsync(BusName, RequestNameOptions.None);
 
             logger.LogInformation("MPRIS service registered as {BusName}", BusName);
             return new MprisService(connection, root);
@@ -46,6 +47,7 @@ public sealed class MprisService : IAsyncDisposable
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to start the MPRIS D-Bus service - media-key/playerctl integration will be unavailable");
+            root?.Dispose();
             connection?.Dispose();
             return null;
         }
@@ -58,7 +60,7 @@ public sealed class MprisService : IAsyncDisposable
         _root.Dispose();
         try
         {
-            await _connection.UnregisterServiceAsync(BusName);
+            await _connection.ReleaseNameAsync(BusName);
         }
         catch (Exception)
         {

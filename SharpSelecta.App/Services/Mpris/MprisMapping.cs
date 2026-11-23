@@ -1,6 +1,6 @@
 using SharpSelecta.App.ViewModels;
 using SharpSelecta.Core.Library;
-using Tmds.DBus;
+using Tmds.DBus.Protocol;
 
 namespace SharpSelecta.App.Services.Mpris;
 
@@ -13,32 +13,32 @@ public static class MprisMapping
         _ => isPlaying ? "Playing" : "Paused",
     };
 
-    public static IDictionary<string, object> BuildMetadata(Track? track, long? heartbeatTick = null)
+    public static Dictionary<string, VariantValue> BuildMetadata(Track? track, long? heartbeatTick = null)
     {
-        var metadata = new Dictionary<string, object>();
+        var metadata = new Dictionary<string, VariantValue>();
 
         if (track is not null)
         {
-            metadata["mpris:trackid"] = TrackId(track);
-            metadata["mpris:length"] = (long)track.Duration.TotalMicroseconds;
-            metadata["xesam:title"] = track.DisplayName;
+            metadata["mpris:trackid"] = VariantValue.ObjectPath(TrackId(track));
+            metadata["mpris:length"] = VariantValue.Int64((long)track.Duration.TotalMicroseconds);
+            metadata["xesam:title"] = VariantValue.String(track.DisplayName);
 
             // xesam:artist is a list, so every artist of the track goes in separately.
             var artists = ArtistList.Split(track.Artist);
             if (artists.Count > 0)
             {
-                metadata["xesam:artist"] = artists.ToArray();
+                metadata["xesam:artist"] = VariantValue.Array(artists.ToArray());
             }
 
             if (!string.IsNullOrWhiteSpace(track.Album))
             {
-                metadata["xesam:album"] = track.Album;
+                metadata["xesam:album"] = VariantValue.String(track.Album);
             }
         }
 
         if (heartbeatTick is { } tick)
         {
-            metadata["x-sharpselecta:heartbeat"] = tick;
+            metadata["x-sharpselecta:heartbeat"] = VariantValue.Int64(tick);
         }
 
         return metadata;

@@ -1,16 +1,15 @@
 using Microsoft.Extensions.Logging;
-using Tmds.DBus;
+using SharpSelecta.App.DBus;
+using Tmds.DBus.Protocol;
 
 namespace SharpSelecta.App.Services.SingleInstance;
 
 public sealed class DBusSingleInstanceGuard(string busName, string? address, ILogger<DBusSingleInstanceGuard> logger)
-    : ISingleInstanceGuard, ISingleInstanceActivation
+    : ISingleInstanceGuard
 {
     private static readonly TimeSpan StartTimeout = TimeSpan.FromSeconds(3);
 
-    private Connection? _connection;
-
-    public ObjectPath ObjectPath { get; } = new(AppIdentity.SingleInstanceObjectPath);
+    private DBusConnection? _connection;
 
     public event EventHandler<IReadOnlyList<string>>? ActivationRequested;
 
@@ -22,7 +21,7 @@ public sealed class DBusSingleInstanceGuard(string busName, string? address, ILo
             return SingleInstanceRole.Primary;
         }
 
-        var connection = new Connection(address);
+        var connection = new DBusConnection(address);
         try
         {
             var role = await StartOnAsync(connection, filePaths).WaitAsync(StartTimeout);
@@ -45,38 +44,44 @@ public sealed class DBusSingleInstanceGuard(string busName, string? address, ILo
         }
     }
 
-    private async Task<SingleInstanceRole> StartOnAsync(Connection connection, IReadOnlyList<string> filePaths)
+    private async Task<SingleInstanceRole> StartOnAsync(DBusConnection connection, IReadOnlyList<string> filePaths)
     {
         await connection.ConnectAsync();
-        await connection.RegisterObjectAsync(this);
-        if (await TryOwnBusNameAsync(connection))
+        connection.AddMethodHandler(new ActivationHandler(connection, this));
+
+        // None: never take the name from a running instance, and don't queue for it.
+        if (await connection.TryRequestNameAsync(busName, RequestNameOptions.None))
         {
             return SingleInstanceRole.Primary;
         }
 
-        await connection.CreateProxy<ISingleInstanceActivation>(busName, ObjectPath).ActivateAsync([.. filePaths]);
+        await ActivateRunningInstanceAsync(connection, [.. filePaths]);
         return SingleInstanceRole.Secondary;
     }
 
-    private async Task<bool> TryOwnBusNameAsync(Connection connection)
+    private Task ActivateRunningInstanceAsync(DBusConnection connection, string[] filePaths)
     {
-        try
-        {
-            // None: never take the name from a running instance, and don't queue for it.
-            await connection.RegisterServiceAsync(busName, ServiceRegistrationOptions.None);
-            return true;
-        }
-        catch (InvalidOperationException)
-        {
-            return false;
-        }
-    }
-
-    Task ISingleInstanceActivation.ActivateAsync(string[] filePaths)
-    {
-        ActivationRequested?.Invoke(this, filePaths);
-        return Task.CompletedTask;
+        var writer = connection.GetMessageWriter();
+        writer.WriteMethodCallHeader(
+            destination: busName,
+            path: AppIdentity.SingleInstanceObjectPath,
+            @interface: AppIdentity.SingleInstanceInterface,
+            signature: "as",
+            member: "Activate");
+        writer.WriteArray(filePaths);
+        return connection.CallMethodAsync(writer.CreateMessage());
     }
 
     public void Dispose() => _connection?.Dispose();
+
+    private sealed class ActivationHandler(DBusConnection connection, DBusSingleInstanceGuard guard)
+        : DBusHandler(connection, AppIdentity.SingleInstanceObjectPath, handlesChildPaths: false, handleOnCapturedContext: false),
+            ISingleInstanceHandler
+    {
+        public ValueTask ActivateAsync(string[] filePaths)
+        {
+            guard.ActivationRequested?.Invoke(guard, filePaths);
+            return default;
+        }
+    }
 }
