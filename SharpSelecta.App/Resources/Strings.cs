@@ -57,6 +57,7 @@ public static class Strings
     public static string AccentHexPlaceholder => Get(nameof(AccentHexPlaceholder));
     public static string ShowTrackChangeNotifications => Get(nameof(ShowTrackChangeNotifications));
     public static string TrackChangeNotificationsHint => Get(nameof(TrackChangeNotificationsHint));
+    public static string NotificationSkip => Get(nameof(NotificationSkip));
     public static string MinimizeToTray => Get(nameof(MinimizeToTray));
     public static string CloseToTray => Get(nameof(CloseToTray));
     public static string TrayHint => Get(nameof(TrayHint));

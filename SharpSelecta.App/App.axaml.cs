@@ -104,6 +104,9 @@ public partial class App : Application
             var desktopNotifications = OperatingSystem.IsLinux()
                 ? new FreedesktopTrackNotifications(provider.GetRequiredService<ILogger<FreedesktopTrackNotifications>>())
                 : null;
+            if (desktopNotifications is not null)
+                desktopNotifications.SkipRequested += (_, _) =>
+                    Dispatcher.UIThread.Post(() => mainWindowViewModel.PlaybackControls.NextTrackCommand.Execute(null));
             var trackNotifier = desktopNotifications is null ? null : new TrackChangeNotifier(
                 mainWindowViewModel.PlaybackControls, desktopNotifications, settings, () => mainWindow.IsActive,
                 provider.GetRequiredService<ILogger<TrackChangeNotifier>>());

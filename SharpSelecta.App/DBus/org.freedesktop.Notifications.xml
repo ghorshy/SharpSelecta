@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- https://specifications.freedesktop.org/notification-spec/latest/ (only the methods the app calls) -->
+<!-- https://specifications.freedesktop.org/notification-spec/latest/ (only the members the app uses) -->
 <node>
   <interface name="org.freedesktop.Notifications">
     <method name="GetCapabilities">
@@ -16,5 +16,9 @@
       <arg name="expire_timeout" type="i" direction="in" />
       <arg name="id" type="u" direction="out" />
     </method>
+    <signal name="ActionInvoked">
+      <arg name="id" type="u" />
+      <arg name="action_key" type="s" />
+    </signal>
   </interface>
 </node>

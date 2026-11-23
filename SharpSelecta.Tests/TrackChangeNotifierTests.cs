@@ -18,6 +18,8 @@ public class TrackChangeNotifierTests : IDisposable
     {
         public List<TrackNotification> Shown { get; } = [];
 
+        public event EventHandler? SkipRequested { add { } remove { } }
+
         public Task ShowAsync(TrackNotification notification)
         {
             Shown.Add(notification);

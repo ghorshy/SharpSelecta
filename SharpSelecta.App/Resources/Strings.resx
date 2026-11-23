@@ -919,6 +919,9 @@
   <data name="TrackChangeNotificationsHint" xml:space="preserve">
     <value>Not shown while the SharpSelecta window is focused.</value>
   </data>
+  <data name="NotificationSkip" xml:space="preserve">
+    <value>Skip</value>
+  </data>
   <data name="MinimizeToTray" xml:space="preserve">
     <value>Minimize to the system tray</value>
   </data>

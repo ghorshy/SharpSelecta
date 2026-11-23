@@ -1,5 +1,6 @@
 using System.Net;
 using Microsoft.Extensions.Logging;
+using SharpSelecta.App.Resources;
 using NotificationsProxy = SharpSelecta.App.DBus.Notifications;
 using Tmds.DBus.Protocol;
 
@@ -9,16 +10,28 @@ namespace SharpSelecta.App.Services.Notifications;
 // keeps trying on later tracks (a daemon may start after the app).
 public sealed class FreedesktopTrackNotifications(ILogger<FreedesktopTrackNotifications> logger) : ITrackNotifications, IDisposable
 {
+    private const string SkipAction = "next";
+
     private static readonly ObjectPath NotificationsPath = new("/org/freedesktop/Notifications");
 
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly string _coverDirectory = Path.Combine(Path.GetTempPath(), $"sharpselecta-{Environment.UserName}-notifications");
     private DBusConnection? _connection;
     private NotificationsProxy? _notifications;
+    private IDisposable? _actionWatch;
     private bool _bodyMarkup;
-    private uint _lastId;
+    private string[] _actions = [];
+    private volatile uint _lastId;
     private string? _lastCoverPath;
     private bool _loggedFailure;
+
+    public event EventHandler? SkipRequested;
+
+    public static string[] ActionsFor(IReadOnlyCollection<string> capabilities) =>
+        capabilities.Contains("actions") ? [SkipAction, Strings.NotificationSkip] : [];
+
+    public static bool IsSkip(uint notificationId, string actionKey, uint latestId) =>
+        notificationId == latestId && actionKey == SkipAction;
 
     public async Task ShowAsync(TrackNotification notification)
     {
@@ -33,7 +46,7 @@ public sealed class FreedesktopTrackNotifications(ILogger<FreedesktopTrackNotifi
                 hints["image-path"] = new Uri(coverPath).AbsoluteUri;
 
             var body = _bodyMarkup ? WebUtility.HtmlEncode(notification.Body) : notification.Body;
-            _lastId = await notifications.NotifyAsync("SharpSelecta", _lastId, string.Empty, notification.Title, body, [], hints, -1);
+            _lastId = await notifications.NotifyAsync("SharpSelecta", _lastId, string.Empty, notification.Title, body, _actions, hints, -1);
         }
         catch (Exception ex) when (ex is DBusMessageException or DBusConnectionException or IOException or UnauthorizedAccessException)
         {
@@ -60,7 +73,11 @@ public sealed class FreedesktopTrackNotifications(ILogger<FreedesktopTrackNotifi
         _connection = new DBusConnection(address);
         await _connection.ConnectAsync();
         var notifications = new NotificationsProxy(_connection, NotificationsProxy.DBusInterfaceName, NotificationsPath);
-        _bodyMarkup = (await notifications.GetCapabilitiesAsync()).Contains("body-markup");
+        var capabilities = await notifications.GetCapabilitiesAsync();
+        _bodyMarkup = capabilities.Contains("body-markup");
+        _actions = ActionsFor(capabilities);
+        if (_actions.Length > 0)
+            _actionWatch = await notifications.WatchActionInvokedAsync(OnActionInvoked, emitOnCapturedContext: false);
         _notifications = notifications;
         return notifications;
     }
@@ -105,8 +122,16 @@ public sealed class FreedesktopTrackNotifications(ILogger<FreedesktopTrackNotifi
         logger.LogWarning(ex, "Desktop notifications are unavailable (no session bus or notification daemon)");
     }
 
+    private void OnActionInvoked((uint Id, string ActionKey) action)
+    {
+        if (IsSkip(action.Id, action.ActionKey, _lastId))
+            SkipRequested?.Invoke(this, EventArgs.Empty);
+    }
+
     private void Disconnect()
     {
+        _actionWatch?.Dispose();
+        _actionWatch = null;
         _connection?.Dispose();
         _connection = null;
         _notifications = null;
