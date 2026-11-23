@@ -1,5 +1,6 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Collections;
 using Avalonia.Controls;
@@ -51,6 +52,9 @@ public sealed partial class TrackListView : UserControl
     private LibraryTrackViewModel? _rowBeingDragged;
     private LibraryTrackViewModel? _collapseSelectionTo;
 
+    // The grid sorts by property path (Track.Title, ...) through reflection, which NativeAOT would trim away.
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(LibraryTrackViewModel))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(Track))]
     public TrackListView()
     {
         InitializeComponent();
