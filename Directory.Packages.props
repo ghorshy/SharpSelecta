@@ -32,7 +32,6 @@
 
         <PackageVersion Include="OwnAudioSharp" Version="4.0.12" />
         <PackageVersion Include="z440.atl.core" Version="7.20.1" />
-        <PackageVersion Include="DiscordRichPresence" Version="1.6.1.70" />
         <PackageVersion Include="FFMpegCore" Version="6.0.0" />
         <PackageVersion Include="Velopack" Version="1.2.161" />
 
