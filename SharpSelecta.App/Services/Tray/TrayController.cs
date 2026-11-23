@@ -100,7 +100,7 @@ public sealed class TrayController : IDisposable
     // the Windows tray shows full-color app icons.
     private static WindowIcon? TrayIconImage(Window window) =>
         OperatingSystem.IsLinux()
-            ? new WindowIcon(AssetLoader.Open(new Uri("avares://sharpselecta/Assets/sharpselecta-tray.png")))
+            ? new WindowIcon(AssetLoader.Open(new Uri("avares://SharpSelecta/Assets/sharpselecta-tray.png")))
             : window.Icon;
 
     private string ToolTip() =>

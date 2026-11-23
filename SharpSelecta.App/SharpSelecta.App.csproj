@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
-        <AssemblyName>sharpselecta</AssemblyName>
+        <AssemblyName>SharpSelecta</AssemblyName>
         <RootNamespace>SharpSelecta.App</RootNamespace>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <ApplicationIcon>Assets\sharpselecta.ico</ApplicationIcon>

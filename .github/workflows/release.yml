@@ -44,14 +44,14 @@ jobs:
         run: vpk download github --repoUrl "https://github.com/${{ github.repository }}" --token "${{ secrets.GITHUB_TOKEN }}" --pre -o releases
 
       # Builds the one-click Setup.exe, the MSI (a wizard: license, then just for me or for everyone)
-      # and the portable zip (sharpselecta.exe on top, the app's files in current\).
+      # and the portable zip (SharpSelecta.exe on top, the app's files in current\).
       # The MSI's license page takes only .txt, .md or .rtf files, and its version only x.x.x.x
       # (1.0.0-rc.2 becomes 1.0.0.0; updates go by the package version, not this one).
       - name: Installers
         run: |
           cp LICENSE LICENSE.txt
           vpk pack --packId SharpSelecta --packVersion "$VERSION" --packDir publish \
-            --mainExe sharpselecta.exe --packTitle SharpSelecta --packAuthors ghorshy \
+            --mainExe SharpSelecta.exe --packTitle SharpSelecta --packAuthors ghorshy \
             --icon SharpSelecta.App/Assets/sharpselecta.ico \
             --msi --msiVersion "${VERSION%%-*}.0" --instLicense LICENSE.txt \
             --runtime win-x64 -o releases
@@ -84,7 +84,9 @@ jobs:
 
       # One self-contained build; the tarball, .deb, .rpm and AppImage are all made from it.
       - name: Publish
-        run: dotnet publish SharpSelecta.App -c Release -r linux-x64 --self-contained -p:Version="$VERSION" -o build/linux-x64/app
+        run: |
+          dotnet publish SharpSelecta.App -c Release -r linux-x64 --self-contained -p:Version="$VERSION" -o build/linux-x64/app
+          mv build/linux-x64/app/SharpSelecta build/linux-x64/app/sharpselecta
 
       - name: Tarball
         run: |

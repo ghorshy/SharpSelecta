@@ -43,7 +43,7 @@ Run `SharpSelecta-win-Setup.exe`. It adds SharpSelecta to the Start menu and upd
 
 To install it for every user of the computer (into Program Files), use `SharpSelecta-win.msi` instead. It asks whether to install just for you or for everyone, and updates itself the same way.
 
-If you'd rather not install anything, extract `SharpSelecta-win-Portable.zip` anywhere and run `sharpselecta.exe` from it. It updates itself too.
+If you'd rather not install anything, extract `SharpSelecta-win-Portable.zip` anywhere and run `SharpSelecta.exe` from it. It updates itself too.
 
 ### Debian, Ubuntu and Mint
 

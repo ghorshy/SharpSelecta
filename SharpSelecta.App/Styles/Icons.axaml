@@ -1,30 +1,30 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <x:String x:Key="Icon.AppLogo">avares://sharpselecta/Assets/Icons/sharpselecta-logo.svg</x:String>
-    <x:String x:Key="Icon.PlayerTrackPrev">avares://sharpselecta/Assets/Icons/player-track-prev.svg</x:String>
-    <x:String x:Key="Icon.PlayerTrackNext">avares://sharpselecta/Assets/Icons/player-track-next.svg</x:String>
-    <x:String x:Key="Icon.PlayerPlay">avares://sharpselecta/Assets/Icons/player-play.svg</x:String>
-    <x:String x:Key="Icon.PlayerPause">avares://sharpselecta/Assets/Icons/player-pause.svg</x:String>
-    <x:String x:Key="Icon.Settings">avares://sharpselecta/Assets/Icons/settings.svg</x:String>
-    <x:String x:Key="Icon.Equalizer">avares://sharpselecta/Assets/Icons/adjustments-alt.svg</x:String>
-    <x:String x:Key="Icon.Repeat">avares://sharpselecta/Assets/Icons/repeat.svg</x:String>
-    <x:String x:Key="Icon.RepeatOff">avares://sharpselecta/Assets/Icons/repeat-off.svg</x:String>
-    <x:String x:Key="Icon.RepeatOnce">avares://sharpselecta/Assets/Icons/repeat-once.svg</x:String>
-    <x:String x:Key="Icon.Volume">avares://sharpselecta/Assets/Icons/volume.svg</x:String>
-    <x:String x:Key="Icon.Volume2">avares://sharpselecta/Assets/Icons/volume-2.svg</x:String>
-    <x:String x:Key="Icon.Volume4">avares://sharpselecta/Assets/Icons/volume-4.svg</x:String>
-    <x:String x:Key="Icon.VolumeOff">avares://sharpselecta/Assets/Icons/volume-off.svg</x:String>
-    <x:String x:Key="Icon.Search">avares://sharpselecta/Assets/Icons/search.svg</x:String>
-    <x:String x:Key="Icon.X">avares://sharpselecta/Assets/Icons/x.svg</x:String>
-    <x:String x:Key="Icon.ChevronDown">avares://sharpselecta/Assets/Icons/chevron-down.svg</x:String>
+    <x:String x:Key="Icon.AppLogo">avares://SharpSelecta/Assets/Icons/sharpselecta-logo.svg</x:String>
+    <x:String x:Key="Icon.PlayerTrackPrev">avares://SharpSelecta/Assets/Icons/player-track-prev.svg</x:String>
+    <x:String x:Key="Icon.PlayerTrackNext">avares://SharpSelecta/Assets/Icons/player-track-next.svg</x:String>
+    <x:String x:Key="Icon.PlayerPlay">avares://SharpSelecta/Assets/Icons/player-play.svg</x:String>
+    <x:String x:Key="Icon.PlayerPause">avares://SharpSelecta/Assets/Icons/player-pause.svg</x:String>
+    <x:String x:Key="Icon.Settings">avares://SharpSelecta/Assets/Icons/settings.svg</x:String>
+    <x:String x:Key="Icon.Equalizer">avares://SharpSelecta/Assets/Icons/adjustments-alt.svg</x:String>
+    <x:String x:Key="Icon.Repeat">avares://SharpSelecta/Assets/Icons/repeat.svg</x:String>
+    <x:String x:Key="Icon.RepeatOff">avares://SharpSelecta/Assets/Icons/repeat-off.svg</x:String>
+    <x:String x:Key="Icon.RepeatOnce">avares://SharpSelecta/Assets/Icons/repeat-once.svg</x:String>
+    <x:String x:Key="Icon.Volume">avares://SharpSelecta/Assets/Icons/volume.svg</x:String>
+    <x:String x:Key="Icon.Volume2">avares://SharpSelecta/Assets/Icons/volume-2.svg</x:String>
+    <x:String x:Key="Icon.Volume4">avares://SharpSelecta/Assets/Icons/volume-4.svg</x:String>
+    <x:String x:Key="Icon.VolumeOff">avares://SharpSelecta/Assets/Icons/volume-off.svg</x:String>
+    <x:String x:Key="Icon.Search">avares://SharpSelecta/Assets/Icons/search.svg</x:String>
+    <x:String x:Key="Icon.X">avares://SharpSelecta/Assets/Icons/x.svg</x:String>
+    <x:String x:Key="Icon.ChevronDown">avares://SharpSelecta/Assets/Icons/chevron-down.svg</x:String>
     <!-- chevron-right.svg's shape: Fluent's menu template draws its submenu arrow as a Path, not an image. -->
     <StreamGeometry x:Key="Geometry.MenuChevron">M9 6l6 6l-6 6</StreamGeometry>
-    <x:String x:Key="Icon.View">avares://sharpselecta/Assets/Icons/binoculars.svg</x:String>
-    <x:String x:Key="Icon.Library">avares://sharpselecta/Assets/Icons/books.svg</x:String>
-    <x:String x:Key="Icon.GripVertical">avares://sharpselecta/Assets/Icons/grip-vertical.svg</x:String>
-    <x:String x:Key="Icon.RecentlyAdded">avares://sharpselecta/Assets/Icons/sparkle-2.svg</x:String>
-    <x:String x:Key="Icon.AppWindow">avares://sharpselecta/Assets/Icons/app-window.svg</x:String>
-    <x:String x:Key="Icon.Power">avares://sharpselecta/Assets/Icons/power.svg</x:String>
+    <x:String x:Key="Icon.View">avares://SharpSelecta/Assets/Icons/binoculars.svg</x:String>
+    <x:String x:Key="Icon.Library">avares://SharpSelecta/Assets/Icons/books.svg</x:String>
+    <x:String x:Key="Icon.GripVertical">avares://SharpSelecta/Assets/Icons/grip-vertical.svg</x:String>
+    <x:String x:Key="Icon.RecentlyAdded">avares://SharpSelecta/Assets/Icons/sparkle-2.svg</x:String>
+    <x:String x:Key="Icon.AppWindow">avares://SharpSelecta/Assets/Icons/app-window.svg</x:String>
+    <x:String x:Key="Icon.Power">avares://SharpSelecta/Assets/Icons/power.svg</x:String>
 
 </ResourceDictionary>
