@@ -35,9 +35,9 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
-     inkscape:zoom="0.7078188"
-     inkscape:cx="235.93609"
-     inkscape:cy="688.02919"
+     inkscape:zoom="1.0010069"
+     inkscape:cx="515.48094"
+     inkscape:cy="736.25863"
      inkscape:window-width="2560"
      inkscape:window-height="1408"
      inkscape:window-x="0"
@@ -76,7 +76,7 @@
        fy="150"
        r="116.72362"
        gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(1.0534646,0,0,1.0534646,-8.0196807,-8.0196807)" />
+       gradientTransform="matrix(1.2552187,0,0,1.2552187,-38.282781,-38.282781)" />
   </defs>
   <g
      id="layer1">
@@ -84,60 +84,61 @@
        id="circle2"
        cx="150"
        cy="150"
-       r="122.9642"
-       style="fill:url(#radialGradient3);stroke-width:1.1333"
+       r="146.51366"
+       style="fill:url(#radialGradient3);stroke-width:1.35034"
        inkscape:label="gradient" />
     <circle
        id="rim"
        cx="150"
        cy="150"
-       r="108.5"
-       style="fill:#000000" />
+       r="129.27936"
+       style="fill:#000000;stroke-width:1.19151" />
     <circle
        id="band1"
        cx="150"
        cy="150"
-       r="102.5"
-       style="fill:#262626;fill-opacity:1" />
+       r="122.13026"
+       style="fill:#262626;fill-opacity:1;stroke-width:1.19151" />
     <circle
        id="groove1"
        cx="150"
        cy="150"
-       r="86"
-       style="fill:#000000" />
+       r="102.47027"
+       style="fill:#000000;stroke-width:1.19151" />
     <circle
        id="band2"
        cx="150"
        cy="150"
-       r="83.5"
-       style="fill:#262626;fill-opacity:1" />
+       r="99.491486"
+       style="fill:#262626;fill-opacity:1;stroke-width:1.19151" />
     <circle
        id="groove2"
        cx="150"
        cy="150"
-       r="67"
-       style="fill:#000000" />
+       r="79.83149"
+       style="fill:#000000;stroke-width:1.19151" />
     <circle
        id="band3"
        cx="150"
        cy="150"
-       r="64.5"
-       style="fill:#262626;fill-opacity:1" />
+       r="76.852699"
+       style="fill:#262626;fill-opacity:1;stroke-width:1.19151" />
     <circle
        id="inner-ring"
        cx="150"
        cy="150"
-       r="48"
-       style="fill:#000000" />
+       r="57.192707"
+       style="fill:#000000;stroke-width:1.19151" />
     <circle
        id="label"
        cx="150"
        cy="150"
-       r="36"
-       style="fill:#512bd4;fill-opacity:1" />
+       r="42.894531"
+       style="fill:#512bd4;fill-opacity:1;stroke-width:1.19151" />
     <g
        id="sharp-white"
-       style="fill:#ffffff;fill-opacity:1">
+       style="fill:#ffffff;fill-opacity:1"
+       transform="matrix(1.1915148,0,0,1.1915148,-28.727213,-28.727213)">
       <!-- krzyżyk muzyczny: pionowe belki proste (cienkie), poziome grubsze i wznoszące się w prawo -->
       <rect
          id="sharp-v1"
@@ -153,22 +154,22 @@
          height="50" />
       <polygon
          id="sharp-h1"
-         points="127.5,143.5 172.5,130 172.5,136.5 127.5,150" />
+         points="172.5,130 172.5,136.5 127.5,150 127.5,143.5 " />
       <polygon
          id="sharp-h2"
-         points="127.5,163.5 172.5,150 172.5,156.5 127.5,170" />
+         points="172.5,150 172.5,156.5 127.5,170 127.5,163.5 " />
     </g>
     <circle
        id="dot"
        cx="150"
        cy="150"
-       r="2.9000001"
-       style="mix-blend-mode:normal;fill:#000000;fill-opacity:1" />
+       r="3.4553928"
+       style="mix-blend-mode:normal;fill:#000000;fill-opacity:1;stroke-width:1.19151" />
     <circle
        id="circle3"
        cx="150"
        cy="150"
-       r="2.9000001"
-       style="mix-blend-mode:normal;fill:#000000;fill-opacity:1" />
+       r="3.4553928"
+       style="mix-blend-mode:normal;fill:#000000;fill-opacity:1;stroke-width:1.19151" />
   </g>
 </svg>
