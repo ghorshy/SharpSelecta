@@ -54,6 +54,13 @@ public partial class MainWindowViewModel : ViewModelBase
         ShortcutSettings = shortcutSettings;
         Equalizer = equalizer;
         SidePanel = new SidePanelLayoutViewModel(settings, layout, interfaceSettings);
+
+        // Settings → Interface previews the waveform choice on the bar while it's being edited.
+        interfaceSettings.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(InterfaceSettingsViewModel.UseWaveformSlider))
+                playbackControls.Waveform.UseSlider = interfaceSettings.UseWaveformSlider;
+        };
     }
 
     // Which track "the selected one" is depends on what has focus (a grid, an expanded album, the

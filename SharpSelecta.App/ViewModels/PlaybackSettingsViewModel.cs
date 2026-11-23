@@ -27,7 +27,6 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     private int _appliedSeekStepSeconds;
     private int _appliedPreviousRestartThresholdSeconds;
     private bool _appliedPauseOnDeviceDisconnect;
-    private bool _appliedUseWaveformSlider;
 
     public ObservableCollection<OutputDeviceOption> OutputDevices { get; } = [OutputDeviceOption.SystemDefault];
 
@@ -99,9 +98,6 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
     [NotifyPropertyChangedFor(nameof(HasPendingChanges))]
     public partial bool PauseOnDeviceDisconnect { get; set; }
 
-    [ObservableProperty]
-    private bool useWaveformSlider;
-
     public string DisplayName => Strings.SettingsCategoryPlayback;
 
     // ?. because the bound ComboBox briefly pushes null while OutputDevices is repopulated.
@@ -116,8 +112,7 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         UseLogarithmicVolumeScale != _appliedUseLogarithmicVolumeScale ||
         SeekStepSeconds != _appliedSeekStepSeconds ||
         PreviousRestartThresholdSeconds != _appliedPreviousRestartThresholdSeconds ||
-        PauseOnDeviceDisconnect != _appliedPauseOnDeviceDisconnect ||
-        UseWaveformSlider != _appliedUseWaveformSlider;
+        PauseOnDeviceDisconnect != _appliedPauseOnDeviceDisconnect;
 
     ICommand ISettingsCategoryViewModel.ApplyCommand => ApplyPlaybackSettingsCommand;
 
@@ -146,9 +141,6 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         UntaggedGainDb = saved.UntaggedGainDb;
         _appliedUntaggedGainDb = saved.UntaggedGainDb;
 
-        useWaveformSlider = saved.UseWaveformSlider;
-        _appliedUseWaveformSlider = useWaveformSlider;
-
         selectedOutputDevice = OutputDeviceOption.For(saved.OutputDeviceName);
         _appliedOutputDeviceName = saved.OutputDeviceName;
 
@@ -176,8 +168,6 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
 
     partial void OnSeekStepSecondsChanged(int value) => OnPropertyChanged(nameof(HasPendingChanges));
 
-    partial void OnUseWaveformSliderChanged(bool value) => OnPropertyChanged(nameof(HasPendingChanges));
-
     public Task OutputDeviceSwitchTask { get; private set; } = Task.CompletedTask;
 
     [RelayCommand]
@@ -193,7 +183,6 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
             TrackStartAction = SelectedTrackStartActionOption.Action,
             VolumeNormalization = SelectedVolumeNormalizationOption.Normalization,
             UntaggedGainDb = UntaggedGainDb,
-            UseWaveformSlider = UseWaveformSlider,
             VolumeCurve = curve,
             SeekStepSeconds = SeekStepSeconds,
             PreviousRestartThresholdSeconds = PreviousRestartThresholdSeconds,
@@ -210,9 +199,6 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         _appliedVolumeNormalization = SelectedVolumeNormalizationOption.Normalization;
         _playbackControls.UntaggedGainDb = UntaggedGainDb;
         _appliedUntaggedGainDb = UntaggedGainDb;
-
-        _playbackControls.Waveform.UseSlider = UseWaveformSlider;
-        _appliedUseWaveformSlider = UseWaveformSlider;
 
         _playbackControls.Volume.Curve = curve;
         _appliedUseLogarithmicVolumeScale = UseLogarithmicVolumeScale;
@@ -246,7 +232,6 @@ public partial class PlaybackSettingsViewModel : ViewModelBase, ISettingsCategor
         SeekStepSeconds = _appliedSeekStepSeconds;
         PreviousRestartThresholdSeconds = _appliedPreviousRestartThresholdSeconds;
         PauseOnDeviceDisconnect = _appliedPauseOnDeviceDisconnect;
-        UseWaveformSlider = _appliedUseWaveformSlider;
     }
 
     private OpenedFilesActionOption OptionFor(OpenedFilesAction action) =>

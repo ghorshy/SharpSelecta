@@ -28,8 +28,9 @@
             <Button x:Name="NextButton" Classes="toolbar-button toolbar-button-hover" Command="{Binding NextTrackCommand}" ToolTip.Tip="{x:Static res:Strings.Next}">
                 <svg:Svg Classes="toolbar-icon" Width="{DynamicResource Size.Icon.M}" Height="{DynamicResource Size.Icon.M}" Path="{DynamicResource Icon.PlayerTrackNext}" />
             </Button>
+            <!-- The Length button's padding, mirrored, so both times sit the same distance from the seek bar. -->
             <TextBlock x:Name="ElapsedText" Text="{Binding PositionDisplay}" VerticalAlignment="Center"
-                       Width="{DynamicResource Size.Playback.TimeWidth}" TextAlignment="Right" />
+                       Width="{DynamicResource Size.Playback.TimeWidth}" TextAlignment="Right" Padding="{Binding #LengthButton.Padding}" />
             <Panel x:Name="SeekBar">
                 <Slider VerticalAlignment="Center" Minimum="0" Maximum="{Binding DurationSeconds}"
                         Value="{Binding PositionSeconds}" IsVisible="{Binding !Waveform.UseSlider}" />

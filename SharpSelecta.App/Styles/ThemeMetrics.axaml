@@ -98,6 +98,9 @@
     <x:Double x:Key="Size.Settings.AccentSwatch">24</x:Double>
     <x:Double x:Key="Size.Settings.AccentHexWidth">100</x:Double>
     <x:Double x:Key="Size.Settings.AboutLogo">64</x:Double>
+    <x:Double x:Key="Size.Settings.BarTileHeight">32</x:Double>
+    <x:Double x:Key="Size.Settings.BarSeekTileWidth">100</x:Double>
+    <x:Double x:Key="Size.Settings.BarDropIndicatorWidth">2</x:Double>
 
     <x:Double x:Key="Size.CreditsEditor.Width">480</x:Double>
     <x:Double x:Key="Size.CreditsEditor.Height">420</x:Double>

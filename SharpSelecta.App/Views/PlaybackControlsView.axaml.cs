@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
+using Avalonia.Media;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -17,6 +18,7 @@ public partial class PlaybackControlsView : UserControl
     private EqualizerWindow? _equalizerWindow;
     private InterfaceSettingsViewModel? _interfaceSettings;
     private PlaybackBarLayout _layout = PlaybackBarLayout.Default;
+    private bool _columnsBuilt;
 
     public PlaybackControlsView()
     {
@@ -27,7 +29,6 @@ public partial class PlaybackControlsView : UserControl
         Unloaded += (_, _) => _positionTimer.Stop();
 
         VolumeSlider.AddHandler(InputElement.PointerReleasedEvent, OnVolumeSliderPointerReleased, handledEventsToo: true);
-        SizeChanged += (_, _) => UpdateSeekBarWidth();
         ApplyLayout(_layout);
     }
 
@@ -76,19 +77,37 @@ public partial class PlaybackControlsView : UserControl
     // width; in Fixed every column fits its content and the row sits left, centered or right.
     private void ApplyLayout(PlaybackBarLayout layout)
     {
+        var rebuild = !_columnsBuilt || !layout.Components.SequenceEqual(_layout.Components) || layout.SeekBarWidth != _layout.SeekBarWidth;
         _layout = layout;
         TitleLine.IsVisible = layout.ShowTitle;
+        TitleLine.TextAlignment = layout.TitleAlignment == TitleAlignment.Center ? TextAlignment.Center : TextAlignment.Left;
 
         var fill = layout.SeekBarWidth == SeekBarWidth.Fill;
+        BarRow.HorizontalAlignment = fill ? HorizontalAlignment.Stretch : layout.Alignment switch
+        {
+            PlaybackBarAlignment.Left => HorizontalAlignment.Left,
+            PlaybackBarAlignment.Right => HorizontalAlignment.Right,
+            _ => HorizontalAlignment.Center,
+        };
+
+        // Dragging the percent slider only needs the seek bar's width measured again.
+        if (rebuild)
+            RebuildColumns(fill);
+
+        InvalidateMeasure();
+    }
+
+    private void RebuildColumns(bool fill)
+    {
         foreach (var component in PlaybackBarLayout.AllComponents)
         {
             ComponentControl(component).IsVisible = false;
         }
 
         BarRow.ColumnDefinitions.Clear();
-        for (var column = 0; column < layout.Components.Count; column++)
+        for (var column = 0; column < _layout.Components.Count; column++)
         {
-            var component = layout.Components[column];
+            var component = _layout.Components[column];
             var control = ComponentControl(component);
             control.IsVisible = true;
             Grid.SetColumn(control, column);
@@ -96,19 +115,37 @@ public partial class PlaybackControlsView : UserControl
                 fill && component == PlaybackBarComponent.SeekBar ? GridLength.Star : GridLength.Auto));
         }
 
-        BarRow.HorizontalAlignment = fill ? HorizontalAlignment.Stretch : layout.Alignment switch
-        {
-            PlaybackBarAlignment.Left => HorizontalAlignment.Left,
-            PlaybackBarAlignment.Right => HorizontalAlignment.Right,
-            _ => HorizontalAlignment.Center,
-        };
-        UpdateSeekBarWidth();
+        // Avalonia's Grid keeps its per-child column info until its children change, so after Fill a
+        // now-Auto seek bar column would still be sized like the old star column (to nothing).
+        var children = BarRow.Children.ToList();
+        BarRow.Children.Clear();
+        BarRow.Children.AddRange(children);
+
+        SeekBar.Width = double.NaN;
+        _columnsBuilt = true;
     }
 
-    private void UpdateSeekBarWidth() =>
-        SeekBar.Width = _layout.SeekBarWidth == SeekBarWidth.Fixed
-            ? Bounds.Width * _layout.SeekBarPercent / 100
-            : double.NaN;
+    // Fixed: the seek bar's share of the bar's width, but never more than the other components leave,
+    // so a large share on a narrow window shrinks the seek bar instead of pushing the rest off the edge.
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        if (_layout.SeekBarWidth == SeekBarWidth.Fixed && double.IsFinite(availableSize.Width))
+        {
+            var others = 0.0;
+            foreach (var component in _layout.Components.Where(c => c != PlaybackBarComponent.SeekBar))
+            {
+                var control = ComponentControl(component);
+                control.Measure(Size.Infinity);
+                others += control.DesiredSize.Width + BarRow.ColumnSpacing;
+            }
+
+            var width = Math.Max(0, Math.Min(availableSize.Width * _layout.SeekBarPercent / 100, availableSize.Width - others));
+            if (!SeekBar.Width.Equals(width))
+                SeekBar.Width = width;
+        }
+
+        return base.MeasureOverride(availableSize);
+    }
 
     private void OnPositionTimerTick(object? sender, EventArgs e) =>
         (DataContext as PlaybackControlsViewModel)?.RefreshPosition();

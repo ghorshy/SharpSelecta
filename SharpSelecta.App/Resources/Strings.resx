@@ -1057,4 +1057,73 @@
   <data name="AboutLibraries" xml:space="preserve">
     <value>Open-source libraries it uses</value>
   </data>
+  <data name="SettingsSectionPlaybackBar" xml:space="preserve">
+    <value>Playback bar</value>
+  </data>
+  <data name="PlaybackBarHint" xml:space="preserve">
+    <value>Drag a tile to move it, or onto Hidden to hide it. With a tile focused: Ctrl+Left/Right moves it, Delete hides it, Insert puts a hidden one back at the end.</value>
+  </data>
+  <data name="PlaybackBarHidden" xml:space="preserve">
+    <value>Hidden</value>
+  </data>
+  <data name="PlaybackBarHiddenEmpty" xml:space="preserve">
+    <value>Drop a tile here to hide it</value>
+  </data>
+  <data name="PlayPause" xml:space="preserve">
+    <value>Play / Pause</value>
+  </data>
+  <data name="ElapsedTime" xml:space="preserve">
+    <value>Elapsed time</value>
+  </data>
+  <data name="ElapsedTileLabel" xml:space="preserve">
+    <value>Elapsed</value>
+  </data>
+  <data name="SeekBar" xml:space="preserve">
+    <value>Seek bar</value>
+  </data>
+  <data name="TrackLength" xml:space="preserve">
+    <value>Track length</value>
+  </data>
+  <data name="LengthTileLabel" xml:space="preserve">
+    <value>Length</value>
+  </data>
+  <data name="Repeat" xml:space="preserve">
+    <value>Repeat</value>
+  </data>
+  <data name="SeekBarWidthLabel" xml:space="preserve">
+    <value>Seek bar width</value>
+  </data>
+  <data name="SeekBarWidthFill" xml:space="preserve">
+    <value>Fill the free space</value>
+  </data>
+  <data name="SeekBarWidthFixed" xml:space="preserve">
+    <value>Fixed share of the bar</value>
+  </data>
+  <data name="PlaybackBarAlignment" xml:space="preserve">
+    <value>Bar alignment</value>
+  </data>
+  <data name="AlignLeft" xml:space="preserve">
+    <value>Left</value>
+  </data>
+  <data name="AlignCenter" xml:space="preserve">
+    <value>Center</value>
+  </data>
+  <data name="AlignRight" xml:space="preserve">
+    <value>Right</value>
+  </data>
+  <data name="ShowTrackTitleAboveBar" xml:space="preserve">
+    <value>Show the track title above the bar</value>
+  </data>
+  <data name="RestoreDefaultLayout" xml:space="preserve">
+    <value>Restore default layout</value>
+  </data>
+  <data name="PercentFormat" xml:space="preserve">
+    <value>{0} %</value>
+  </data>
+  <data name="PlaybackBarLockedTileFormat" xml:space="preserve">
+    <value>{0} always stays on the bar.</value>
+  </data>
+  <data name="TrackTitleAlignment" xml:space="preserve">
+    <value>Title alignment</value>
+  </data>
 </root>

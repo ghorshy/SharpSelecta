@@ -30,12 +30,18 @@ public enum PlaybackBarAlignment
     Right,
 }
 
+public enum TitleAlignment
+{
+    Left,
+    Center,
+}
+
 // The bottom bar's components in their order on the bar; the ones not listed are hidden.
 public sealed record PlaybackBarLayout
 {
-    public const int MinSeekBarPercent = 20;
-    public const int MaxSeekBarPercent = 80;
-    public const int SeekBarPercentStep = 5;
+    public const double MinSeekBarPercent = 20;
+    public const double MaxSeekBarPercent = 80;
+    public const double DefaultSeekBarPercent = 50;
 
     public static IReadOnlyList<PlaybackBarComponent> AllComponents { get; } = Enum.GetValues<PlaybackBarComponent>();
 
@@ -48,19 +54,21 @@ public sealed record PlaybackBarLayout
     public SeekBarWidth SeekBarWidth { get; init; } = SeekBarWidth.Fill;
 
     // The seek bar's share of the bar's width when SeekBarWidth is Fixed.
-    public int SeekBarPercent { get; init; } = 50;
+    public double SeekBarPercent { get; init; } = DefaultSeekBarPercent;
 
     // Where the row sits when the seek bar doesn't fill the free width.
     public PlaybackBarAlignment Alignment { get; init; } = PlaybackBarAlignment.Center;
 
     public bool ShowTitle { get; init; } = true;
 
+    public TitleAlignment TitleAlignment { get; init; } = TitleAlignment.Left;
+
     public static bool CanHide(PlaybackBarComponent component) =>
         component is not (PlaybackBarComponent.SeekBar or PlaybackBarComponent.Settings);
 
     public IEnumerable<PlaybackBarComponent> HiddenComponents => AllComponents.Except(Components);
 
-    // Duplicates dropped, the seek bar and Settings put back if missing, the percent on the slider's grid.
+    // Duplicates dropped, the seek bar and Settings put back if missing, the percent within the slider's range.
     public PlaybackBarLayout Normalize()
     {
         var components = Components.Where(c => Enum.IsDefined(c)).Distinct().ToList();
@@ -73,17 +81,20 @@ public sealed record PlaybackBarLayout
         if (!components.Contains(PlaybackBarComponent.Settings))
             components.Add(PlaybackBarComponent.Settings);
 
-        var percent = (int)Math.Round((double)SeekBarPercent / SeekBarPercentStep, MidpointRounding.AwayFromZero) * SeekBarPercentStep;
         return this with
         {
             Components = components,
-            SeekBarPercent = Math.Clamp(percent, MinSeekBarPercent, MaxSeekBarPercent),
+            SeekBarPercent = double.IsNaN(SeekBarPercent)
+                ? DefaultSeekBarPercent
+                : Math.Clamp(SeekBarPercent, MinSeekBarPercent, MaxSeekBarPercent),
+            TitleAlignment = Enum.IsDefined(TitleAlignment) ? TitleAlignment : TitleAlignment.Left,
         };
     }
 
     public bool Equals(PlaybackBarLayout? other) =>
         other is not null && Components.SequenceEqual(other.Components) && SeekBarWidth == other.SeekBarWidth
-        && SeekBarPercent == other.SeekBarPercent && Alignment == other.Alignment && ShowTitle == other.ShowTitle;
+        && SeekBarPercent == other.SeekBarPercent && Alignment == other.Alignment && ShowTitle == other.ShowTitle
+        && TitleAlignment == other.TitleAlignment;
 
     public override int GetHashCode()
     {
@@ -97,6 +108,7 @@ public sealed record PlaybackBarLayout
         hash.Add(SeekBarPercent);
         hash.Add(Alignment);
         hash.Add(ShowTitle);
+        hash.Add(TitleAlignment);
         return hash.ToHashCode();
     }
 

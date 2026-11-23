@@ -80,7 +80,6 @@
 
         <StackPanel Classes="settings-section">
             <TextBlock Text="{x:Static res:Strings.SettingsSectionSeeking}" Classes="settings-heading" />
-            <CheckBox Content="{x:Static res:Strings.UseWaveformSlider}" IsChecked="{Binding UseWaveformSlider}" />
             <StackPanel Classes="settings-field">
                 <TextBlock Text="{x:Static res:Strings.SeekStepSeconds}" Classes="settings-label" />
                 <NumericUpDown Value="{Binding SeekStepSeconds}" Minimum="1" Maximum="10" Increment="1"

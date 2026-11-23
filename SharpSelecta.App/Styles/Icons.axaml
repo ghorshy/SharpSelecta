@@ -26,5 +26,6 @@
     <x:String x:Key="Icon.RecentlyAdded">avares://SharpSelecta/Assets/Icons/sparkle-2.svg</x:String>
     <x:String x:Key="Icon.AppWindow">avares://SharpSelecta/Assets/Icons/app-window.svg</x:String>
     <x:String x:Key="Icon.Power">avares://SharpSelecta/Assets/Icons/power.svg</x:String>
+    <x:String x:Key="Icon.Lock">avares://SharpSelecta/Assets/Icons/lock.svg</x:String>
 
 </ResourceDictionary>

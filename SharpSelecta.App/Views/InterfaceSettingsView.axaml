@@ -4,11 +4,61 @@
              xmlns:res="using:SharpSelecta.App.Resources"
              xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:styles="using:SharpSelecta.App.Styles"
+             xmlns:converters="using:SharpSelecta.App.Converters"
+             xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Svg.Controls.Skia.Avalonia"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="260"
              x:Class="SharpSelecta.App.Views.InterfaceSettingsView"
              x:DataType="vm:InterfaceSettingsViewModel">
+
+    <UserControl.Styles>
+        <!-- A tile on the bar or in the Hidden pool; drag it, or move it with the keyboard. -->
+        <Style Selector="ItemsControl.bar-tiles">
+            <Setter Property="ItemTemplate">
+                <DataTemplate x:DataType="vm:PlaybackBarTile">
+                    <Border Classes="bar-tile" Classes.seek="{Binding IsSeekBar}" Focusable="True" ToolTip.Tip="{Binding ToolTip}"
+                            PointerPressed="OnTilePointerPressed" KeyDown="OnTileKeyDown"
+                            DragDrop.AllowDrop="True" DragDrop.DragOver="OnTileDragOver" DragDrop.Drop="OnTileDrop">
+                        <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue XS}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <svg:Svg Classes="toolbar-icon" Width="{DynamicResource Size.Icon.M}" Height="{DynamicResource Size.Icon.M}"
+                                     Path="{Binding IconKey, Converter={x:Static converters:IconKeyConverter.Instance}}"
+                                     IsVisible="{Binding IconKey, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+                            <TextBlock Text="{Binding Label}" VerticalAlignment="Center"
+                                       IsVisible="{Binding Label, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+                            <svg:Svg Classes="toolbar-icon" Width="{DynamicResource Size.Icon.XS}" Height="{DynamicResource Size.Icon.XS}"
+                                     Path="{DynamicResource Icon.Lock}" IsVisible="{Binding IsLocked}" />
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Border.bar-tile">
+            <Setter Property="MinHeight" Value="{DynamicResource Size.Settings.BarTileHeight}" />
+            <Setter Property="Padding" Value="{styles:Spacing Left=S, Right=S}" />
+            <Setter Property="Background" Value="{DynamicResource Brush.Surface}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource Radius.Control}" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="{DynamicResource Border.All}" />
+            <Setter Property="Cursor" Value="SizeAll" />
+        </Style>
+        <Style Selector="Border.bar-tile.seek">
+            <Setter Property="MinWidth" Value="{DynamicResource Size.Settings.BarSeekTileWidth}" />
+        </Style>
+        <Style Selector="Border.bar-tile:focus-visible">
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+        </Style>
+        <Style Selector="Border.bar-area">
+            <Setter Property="Padding" Value="{styles:Spacing Uniform=XS}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Separator}" />
+            <Setter Property="BorderThickness" Value="{DynamicResource Border.All}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource Radius.Control}" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="Border.bar-area.drag-over">
+            <Setter Property="Background" Value="{DynamicResource Brush.DragHighlight}" />
+        </Style>
+    </UserControl.Styles>
 
     <StackPanel Classes="settings-page">
         <StackPanel Classes="settings-section">
@@ -103,6 +153,95 @@
             <StackPanel Classes="settings-field" IsEnabled="{Binding IsSidePanelShown}">
                 <CheckBox Content="{x:Static res:Strings.ShowNowPlayingArtwork}" IsChecked="{Binding ShowNowPlayingArtwork}" />
                 <CheckBox Content="{x:Static res:Strings.ShowNowPlayingDetails}" IsChecked="{Binding ShowNowPlayingDetails}" />
+            </StackPanel>
+        </StackPanel>
+
+        <StackPanel Classes="settings-section">
+            <TextBlock Text="{x:Static res:Strings.SettingsSectionPlaybackBar}" Classes="settings-heading" />
+            <TextBlock Text="{x:Static res:Strings.PlaybackBarHint}" Classes="settings-hint" />
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                <Border Classes="bar-area" HorizontalAlignment="Left" DragDrop.AllowDrop="True"
+                        DragDrop.DragOver="OnStripDragOver" DragDrop.DragLeave="OnStripDragLeave" DragDrop.Drop="OnStripDrop">
+                    <Panel x:Name="BarStripPanel">
+                        <ItemsControl x:Name="BarStrip" ItemsSource="{Binding PlaybackBarEditor.BarTiles}" Classes="bar-tiles">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue XS}" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                        <!-- Where a dragged tile will land: a line in the gap between two tiles. -->
+                        <Canvas IsHitTestVisible="False">
+                            <Border x:Name="DropIndicator" IsVisible="False" Background="{DynamicResource Brush.Accent}"
+                                    Width="{DynamicResource Size.Settings.BarDropIndicatorWidth}" />
+                        </Canvas>
+                    </Panel>
+                </Border>
+            </ScrollViewer>
+            <StackPanel Classes="settings-field">
+                <TextBlock Text="{x:Static res:Strings.PlaybackBarHidden}" Classes="settings-label" />
+                <Border x:Name="HiddenPoolArea" Classes="bar-area" DragDrop.AllowDrop="True"
+                        DragDrop.DragOver="OnPoolDragOver" DragDrop.DragLeave="OnAreaDragLeave" DragDrop.Drop="OnPoolDrop">
+                    <Panel MinHeight="{DynamicResource Size.Settings.BarTileHeight}">
+                        <TextBlock Text="{x:Static res:Strings.PlaybackBarHiddenEmpty}" Classes="settings-hint" VerticalAlignment="Center"
+                                   Margin="{styles:Spacing Left=S}"
+                                   IsVisible="{Binding !PlaybackBarEditor.HiddenTiles.Count}" />
+                        <ItemsControl x:Name="HiddenPool" ItemsSource="{Binding PlaybackBarEditor.HiddenTiles}" Classes="bar-tiles">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel ItemSpacing="{styles:SpacingValue XS}" LineSpacing="{styles:SpacingValue XS}" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </Panel>
+                </Border>
+            </StackPanel>
+            <StackPanel Classes="settings-field">
+                <TextBlock Text="{x:Static res:Strings.SeekBarWidthLabel}" Classes="settings-label" />
+                <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue S}">
+                    <ComboBox ItemsSource="{Binding PlaybackBarEditor.SeekBarWidthOptions}" SelectedItem="{Binding PlaybackBarEditor.SelectedSeekBarWidthOption}"
+                              MinWidth="{DynamicResource Size.Settings.FieldMinWidth}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SeekBarWidthOption">
+                                <TextBlock Text="{Binding DisplayName}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <Slider Minimum="{Binding PlaybackBarEditor.MinSeekBarPercent}" Maximum="{Binding PlaybackBarEditor.MaxSeekBarPercent}"
+                            Value="{Binding PlaybackBarEditor.SeekBarPercent}" IsEnabled="{Binding PlaybackBarEditor.IsSeekBarFixed}"
+                            Width="{DynamicResource Size.Settings.FieldMinWidth}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding PlaybackBarEditor.SeekBarPercentText}" IsEnabled="{Binding PlaybackBarEditor.IsSeekBarFixed}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+            </StackPanel>
+            <StackPanel Classes="settings-field" IsEnabled="{Binding PlaybackBarEditor.IsSeekBarFixed}">
+                <TextBlock Text="{x:Static res:Strings.PlaybackBarAlignment}" Classes="settings-label" />
+                <ComboBox ItemsSource="{Binding PlaybackBarEditor.AlignmentOptions}" SelectedItem="{Binding PlaybackBarEditor.SelectedAlignmentOption}"
+                          HorizontalAlignment="Left" MinWidth="{DynamicResource Size.Settings.FieldMinWidth}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:PlaybackBarAlignmentOption">
+                            <TextBlock Text="{Binding DisplayName}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
+            <StackPanel Classes="settings-field">
+                <CheckBox Content="{x:Static res:Strings.ShowTrackTitleAboveBar}" IsChecked="{Binding PlaybackBarEditor.ShowTitle}" />
+                <StackPanel Orientation="Horizontal" Spacing="{styles:SpacingValue S}" Classes="indented"
+                            IsEnabled="{Binding PlaybackBarEditor.ShowTitle}">
+                    <TextBlock Text="{x:Static res:Strings.TrackTitleAlignment}" VerticalAlignment="Center" />
+                    <ComboBox ItemsSource="{Binding PlaybackBarEditor.TitleAlignmentOptions}" SelectedItem="{Binding PlaybackBarEditor.SelectedTitleAlignmentOption}"
+                              MinWidth="{DynamicResource Size.Settings.FieldMinWidth}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:TitleAlignmentOption">
+                                <TextBlock Text="{Binding DisplayName}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+                <CheckBox Content="{x:Static res:Strings.UseWaveformSlider}" IsChecked="{Binding UseWaveformSlider}" />
+                <Button Content="{x:Static res:Strings.RestoreDefaultLayout}" Command="{Binding PlaybackBarEditor.RestoreDefaultCommand}"
+                        HorizontalAlignment="Left" Margin="{styles:Spacing Top=XS}" />
             </StackPanel>
         </StackPanel>
 

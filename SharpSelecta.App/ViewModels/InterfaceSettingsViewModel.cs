@@ -18,11 +18,11 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
         AppTheme Theme, string? CustomThemeFileName, int? FontSize, string? AccentColor,
         bool TrackChangeNotifications, bool MinimizeToTray, bool CloseToTray,
         SidePanelPosition SidePanelPosition, QueuePosition QueuePosition, bool ShowNowPlayingArtwork, bool ShowNowPlayingDetails,
-        PlaybackBarLayout PlaybackBar)
+        PlaybackBarLayout PlaybackBar, bool UseWaveformSlider)
     {
         public static Choices From(AppSettings s) =>
             new(s.Theme, s.CustomThemeFileName, s.FontSize, s.AccentColor, s.TrackChangeNotifications, s.MinimizeToTray, s.CloseToTray,
-                s.SidePanelPosition, s.QueuePosition, s.ShowNowPlayingArtwork, s.ShowNowPlayingDetails, s.PlaybackBar);
+                s.SidePanelPosition, s.QueuePosition, s.ShowNowPlayingArtwork, s.ShowNowPlayingDetails, s.PlaybackBar, s.UseWaveformSlider);
 
         public AppSettings ApplyTo(AppSettings s) => s with
         {
@@ -30,7 +30,7 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
             TrackChangeNotifications = TrackChangeNotifications, MinimizeToTray = MinimizeToTray, CloseToTray = CloseToTray,
             SidePanelPosition = SidePanelPosition, QueuePosition = QueuePosition,
             ShowNowPlayingArtwork = ShowNowPlayingArtwork, ShowNowPlayingDetails = ShowNowPlayingDetails,
-            PlaybackBar = PlaybackBar,
+            PlaybackBar = PlaybackBar, UseWaveformSlider = UseWaveformSlider,
         };
     }
 
@@ -124,6 +124,12 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
     // The bottom bar as edited; the main window previews it.
     public PlaybackBarLayout PlaybackBar => _edited.PlaybackBar;
 
+    public PlaybackBarEditorViewModel PlaybackBarEditor { get; }
+
+    // Previewed on the bar like its layout.
+    [ObservableProperty]
+    public partial bool UseWaveformSlider { get; set; }
+
     public string DisplayName => Strings.SettingsCategoryInterface;
 
     public bool HasPendingChanges => _edited != _applied;
@@ -178,6 +184,7 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
         UseThemeAccentCommand = new RelayCommand(() => SetAccent(null), () => HasCustomAccent);
         ApplyCommand = new RelayCommand(Apply);
         CancelCommand = new RelayCommand(Cancel);
+        PlaybackBarEditor = new PlaybackBarEditorViewModel(_applied.PlaybackBar, layout => Edit(c => c with { PlaybackBar = layout }));
         ShowChoices(_applied);
         _loading = false;
     }
@@ -226,6 +233,8 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
             SelectedQueuePositionOption = QueuePositionOptions.First(o => o.Position == choices.QueuePosition);
             ShowNowPlayingArtwork = choices.ShowNowPlayingArtwork;
             ShowNowPlayingDetails = choices.ShowNowPlayingDetails;
+            PlaybackBarEditor.Load(choices.PlaybackBar);
+            UseWaveformSlider = choices.UseWaveformSlider;
             IsAccentHexInvalid = false;
             SyncAccentControls();
         }
@@ -303,6 +312,12 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
     {
         if (!_loading)
             Edit(c => c with { ShowNowPlayingDetails = value });
+    }
+
+    partial void OnUseWaveformSliderChanged(bool value)
+    {
+        if (!_loading)
+            Edit(c => c with { UseWaveformSlider = value });
     }
 
     partial void OnAccentPickerColorChanged(Color value)

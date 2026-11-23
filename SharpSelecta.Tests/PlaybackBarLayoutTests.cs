@@ -19,6 +19,7 @@ public class PlaybackBarLayoutTests : IDisposable
             [Previous, PlayPause, Next, Elapsed, SeekBar, Length, Volume, Repeat, Equalizer, Settings], CollectionOrdering.Matching);
         await Assert.That(layout.SeekBarWidth).IsEqualTo(SeekBarWidth.Fill);
         await Assert.That(layout.ShowTitle).IsTrue();
+        await Assert.That(layout.TitleAlignment).IsEqualTo(TitleAlignment.Left);
         await Assert.That(layout.HiddenComponents).IsEmpty();
     }
 
@@ -65,14 +66,21 @@ public class PlaybackBarLayoutTests : IDisposable
     [Test]
     [Arguments(5, 20)]
     [Arguments(95, 80)]
-    [Arguments(47, 45)]
-    [Arguments(48, 50)]
-    [Arguments(60, 60)]
-    public async Task Normalize_ClampsThePercentToTheSlidersRangeAndStep(int saved, int expected)
+    [Arguments(47.3, 47.3)]
+    [Arguments(double.NaN, 50)]
+    public async Task Normalize_KeepsThePercentInTheSlidersRange(double saved, double expected)
     {
         var layout = new PlaybackBarLayout { SeekBarPercent = saved }.Normalize();
 
         await Assert.That(layout.SeekBarPercent).IsEqualTo(expected);
+    }
+
+    [Test]
+    public async Task Normalize_TurnsAnUnknownTitleAlignmentIntoLeft()
+    {
+        var layout = new PlaybackBarLayout { TitleAlignment = (TitleAlignment)7 }.Normalize();
+
+        await Assert.That(layout.TitleAlignment).IsEqualTo(TitleAlignment.Left);
     }
 
     [Test]
@@ -100,6 +108,7 @@ public class PlaybackBarLayoutTests : IDisposable
         await Assert.That(a).IsEqualTo(b);
         await Assert.That(a.GetHashCode()).IsEqualTo(b.GetHashCode());
         await Assert.That(a with { ShowTitle = false }).IsNotEqualTo(b);
+        await Assert.That(a with { TitleAlignment = TitleAlignment.Center }).IsNotEqualTo(b);
     }
 
     [Test]
@@ -121,9 +130,10 @@ public class PlaybackBarLayoutTests : IDisposable
         {
             Components = [SeekBar, PlayPause, Volume, Settings],
             SeekBarWidth = SeekBarWidth.Fixed,
-            SeekBarPercent = 35,
+            SeekBarPercent = 35.5,
             Alignment = PlaybackBarAlignment.Right,
             ShowTitle = false,
+            TitleAlignment = TitleAlignment.Center,
         };
         new SettingsStore(path).Update(s => s with { PlaybackBar = layout });
 

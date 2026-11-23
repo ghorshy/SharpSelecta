@@ -412,5 +412,33 @@ public static class Strings
     public static string AboutSystem(string runtime, string os, string architecture) =>
         string.Format(CultureInfo.CurrentCulture, Get("AboutSystemFormat"), runtime, os, architecture);
 
+    public static string SettingsSectionPlaybackBar => Get(nameof(SettingsSectionPlaybackBar));
+    public static string PlaybackBarHint => Get(nameof(PlaybackBarHint));
+    public static string PlaybackBarHidden => Get(nameof(PlaybackBarHidden));
+    public static string PlaybackBarHiddenEmpty => Get(nameof(PlaybackBarHiddenEmpty));
+    public static string PlayPause => Get(nameof(PlayPause));
+    public static string ElapsedTime => Get(nameof(ElapsedTime));
+    public static string ElapsedTileLabel => Get(nameof(ElapsedTileLabel));
+    public static string SeekBar => Get(nameof(SeekBar));
+    public static string TrackLength => Get(nameof(TrackLength));
+    public static string LengthTileLabel => Get(nameof(LengthTileLabel));
+    public static string Repeat => Get(nameof(Repeat));
+    public static string SeekBarWidthLabel => Get(nameof(SeekBarWidthLabel));
+    public static string SeekBarWidthFill => Get(nameof(SeekBarWidthFill));
+    public static string SeekBarWidthFixed => Get(nameof(SeekBarWidthFixed));
+    public static string PlaybackBarAlignment => Get(nameof(PlaybackBarAlignment));
+    public static string AlignLeft => Get(nameof(AlignLeft));
+    public static string AlignCenter => Get(nameof(AlignCenter));
+    public static string AlignRight => Get(nameof(AlignRight));
+    public static string ShowTrackTitleAboveBar => Get(nameof(ShowTrackTitleAboveBar));
+    public static string TrackTitleAlignment => Get(nameof(TrackTitleAlignment));
+    public static string RestoreDefaultLayout => Get(nameof(RestoreDefaultLayout));
+
+    public static string Percent(int percent) =>
+        string.Format(CultureInfo.CurrentCulture, Get("PercentFormat"), percent);
+
+    public static string PlaybackBarLockedTile(string name) =>
+        string.Format(CultureInfo.CurrentCulture, Get("PlaybackBarLockedTileFormat"), name);
+
     private static string Get(string name) => ResourceManager.GetString(name, CultureInfo.CurrentUICulture)!;
 }
