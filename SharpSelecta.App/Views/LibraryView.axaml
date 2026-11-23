@@ -32,9 +32,10 @@
                         CommandParameter="{x:Static core:LibrarySection.RecentlyAdded}"
                         Classes.active="{Binding LibrarySection, Converter={x:Static conv:ObjectConverters.Equal}, ConverterParameter={x:Static core:LibrarySection.RecentlyAdded}}" />
 
-                <Button Classes="toolbar-button toolbar-button-hover"
-                        Content="{x:Static res:Strings.Playlists}"
+                <Button Classes="toolbar-button toolbar-button-hover" ToolTip.Tip="{Binding PlaylistsButtonLabel}"
                         Classes.active="{Binding LibrarySection, Converter={x:Static conv:ObjectConverters.Equal}, ConverterParameter={x:Static core:LibrarySection.Playlist}}">
+                    <TextBlock Text="{Binding PlaylistsButtonLabel}" TextTrimming="CharacterEllipsis"
+                               MaxWidth="{DynamicResource Size.Library.PlaylistButtonMaxWidth}" />
                     <Button.Flyout>
                         <MenuFlyout Placement="BottomEdgeAlignedLeft" Opening="OnPlaylistsFlyoutOpening">
                             <MenuItem Header="{x:Static res:Strings.NewPlaylistEllipsis}" Click="OnNewPlaylistClick" />

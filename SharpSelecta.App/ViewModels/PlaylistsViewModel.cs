@@ -15,7 +15,10 @@ public partial class PlaylistsViewModel : ObservableObject
     public BulkObservableCollection<LibraryTrackViewModel> Tracks { get; } = [];
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedPlaylistName))]
     private string? selectedPlaylistId;
+
+    public string? SelectedPlaylistName => Playlists.FirstOrDefault(p => p.Id == SelectedPlaylistId)?.Name;
 
     // The rows in their saved order; a drag only rearranges Tracks until Save order.
     private List<LibraryTrackViewModel> _savedOrder = [];
@@ -35,6 +38,7 @@ public partial class PlaylistsViewModel : ObservableObject
     {
         var summaries = LibraryIndexStore.ListPlaylists(_settings.FilePath);
         Playlists.ReplaceAll(summaries.Select(s => new PlaylistSummaryViewModel(s.Id, s.Name)));
+        OnPropertyChanged(nameof(SelectedPlaylistName));
     }
 
     public void SelectPlaylist(string? playlistId)

@@ -155,10 +155,14 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
     {
         _settings.Update(s => s with { LibrarySection = value });
         NotifyViewVisibilityChanged();
+        OnPropertyChanged(nameof(PlaylistsButtonLabel));
         if (value != LibrarySection.Playlist && Playlists.HasPendingOrder)
             Playlists.RevertOrderCommand.Execute(null);
     }
 
+    // The open playlist's name while one is shown, so the toolbar says which.
+    public string PlaylistsButtonLabel =>
+        LibrarySection == LibrarySection.Playlist && Playlists.SelectedPlaylistName is { } name ? name : Strings.Playlists;
 
     partial void OnRecentlyAddedViewModeChanged(LibraryViewMode value)
     {
@@ -224,6 +228,11 @@ public partial class LibraryViewModel : ViewModelBase, ISettingsCategoryViewMode
         Grid = new AlbumGridViewModel(this, settings, layout, _logger);
         RecentlyAddedGrid = new AlbumGridViewModel(this, settings, layout, _logger, allowUserSort: false, limitToRecentlyAdded: true);
         Playlists = new PlaylistsViewModel(this, settings);
+        Playlists.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PlaylistsViewModel.SelectedPlaylistName))
+                OnPropertyChanged(nameof(PlaylistsButtonLabel));
+        };
         Columns = new LibraryColumnsViewModel(settings);
         Folders = new LibraryFoldersViewModel(filePickerService, settings, ReconcileFoldersAsync);
         IsWatchingFolders = WatchFolders = settings.Current.WatchLibraryFolders;

@@ -327,4 +327,28 @@ public class PlaylistsViewModelTests : IDisposable
         await Assert.That(string.Join(",", Names(vm))).IsEqualTo("a.mp3,a.mp3,b.mp3");
         await Assert.That(vm.Tracks.ToList()).IsEquivalentTo([rows[0], rows[2], rows[1]], TUnit.Assertions.Enums.CollectionOrdering.Matching);
     }
+
+    [Test]
+    public async Task PlaylistsButtonLabel_IsTheOpenPlaylistsName_OnlyInThePlaylistSection()
+    {
+        var settingsPath = _temp.NewSettingsPath();
+        LibraryIndexStore.Reconcile(settingsPath, [_temp.NewSubdirectory().FullName]);
+        var vm = CreateViewModel(settingsPath, out var library);
+        var id = vm.CreatePlaylist("Road trip");
+        var raised = new List<string?>();
+        library.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        await Assert.That(library.PlaylistsButtonLabel).IsEqualTo(SharpSelecta.App.Resources.Strings.Playlists);
+
+        library.LibrarySection = LibrarySection.Playlist;
+        await Assert.That(library.PlaylistsButtonLabel).IsEqualTo("Road trip");
+
+        raised.Clear();
+        vm.RenamePlaylist(id, "Night drive");
+        await Assert.That(library.PlaylistsButtonLabel).IsEqualTo("Night drive");
+        await Assert.That(raised).Contains(nameof(LibraryViewModel.PlaylistsButtonLabel));
+
+        vm.SelectPlaylist(null);
+        await Assert.That(library.PlaylistsButtonLabel).IsEqualTo(SharpSelecta.App.Resources.Strings.Playlists);
+    }
 }
