@@ -17,6 +17,26 @@ public partial class InterfaceSettingsView : UserControl
         InitializeComponent();
     }
 
+    // Opened from the bar's "Customize the bar…": scroll to its section once the page is laid out.
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        RevealPlaybackBarIfRequested();
+    }
+
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        if (this.IsAttachedToVisualTree())
+            RevealPlaybackBarIfRequested();
+    }
+
+    private void RevealPlaybackBarIfRequested()
+    {
+        if (DataContext is InterfaceSettingsViewModel viewModel && viewModel.TakePlaybackBarReveal())
+            Dispatcher.UIThread.Post(() => PlaybackBarSection.BringIntoView(), DispatcherPriority.Loaded);
+    }
+
     private PlaybackBarEditorViewModel? Editor => (DataContext as InterfaceSettingsViewModel)?.PlaybackBarEditor;
 
     private async void OnTilePointerPressed(object? sender, PointerPressedEventArgs e)

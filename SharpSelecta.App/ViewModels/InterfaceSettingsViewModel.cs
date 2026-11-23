@@ -126,6 +126,18 @@ public partial class InterfaceSettingsViewModel : ViewModelBase, ISettingsCatego
 
     public PlaybackBarEditorViewModel PlaybackBarEditor { get; }
 
+    private bool _revealPlaybackBar;
+
+    // One-shot: the page scrolls to the bar's section the next time it's shown.
+    public void RequestPlaybackBarReveal() => _revealPlaybackBar = true;
+
+    public bool TakePlaybackBarReveal()
+    {
+        var reveal = _revealPlaybackBar;
+        _revealPlaybackBar = false;
+        return reveal;
+    }
+
     // Previewed on the bar like its layout.
     [ObservableProperty]
     public partial bool UseWaveformSlider { get; set; }

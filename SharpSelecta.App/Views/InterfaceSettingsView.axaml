@@ -156,7 +156,7 @@
             </StackPanel>
         </StackPanel>
 
-        <StackPanel Classes="settings-section">
+        <StackPanel x:Name="PlaybackBarSection" Classes="settings-section">
             <TextBlock Text="{x:Static res:Strings.SettingsSectionPlaybackBar}" Classes="settings-heading" />
             <TextBlock Text="{x:Static res:Strings.PlaybackBarHint}" Classes="settings-hint" />
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">

@@ -63,6 +63,19 @@ public partial class MainWindowViewModel : ViewModelBase
         };
     }
 
+    // customizeBar: from the bar's own context menu, so it opens on Interface at the bar's section.
+    public SettingsWindowViewModel CreateSettings(bool customizeBar = false)
+    {
+        var settings = new SettingsWindowViewModel(Library, PlaybackSettings, InterfaceSettings, Integrations, ShortcutSettings, Updates);
+        if (customizeBar)
+        {
+            settings.SelectedCategory = InterfaceSettings;
+            InterfaceSettings.RequestPlaybackBarReveal();
+        }
+
+        return settings;
+    }
+
     // Which track "the selected one" is depends on what has focus (a grid, an expanded album, the
     // queue), which only the view knows - so the shortcut just asks the view to resolve and open it.
     public event EventHandler? OpenPropertiesRequested;

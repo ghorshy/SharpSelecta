@@ -1126,4 +1126,7 @@
   <data name="TrackTitleAlignment" xml:space="preserve">
     <value>Title alignment</value>
   </data>
+  <data name="CustomizeBar" xml:space="preserve">
+    <value>Customize the bar…</value>
+  </data>
 </root>

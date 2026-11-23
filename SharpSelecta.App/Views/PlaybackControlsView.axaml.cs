@@ -7,6 +7,7 @@ using Avalonia.Media;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using SharpSelecta.App.Resources;
 using SharpSelecta.App.ViewModels;
 using SharpSelecta.Core.Library;
 
@@ -29,6 +30,7 @@ public partial class PlaybackControlsView : UserControl
         Unloaded += (_, _) => _positionTimer.Stop();
 
         VolumeSlider.AddHandler(InputElement.PointerReleasedEvent, OnVolumeSliderPointerReleased, handledEventsToo: true);
+        ContextRequested += OnContextRequested;
         ApplyLayout(_layout);
     }
 
@@ -153,17 +155,28 @@ public partial class PlaybackControlsView : UserControl
     private void OnVolumeSliderPointerReleased(object? sender, PointerReleasedEventArgs e) =>
         (DataContext as PlaybackControlsViewModel)?.Volume.Persist();
 
-    private void OnSettingsClick(object? sender, RoutedEventArgs e)
+    private void OnSettingsClick(object? sender, RoutedEventArgs e) => OpenSettings(customizeBar: false);
+
+    private void OpenSettings(bool customizeBar)
     {
         if (this.FindAncestorOfType<Window>() is not { DataContext: MainWindowViewModel mainWindowViewModel } window)
             return;
 
-        new SettingsWindow
-        {
-            DataContext = new SettingsWindowViewModel(
-                mainWindowViewModel.Library, mainWindowViewModel.PlaybackSettings, mainWindowViewModel.InterfaceSettings,
-                mainWindowViewModel.Integrations, mainWindowViewModel.ShortcutSettings, mainWindowViewModel.Updates),
-        }.ShowDialog(window);
+        new SettingsWindow { DataContext = mainWindowViewModel.CreateSettings(customizeBar) }.ShowDialog(window);
+    }
+
+    // Right-click anywhere on the bar but a slider (the waveform seeks on any button) offers to customize it.
+    private void OnContextRequested(object? sender, ContextRequestedEventArgs e)
+    {
+        if (e.Source is Visual source && source.GetSelfAndVisualAncestors()
+                .TakeWhile(visual => visual != this)
+                .Any(visual => visual is Slider or WaveformSliderView))
+            return;
+
+        e.Handled = true;
+        var customize = new MenuItem { Header = Strings.CustomizeBar };
+        customize.Click += (_, _) => OpenSettings(customizeBar: true);
+        new ContextMenu { Items = { customize } }.Open(this);
     }
 
     private void OnEqualizerClick(object? sender, RoutedEventArgs e)

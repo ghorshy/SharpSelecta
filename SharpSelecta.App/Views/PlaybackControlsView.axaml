@@ -13,7 +13,8 @@
              x:Class="SharpSelecta.App.Views.PlaybackControlsView"
              x:DataType="vm:PlaybackControlsViewModel">
 
-    <StackPanel Spacing="{styles:SpacingValue M}">
+    <!-- A background, so a right-click between the components still reaches the bar's context menu. -->
+    <StackPanel Spacing="{styles:SpacingValue M}" Background="Transparent">
         <TextBlock x:Name="TitleLine" Text="{Binding DisplayTrackLabel}" />
         <TextBlock Text="{Binding StatusMessage}" Classes="error" TextWrapping="Wrap" IsVisible="{Binding StatusMessage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
 

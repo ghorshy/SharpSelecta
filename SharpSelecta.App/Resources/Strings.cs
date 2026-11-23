@@ -432,6 +432,7 @@ public static class Strings
     public static string AlignRight => Get(nameof(AlignRight));
     public static string ShowTrackTitleAboveBar => Get(nameof(ShowTrackTitleAboveBar));
     public static string TrackTitleAlignment => Get(nameof(TrackTitleAlignment));
+    public static string CustomizeBar => Get(nameof(CustomizeBar));
     public static string RestoreDefaultLayout => Get(nameof(RestoreDefaultLayout));
 
     public static string Percent(int percent) =>

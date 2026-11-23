@@ -293,4 +293,39 @@ public class MainWindowViewModelTests : IDisposable
 
         await Assert.That(vm.Equalizer.Bands.Count).IsEqualTo(10);
     }
+
+    [Test]
+    public async Task CreateSettings_OpensOnTheFirstCategory()
+    {
+        var vm = CreateViewModel(out _);
+
+        var settings = vm.CreateSettings();
+
+        await Assert.That(settings.SelectedCategory).IsEqualTo(settings.Categories[0]);
+        await Assert.That(vm.InterfaceSettings.TakePlaybackBarReveal()).IsFalse();
+    }
+
+    [Test]
+    public async Task CreateSettings_ToCustomizeTheBar_OpensOnInterfaceAtThePlaybackBar()
+    {
+        var vm = CreateViewModel(out _);
+
+        var settings = vm.CreateSettings(customizeBar: true);
+
+        await Assert.That(settings.SelectedCategory).IsEqualTo(vm.InterfaceSettings);
+        await Assert.That(vm.InterfaceSettings.TakePlaybackBarReveal()).IsTrue();
+        await Assert.That(vm.InterfaceSettings.TakePlaybackBarReveal()).IsFalse();
+    }
+
+    [Test]
+    public async Task EditingTheWaveformChoice_PreviewsItOnTheBar()
+    {
+        var vm = CreateViewModel(out _);
+
+        vm.InterfaceSettings.UseWaveformSlider = true;
+        await Assert.That(vm.PlaybackControls.Waveform.UseSlider).IsTrue();
+
+        vm.InterfaceSettings.CancelCommand.Execute(null);
+        await Assert.That(vm.PlaybackControls.Waveform.UseSlider).IsFalse();
+    }
 }
