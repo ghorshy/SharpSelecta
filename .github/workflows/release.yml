@@ -33,7 +33,10 @@ jobs:
           if [[ "$GITHUB_REF_NAME" == *-* ]]; then echo "PRE=--pre" >> "$GITHUB_ENV"; fi
 
       - name: Publish
-        run: dotnet publish SharpSelecta.App -c Release -r win-x64 --self-contained -p:Version="$VERSION" -o publish
+        run: |
+          dotnet publish SharpSelecta.App -c Release -r win-x64 -p:Version="$VERSION" -o publish | tee publish.log
+          if grep -oE "Assembly '[^']+' produced" publish.log | grep -vE "'(Avalonia\.Controls\.DataGrid|FFMpegCore)'"; then exit 1; fi
+          mkdir symbols && mv publish/*.pdb symbols/
 
       - run: dotnet tool install -g vpk --version "$VPK_VERSION"
 
@@ -70,6 +73,13 @@ jobs:
             gh release upload "$GITHUB_REF_NAME" releases/*.msi
           fi
 
+      - name: Attach the debug symbols
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          7z a "SharpSelecta-$VERSION-win-x64-symbols.zip" ./symbols/*
+          gh release upload "$GITHUB_REF_NAME" "SharpSelecta-$VERSION-win-x64-symbols.zip"
+
   linux:
     needs: windows
     runs-on: ubuntu-latest
@@ -82,11 +92,19 @@ jobs:
       - name: Version from tag
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
 
+      - name: NativeAOT toolchain
+        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+
       # One self-contained build; the tarball, .deb, .rpm and AppImage are all made from it.
       - name: Publish
         run: |
-          dotnet publish SharpSelecta.App -c Release -r linux-x64 --self-contained -p:Version="$VERSION" -o build/linux-x64/app
+          set -o pipefail
+          dotnet publish SharpSelecta.App -c Release -r linux-x64 -p:Version="$VERSION" -o build/linux-x64/app | tee publish.log
+          if grep -oE "Assembly '[^']+' produced" publish.log | grep -vE "'(Avalonia\.Controls\.DataGrid|FFMpegCore)'"; then exit 1; fi
           mv build/linux-x64/app/SharpSelecta build/linux-x64/app/sharpselecta
+          mkdir -p symbols dist
+          mv build/linux-x64/app/*.dbg build/linux-x64/app/*.pdb symbols/
+          tar czf "dist/SharpSelecta-$VERSION-linux-x64-symbols.tar.gz" -C symbols .
 
       - name: Tarball
         run: |
