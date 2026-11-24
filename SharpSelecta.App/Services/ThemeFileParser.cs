@@ -125,6 +125,7 @@ public static class ThemeFileParser
             {
                 (AvaloniaNamespace, "Color") => Color.TryParse(text, out var color) ? color : null,
                 (AvaloniaNamespace, "SolidColorBrush") => Brush(element),
+                (AvaloniaNamespace, "LinearGradientBrush" or "RadialGradientBrush" or "ConicGradientBrush") => Gradient(element),
                 (AvaloniaNamespace, "Thickness") => Try(() => Thickness.Parse(text)),
                 (AvaloniaNamespace, "CornerRadius") => Try(() => CornerRadius.Parse(text)),
                 (AvaloniaNamespace, "GridLength") => Try(() => GridLength.Parse(text)),
@@ -143,36 +144,140 @@ public static class ThemeFileParser
             return value ?? throw new ThemeFileException(Line(element), Strings.ThemeErrorBadValue(text, name.LocalName));
         }
 
-        // A literal color, or {DynamicResource Key} that follows that resource (the accent, say) live.
-        private SolidColorBrush? Brush(XElement element)
+        private SolidColorBrush Brush(XElement element)
         {
-            var colorText = (element.Attribute("Color")?.Value ?? element.Value).Trim();
             var brush = new SolidColorBrush();
             if (element.Attribute("Opacity")?.Value is { } opacityText)
-            {
-                if (!double.TryParse(opacityText, NumberStyles.Float, CultureInfo.InvariantCulture, out var opacity))
-                    throw new ThemeFileException(Line(element), Strings.ThemeErrorBadValue(opacityText, "Opacity"));
+                brush.Opacity = Number(element, opacityText, "Opacity");
 
-                brush.Opacity = opacity;
+            var colorText = (element.Attribute("Color")?.Value ?? element.Value).Trim();
+            return SetColor(element, colorText, color => brush.Color = color)
+                ? brush
+                : throw new ThemeFileException(Line(element), Strings.ThemeErrorBadValue(colorText, "Color"));
+        }
+
+        // Linear, radial or conic, with stops directly inside or under <X.GradientStops>.
+        private GradientBrush Gradient(XElement element)
+        {
+            var kind = element.Name.LocalName;
+            GradientBrush brush = kind switch
+            {
+                "LinearGradientBrush" => new LinearGradientBrush(),
+                "RadialGradientBrush" => new RadialGradientBrush(),
+                _ => new ConicGradientBrush(),
+            };
+
+            foreach (var attribute in element.Attributes().Where(a => !a.IsNamespaceDeclaration && a.Name.Namespace != XamlNamespace))
+            {
+                var text = attribute.Value;
+                switch (brush, attribute.Name.LocalName)
+                {
+                    case (_, "Opacity"):
+                        brush.Opacity = Number(element, text, "Opacity");
+                        break;
+                    case (_, "SpreadMethod"):
+                        brush.SpreadMethod = Enum.TryParse<GradientSpreadMethod>(text, ignoreCase: true, out var spread) && Enum.IsDefined(spread)
+                            ? spread
+                            : throw new ThemeFileException(Line(element), Strings.ThemeErrorBadValue(text, "SpreadMethod"));
+                        break;
+                    case (LinearGradientBrush linear, "StartPoint"):
+                        linear.StartPoint = Point(element, text);
+                        break;
+                    case (LinearGradientBrush linear, "EndPoint"):
+                        linear.EndPoint = Point(element, text);
+                        break;
+                    case (RadialGradientBrush radial, "Center"):
+                        radial.Center = Point(element, text);
+                        break;
+                    case (RadialGradientBrush radial, "GradientOrigin"):
+                        radial.GradientOrigin = Point(element, text);
+                        break;
+                    case (RadialGradientBrush radial, "RadiusX"):
+                        radial.RadiusX = Scalar(element, text);
+                        break;
+                    case (RadialGradientBrush radial, "RadiusY"):
+                        radial.RadiusY = Scalar(element, text);
+                        break;
+                    case (ConicGradientBrush conic, "Center"):
+                        conic.Center = Point(element, text);
+                        break;
+                    case (ConicGradientBrush conic, "Angle"):
+                        conic.Angle = Number(element, text, "Angle");
+                        break;
+                    default:
+                        throw new ThemeFileException(Line(element), Strings.ThemeErrorUnsupportedAttribute(attribute.Name.LocalName, kind));
+                }
             }
 
-            if (DynamicResourceKey(colorText) is { } source)
+            foreach (var stop in GradientStops(element, kind))
+            {
+                brush.GradientStops.Add(stop);
+            }
+
+            return brush;
+        }
+
+        private IEnumerable<GradientStop> GradientStops(XElement brush, string kind)
+        {
+            foreach (var child in brush.Elements())
+            {
+                var stops = child.Name.LocalName == $"{kind}.GradientStops"
+                    ? child.Elements().SelectMany(e => e.Name.LocalName == "GradientStops" ? e.Elements() : [e])
+                    : [child];
+                foreach (var element in stops)
+                {
+                    yield return element.Name == XName.Get("GradientStop", AvaloniaNamespace)
+                        ? Stop(element)
+                        : throw new ThemeFileException(Line(element), Strings.ThemeErrorUnsupportedElement(element.Name.LocalName));
+                }
+            }
+        }
+
+        private GradientStop Stop(XElement element)
+        {
+            var stop = new GradientStop();
+            if (element.Attribute("Offset")?.Value is { } offsetText)
+                stop.Offset = Number(element, offsetText, "Offset");
+
+            var colorText = (element.Attribute("Color")?.Value ?? "").Trim();
+            return SetColor(element, colorText, color => stop.Color = color)
+                ? stop
+                : throw new ThemeFileException(Line(element), Strings.ThemeErrorBadValue(colorText, "Color"));
+        }
+
+        // A literal color, or {DynamicResource Key} that follows that resource (the accent, say) live.
+        private bool SetColor(XElement element, string text, Action<Color> set)
+        {
+            if (DynamicResourceKey(text) is { } source)
             {
                 if (existingType is not null && existingType(source) is null)
                     throw new ThemeFileException(Line(element), Strings.ThemeErrorUnknownKey(source));
 
                 if (colorSource is not null)
-                    bindings.Add(colorSource.GetResourceObservable(source, ColorOf).Subscribe(new ColorFollower(brush)));
+                    bindings.Add(colorSource.GetResourceObservable(source, ColorOf).Subscribe(new ColorFollower(set)));
 
-                return brush;
+                return true;
             }
 
-            if (!Color.TryParse(colorText, out var color))
-                return null;
+            if (!Color.TryParse(text, out var color))
+                return false;
 
-            brush.Color = color;
-            return brush;
+            set(color);
+            return true;
         }
+
+        private static double Number(XElement element, string text, string what) =>
+            double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var number)
+                ? number
+                : throw new ThemeFileException(Line(element), Strings.ThemeErrorBadValue(text, what));
+
+        private static RelativePoint Point(XElement element, string text) =>
+            Try(() => RelativePoint.Parse(text)) as RelativePoint?
+            ?? throw new ThemeFileException(Line(element), Strings.ThemeErrorBadValue(text, "RelativePoint"));
+
+        private static RelativeScalar Scalar(XElement element, string text) =>
+            Try(() => RelativeScalar.Parse(text)) as RelativeScalar?
+            ?? throw new ThemeFileException(Line(element), Strings.ThemeErrorBadValue(text, "RelativeScalar"));
 
         private void CheckType(XElement element, string key, object value)
         {
@@ -200,12 +305,12 @@ public static class ThemeFileParser
         };
 
         // Sets the color as the resource changes, on the thread that changed it (a Bind would post to the UI thread).
-        private sealed class ColorFollower(SolidColorBrush brush) : IObserver<object?>
+        private sealed class ColorFollower(Action<Color> set) : IObserver<object?>
         {
             public void OnNext(object? value)
             {
                 if (value is Color color)
-                    brush.Color = color;
+                    set(color);
             }
 
             public void OnCompleted()

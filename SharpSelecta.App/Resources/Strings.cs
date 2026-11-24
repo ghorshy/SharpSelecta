@@ -472,5 +472,8 @@ public static class Strings
     public static string InvalidThemeFileAt(int line, string reason) =>
         string.Format(CultureInfo.CurrentCulture, Get("InvalidThemeFileAtFormat"), line, reason);
 
+    public static string ThemeErrorUnsupportedAttribute(string attribute, string element) =>
+        string.Format(CultureInfo.CurrentCulture, Get("ThemeErrorUnsupportedAttributeFormat"), attribute, element);
+
     private static string Get(string name) => ResourceManager.GetString(name, CultureInfo.CurrentUICulture)!;
 }

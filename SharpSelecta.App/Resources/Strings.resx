@@ -1171,4 +1171,7 @@
   <data name="InvalidThemeFileAtFormat" xml:space="preserve">
     <value>That file isn't a usable theme (line {0}): {1}</value>
   </data>
+  <data name="ThemeErrorUnsupportedAttributeFormat" xml:space="preserve">
+    <value>"{0}" can't be set on a {1}.</value>
+  </data>
 </root>

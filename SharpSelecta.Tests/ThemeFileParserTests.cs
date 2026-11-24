@@ -204,4 +204,94 @@ public class ThemeFileParserTests
 
         await Assert.That(error.Line).IsEqualTo(4);
     }
+
+    private const string Gradients = """
+        <LinearGradientBrush x:Key="Brush.Linear" StartPoint="0%,0%" EndPoint="100%,50%" SpreadMethod="Reflect" Opacity="0.9">
+            <GradientStop Color="#FF102030" Offset="0" />
+            <GradientStop Color="#80FFFFFF" Offset="0.75" />
+        </LinearGradientBrush>
+        <RadialGradientBrush x:Key="Brush.Radial" Center="50%,40%" GradientOrigin="25%,25%" RadiusX="60%" RadiusY="30%">
+            <RadialGradientBrush.GradientStops>
+                <GradientStop Color="Red" Offset="0.2" />
+                <GradientStop Color="#00000000" Offset="1" />
+            </RadialGradientBrush.GradientStops>
+        </RadialGradientBrush>
+        <ConicGradientBrush x:Key="Brush.Conic" Center="10,20" Angle="45">
+            <ConicGradientBrush.GradientStops>
+                <GradientStops>
+                    <GradientStop Color="#FF00FF00" Offset="0.5" />
+                </GradientStops>
+            </ConicGradientBrush.GradientStops>
+        </ConicGradientBrush>
+        """;
+
+    [Test]
+    public async Task GradientBrushes_ReadTheSameAsAvaloniasLoader()
+    {
+        var text = Theme(Gradients);
+        var reference = (ResourceDictionary)ReferenceXamlLoader.Load(text);
+
+        using var parsed = ThemeFileParser.Parse(text, null, null);
+
+        foreach (var key in new[] { "Brush.Linear", "Brush.Radial", "Brush.Conic" })
+        {
+            var want = (GradientBrush)reference[key]!;
+            var got = (GradientBrush)parsed.Resources[key]!;
+            await Assert.That(got.GetType()).IsEqualTo(want.GetType());
+            await Assert.That(got.Opacity).IsEqualTo(want.Opacity);
+            await Assert.That(got.SpreadMethod).IsEqualTo(want.SpreadMethod);
+            await Assert.That(got.GradientStops.Select(s => (s.Color, s.Offset)))
+                .IsEquivalentTo(want.GradientStops.Select(s => (s.Color, s.Offset)), TUnit.Assertions.Enums.CollectionOrdering.Matching);
+            var same = (want, got) switch
+            {
+                (LinearGradientBrush w, LinearGradientBrush g) => w.StartPoint == g.StartPoint && w.EndPoint == g.EndPoint,
+                (RadialGradientBrush w, RadialGradientBrush g) => w.Center == g.Center && w.GradientOrigin == g.GradientOrigin
+                                                                   && w.RadiusX == g.RadiusX && w.RadiusY == g.RadiusY,
+                (ConicGradientBrush w, ConicGradientBrush g) => w.Center == g.Center && w.Angle.Equals(g.Angle),
+                _ => false,
+            };
+            await Assert.That(same).IsTrue().Because(key);
+        }
+    }
+
+    [Test]
+    public async Task AGradientStop_CanFollowAResource()
+    {
+        var host = new Border();
+        host.Resources["SystemAccentColor"] = Colors.Red;
+        using var parsed = ThemeFileParser.Parse(Theme("""
+            <LinearGradientBrush x:Key="Brush.Surface">
+                <GradientStop Color="{DynamicResource SystemAccentColor}" Offset="0" />
+                <GradientStop Color="Transparent" Offset="1" />
+            </LinearGradientBrush>
+            """), host, null);
+        var brush = (LinearGradientBrush)parsed.Resources["Brush.Surface"]!;
+
+        host.Resources["SystemAccentColor"] = Colors.Blue;
+
+        await Assert.That(brush.GradientStops[0].Color).IsEqualTo(Colors.Blue);
+    }
+
+    [Test]
+    public async Task AGradient_CanReplaceASolidBrush()
+    {
+        using var parsed = ThemeFileParser.Parse(Theme("""
+            <LinearGradientBrush x:Key="Brush.Surface"><GradientStop Color="Black" Offset="0" /></LinearGradientBrush>
+            """), null, key => key == "Brush.Surface" ? typeof(SolidColorBrush) : null);
+
+        await Assert.That(parsed.Resources["Brush.Surface"]).IsTypeOf<LinearGradientBrush>();
+    }
+
+    [Test]
+    [Arguments("""<LinearGradientBrush x:Key="Brush.Surface" Angle="45" />""", "Angle")]
+    [Arguments("""<LinearGradientBrush x:Key="Brush.Surface" StartPoint="left" />""", "left")]
+    [Arguments("""<LinearGradientBrush x:Key="Brush.Surface"><GradientStop Color="#nope" /></LinearGradientBrush>""", "#nope")]
+    [Arguments("""<LinearGradientBrush x:Key="Brush.Surface"><Border /></LinearGradientBrush>""", "Border")]
+    public async Task AMistakeInAGradient_IsReported(string element, string mentioned)
+    {
+        var error = Fails(Theme(element));
+
+        await Assert.That(error.Line).IsEqualTo(3);
+        await Assert.That(error.Message).Contains(mentioned);
+    }
 }
