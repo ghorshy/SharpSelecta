@@ -35,7 +35,7 @@ SharpSelecta is a music player for your local library. It plays MP3, FLAC, ALAC,
 
 Every build is self-contained, so you don't need .NET installed. Download the file for your system from the [Releases page](https://github.com/ghorshy/SharpSelecta/releases).
 
-Packages for Arch (AUR), NixOS and Flathub are on the way, and a macOS version is planned.
+Packages for NixOS and Flathub are on the way, and a macOS version is planned.
 
 ### Windows
 
@@ -44,6 +44,16 @@ Run `SharpSelecta-win-Setup.exe`. It adds SharpSelecta to the Start menu and upd
 To install it for every user of the computer (into Program Files), use `SharpSelecta-win.msi` instead. It asks whether to install just for you or for everyone, and updates itself the same way.
 
 If you'd rather not install anything, extract `SharpSelecta-win-Portable.zip` anywhere and run `SharpSelecta.exe` from it. It updates itself too.
+
+### Arch Linux
+
+Install `sharpselecta-bin` from the AUR with your AUR helper:
+
+```sh
+yay -S sharpselecta-bin
+```
+
+It updates with the rest of your system.
 
 ### Debian, Ubuntu and Mint
 
@@ -109,7 +119,7 @@ Converting between file types (the Convert tab) needs [FFmpeg](https://ffmpeg.or
 - Two views: a table where you choose, sort and rearrange the columns, and an album grid you can zoom and sort by title, artist or year. Click an album to open its tracks in the grid; double-click to play it.
 - Recently Added lists the newest tracks first.
 - Fuzzy search over title, artist and album filters as you type.
-- Playlists can be renamed, reordered by dragging, and imported from or exported to M3U/M3U8.
+- Playlists can be renamed and imported from or exported to M3U/M3U8. Drag tracks within a playlist to reorder them, then save the new order or revert it.
 
 <p align="center">
   <img src=".github/assets/screenshots/track-list.png" alt="The library as a table, filtered by a search" width="100%" />
@@ -122,6 +132,7 @@ Converting between file types (the Convert tab) needs [FFmpeg](https://ffmpeg.or
 - ReplayGain normalization, per track or per album. Files without the tags get a gain you set.
 - 10-band equalizer with presets.
 - Optional waveform seek bar. Click the time to switch between elapsed and remaining. The volume slider can be linear or logarithmic.
+- Rearrange the playback bar: choose which buttons it shows and in what order, give the seek bar a fixed width, and show, hide or center the track title above it.
 - Pick the output device. If it disconnects, playback pauses instead of moving to your speakers.
 - The next launch brings back the queue, the track and position, the volume and the repeat mode, and can start playing right away.
 - A double-click on a track can play it right away, play the list from that point, play just that track or add it to the queue. You choose which, and after how many seconds Previous restarts the track instead of going back.
@@ -144,7 +155,7 @@ Converting between file types (the Convert tab) needs [FFmpeg](https://ffmpeg.or
 
 - Open audio files, folders and M3U playlists from your file manager. If SharpSelecta is already running, they go to that window.
 - Minimize or close to the tray. The tray menu has playback controls.
-- On Linux, media keys and playerctl work through MPRIS, and you can get a notification with the cover when the track changes.
+- On Linux, media keys and playerctl work through MPRIS, and you can get a notification with the cover when the track changes, with a button to skip to the next one.
 - A Discord "Listening to" status, off by default. You decide whether it shows the artist, the album and the elapsed time, and whether it stays up while paused.
 - Every keyboard shortcut can be rebound.
 - Light, dark or custom themes, your own accent color, and adjustable text size.
