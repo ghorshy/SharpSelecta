@@ -152,3 +152,49 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload "$GITHUB_REF_NAME" dist/*
+
+  aur:
+    needs: linux
+    if: ${{ !contains(github.ref_name, '-') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Version from tag
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: PKGBUILD and .SRCINFO
+        run: |
+          mkdir aur-build
+          sed -e "s/^pkgver=.*/pkgver=$VERSION/" -e "s/^pkgrel=.*/pkgrel=1/" packaging/aur/PKGBUILD > aur-build/PKGBUILD
+          docker run --rm -v "$PWD/aur-build:/pkg" archlinux:base-devel bash -ec '
+            pacman -Syu --noconfirm --needed pacman-contrib > /dev/null
+            useradd -m builder
+            chown -R builder /pkg
+            su builder -c "cd /pkg && updpkgsums && makepkg --printsrcinfo > .SRCINFO"'
+
+      - name: Push to the AUR
+        env:
+          AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
+        run: |
+          if [ -z "$AUR_SSH_KEY" ]; then
+            echo "::warning::AUR_SSH_KEY isn't set, the AUR package wasn't updated"
+            exit 0
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$AUR_SSH_KEY" > ~/.ssh/aur
+          chmod 600 ~/.ssh/aur
+          ssh-keyscan -t ed25519 aur.archlinux.org >> ~/.ssh/known_hosts
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/aur -o IdentitiesOnly=yes"
+          git clone ssh://aur@aur.archlinux.org/sharpselecta-bin.git aur-repo
+          cp aur-build/PKGBUILD aur-build/.SRCINFO aur-repo/
+          cd aur-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add PKGBUILD .SRCINFO
+          if git diff --cached --quiet; then
+            echo "The AUR package is already at $VERSION"
+            exit 0
+          fi
+          git commit -m "sharpselecta-bin $VERSION"
+          git push origin HEAD:master
