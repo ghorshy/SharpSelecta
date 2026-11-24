@@ -19,7 +19,7 @@ public sealed class EngineOutputDeviceService(IAudioEngine audioEngine, ILogger<
                 _activeDeviceLost += value;
                 if (_watcher is null && OperatingSystem.IsWindows())
                 {
-                    _watcher = Task.Run(StartWindowsWatcher);
+                    _watcher = AudioThread.InvokeAsync(StartWindowsWatcher);
                 }
             }
         }
@@ -36,7 +36,7 @@ public sealed class EngineOutputDeviceService(IAudioEngine audioEngine, ILogger<
         Task.Run(audioEngine.GetOutputDevices);
 
     public Task SetOutputDeviceAsync(string? deviceName) =>
-        Task.Run(() =>
+        Task.Run(async () =>
         {
             audioEngine.SetOutputDevice(deviceName);
             Task<IDisposable?>? watcher;
@@ -46,7 +46,7 @@ public sealed class EngineOutputDeviceService(IAudioEngine audioEngine, ILogger<
                 watcher = _watcher;
             }
 
-            if (OperatingSystem.IsWindows() && watcher?.Result is WindowsEndpointWatcher windowsWatcher)
+            if (OperatingSystem.IsWindows() && watcher is not null && await watcher is WindowsEndpointWatcher windowsWatcher)
             {
                 windowsWatcher.Follow(deviceName);
             }
@@ -66,7 +66,6 @@ public sealed class EngineOutputDeviceService(IAudioEngine audioEngine, ILogger<
         }
     }
 
-    // On a pool thread, so the COM objects live in the multithreaded apartment rather than on the UI thread.
     private IDisposable? StartWindowsWatcher()
     {
         if (!OperatingSystem.IsWindows())

@@ -1,23 +1,29 @@
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
 using SharpSelecta.Core.Audio;
 
 namespace SharpSelecta.Audio;
 
-// IMMNotificationClient callbacks must return quickly, so their work is handed to the thread pool.
+// IMMNotificationClient callbacks must return quickly, so their work is handed to the audio thread.
 [SupportedOSPlatform("windows")]
-internal sealed class WindowsEndpointWatcher : IMMNotificationClient, IDisposable
+[GeneratedComClass]
+internal sealed partial class WindowsEndpointWatcher : IMMNotificationClient, IDisposable
 {
     private const uint DeviceStateActive = 0x1;
     private const int RenderFlow = 0;
     private const int ConsoleRole = 0;
     private const int StorageRead = 0;
     private const ushort WideStringVariant = 31;
+    private const uint InProcessServer = 0x1;
+
+    private static readonly Guid MMDeviceEnumeratorClassId = new("BCDE0395-E52F-467C-8E3D-C4579291692E");
+    private static readonly Guid MMDeviceEnumeratorInterfaceId = new("A95664D2-9614-4F35-A746-DE8DB63617E6");
 
     private static readonly PropertyKey FriendlyNameKey = new(new Guid("a45c254e-df1c-4efd-8020-67d146a850e0"), 14);
 
-    private readonly IMMDeviceEnumerator _enumerator = (IMMDeviceEnumerator)new MMDeviceEnumerator();
+    private readonly IMMDeviceEnumerator _enumerator = CreateEnumerator();
     private readonly DeviceLossTracker<string> _tracker = new();
     private readonly Lock _gate = new();
     private readonly Action _onLost;
@@ -32,16 +38,16 @@ internal sealed class WindowsEndpointWatcher : IMMNotificationClient, IDisposabl
         _enumerator.RegisterEndpointNotificationCallback(this);
     }
 
-    public void Follow(string? deviceName)
+    public void Follow(string? deviceName) => AudioThread.Invoke(() =>
     {
         lock (_gate)
         {
             _deviceName = deviceName;
             SwitchToRequestedEndpoint();
         }
-    }
+    });
 
-    public void Dispose()
+    public void Dispose() => AudioThread.Invoke(() =>
     {
         lock (_gate)
         {
@@ -51,7 +57,7 @@ internal sealed class WindowsEndpointWatcher : IMMNotificationClient, IDisposabl
                 _enumerator.UnregisterEndpointNotificationCallback(this);
             }
         }
-    }
+    });
 
     void IMMNotificationClient.OnDeviceStateChanged(string deviceId, uint newState)
     {
@@ -101,7 +107,20 @@ internal sealed class WindowsEndpointWatcher : IMMNotificationClient, IDisposabl
         _tracker.StreamSwitchedTo(endpointId);
     }
 
-    private void Run(Action work) => Task.Run(() =>
+    private static IMMDeviceEnumerator CreateEnumerator()
+    {
+        Marshal.ThrowExceptionForHR(CoCreateInstance(MMDeviceEnumeratorClassId, 0, InProcessServer, MMDeviceEnumeratorInterfaceId, out var instance));
+        try
+        {
+            return (IMMDeviceEnumerator)new StrategyBasedComWrappers().GetOrCreateObjectForComInstance(instance, CreateObjectFlags.None);
+        }
+        finally
+        {
+            Marshal.Release(instance);
+        }
+    }
+
+    private void Run(Action work) => AudioThread.InvokeAsync(() =>
     {
         try
         {
@@ -175,8 +194,7 @@ internal sealed class WindowsEndpointWatcher : IMMNotificationClient, IDisposabl
     private static string? FriendlyName(IMMDevice device)
     {
         device.OpenPropertyStore(StorageRead, out var properties);
-        var key = FriendlyNameKey;
-        properties.GetValue(ref key, out var value);
+        properties.GetValue(FriendlyNameKey, out var value);
         try
         {
             return value.ValueType == WideStringVariant ? Marshal.PtrToStringUni(value.Pointer) : null;
@@ -187,11 +205,11 @@ internal sealed class WindowsEndpointWatcher : IMMNotificationClient, IDisposabl
         }
     }
 
-    [DllImport("ole32.dll")]
-    private static extern int PropVariantClear(ref PropVariant value);
+    [LibraryImport("ole32.dll")]
+    private static partial int PropVariantClear(ref PropVariant value);
 
-    [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
-    private class MMDeviceEnumerator;
+    [LibraryImport("ole32.dll")]
+    private static partial int CoCreateInstance(in Guid classId, nint outer, uint context, in Guid interfaceId, out nint instance);
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -204,46 +222,46 @@ internal struct PropVariant
     [FieldOffset(8)] public IntPtr Pointer;
 }
 
-[ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-internal interface IMMDeviceEnumerator
+[GeneratedComInterface(StringMarshalling = StringMarshalling.Utf16), Guid("A95664D2-9614-4F35-A746-DE8DB63617E6")]
+internal partial interface IMMDeviceEnumerator
 {
     void EnumAudioEndpoints(int dataFlow, uint stateMask, out IMMDeviceCollection devices);
     void GetDefaultAudioEndpoint(int dataFlow, int role, out IMMDevice endpoint);
-    void GetDevice([MarshalAs(UnmanagedType.LPWStr)] string id, out IMMDevice device);
+    void GetDevice(string id, out IMMDevice device);
     void RegisterEndpointNotificationCallback(IMMNotificationClient client);
     void UnregisterEndpointNotificationCallback(IMMNotificationClient client);
 }
 
-[ComImport, Guid("0BD7A1BE-7A1A-44DB-8397-CC5392387B5E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-internal interface IMMDeviceCollection
+[GeneratedComInterface, Guid("0BD7A1BE-7A1A-44DB-8397-CC5392387B5E")]
+internal partial interface IMMDeviceCollection
 {
     void GetCount(out uint count);
     void Item(uint index, out IMMDevice device);
 }
 
-[ComImport, Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-internal interface IMMDevice
+[GeneratedComInterface(StringMarshalling = StringMarshalling.Utf16), Guid("D666063F-1587-4E43-81F1-B948E807363F")]
+internal partial interface IMMDevice
 {
-    void Activate(ref Guid interfaceId, int classContext, IntPtr activationParams, [MarshalAs(UnmanagedType.IUnknown)] out object instance);
+    void Activate(in Guid interfaceId, int classContext, nint activationParams, out nint instance);
     void OpenPropertyStore(int storageAccess, out IPropertyStore properties);
-    void GetId([MarshalAs(UnmanagedType.LPWStr)] out string id);
+    void GetId(out string id);
     void GetState(out uint state);
 }
 
-[ComImport, Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-internal interface IPropertyStore
+[GeneratedComInterface, Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")]
+internal partial interface IPropertyStore
 {
     void GetCount(out uint count);
     void GetAt(uint index, out PropertyKey key);
-    void GetValue(ref PropertyKey key, out PropVariant value);
+    void GetValue(in PropertyKey key, out PropVariant value);
 }
 
-[ComImport, Guid("7991EEC9-7E89-4D85-8390-6C703CEC60C0"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-internal interface IMMNotificationClient
+[GeneratedComInterface(StringMarshalling = StringMarshalling.Utf16), Guid("7991EEC9-7E89-4D85-8390-6C703CEC60C0")]
+internal partial interface IMMNotificationClient
 {
-    void OnDeviceStateChanged([MarshalAs(UnmanagedType.LPWStr)] string deviceId, uint newState);
-    void OnDeviceAdded([MarshalAs(UnmanagedType.LPWStr)] string deviceId);
-    void OnDeviceRemoved([MarshalAs(UnmanagedType.LPWStr)] string deviceId);
-    void OnDefaultDeviceChanged(int flow, int role, [MarshalAs(UnmanagedType.LPWStr)] string? defaultDeviceId);
-    void OnPropertyValueChanged([MarshalAs(UnmanagedType.LPWStr)] string deviceId, PropertyKey key);
+    void OnDeviceStateChanged(string deviceId, uint newState);
+    void OnDeviceAdded(string deviceId);
+    void OnDeviceRemoved(string deviceId);
+    void OnDefaultDeviceChanged(int flow, int role, string? defaultDeviceId);
+    void OnPropertyValueChanged(string deviceId, PropertyKey key);
 }

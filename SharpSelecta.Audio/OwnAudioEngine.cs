@@ -22,9 +22,11 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
     private static readonly IReadOnlyList<int> StandardEqualizerBandFrequenciesHz =
         [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 
-    public async Task InitializeAsync()
+    public Task InitializeAsync() => AudioThread.InvokeAsync(Initialize);
+
+    private void Initialize()
     {
-        await OwnaudioNet.InitializeAsync();
+        OwnaudioNet.Initialize();
         OwnaudioNet.Start();
         _mixer = new AudioMixer(OwnaudioNet.Engine!.UnderlyingEngine);
         _mixer.Start();
@@ -50,7 +52,9 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
             OwnaudioNet.Engine.Config.Channels);
     }
 
-    public void Load(string filePath)
+    public void Load(string filePath) => AudioThread.Invoke(() => LoadOnAudioThread(filePath));
+
+    private void LoadOnAudioThread(string filePath)
     {
         if (_mixer is null)
         {
@@ -199,18 +203,20 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
         "Discard all samples",
     ];
 
-    public IReadOnlyList<AudioOutputDevice> GetOutputDevices() =>
+    public IReadOnlyList<AudioOutputDevice> GetOutputDevices() => AudioThread.Invoke<IReadOnlyList<AudioOutputDevice>>(() =>
     [
         .. OwnaudioNet.GetOutputDevices()
             .Where(d => d.IsOutput && !IsVirtualDevice(d.Name))
             .DistinctBy(d => d.Name)
             .Select(d => new AudioOutputDevice(d.Name, d.IsDefault))
-    ];
+    ]);
 
     private static bool IsVirtualDevice(string name) =>
         VirtualDeviceNameFragments.Any(fragment => name.Contains(fragment, StringComparison.OrdinalIgnoreCase));
 
-    public void SetOutputDevice(string? deviceName)
+    public void SetOutputDevice(string? deviceName) => AudioThread.Invoke(() => SetOutputDeviceOnAudioThread(deviceName));
+
+    private void SetOutputDeviceOnAudioThread(string? deviceName)
     {
         if (OwnaudioNet.Engine is not { } engine)
         {
@@ -260,7 +266,9 @@ public sealed class OwnAudioEngine(ILogger<OwnAudioEngine> logger) : IAudioEngin
             ?? rawDevices.FirstOrDefault(d => d.Name.Contains("Default ALSA Output", StringComparison.OrdinalIgnoreCase))?.Name;
     }
 
-    public void Dispose()
+    public void Dispose() => AudioThread.Invoke(DisposeOnAudioThread);
+
+    private void DisposeOnAudioThread()
     {
         _equalizer?.Dispose();
         _equalizer = null;
